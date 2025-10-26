@@ -1,3 +1,3 @@
-# DeepMT (Deep Metamorphic Testing)
+# DeepMT
 
-DeepMT (Deep Metamorphic Testing), a metamorphic relation automatic generation and hierarchical testing system for deep learning frameworks.
+DeepMT (Deep Metamorphic Testing) is a metamorphic relation automatic generation and hierarchical testing system for deep learning frameworks.
