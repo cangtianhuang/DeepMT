@@ -3,5 +3,9 @@ name = "deepmt"
 version = "0.1.0"
 description = "A metamorphic relation automatic generation and hierarchical testing system for deep learning frameworks"
 readme = "README.md"
-requires-python = ">=3.14"
-dependencies = []
+requires-python = ">=3.8"
+dependencies = [
+    "torch>=1.9.0",
+    "numpy>=1.21.0",
+    "pyyaml>=5.4.0",
+]
