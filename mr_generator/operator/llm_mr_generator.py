@@ -5,63 +5,42 @@ LLM MR生成器：使用大语言模型生成MR猜想（路径A）
 import json
 import uuid
 from typing import List, Optional, Dict, Any
-import os
 
 from ir.schema import MetamorphicRelation
+from tools.llm.client import LLMClient
 from core.logger import get_logger
 
 
 class LLMMRGenerator:
     """使用LLM生成MR猜想的生成器"""
 
-    def __init__(self, api_key: Optional[str] = None, model: str = None):
+    def __init__(
+        self,
+        llm_client: Optional[LLMClient] = None,
+        api_key: Optional[str] = None,
+        model: str = None,
+    ):
         """
         初始化LLM MR生成器
 
         Args:
-            api_key: OpenAI API密钥（如果为None，则从配置文件或环境变量获取）
+            llm_client: LLM客户端（如果为None则创建）
+            api_key: API密钥（如果为None，则从配置文件或环境变量获取）
             model: 使用的模型名称（如果为None，则从配置文件获取）
         """
-        import yaml
-        from pathlib import Path
-
         self.logger = get_logger()
 
-        # 加载配置文件
-        config_path = Path(__file__).parent.parent / "config.yaml"
-        config = {}
-        if config_path.exists():
+        if llm_client:
+            self.llm_client = llm_client
+            self.llm_available = True
+        else:
             try:
-                with open(config_path, "r", encoding="utf-8") as f:
-                    config = yaml.safe_load(f) or {}
+                from tools.llm.client import LLMClient
+
+                self.llm_client = LLMClient(api_key=api_key, model=model)
+                self.llm_available = True
             except Exception as e:
-                self.logger.warning(f"Failed to load config: {e}")
-
-        llm_config = config.get("llm", {})
-
-        # 获取API key（优先级：参数 > 配置文件 > 环境变量）
-        self.api_key = (
-            api_key or llm_config.get("api_key") or os.getenv("OPENAI_API_KEY")
-        )
-        self.model = model or llm_config.get("model", "gpt-4")
-
-        if not self.api_key:
-            raise ValueError(
-                "LLM API key is required! Please:\n"
-                "1. Set it in config.yaml (llm.api_key)\n"
-                "2. Set OPENAI_API_KEY environment variable\n"
-                "3. Pass api_key parameter to OperatorMRGenerator"
-            )
-
-        self.llm_available = True
-        try:
-            import openai
-
-            self.client = openai.OpenAI(api_key=self.api_key)
-        except ImportError:
-            raise ImportError(
-                "openai package not installed. Install with: pip install openai"
-            )
+                raise ValueError(f"Failed to initialize LLM client: {e}")
 
     def _build_prompt(
         self,
@@ -139,7 +118,7 @@ class LLMMRGenerator:
         Returns:
             MR候选列表
         """
-        if not self.llm_available:
+        if not self.llm_available or not self.llm_client:
             self.logger.warning("LLM not available, returning empty list")
             return []
 
@@ -150,21 +129,17 @@ class LLMMRGenerator:
             )
 
             # 调用LLM
-            response = self.client.chat.completions.create(
-                model=self.model,
-                messages=[
-                    {
-                        "role": "system",
-                        "content": "You are an expert in metamorphic testing for deep learning operators.",
-                    },
-                    {"role": "user", "content": prompt},
-                ],
-                temperature=0.7,
-                max_tokens=1000,
-            )
+            messages = [
+                {
+                    "role": "system",
+                    "content": "You are an expert in metamorphic testing for deep learning operators.",
+                },
+                {"role": "user", "content": prompt},
+            ]
 
-            # 解析响应
-            content = response.choices[0].message.content.strip()
+            content = self.llm_client.chat_completion(
+                messages, temperature=0.7, max_tokens=1000
+            )
 
             # 提取JSON（可能包含markdown代码块）
             if "```json" in content:

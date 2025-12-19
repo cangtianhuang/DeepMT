@@ -278,17 +278,15 @@ class MRDeriver:
 }}
 """
 
-            response = self.llm_client.chat.completions.create(
-                model="gpt-4",
-                messages=[
-                    {
-                        "role": "system",
-                        "content": "You are a metamorphic testing expert.",
-                    },
-                    {"role": "user", "content": prompt},
-                ],
-                temperature=0.7,
-            )
+            messages = [
+                {
+                    "role": "system",
+                    "content": "You are a metamorphic testing expert.",
+                },
+                {"role": "user", "content": prompt},
+            ]
+
+            content = self.llm_client.chat_completion(messages, temperature=0.7)
 
             # 解析响应（简化实现）
             # TODO: 完整实现JSON解析和MR创建

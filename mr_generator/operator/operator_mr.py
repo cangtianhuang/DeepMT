@@ -6,14 +6,14 @@
 from typing import List, Optional, Callable, Any
 
 from ir.schema import OperatorIR, MetamorphicRelation
-from mr_generator.knowledge_base import KnowledgeBase
-from mr_generator.mr_templates import MRTemplatePool
-from mr_generator.mr_precheck import MRPreChecker
-from mr_generator.sympy_prover import SymPyProver
-from mr_generator.llm_mr_generator import LLMMRGenerator
-from mr_generator.code_to_sympy import CodeToSymPyTranslator
-from mr_generator.mr_deriver import MRDeriver
-from mr_generator.operator_info_fetcher import OperatorInfoFetcher
+from mr_generator.operator.knowledge_base import KnowledgeBase
+from mr_generator.base.mr_templates import MRTemplatePool
+from mr_generator.operator.mr_precheck import MRPreChecker
+from mr_generator.operator.sympy_prover import SymPyProver
+from mr_generator.operator.llm_mr_generator import LLMMRGenerator
+from tools.llm.code_translator import CodeToSymPyTranslator
+from mr_generator.operator.mr_deriver import MRDeriver
+from tools.web_search.operator_fetcher import OperatorInfoFetcher
 from core.logger import get_logger
 
 
@@ -86,25 +86,30 @@ class OperatorMRGenerator:
             )
             use_llm = True
 
+        # 创建LLM客户端（共享使用）
         try:
-            self.llm_generator = LLMMRGenerator(api_key=llm_api_key)
-            llm_client = (
-                self.llm_generator.client
-                if hasattr(self.llm_generator, "client")
-                else None
-            )
-        except (ValueError, ImportError) as e:
-            self.logger.error(f"Failed to initialize LLM: {e}")
+            from tools.llm.client import LLMClient
+
+            self.llm_client = LLMClient(api_key=llm_api_key)
+        except Exception as e:
+            self.logger.error(f"Failed to initialize LLM client: {e}")
+            raise
+
+        # 创建LLM MR生成器
+        try:
+            self.llm_generator = LLMMRGenerator(llm_client=self.llm_client)
+        except Exception as e:
+            self.logger.error(f"Failed to initialize LLM MR generator: {e}")
             raise
 
         # 新增：代码到SymPy转换器和MR推导器
         self.use_auto_derivation = use_auto_derivation
         if use_auto_derivation:
-            self.code_translator = CodeToSymPyTranslator(llm_client=llm_client)
+            self.code_translator = CodeToSymPyTranslator(llm_client=self.llm_client)
             self.mr_deriver = MRDeriver(
                 template_pool=self.template_pool,
                 use_z3=False,  # 可选：启用Z3
-                llm_client=llm_client,
+                llm_client=self.llm_client,
             )
         else:
             self.code_translator = None

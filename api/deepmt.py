@@ -8,9 +8,9 @@ from pathlib import Path
 
 from ir.converter import IRConverter
 from ir.schema import OperatorIR, ModelIR, ApplicationIR
-from mr_generator.operator_mr import OperatorMRGenerator
-from mr_generator.knowledge_base import KnowledgeBase
-from mr_generator.mr_repository import MRRepository
+from mr_generator.operator.operator_mr import OperatorMRGenerator
+from mr_generator.operator.knowledge_base import KnowledgeBase
+from mr_generator.base.mr_repository import MRRepository
 from core.scheduler import TaskScheduler
 from core.test_runner import TestRunner
 from core.ir_manager import IRManager
