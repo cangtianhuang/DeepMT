@@ -372,3 +372,4 @@ class WebSearchTool:
         code_blocks.extend([m for m in matches if "(" in m and ")" in m])
 
         return code_blocks
+

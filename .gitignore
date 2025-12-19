@@ -9,5 +9,7 @@ Thumbs.db
 __pycache__/
 config.yaml
 data/
+docs/
+examples/
 logs/
 tests/

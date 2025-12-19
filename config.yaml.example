@@ -32,3 +32,4 @@ web_search:
 logging:
   level: "INFO"  # DEBUG, INFO, WARNING, ERROR
   file: "data/logs/deepmt.log"
+
