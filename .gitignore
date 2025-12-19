@@ -1,4 +1,13 @@
+*.db
+*.log
+.DS_Store
+.idea/
 .tmp/
+.venv/
 .vscode/
+Thumbs.db
+__pycache__/
+config.yaml
 data/
-__pycache__
+logs/
+tests/
