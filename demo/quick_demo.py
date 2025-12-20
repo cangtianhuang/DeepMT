@@ -4,7 +4,7 @@
 
 from ir.schema import OperatorIR
 from mr_generator.operator.operator_mr import OperatorMRGenerator
-from mr_generator.operator.knowledge_base import KnowledgeBase
+from mr_generator.base.knowledge_base import KnowledgeBase
 from core.scheduler import TaskScheduler
 from core.ir_manager import IRManager
 from core.plugins_manager import PluginsManager

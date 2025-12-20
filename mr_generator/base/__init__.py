@@ -4,6 +4,7 @@ MR生成器基础模块
 """
 
 from mr_generator.base.mr_templates import MRTemplatePool
+from mr_generator.base.knowledge_base import KnowledgeBase
 from mr_generator.base.mr_repository import MRRepository
 
-__all__ = ["MRTemplatePool", "MRRepository"]
+__all__ = ["MRTemplatePool", "KnowledgeBase", "MRRepository"]

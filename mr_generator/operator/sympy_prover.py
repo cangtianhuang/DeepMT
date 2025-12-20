@@ -1,151 +1,146 @@
 """
 SymPy证明引擎：使用SymPy进行形式化证明
-将算子代码转换为SymPy表达式，然后使用simplify(LHS - RHS) == 0进行证明
+使用 code_to_sympy 动态将 Python 代码（可能是复杂的 Python 代码）转化为 sympy 表达
+然后使用 simplify(LHS - RHS) == 0 进行证明
 """
 
 import sympy as sp
-from typing import Callable, Any, List, Optional, Dict
-import numpy as np
+from typing import Callable, Any, List, Optional
 
 from ir.schema import MetamorphicRelation
 from core.logger import get_logger
+from mr_generator.operator.code_translator import CodeToSymPyTranslator
 
 
 class SymPyProver:
-    """SymPy形式化证明引擎"""
+    """SymPy形式化证明引擎：使用动态代码转换"""
 
-    def __init__(self):
-        self.logger = get_logger()
-        # 算子到SymPy操作的映射表
-        self.operator_mapping = self._init_operator_mapping()
-
-    def _init_operator_mapping(self) -> Dict[str, Callable]:
+    def __init__(self, code_translator: Optional[CodeToSymPyTranslator] = None):
         """
-        初始化算子到SymPy操作的映射表
-
-        返回:
-            映射字典 {算子名称: SymPy操作}
-        """
-        return {
-            # 基本算术运算
-            "Add": lambda x, y: sp.Add(x, y),
-            "add": lambda x, y: sp.Add(x, y),
-            "Multiply": lambda x, y: sp.Mul(x, y),
-            "multiply": lambda x, y: sp.Mul(x, y),
-            "Subtract": lambda x, y: sp.Add(x, -y),
-            "subtract": lambda x, y: sp.Add(x, -y),
-            "Divide": lambda x, y: sp.Mul(x, sp.Pow(y, -1)),
-            "divide": lambda x, y: sp.Mul(x, sp.Pow(y, -1)),
-            # 数学函数
-            "Power": lambda x, y: sp.Pow(x, y),
-            "power": lambda x, y: sp.Pow(x, y),
-            "Exp": lambda x: sp.exp(x),
-            "exp": lambda x: sp.exp(x),
-            "Log": lambda x: sp.log(x),
-            "log": lambda x: sp.log(x),
-            "Sqrt": lambda x: sp.sqrt(x),
-            "sqrt": lambda x: sp.sqrt(x),
-            # 三角函数
-            "Sin": lambda x: sp.sin(x),
-            "sin": lambda x: sp.sin(x),
-            "Cos": lambda x: sp.cos(x),
-            "cos": lambda x: sp.cos(x),
-            "Tan": lambda x: sp.tan(x),
-            "tan": lambda x: sp.tan(x),
-            # 最大值最小值
-            "Max": lambda x, y: sp.Max(x, y),
-            "max": lambda x, y: sp.Max(x, y),
-            "Min": lambda x, y: sp.Min(x, y),
-            "min": lambda x, y: sp.Min(x, y),
-            # 绝对值
-            "Abs": lambda x: sp.Abs(x),
-            "abs": lambda x: sp.Abs(x),
-        }
-
-    def code_to_sympy(self, operator_name: str, num_inputs: int) -> Optional[Callable]:
-        """
-        将算子名称转换为SymPy表达式生成函数
+        初始化SymPy证明引擎
 
         Args:
-            operator_name: 算子名称
-            num_inputs: 输入数量
-
-        Returns:
-            SymPy表达式生成函数，如果无法转换则返回None
+            code_translator: 代码转换器（如果为None则创建默认实例）
         """
-        # 查找映射
-        if operator_name in self.operator_mapping:
-            op_func = self.operator_mapping[operator_name]
-            return op_func
+        self.logger = get_logger()
+        self.code_translator = code_translator or CodeToSymPyTranslator()
 
-        # 尝试规范化名称（去除框架前缀）
-        normalized_name = operator_name.split(".")[-1]  # 如 "torch.add" -> "add"
-        if normalized_name in self.operator_mapping:
-            op_func = self.operator_mapping[normalized_name]
-            return op_func
-
-        self.logger.warning(
-            f"Cannot map operator '{operator_name}' to SymPy expression. "
-            f"Available operators: {list(self.operator_mapping.keys())}"
-        )
-        return None
-
-    def create_sympy_expression(
-        self, operator_func: Callable, num_inputs: int, operator_name: str = None
+    def code_to_sympy(
+        self,
+        code: Optional[str] = None,
+        func: Optional[Callable] = None,
+        doc: Optional[str] = None,
+        signature: Optional[str] = None,
+        num_inputs: Optional[int] = None,
     ) -> Optional[sp.Expr]:
         """
-        创建SymPy表达式
+        动态将 Python 代码（可能是复杂的 Python 代码）转化为 sympy 表达
 
         Args:
-            operator_func: 算子函数（用于推断类型）
-            num_inputs: 输入数量
-            operator_name: 算子名称（可选，用于查找映射）
+            code: Python代码字符串
+            func: Python函数对象
+            doc: 函数文档字符串
+            signature: 函数签名字符串
+            num_inputs: 输入数量（用于创建符号变量）
+
+        Returns:
+            SymPy表达式，如果转换失败则返回None
+        """
+        # 使用 CodeToSymPyTranslator 进行动态转换
+        sympy_expr = self.code_translator.translate(
+            code=code,
+            func=func,
+            doc=doc,
+            signature=signature,
+        )
+        
+        if sympy_expr is None:
+            self.logger.warning("Failed to convert code to SymPy expression")
+        
+        return sympy_expr
+
+    def create_sympy_expression(
+        self,
+        operator_func: Optional[Callable] = None,
+        operator_code: Optional[str] = None,
+        operator_doc: Optional[str] = None,
+        operator_name: Optional[str] = None,
+        num_inputs: Optional[int] = None,
+    ) -> Optional[sp.Expr]:
+        """
+        创建SymPy表达式（动态转换）
+
+        Args:
+            operator_func: 算子函数对象
+            operator_code: 算子代码字符串
+            operator_doc: 算子文档字符串
+            operator_name: 算子名称（可选，用于日志）
+            num_inputs: 输入数量（可选，用于推断）
 
         Returns:
             SymPy表达式，如果无法创建则返回None
         """
-        # 如果提供了算子名称，尝试直接映射
-        if operator_name:
-            sympy_op = self.code_to_sympy(operator_name, num_inputs)
-            if sympy_op:
-                # 创建符号变量
-                symbols = [sp.Symbol(f"x{i}") for i in range(num_inputs)]
-                if num_inputs == 1:
-                    return sympy_op(symbols[0])
-                elif num_inputs == 2:
-                    return sympy_op(symbols[0], symbols[1])
-                else:
-                    # 对于多输入，尝试递归应用
-                    result = symbols[0]
-                    for i in range(1, num_inputs):
-                        result = sympy_op(result, symbols[i])
-                    return result
-
-        # 如果无法映射，返回None
-        return None
+        # 使用动态代码转换
+        sympy_expr = self.code_to_sympy(
+            code=operator_code,
+            func=operator_func,
+            doc=operator_doc,
+            num_inputs=num_inputs,
+        )
+        
+        if sympy_expr is None:
+            if operator_name:
+                self.logger.warning(
+                    f"Cannot convert operator '{operator_name}' to SymPy expression"
+                )
+            else:
+                self.logger.warning("Cannot convert operator to SymPy expression")
+        
+        return sympy_expr
 
     def prove_mr(
-        self, operator_name: str, mr: MetamorphicRelation, num_inputs: int
+        self,
+        mr: MetamorphicRelation,
+        operator_func: Optional[Callable] = None,
+        operator_code: Optional[str] = None,
+        operator_doc: Optional[str] = None,
+        operator_name: Optional[str] = None,
+        num_inputs: Optional[int] = None,
     ) -> tuple[bool, Optional[str]]:
         """
-        使用SymPy证明MR
+        使用SymPy证明MR（动态代码转换）
 
         Args:
-            operator_name: 算子名称
             mr: 蜕变关系
+            operator_func: 算子函数对象
+            operator_code: 算子代码字符串
+            operator_doc: 算子文档字符串
+            operator_name: 算子名称（可选，用于日志）
             num_inputs: 输入数量
 
         Returns:
             (是否证明成功, 错误信息)
         """
         try:
-            # 创建SymPy表达式
-            sympy_expr = self.create_sympy_expression(None, num_inputs, operator_name)
+            # 动态创建SymPy表达式
+            sympy_expr = self.create_sympy_expression(
+                operator_func=operator_func,
+                operator_code=operator_code,
+                operator_doc=operator_doc,
+                operator_name=operator_name,
+                num_inputs=num_inputs,
+            )
             if sympy_expr is None:
                 return (
                     False,
-                    f"Cannot convert operator '{operator_name}' to SymPy expression",
+                    f"Cannot convert operator to SymPy expression",
                 )
+            
+            # 推断输入数量（如果未提供）
+            if num_inputs is None:
+                # 尝试从sympy表达式推断
+                free_symbols = sympy_expr.free_symbols
+                num_inputs = len(free_symbols) if free_symbols else 1
 
             # 创建符号变量
             symbols = [sp.Symbol(f"x{i}") for i in range(num_inputs)]
@@ -220,14 +215,23 @@ class SymPyProver:
             return False, error_msg
 
     def prove_mrs(
-        self, operator_name: str, mrs: List[MetamorphicRelation], num_inputs: int
+        self,
+        mrs: List[MetamorphicRelation],
+        operator_func: Optional[Callable] = None,
+        operator_code: Optional[str] = None,
+        operator_doc: Optional[str] = None,
+        operator_name: Optional[str] = None,
+        num_inputs: Optional[int] = None,
     ) -> List[MetamorphicRelation]:
         """
-        证明MR列表，返回经过证明的MR
+        证明MR列表，返回经过证明的MR（动态代码转换）
 
         Args:
-            operator_name: 算子名称
             mrs: MR列表
+            operator_func: 算子函数对象
+            operator_code: 算子代码字符串
+            operator_doc: 算子文档字符串
+            operator_name: 算子名称（可选，用于日志）
             num_inputs: 输入数量
 
         Returns:
@@ -238,7 +242,14 @@ class SymPyProver:
         self.logger.info(f"Proving {len(mrs)} MRs using SymPy...")
 
         for i, mr in enumerate(mrs):
-            is_proven, error_msg = self.prove_mr(operator_name, mr, num_inputs)
+            is_proven, error_msg = self.prove_mr(
+                mr=mr,
+                operator_func=operator_func,
+                operator_code=operator_code,
+                operator_doc=operator_doc,
+                operator_name=operator_name,
+                num_inputs=num_inputs,
+            )
 
             if is_proven:
                 proven_mrs.append(mr)

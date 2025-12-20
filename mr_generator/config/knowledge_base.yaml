@@ -1,0 +1,76 @@
+# 知识库配置文件
+# 支持三层知识库：算子层、模型层、应用层
+
+# 算子层知识库
+operator:
+  # 算子名称 -> MR生成规则列表
+  Add:
+    - name: "commutative"
+      description: "交换律: f(x, y) == f(y, x)"
+      transform_code: "lambda *args: ((args[1], args[0]) + args[2:] if len(args) >= 2 else args)"
+      expected: "equal"
+    
+    - name: "associative"
+      description: "结合律: f(f(x, y), z) == f(x, f(y, z))"
+      transform_code: "lambda *args: args"
+      expected: "equal"
+    
+    - name: "identity"
+      description: "单位元: f(x, 0) == x"
+      transform_code: "lambda x: (x, 0)"
+      expected: "equal"
+  
+  Multiply:
+    - name: "commutative"
+      description: "交换律: f(x, y) == f(y, x)"
+      transform_code: "lambda *args: ((args[1], args[0]) + args[2:] if len(args) >= 2 else args)"
+      expected: "equal"
+    
+    - name: "associative"
+      description: "结合律: f(f(x, y), z) == f(x, f(y, z))"
+      transform_code: "lambda *args: args"
+      expected: "equal"
+    
+    - name: "identity"
+      description: "单位元: f(x, 1) == x"
+      transform_code: "lambda x: (x, 1)"
+      expected: "equal"
+  
+  Subtract:
+    - name: "anti_commutative"
+      description: "反交换律: f(x, y) == -f(y, x)"
+      transform_code: "lambda *args: ((args[1], args[0]) + args[2:] if len(args) >= 2 else args)"
+      expected: "proportional"
+  
+  Divide:
+    - name: "reciprocal"
+      description: "倒数关系: f(x, y) == 1 / f(y, x)"
+      transform_code: "lambda a, b: (b, a)"
+      expected: "proportional"
+  
+  MatMul:
+    - name: "transpose"
+      description: "转置关系: f(A, B) == f(B^T, A^T)^T"
+      transform_code: "lambda A, B: (B.T, A.T)"
+      expected: "equal"
+
+# 模型层知识库（待扩展）
+model:
+  # 模型名称 -> MR生成规则列表
+  # 示例：CNN模型的数据增强不变性
+  # CNN:
+  #   - name: "rotation_invariant"
+  #     description: "旋转不变性: 输入旋转90度，输出分类不变"
+  #     transform_code: "lambda x: rotate_90(x)"
+  #     expected: "invariant"
+
+# 应用层知识库（待扩展）
+application:
+  # 应用名称 -> MR生成规则列表
+  # 示例：图像分类应用
+  # ImageClassification:
+  #   - name: "brightness_invariant"
+  #     description: "亮度不变性: 调整亮度，输出分类不变"
+  #     transform_code: "lambda x: adjust_brightness(x)"
+  #     expected: "invariant"
+

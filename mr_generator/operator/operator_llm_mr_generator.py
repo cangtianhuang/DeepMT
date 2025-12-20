@@ -1,5 +1,6 @@
 """
-LLM MR生成器：使用大语言模型生成MR猜想（路径A）
+算子层LLM MR生成器：使用大语言模型生成算子MR猜想（路径A）
+专为算子层MR生成设计，因为大模型MR生成方法在后续也可能用于其他层次
 """
 
 import json
@@ -11,8 +12,8 @@ from tools.llm.client import LLMClient
 from core.logger import get_logger
 
 
-class LLMMRGenerator:
-    """使用LLM生成MR猜想的生成器"""
+class OperatorLLMMRGenerator:
+    """算子层LLM MR生成器：使用LLM生成算子MR猜想"""
 
     def __init__(
         self,
@@ -21,7 +22,7 @@ class LLMMRGenerator:
         model: str = None,
     ):
         """
-        初始化LLM MR生成器
+        初始化算子层LLM MR生成器
 
         Args:
             llm_client: LLM客户端（如果为None则创建）

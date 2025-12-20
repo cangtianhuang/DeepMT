@@ -6,12 +6,12 @@
 from typing import List, Optional, Callable, Any
 
 from ir.schema import OperatorIR, MetamorphicRelation
-from mr_generator.operator.knowledge_base import KnowledgeBase
+from mr_generator.base.knowledge_base import KnowledgeBase
 from mr_generator.base.mr_templates import MRTemplatePool
 from mr_generator.operator.mr_precheck import MRPreChecker
 from mr_generator.operator.sympy_prover import SymPyProver
-from mr_generator.operator.llm_mr_generator import LLMMRGenerator
-from tools.llm.code_translator import CodeToSymPyTranslator
+from mr_generator.operator.operator_llm_mr_generator import OperatorLLMMRGenerator
+from mr_generator.operator.code_translator import CodeToSymPyTranslator
 from mr_generator.operator.mr_deriver import MRDeriver
 from tools.web_search.operator_fetcher import OperatorInfoFetcher
 from core.logger import get_logger
@@ -97,7 +97,7 @@ class OperatorMRGenerator:
 
         # 创建LLM MR生成器
         try:
-            self.llm_generator = LLMMRGenerator(llm_client=self.llm_client)
+            self.llm_generator = OperatorLLMMRGenerator(llm_client=self.llm_client)
         except Exception as e:
             self.logger.error(f"Failed to initialize LLM MR generator: {e}")
             raise
@@ -273,7 +273,12 @@ class OperatorMRGenerator:
         if self.use_sympy_proof and self.sympy_prover:
             self.logger.info("Proving MRs using SymPy...")
             proven_mrs = self.sympy_prover.prove_mrs(
-                operator_name=operator_ir.name, mrs=mr_candidates, num_inputs=num_inputs
+                mrs=mr_candidates,
+                operator_func=operator_func,
+                operator_code=operator_code,
+                operator_doc=operator_doc,
+                operator_name=operator_ir.name,
+                num_inputs=num_inputs,
             )
             self.logger.info(f"After SymPy proof: {len(proven_mrs)} MRs proven")
             return proven_mrs

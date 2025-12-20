@@ -1,5 +1,6 @@
 """
 AST到SymPy解析器：解析Python AST并转换为SymPy表达式
+算子相关功能，用于将Python代码转换为SymPy表达式
 """
 
 import ast
@@ -162,3 +163,5 @@ class ASTToSymPyParser:
                     return left >= right
 
         return sp.Symbol("unknown")
+
+

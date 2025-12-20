@@ -37,9 +37,9 @@ class IRConverter:
         logger = get_logger()
         logger.debug(f"Creating OperatorIR from name: {name}")
 
-        # 如果没有提供properties，尝试从算子名称推断
+        # 算子相关属性应该由后续的步骤推断，这里不再自动推断
         if properties is None:
-            properties = IRConverter._infer_operator_properties(name)
+            properties = {}
 
         return OperatorIR(
             name=name, inputs=inputs, outputs=outputs or [], properties=properties
@@ -126,24 +126,3 @@ class IRConverter:
         else:
             raise NotImplementedError("Framework code parsing not fully implemented")
 
-    @staticmethod
-    def _infer_operator_properties(name: str) -> Dict[str, Any]:
-        """
-        从算子名称推断属性
-
-        Args:
-            name: 算子名称
-
-        Returns:
-            属性字典
-        """
-        # 常见算子的属性映射
-        properties_map = {
-            "Add": {"commutative": True, "associative": True},
-            "Multiply": {"commutative": True, "associative": True},
-            "Subtract": {"anti_commutative": True},
-            "Divide": {"reciprocal": True},
-            "MatMul": {"transpose": True},
-        }
-
-        return properties_map.get(name, {})

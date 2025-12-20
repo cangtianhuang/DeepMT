@@ -1,0 +1,242 @@
+# MR模板配置文件
+# 定义常见数学变换模板，用于路径B（无知识）的MR猜想生成
+# 映射格式：算子名称 -> 适用的MR模板列表
+
+# 算子到MR模板的映射
+operator_mr_mapping:
+  Add:
+    - commutative
+    - associative_left
+    - additive_identity
+    - linear_scaling
+    - additive_scaling
+    - translation_invariant
+    - negation
+    - zero_element_add
+    - logarithm_rule
+    - identity
+  
+  Multiply:
+    - commutative
+    - associative_left
+    - multiplicative_identity
+    - linear_scaling
+    - distributive_left
+    - negation
+    - zero_element_mul
+    - power_rule
+    - identity
+  
+  Subtract:
+    - anti_commutative
+    - identity
+  
+  Divide:
+    - reciprocal
+    - identity
+  
+  MatMul:
+    - commutative
+    - linear_scaling
+    - transpose_matmul
+    - identity
+  
+  Max:
+    - commutative
+    - idempotent
+    - absorption_max
+    - identity
+  
+  Min:
+    - commutative
+    - idempotent
+    - absorption_min
+    - identity
+  
+  Dot:
+    - symmetric
+    - identity
+  
+  Inner:
+    - symmetric
+    - identity
+
+# MR模板定义
+templates:
+  commutative:
+    name: "commutative"
+    description: "交换律: f(x, y) == f(y, x)"
+    transform_code: "lambda *args: ((args[1], args[0]) + args[2:] if len(args) >= 2 else args)"
+    expected: "equal"
+    min_inputs: 2
+    max_inputs: 2
+  
+  associative_left:
+    name: "associative_left"
+    description: "左结合律: f(f(x, y), z) == f(x, f(y, z))"
+    transform_code: "lambda x, y, z: (x, (y, z))"
+    expected: "equal"
+    min_inputs: 3
+    max_inputs: 3
+  
+  additive_identity:
+    name: "additive_identity"
+    description: "加法单位元: f(x, 0) == x"
+    transform_code: "lambda x: (x, 0)"
+    expected: "equal"
+    min_inputs: 1
+    max_inputs: 1
+  
+  multiplicative_identity:
+    name: "multiplicative_identity"
+    description: "乘法单位元: f(x, 1) == x"
+    transform_code: "lambda x: (x, 1)"
+    expected: "equal"
+    min_inputs: 1
+    max_inputs: 1
+  
+  anti_commutative:
+    name: "anti_commutative"
+    description: "反交换律: f(x, y) == -f(y, x)"
+    transform_code: "lambda *args: ((args[1], args[0]) + args[2:] if len(args) >= 2 else args)"
+    expected: "proportional"
+    min_inputs: 2
+    max_inputs: 2
+  
+  reciprocal:
+    name: "reciprocal"
+    description: "倒数关系: f(x, y) == 1 / f(y, x)"
+    transform_code: "lambda x, y: (y, x)"
+    expected: "proportional"
+    min_inputs: 2
+    max_inputs: 2
+  
+  linear_scaling:
+    name: "linear_scaling"
+    description: "线性缩放: f(k*x, k*y) == k*f(x, y)"
+    transform_code: "lambda x, y, k=2: (k * x, k * y)"
+    expected: "proportional"
+    min_inputs: 2
+    max_inputs: 2
+  
+  additive_scaling:
+    name: "additive_scaling"
+    description: "加法缩放: f(x + k, y + k) == f(x, y) + k (对于某些算子)"
+    transform_code: "lambda x, y, k=1: (x + k, y + k)"
+    expected: "proportional"
+    min_inputs: 2
+    max_inputs: 2
+  
+  distributive_left:
+    name: "distributive_left"
+    description: "左分配律: f(x, f(y, z)) == f(f(x, y), f(x, z))"
+    transform_code: "lambda x, y, z: (x, (y, z))"
+    expected: "equal"
+    min_inputs: 3
+    max_inputs: 3
+  
+  idempotent:
+    name: "idempotent"
+    description: "幂等性: f(x, x) == x"
+    transform_code: "lambda x: (x, x)"
+    expected: "equal"
+    min_inputs: 1
+    max_inputs: 1
+  
+  absorption_max:
+    name: "absorption_max"
+    description: "吸收律(Max): f(x, f(x, y)) == f(x, y)"
+    transform_code: "lambda x, y: (x, (x, y))"
+    expected: "equal"
+    min_inputs: 2
+    max_inputs: 2
+  
+  absorption_min:
+    name: "absorption_min"
+    description: "吸收律(Min): f(x, f(x, y)) == f(x, y)"
+    transform_code: "lambda x, y: (x, (x, y))"
+    expected: "equal"
+    min_inputs: 2
+    max_inputs: 2
+  
+  transpose_matmul:
+    name: "transpose_matmul"
+    description: "矩阵乘法转置: f(A, B) == f(B^T, A^T)^T"
+    transform_code: "lambda A, B: (B.T, A.T)"
+    expected: "equal"
+    min_inputs: 2
+    max_inputs: 2
+  
+  symmetric:
+    name: "symmetric"
+    description: "对称性: f(x, y) == f(y, x)"
+    transform_code: "lambda *args: ((args[1], args[0]) + args[2:] if len(args) >= 2 else args)"
+    expected: "equal"
+    min_inputs: 2
+    max_inputs: 2
+  
+  translation_invariant:
+    name: "translation_invariant"
+    description: "平移不变性: f(x + k, y + k) == f(x, y) + k"
+    transform_code: "lambda x, y, k=1: (x + k, y + k)"
+    expected: "proportional"
+    min_inputs: 2
+    max_inputs: 2
+  
+  negation:
+    name: "negation"
+    description: "取反: f(-x, -y) == -f(x, y)"
+    transform_code: "lambda x, y: (-x, -y)"
+    expected: "proportional"
+    min_inputs: 2
+    max_inputs: 2
+  
+  zero_element_add:
+    name: "zero_element_add"
+    description: "加法零元: f(x, 0) == x"
+    transform_code: "lambda x: (x, 0)"
+    expected: "equal"
+    min_inputs: 1
+    max_inputs: 1
+  
+  zero_element_mul:
+    name: "zero_element_mul"
+    description: "乘法零元: f(x, 0) == 0"
+    transform_code: "lambda x: (x, 0)"
+    expected: "equal"
+    min_inputs: 1
+    max_inputs: 1
+  
+  power_rule:
+    name: "power_rule"
+    description: "幂运算规则: f(x^a, x^b) == x^(a+b)"
+    transform_code: "lambda x, a, b: (x**a, x**b)"
+    expected: "equal"
+    min_inputs: 3
+    max_inputs: 3
+  
+  logarithm_rule:
+    name: "logarithm_rule"
+    description: "对数规则: f(log(x), log(y)) == log(x*y)"
+    transform_code: "lambda x, y: (x, y)"
+    expected: "equal"
+    min_inputs: 2
+    max_inputs: 2
+  
+  trigonometric_identity:
+    name: "trigonometric_identity"
+    description: "三角恒等式: f(sin(x), cos(x)) == 1"
+    transform_code: "lambda x: (x, x)"
+    expected: "equal"
+    min_inputs: 1
+    max_inputs: 1
+  
+  identity:
+    name: "identity"
+    description: "恒等变换: f(x) == f(x)"
+    transform_code: "lambda *args: args"
+    expected: "equal"
+    min_inputs: 1
+    max_inputs: null  # None表示无限制
+
+

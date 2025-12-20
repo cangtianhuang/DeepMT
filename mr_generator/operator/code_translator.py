@@ -1,6 +1,6 @@
 """
 代码翻译器：使用LLM将任意代码转换为SymPy表达式
-通用工具，可用于多种场景
+算子相关功能，用于将Python代码转换为SymPy表达式
 """
 
 import ast
@@ -14,7 +14,7 @@ from core.logger import get_logger
 
 class CodeToSymPyTranslator:
     """
-    代码到SymPy转换器（通用工具）
+    代码到SymPy转换器（算子相关功能）
 
     使用LLM + AST解析将任意Python代码转换为SymPy表达式
     """
@@ -29,7 +29,7 @@ class CodeToSymPyTranslator:
         self.logger = get_logger()
 
         # 导入AST解析器（延迟导入避免循环依赖）
-        from tools.llm.ast_parser import ASTToSymPyParser
+        from mr_generator.operator.ast_parser import ASTToSymPyParser
 
         self.ast_parser = ASTToSymPyParser()
 
@@ -163,3 +163,5 @@ result = <SymPy表达式>
         except Exception as e:
             self.logger.warning(f"Error executing SymPy code: {e}")
             return None
+
+
