@@ -54,6 +54,7 @@ class CodeToSymPyTranslator:
         func: Optional[Callable] = None,
         doc: Optional[str] = None,
         signature: Optional[str] = None,
+        use_proxy_path: bool = True,
     ) -> Optional[sp.Expr]:
         """
         将代码转换为SymPy表达式
@@ -63,6 +64,8 @@ class CodeToSymPyTranslator:
             func: Python函数对象
             doc: 函数文档字符串
             signature: 函数签名字符串
+            use_proxy_path: 是否使用代理路径（LLM→Python参考实现→AST→SymPy），
+                           如果为False则使用直接路径（LLM→SymPy）
 
         Returns:
             SymPy表达式，如果转换失败则返回None
@@ -81,21 +84,117 @@ class CodeToSymPyTranslator:
 
         # 2. 尝试LLM翻译（如果有LLM客户端）
         if self.llm_client:
-            sympy_code = self._llm_translate(code, doc, sig)
+            if use_proxy_path:
+                # 标准路径：LLM → Python参考实现（代理）→ AST → SymPy
+                self.logger.debug("Using proxy path: LLM → Python reference → AST → SymPy")
+                python_ref = self._llm_translate_to_python_ref(code, doc, sig)
+                if python_ref:
+                    try:
+                        # 使用AST解析Python参考实现
+                        sympy_expr = self.ast_parser.parse_to_sympy(python_ref)
+                        if sympy_expr is not None:
+                            self.logger.debug("Successfully converted via proxy path")
+                            return sympy_expr
+                        else:
+                            self.logger.warning(
+                                "AST parsing failed for Python reference, trying direct path"
+                            )
+                    except Exception as e:
+                        self.logger.warning(
+                            f"Proxy path failed: {e}, trying direct path"
+                        )
+                
+                # 如果代理路径失败，回退到直接路径
+                self.logger.debug("Falling back to direct path: LLM → SymPy")
+            
+            # 直接路径：LLM → SymPy表达式（保留原有路径）
+            sympy_code = self._llm_translate_direct(code, doc, sig)
             if sympy_code:
                 try:
                     # 执行LLM生成的SymPy代码
-                    return self._execute_sympy_code(sympy_code)
+                    result = self._execute_sympy_code(sympy_code)
+                    if result is not None:
+                        self.logger.debug("Successfully converted via direct path")
+                        return result
                 except Exception as e:
                     self.logger.warning(
-                        f"LLM translation failed: {e}, falling back to AST"
+                        f"Direct LLM translation failed: {e}, falling back to AST"
                     )
 
-        # 3. 回退到AST解析
+        # 3. 回退到AST解析原始代码
+        self.logger.debug("Falling back to AST parsing of original code")
         return self.ast_parser.parse_to_sympy(code)
 
-    def _llm_translate(self, code: str, doc: str, signature: str) -> Optional[str]:
-        """使用LLM翻译代码为SymPy表达式"""
+    def _llm_translate_to_python_ref(
+        self, code: str, doc: str, signature: str
+    ) -> Optional[str]:
+        """
+        使用LLM将多源数据翻译为Python参考实现（代理路径的第一步）
+        
+        这是标准路径的第一步：将代码、文档、签名等转换为清晰的Python参考实现，
+        然后由AST解析器解析为SymPy表达式。这样可以提高转换的准确性和可解释性。
+        """
+        prompt = f"""你是一个代码分析专家。请将以下Python代码转换为一个清晰的Python参考实现。
+
+函数签名：{signature}
+
+原始代码：
+```python
+{code}
+```
+
+文档：
+{doc if doc else "无"}
+
+要求：
+1. 将代码转换为一个清晰的、数学化的Python函数实现
+2. 使用标准的Python数学操作（+、-、*、/、**、max、min等）
+3. 处理条件表达式使用 if-else 或三元表达式
+4. 确保代码逻辑清晰，便于后续符号化处理
+5. 只返回Python函数代码，不要包含其他说明
+
+输出格式（Python代码）：
+```python
+def reference_implementation(x0, x1, ...):
+    # 清晰的数学实现
+    return <表达式>
+```
+
+只返回代码块，不要包含markdown标记外的其他文字。
+"""
+
+        try:
+            messages = [
+                {
+                    "role": "system",
+                    "content": "You are a code analysis expert. Convert code to a clear Python reference implementation.",
+                },
+                {"role": "user", "content": prompt},
+            ]
+
+            content = self.llm_client.chat_completion(messages, temperature=0.3)
+
+            # 提取代码块
+            if "```python" in content:
+                code_block = content.split("```python")[1].split("```")[0].strip()
+            elif "```" in content:
+                code_block = content.split("```")[1].split("```")[0].strip()
+            else:
+                code_block = content
+
+            return code_block
+
+        except Exception as e:
+            self.logger.warning(f"LLM translation to Python reference error: {e}")
+            return None
+
+    def _llm_translate_direct(self, code: str, doc: str, signature: str) -> Optional[str]:
+        """
+        使用LLM直接将代码翻译为SymPy表达式（直接路径）
+        
+        这是原有的直接路径：直接从代码、文档、签名生成SymPy表达式代码。
+        保留此路径作为备选方案。
+        """
         prompt = f"""你是一个代码分析专家。请将以下Python代码转换为SymPy表达式。
 
 函数签名：{signature}
@@ -146,7 +245,7 @@ result = <SymPy表达式>
             return code_block
 
         except Exception as e:
-            self.logger.warning(f"LLM translation error: {e}")
+            self.logger.warning(f"LLM direct translation error: {e}")
             return None
 
     def _execute_sympy_code(self, code: str) -> Optional[sp.Expr]:

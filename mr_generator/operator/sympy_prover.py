@@ -53,49 +53,10 @@ class SymPyProver:
             doc=doc,
             signature=signature,
         )
-        
+
         if sympy_expr is None:
             self.logger.warning("Failed to convert code to SymPy expression")
-        
-        return sympy_expr
 
-    def create_sympy_expression(
-        self,
-        operator_func: Optional[Callable] = None,
-        operator_code: Optional[str] = None,
-        operator_doc: Optional[str] = None,
-        operator_name: Optional[str] = None,
-        num_inputs: Optional[int] = None,
-    ) -> Optional[sp.Expr]:
-        """
-        创建SymPy表达式（动态转换）
-
-        Args:
-            operator_func: 算子函数对象
-            operator_code: 算子代码字符串
-            operator_doc: 算子文档字符串
-            operator_name: 算子名称（可选，用于日志）
-            num_inputs: 输入数量（可选，用于推断）
-
-        Returns:
-            SymPy表达式，如果无法创建则返回None
-        """
-        # 使用动态代码转换
-        sympy_expr = self.code_to_sympy(
-            code=operator_code,
-            func=operator_func,
-            doc=operator_doc,
-            num_inputs=num_inputs,
-        )
-        
-        if sympy_expr is None:
-            if operator_name:
-                self.logger.warning(
-                    f"Cannot convert operator '{operator_name}' to SymPy expression"
-                )
-            else:
-                self.logger.warning("Cannot convert operator to SymPy expression")
-        
         return sympy_expr
 
     def prove_mr(
@@ -123,19 +84,22 @@ class SymPyProver:
         """
         try:
             # 动态创建SymPy表达式
-            sympy_expr = self.create_sympy_expression(
-                operator_func=operator_func,
-                operator_code=operator_code,
-                operator_doc=operator_doc,
-                operator_name=operator_name,
+            sympy_expr = self.code_to_sympy(
+                code=operator_code,
+                func=operator_func,
+                doc=operator_doc,
                 num_inputs=num_inputs,
             )
             if sympy_expr is None:
-                return (
-                    False,
-                    f"Cannot convert operator to SymPy expression",
+                error_msg = (
+                    f"Cannot convert operator '{operator_name}' to SymPy expression"
+                    if operator_name
+                    else "Cannot convert operator to SymPy expression"
                 )
-            
+                if operator_name:
+                    self.logger.warning(error_msg)
+                return (False, error_msg)
+
             # 推断输入数量（如果未提供）
             if num_inputs is None:
                 # 尝试从sympy表达式推断
@@ -146,12 +110,7 @@ class SymPyProver:
             symbols = [sp.Symbol(f"x{i}") for i in range(num_inputs)]
 
             # 构建LHS（原始表达式）
-            if num_inputs == 1:
-                lhs = sympy_expr.subs({symbols[0]: symbols[0]})
-            elif num_inputs == 2:
-                lhs = sympy_expr.subs({symbols[0]: symbols[0], symbols[1]: symbols[1]})
-            else:
-                lhs = sympy_expr
+            lhs = sympy_expr
 
             # 构建RHS（变换后的表达式）
             # 应用MR变换到符号变量
@@ -160,24 +119,20 @@ class SymPyProver:
                 transformed_symbols = (transformed_symbols,)
 
             # 重新创建表达式，使用变换后的符号
-            if num_inputs == 1:
-                rhs = sympy_expr.subs({symbols[0]: transformed_symbols[0]})
-            elif num_inputs == 2:
-                rhs = sympy_expr.subs(
-                    {
-                        symbols[0]: transformed_symbols[0],
-                        symbols[1]: transformed_symbols[1],
-                    }
-                )
-            else:
-                # 对于多输入，需要更复杂的处理
-                subs_dict = {
-                    symbols[i]: transformed_symbols[i]
-                    for i in range(min(len(symbols), len(transformed_symbols)))
-                }
+            # 构建替换字典
+            subs_dict = {}
+            for i in range(min(len(symbols), len(transformed_symbols))):
+                subs_dict[symbols[i]] = transformed_symbols[i]
+
+            if subs_dict:
                 rhs = sympy_expr.subs(subs_dict)
+            else:
+                rhs = sympy_expr
 
             # 根据期望关系类型进行证明
+            diff = None
+            is_proven = False
+
             if mr.expected == "equal":
                 # 证明 LHS == RHS，即 simplify(LHS - RHS) == 0
                 diff = sp.simplify(lhs - rhs)
@@ -192,8 +147,10 @@ class SymPyProver:
                     ratio = sp.simplify(lhs / rhs)
                     # 如果ratio是常数且不等于0，则成比例
                     is_proven = (diff1 == 0) or (ratio.is_constant())
+                    diff = diff1 if diff1 != 0 else ratio
                 except:
                     is_proven = diff1 == 0
+                    diff = diff1
 
             else:
                 # 其他关系类型，默认使用相等检查
@@ -205,7 +162,7 @@ class SymPyProver:
                 return True, None
             else:
                 error_msg = (
-                    f"SymPy proof failed: {diff if 'diff' in locals() else 'unknown'}"
+                    f"SymPy proof failed: {diff if diff is not None else 'unknown'}"
                 )
                 return False, error_msg
 
