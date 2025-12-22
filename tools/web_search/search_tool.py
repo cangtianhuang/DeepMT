@@ -3,12 +3,13 @@
 这是一个可复用的工具，用于后续开发
 """
 
-import requests
 import re
-from typing import List, Dict, Optional, Any
-from urllib.parse import quote, urljoin
 import time
 from dataclasses import dataclass
+from typing import Any, Dict, List, Optional
+from urllib.parse import quote, urljoin
+
+import requests
 
 from core.logger import get_logger
 
@@ -26,7 +27,7 @@ class SearchResult:
 
 class WebSearchTool:
     """
-    网络搜索工具：从多个源搜索算子信息
+    网络搜索工具：从多个源搜索算子信息（单例模式）
 
     支持：
     - PyTorch官方文档
@@ -34,6 +35,24 @@ class WebSearchTool:
     - Stack Overflow
     - 技术博客
     """
+
+    _instance: Optional["WebSearchTool"] = None
+    _initialized = False
+
+    def __new__(cls, timeout: int = 10, max_results_per_source: int = 5):
+        """
+        创建或获取WebSearchTool实例（单例模式）
+
+        Args:
+            timeout: 请求超时时间（秒）
+            max_results_per_source: 每个源的最大结果数
+
+        Returns:
+            WebSearchTool实例
+        """
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
 
     def __init__(self, timeout: int = 10, max_results_per_source: int = 5):
         """
@@ -43,6 +62,10 @@ class WebSearchTool:
             timeout: 请求超时时间（秒）
             max_results_per_source: 每个源的最大结果数
         """
+        # 如果已经初始化过，跳过
+        if WebSearchTool._initialized:
+            return
+
         self.logger = get_logger()
         self.timeout = timeout
         self.max_results = max_results_per_source
@@ -56,6 +79,8 @@ class WebSearchTool:
         self.headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
         }
+
+        WebSearchTool._initialized = True
 
     def search_operator(
         self,
@@ -372,4 +397,3 @@ class WebSearchTool:
         code_blocks.extend([m for m in matches if "(" in m and ")" in m])
 
         return code_blocks
-

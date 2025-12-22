@@ -3,14 +3,14 @@
 支持使用预生成的MR（通过MR知识库）或动态生成MR
 """
 
-from typing import Any, Optional, List
+from typing import Any, List, Optional
 
-from ir.schema import OperatorIR, ModelIR, ApplicationIR, MetamorphicRelation
 from core.ir_manager import IRManager
+from core.logger import get_logger
 from core.plugins_manager import PluginsManager
 from core.results_manager import ResultsManager
 from core.test_runner import TestRunner
-from core.logger import get_logger
+from ir.schema import ApplicationIR, MetamorphicRelation, ModelIR, OperatorIR
 
 
 class TaskScheduler:

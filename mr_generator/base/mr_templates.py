@@ -4,13 +4,14 @@ MR模板池：从配置文件读取常见数学变换模板
 """
 
 import uuid
-import yaml
-from pathlib import Path
-from typing import List, Dict, Callable, Any, Optional
 from dataclasses import dataclass
+from pathlib import Path
+from typing import Any, Callable, Dict, List, Optional
 
-from ir.schema import MetamorphicRelation
+import yaml
+
 from core.logger import get_logger
+from ir.schema import MetamorphicRelation
 
 
 @dataclass

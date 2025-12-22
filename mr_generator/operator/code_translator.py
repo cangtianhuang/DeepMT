@@ -5,11 +5,12 @@
 
 import ast
 import inspect
-import sympy as sp
-from typing import Callable, Any, Optional
+from typing import Any, Callable, Optional
 
-from tools.llm.client import LLMClient
+import sympy as sp
+
 from core.logger import get_logger
+from tools.llm.client import LLMClient
 
 
 class CodeToSymPyTranslator:
@@ -41,12 +42,6 @@ class CodeToSymPyTranslator:
             except Exception as e:
                 self.logger.warning(f"Failed to create LLM client: {e}")
                 self.llm_client = None
-
-        if self.llm_client is None:
-            try:
-                self.llm_client = LLMClient()
-            except Exception as e:
-                self.logger.warning(f"Failed to create LLM client: {e}")
 
     def translate(
         self,
@@ -86,7 +81,9 @@ class CodeToSymPyTranslator:
         if self.llm_client:
             if use_proxy_path:
                 # 标准路径：LLM → Python参考实现（代理）→ AST → SymPy
-                self.logger.debug("Using proxy path: LLM → Python reference → AST → SymPy")
+                self.logger.debug(
+                    "Using proxy path: LLM → Python reference → AST → SymPy"
+                )
                 python_ref = self._llm_translate_to_python_ref(code, doc, sig)
                 if python_ref:
                     try:
@@ -103,10 +100,10 @@ class CodeToSymPyTranslator:
                         self.logger.warning(
                             f"Proxy path failed: {e}, trying direct path"
                         )
-                
+
                 # 如果代理路径失败，回退到直接路径
                 self.logger.debug("Falling back to direct path: LLM → SymPy")
-            
+
             # 直接路径：LLM → SymPy表达式（保留原有路径）
             sympy_code = self._llm_translate_direct(code, doc, sig)
             if sympy_code:
@@ -130,7 +127,7 @@ class CodeToSymPyTranslator:
     ) -> Optional[str]:
         """
         使用LLM将多源数据翻译为Python参考实现（代理路径的第一步）
-        
+
         这是标准路径的第一步：将代码、文档、签名等转换为清晰的Python参考实现，
         然后由AST解析器解析为SymPy表达式。这样可以提高转换的准确性和可解释性。
         """
@@ -188,10 +185,12 @@ def reference_implementation(x0, x1, ...):
             self.logger.warning(f"LLM translation to Python reference error: {e}")
             return None
 
-    def _llm_translate_direct(self, code: str, doc: str, signature: str) -> Optional[str]:
+    def _llm_translate_direct(
+        self, code: str, doc: str, signature: str
+    ) -> Optional[str]:
         """
         使用LLM直接将代码翻译为SymPy表达式（直接路径）
-        
+
         这是原有的直接路径：直接从代码、文档、签名生成SymPy表达式代码。
         保留此路径作为备选方案。
         """
@@ -262,5 +261,3 @@ result = <SymPy表达式>
         except Exception as e:
             self.logger.warning(f"Error executing SymPy code: {e}")
             return None
-
-

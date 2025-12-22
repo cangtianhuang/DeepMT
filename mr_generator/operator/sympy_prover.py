@@ -4,11 +4,12 @@ SymPy证明引擎：使用SymPy进行形式化证明
 然后使用 simplify(LHS - RHS) == 0 进行证明
 """
 
-import sympy as sp
-from typing import Callable, Any, List, Optional
+from typing import Any, Callable, List, Optional
 
-from ir.schema import MetamorphicRelation
+import sympy as sp
+
 from core.logger import get_logger
+from ir.schema import MetamorphicRelation
 from mr_generator.operator.code_translator import CodeToSymPyTranslator
 
 

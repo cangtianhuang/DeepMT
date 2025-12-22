@@ -5,13 +5,13 @@ MR知识库：持久化存储和管理蜕变关系
 
 import json
 import sqlite3
-from pathlib import Path
-from typing import List, Optional, Dict, Any
-from datetime import datetime
 import uuid
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
-from ir.schema import MetamorphicRelation
 from core.logger import get_logger
+from ir.schema import MetamorphicRelation
 
 
 class MRRepository:

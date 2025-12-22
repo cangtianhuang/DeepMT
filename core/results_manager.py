@@ -7,11 +7,12 @@ import json
 import sqlite3
 from datetime import datetime
 from pathlib import Path
-from typing import Any, List, Tuple, Dict, Optional
+from typing import Any, Dict, List, Optional, Tuple
+
 import numpy as np
 
-from ir.schema import MetamorphicRelation, OperatorIR, ModelIR, ApplicationIR
 from analysis.defect_classifier import DefectClassifier
+from ir.schema import ApplicationIR, MetamorphicRelation, ModelIR, OperatorIR
 
 
 class ResultsManager:

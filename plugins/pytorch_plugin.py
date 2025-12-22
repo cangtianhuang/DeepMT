@@ -2,11 +2,12 @@
 PyTorch框架适配插件
 """
 
-import torch
 from typing import Any, Callable
 
-from ir.schema import OperatorIR, MetamorphicRelation
+import torch
+
 from core.logger import get_logger
+from ir.schema import MetamorphicRelation, OperatorIR
 
 
 class PyTorchPlugin:

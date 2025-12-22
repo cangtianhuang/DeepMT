@@ -3,13 +3,14 @@
 支持从配置文件读取，便于后续拓展开发
 """
 
-import yaml
 import uuid
 from pathlib import Path
-from typing import List, Dict, Callable, Any, Optional
+from typing import Any, Callable, Dict, List, Optional
 
-from ir.schema import MetamorphicRelation
+import yaml
+
 from core.logger import get_logger
+from ir.schema import MetamorphicRelation
 
 
 class KnowledgeBase:
@@ -50,13 +51,13 @@ class KnowledgeBase:
                 config = yaml.safe_load(f)
 
             # 加载算子层知识
-            self.operator_knowledge = config.get("operator", {})
+            self.operator_knowledge = config.get("operator", {}) or {}
 
             # 加载模型层知识
-            self.model_knowledge = config.get("model", {})
+            self.model_knowledge = config.get("model", {}) or {}
 
             # 加载应用层知识
-            self.application_knowledge = config.get("application", {})
+            self.application_knowledge = config.get("application", {}) or {}
 
             self.logger.info(
                 f"Loaded knowledge base from {self.config_path}: "

@@ -2,25 +2,43 @@
 算子信息获取器：自动从网络搜索获取算子的定义、代码、文档
 """
 
-import yaml
 import os
 import re
-from typing import Dict, Any, Optional
 from pathlib import Path
+from typing import Any, Dict, Optional
 
-from mr_generator.web_search_tool import WebSearchTool
+import yaml
+
 from core.logger import get_logger
+from tools.web_search.search_tool import WebSearchTool
 
 
 class OperatorInfoFetcher:
     """
-    算子信息获取器
+    算子信息获取器（单例模式）
 
     功能：
     1. 从配置文件读取设置
     2. 使用WebSearchTool搜索算子信息
     3. 提取和整理算子代码、文档、签名
     """
+
+    _instance: Optional["OperatorInfoFetcher"] = None
+    _initialized = False
+
+    def __new__(cls, config_path: Optional[str] = None):
+        """
+        创建或获取OperatorInfoFetcher实例（单例模式）
+
+        Args:
+            config_path: 配置文件路径（如果为None则使用默认路径）
+
+        Returns:
+            OperatorInfoFetcher实例
+        """
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
 
     def __init__(self, config_path: Optional[str] = None):
         """
@@ -29,10 +47,14 @@ class OperatorInfoFetcher:
         Args:
             config_path: 配置文件路径（如果为None则使用默认路径）
         """
+        # 如果已经初始化过，跳过
+        if OperatorInfoFetcher._initialized:
+            return
+
         self.logger = get_logger()
         self.config = self._load_config(config_path)
 
-        # 初始化搜索工具
+        # 初始化搜索工具（单例）
         web_search_config = self.config.get("web_search", {})
         self.search_tool = WebSearchTool(
             timeout=web_search_config.get("timeout", 10),
@@ -40,6 +62,7 @@ class OperatorInfoFetcher:
         )
 
         self.enabled = web_search_config.get("enabled", True)
+        OperatorInfoFetcher._initialized = True
 
     def _load_config(self, config_path: Optional[str] = None) -> Dict[str, Any]:
         """
@@ -178,4 +201,3 @@ class OperatorInfoFetcher:
         """
         info = self.fetch_operator_info(operator_name, framework)
         return info.get("doc")
-

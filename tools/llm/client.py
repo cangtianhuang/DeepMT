@@ -3,24 +3,63 @@ LLM客户端：通用的LLM调用接口
 支持OpenAI、Anthropic等不同提供商
 """
 
+import hashlib
 import os
-import yaml
-from typing import Optional, Dict, Any, List
 from pathlib import Path
+from typing import Any, Dict, List, Optional
+
+import yaml
 
 from core.logger import get_logger
 
 
 class LLMClient:
     """
-    通用LLM客户端
+    通用LLM客户端（基于配置的多实例单例模式）
 
     功能：
     - 统一的LLM调用接口
     - 支持多种LLM提供商
     - 配置管理
     - 错误处理
+    - 相同配置返回同一实例，不同配置返回不同实例
     """
+
+    # 类级别的实例字典，key为配置hash，value为实例
+    _instances: Dict[str, "LLMClient"] = {}
+    # 记录已初始化的配置key
+    _initialized_keys: set = set()
+
+    def __new__(
+        cls,
+        provider: str = "openai",
+        api_key: Optional[str] = None,
+        model: Optional[str] = None,
+        config_path: Optional[str] = None,
+    ):
+        """
+        创建或获取LLM客户端实例（基于配置的单例）
+
+        Args:
+            provider: LLM提供商（openai, anthropic等）
+            api_key: API密钥（如果为None，则从配置文件或环境变量获取）
+            model: 模型名称（如果为None，则从配置文件获取）
+            config_path: 配置文件路径（如果为None则使用默认路径）
+
+        Returns:
+            LLMClient实例
+        """
+        # 生成配置key
+        config_key = cls._generate_config_key(provider, api_key, model, config_path)
+
+        # 如果该配置的实例已存在，直接返回
+        if config_key in cls._instances:
+            return cls._instances[config_key]
+
+        # 创建新实例
+        instance = super().__new__(cls)
+        cls._instances[config_key] = instance
+        return instance
 
     def __init__(
         self,
@@ -38,8 +77,16 @@ class LLMClient:
             model: 模型名称（如果为None，则从配置文件获取）
             config_path: 配置文件路径（如果为None则使用默认路径）
         """
+        # 生成配置key
+        config_key = self._generate_config_key(provider, api_key, model, config_path)
+
+        # 如果已经初始化过，跳过
+        if config_key in LLMClient._initialized_keys:
+            return
+
         self.logger = get_logger()
         self.provider = provider
+        self._config_key = config_key
 
         # 加载配置
         config = self._load_config(config_path)
@@ -63,6 +110,34 @@ class LLMClient:
 
         # 初始化提供商特定的客户端
         self._init_client()
+
+        # 标记为已初始化
+        LLMClient._initialized_keys.add(config_key)
+
+    @classmethod
+    def _generate_config_key(
+        cls,
+        provider: str,
+        api_key: Optional[str],
+        model: Optional[str],
+        config_path: Optional[str],
+    ) -> str:
+        """
+        根据配置参数生成唯一的配置key
+
+        Args:
+            provider: LLM提供商
+            api_key: API密钥
+            model: 模型名称
+            config_path: 配置文件路径
+
+        Returns:
+            配置key字符串
+        """
+        # 标准化配置参数
+        config_str = f"{provider}|{api_key or ''}|{model or ''}|{config_path or ''}"
+        # 使用hash生成key
+        return hashlib.md5(config_str.encode("utf-8")).hexdigest()
 
     def _load_config(self, config_path: Optional[str] = None) -> Dict[str, Any]:
         """加载配置文件"""

@@ -3,12 +3,13 @@ IR管理器：负责IR的加载、保存、转换
 """
 
 import json
-import yaml
 from pathlib import Path
 from typing import Any, Optional, Union
 
-from ir.schema import OperatorIR, ModelIR, ApplicationIR
+import yaml
+
 from core.logger import get_logger
+from ir.schema import ApplicationIR, ModelIR, OperatorIR
 
 
 class IRManager:

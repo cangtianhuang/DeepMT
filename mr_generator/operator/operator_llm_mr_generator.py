@@ -5,11 +5,11 @@
 
 import json
 import uuid
-from typing import List, Optional, Dict, Any
+from typing import Any, Dict, List, Optional
 
+from core.logger import get_logger
 from ir.schema import MetamorphicRelation
 from tools.llm.client import LLMClient
-from core.logger import get_logger
 
 
 class OperatorLLMMRGenerator:
@@ -36,8 +36,6 @@ class OperatorLLMMRGenerator:
             self.llm_available = True
         else:
             try:
-                from tools.llm.client import LLMClient
-
                 self.llm_client = LLMClient(api_key=api_key, model=model)
                 self.llm_available = True
             except Exception as e:

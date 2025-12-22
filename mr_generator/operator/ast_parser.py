@@ -5,8 +5,9 @@ AST到SymPy解析器：解析Python AST并转换为SymPy表达式
 
 import ast
 import re
-import sympy as sp
 from typing import List, Optional
+
+import sympy as sp
 
 from core.logger import get_logger
 
@@ -163,5 +164,3 @@ class ASTToSymPyParser:
                     return left >= right
 
         return sp.Symbol("unknown")
-
-

@@ -3,18 +3,19 @@
 支持路径A（LLM）和路径B（模板池），包含快速筛选和SymPy证明
 """
 
-from typing import List, Optional, Callable, Any
+from typing import Any, Callable, List, Optional
 
-from ir.schema import OperatorIR, MetamorphicRelation
+from core.logger import get_logger
+from ir.schema import MetamorphicRelation, OperatorIR
 from mr_generator.base.knowledge_base import KnowledgeBase
 from mr_generator.base.mr_templates import MRTemplatePool
-from mr_generator.operator.mr_precheck import MRPreChecker
-from mr_generator.operator.sympy_prover import SymPyProver
-from mr_generator.operator.operator_llm_mr_generator import OperatorLLMMRGenerator
 from mr_generator.operator.code_translator import CodeToSymPyTranslator
 from mr_generator.operator.mr_deriver import MRDeriver
+from mr_generator.operator.mr_precheck import MRPreChecker
+from mr_generator.operator.operator_llm_mr_generator import OperatorLLMMRGenerator
+from mr_generator.operator.sympy_prover import SymPyProver
+from tools.llm.client import LLMClient
 from tools.web_search.operator_fetcher import OperatorInfoFetcher
-from core.logger import get_logger
 
 
 class OperatorMRGenerator:
@@ -58,6 +59,8 @@ class OperatorMRGenerator:
         self.use_precheck = use_precheck
         self.use_sympy_proof = use_sympy_proof
 
+        self.logger = get_logger()
+
         # 初始化组件
         if use_template_pool:
             self.template_pool = MRTemplatePool()
@@ -88,8 +91,6 @@ class OperatorMRGenerator:
 
         # 创建LLM客户端（共享使用）
         try:
-            from tools.llm.client import LLMClient
-
             self.llm_client = LLMClient(api_key=llm_api_key)
         except Exception as e:
             self.logger.error(f"Failed to initialize LLM client: {e}")

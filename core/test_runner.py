@@ -3,12 +3,12 @@
 实现MR生成与测试的分离
 """
 
-from typing import List, Any, Tuple
+from typing import Any, List, Tuple
 
-from ir.schema import MetamorphicRelation, OperatorIR, ModelIR, ApplicationIR
+from core.logger import get_logger
 from core.plugins_manager import PluginsManager
 from core.results_manager import ResultsManager
-from core.logger import get_logger
+from ir.schema import ApplicationIR, MetamorphicRelation, ModelIR, OperatorIR
 
 
 class TestRunner:

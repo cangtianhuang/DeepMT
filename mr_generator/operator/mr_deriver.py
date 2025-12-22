@@ -3,13 +3,14 @@ MR自动推导器：基于符号表达式自动推导蜕变关系
 结合模板匹配、符号验证、Z3求解、LLM启发
 """
 
-import sympy as sp
-from typing import List, Optional, Callable, Any
 import uuid
+from typing import Any, Callable, List, Optional
 
-from ir.schema import MetamorphicRelation
-from mr_generator.mr_templates import MRTemplatePool
+import sympy as sp
+
 from core.logger import get_logger
+from ir.schema import MetamorphicRelation
+from mr_generator.base.mr_templates import MRTemplatePool
 
 
 class MRDeriver:

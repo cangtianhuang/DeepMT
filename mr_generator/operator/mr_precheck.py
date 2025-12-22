@@ -3,12 +3,13 @@ MR快速筛选器（Pre-check）：用随机数快速测试MR猜想
 过滤掉明显不满足的MR，减少后续SymPy证明的计算量
 """
 
-import numpy as np
-from typing import List, Callable, Any, Tuple
 import traceback
+from typing import Any, Callable, List, Tuple
 
-from ir.schema import MetamorphicRelation
+import numpy as np
+
 from core.logger import get_logger
+from ir.schema import MetamorphicRelation
 
 
 class MRPreChecker:
