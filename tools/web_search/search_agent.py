@@ -45,55 +45,99 @@ class SearchAgent:
         Returns:
             搜索结果列表，每个结果包含title, url, content等
         """
-        # 第一步：使用LLM生成搜索策略
-        search_strategy = self._generate_search_strategy(query)
-        self.logger.debug(f"Search strategy: {search_strategy}")
+        # 第一步：使用LLM生成优化的搜索关键词列表
+        search_keywords = self._generate_search_strategy(query)
+        self.logger.debug(f"Generated search keywords: {search_keywords}")
 
-        # 第二步：执行搜索
-        raw_results = self._execute_search(search_url, query, max_results)
+        # 第二步：使用多个关键词尝试搜索，直到找到足够的结果
+        all_results = []
+        for keyword in search_keywords:
+            raw_results = self._execute_search(search_url, keyword, max_results)
+            all_results.extend(raw_results)
+
+            # 如果已经找到足够的结果，停止搜索
+            if len(all_results) >= max_results:
+                break
+
+        # 去重（基于URL）
+        seen_urls = set()
+        unique_results = []
+        for result in all_results:
+            url = result.get("url", "")
+            if url and url not in seen_urls:
+                seen_urls.add(url)
+                unique_results.append(result)
 
         # 第三步：使用LLM重排和理解结果
-        if raw_results:
-            ranked_results = self._rerank_with_llm(query, raw_results)
-            return ranked_results
+        if unique_results:
+            ranked_results = self._rerank_with_llm(
+                query, unique_results[: max_results * 2]
+            )
+            return ranked_results[:max_results]
 
         return []
 
-    def _generate_search_strategy(self, query: str) -> str:
+    def _generate_search_strategy(self, query: str) -> List[str]:
         """
-        使用LLM生成搜索策略
+        使用LLM生成优化的搜索关键词列表
 
         Args:
-            query: 搜索查询
+            query: 原始搜索查询
 
         Returns:
-            搜索策略描述
+            优化的搜索关键词列表，用于多轮搜索尝试
         """
-        prompt = f"""你是一个搜索专家。用户想要搜索以下内容：
-{query}
+        prompt = f"""你是一个搜索优化专家。用户想要搜索：{query}
 
-请分析这个查询，并生成一个优化的搜索策略，包括：
-1. 可能的关键词变体
-2. 相关的搜索术语
-3. 预期的结果类型
+请分析这个查询，生成3-5个优化的搜索关键词，用于在不同搜索引擎中尝试。
 
-只返回策略描述，不要包含其他内容。
+要求：
+1. 关键词应该更精确、更具体
+2. 包含可能的同义词、变体或相关术语
+3. 考虑中英文混合的情况
+4. 优先使用最可能找到准确结果的关键词
+
+返回JSON格式：
+{{
+    "keywords": [
+        "关键词1",
+        "关键词2",
+        "关键词3"
+    ]
+}}
+
+只返回JSON，不要包含其他内容。
 """
 
         try:
             messages = [
                 {
                     "role": "system",
-                    "content": "You are a search strategy expert. Generate optimized search strategies.",
+                    "content": "You are a search optimization expert. Generate optimized search keywords.",
                 },
                 {"role": "user", "content": prompt},
             ]
 
-            strategy = self.llm_client.chat_completion(messages, temperature=0.3)
-            return strategy
+            response = self.llm_client.chat_completion(messages, temperature=0.3)
+
+            # 解析JSON响应
+            if "```json" in response:
+                response = response.split("```json")[1].split("```")[0].strip()
+            elif "```" in response:
+                response = response.split("```")[1].split("```")[0].strip()
+
+            strategy_data = json.loads(response)
+            keywords = strategy_data.get("keywords", [query])
+
+            # 确保至少包含原始查询
+            if query not in keywords:
+                keywords.insert(0, query)
+
+            return keywords[:5]  # 最多返回5个关键词
+
         except Exception as e:
             self.logger.warning(f"Failed to generate search strategy: {e}")
-            return query
+            return [query]  # 失败时返回原始查询
 
     def _execute_search(
         self, search_url: str, query: str, max_results: int
@@ -316,16 +360,118 @@ class SearchAgent:
             if response.status_code == 200:
                 # 解析HTML内容
                 soup = BeautifulSoup(response.text, "html.parser")
-                # 提取主要内容
-                content = soup.get_text(separator="\n", strip=True)
+
+                # 检测并处理图片（特别是公式图片）
+                content = self._extract_content_with_ocr(soup, url)
+
+                # 提取文本内容
+                text_content = soup.get_text(separator="\n", strip=True)
+                if content:
+                    # 合并OCR识别的公式和文本内容
+                    full_content = f"{text_content}\n\n[公式识别结果]\n{content}"
+                else:
+                    full_content = text_content
 
                 # 使用LLM理解内容
-                return self._understand_content_with_llm(content[:5000])  # 限制长度
+                return self._understand_content_with_llm(
+                    full_content[:5000]
+                )  # 限制长度
 
         except Exception as e:
             self.logger.warning(f"Failed to fetch content from {url}: {e}")
 
         return None
+
+    def _extract_content_with_ocr(
+        self, soup: BeautifulSoup, base_url: str
+    ) -> Optional[str]:
+        """
+        从HTML中提取图片并使用OCR识别（特别是公式图片）
+
+        Args:
+            soup: BeautifulSoup解析的HTML对象
+            base_url: 基础URL（用于解析相对路径）
+
+        Returns:
+            OCR识别的文本内容，如果没有图片或OCR未启用则返回None
+        """
+        from core.config_loader import get_config
+        from tools.llm.ocr_client import OCRClient
+
+        # 检查OCR是否启用
+        config = get_config()
+        web_search_config = config.get("web_search", {})
+        if not web_search_config.get("ocr", False):
+            return None
+
+        try:
+            # 查找所有图片标签
+            images = soup.find_all("img")
+            if not images:
+                return None
+
+            ocr_client = OCRClient()
+            ocr_results = []
+
+            for img in images:
+                img_src = img.get("src", "")
+                if not img_src:
+                    continue
+
+                # 确保 img_src 是字符串
+                img_src = str(img_src)
+
+                # 构建完整URL
+                if img_src.startswith("http://") or img_src.startswith("https://"):
+                    img_url = img_src
+                elif img_src.startswith("//"):
+                    img_url = f"https:{img_src}"
+                elif img_src.startswith("/"):
+                    from urllib.parse import urlparse
+
+                    parsed = urlparse(base_url)
+                    img_url = f"{parsed.scheme}://{parsed.netloc}{img_src}"
+                else:
+                    from urllib.parse import urljoin
+
+                    img_url = urljoin(base_url, img_src)
+
+                # 判断是否为公式图片（通过alt、class等属性）
+                alt_attr = img.get("alt")
+                alt_text = str(alt_attr).lower() if alt_attr else ""
+                class_attr = img.get("class")
+                if isinstance(class_attr, list):
+                    class_str = " ".join(str(c) for c in class_attr).lower()
+                else:
+                    class_str = str(class_attr).lower() if class_attr else ""
+
+                is_formula = (
+                    "formula" in alt_text
+                    or "formula" in class_str
+                    or "math" in alt_text
+                    or "math" in class_str
+                    or "equation" in alt_text
+                    or "equation" in class_str
+                )
+
+                # 使用OCR识别
+                if is_formula:
+                    # 识别公式
+                    formula_text = ocr_client.recognize_formula(
+                        str(img_url), use_layout_detection=False
+                    )
+                    if formula_text:
+                        ocr_results.append(f"公式: {formula_text}")
+                else:
+                    # 识别普通文本（可选，如果图片看起来包含文本）
+                    # 这里可以根据需要决定是否识别所有图片
+                    pass
+
+            return "\n".join(ocr_results) if ocr_results else None
+
+        except Exception as e:
+            self.logger.warning(f"OCR extraction failed: {e}")
+            return None
 
     def _understand_content_with_llm(self, content: str) -> str:
         """

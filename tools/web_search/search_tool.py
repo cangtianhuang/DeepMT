@@ -12,6 +12,7 @@ from urllib.parse import quote, urljoin
 
 import requests
 
+from core.config_loader import get_config
 from core.logger import get_logger
 from tools.web_search.search_agent import SearchAgent
 
@@ -40,19 +41,9 @@ class WebSearchTool:
     _instance: Optional["WebSearchTool"] = None
     _initialized = False
 
-    def __new__(
-        cls,
-        timeout: int = 10,
-        max_results_per_source: int = 5,
-        config: Optional[Dict[str, Any]] = None,
-    ):
+    def __new__(cls):
         """
         创建或获取WebSearchTool实例（单例模式）
-
-        Args:
-            timeout: 请求超时时间（秒）
-            max_results_per_source: 每个源的最大结果数
-            config: 配置字典（包含API密钥等）
 
         Returns:
             WebSearchTool实例
@@ -61,30 +52,24 @@ class WebSearchTool:
             cls._instance = super().__new__(cls)
         return cls._instance
 
-    def __init__(
-        self,
-        timeout: int = 10,
-        max_results_per_source: int = 5,
-        config: Optional[Dict[str, Any]] = None,
-    ):
+    def __init__(self):
         """
         初始化搜索工具
 
-        Args:
-            timeout: 请求超时时间（秒）
-            max_results_per_source: 每个源的最大结果数
-            config: 配置字典（包含API密钥等）
+        所有配置从 core/config_loader.py 统一获取
         """
         # 如果已经初始化过，跳过
         if WebSearchTool._initialized:
             return
 
         self.logger = get_logger()
-        self.timeout = timeout
-        self.max_results = max_results_per_source
-        self.config = config or {}
-
+        # 使用统一的配置加载器
+        self.config = get_config()
         web_search_config = self.config.get("web_search", {})
+
+        # 从配置中获取参数
+        self.timeout = web_search_config.get("timeout", 10)
+        self.max_results = web_search_config.get("max_results", 5)
 
         # 框架文档URL映射
         self.framework_docs = {
@@ -469,7 +454,7 @@ class WebSearchTool:
                     )
                     return results
 
-                # 解析结果
+                # 解析结果（只处理网页结果，图片OCR在search_agent中处理）
                 references = data.get("references", [])
                 for ref in references[: self.max_results]:
                     if ref.get("type") == "web":

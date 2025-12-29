@@ -48,14 +48,10 @@ class OperatorInfoFetcher:
         # 使用统一的配置加载器
         self.config = get_config()
 
-        # 初始化搜索工具（单例，传入配置）
-        web_search_config = self.config.get("web_search", {})
-        self.search_tool = WebSearchTool(
-            timeout=web_search_config.get("timeout", 10),
-            max_results_per_source=web_search_config.get("max_results", 5),
-            config=self.config,  # 传递完整配置
-        )
+        # 初始化搜索工具（单例，配置由内部从 config_loader 获取）
+        self.search_tool = WebSearchTool()
 
+        web_search_config = self.config.get("web_search", {})
         self.enabled = web_search_config.get("enabled", True)
         OperatorInfoFetcher._initialized = True
 

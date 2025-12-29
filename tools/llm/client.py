@@ -91,6 +91,8 @@ class LLMClient:
             api_key or llm_config.get("api_key") or os.getenv("OPENAI_API_KEY")
         )
         self.model = model or llm_config.get("model", "gpt-4")
+        # 获取API基础URL（如果配置了则使用，否则根据provider自动选择）
+        self.base_url = llm_config.get("url")
         self.temperature = llm_config.get("temperature", 0.7)
         self.max_tokens = llm_config.get("max_tokens", 2000)
 
@@ -137,7 +139,13 @@ class LLMClient:
             try:
                 import openai
 
-                self.client = openai.OpenAI(api_key=self.api_key)
+                # 如果配置了基础URL，拼接chat/completions端点
+                if self.base_url:
+                    # 确保base_url以/结尾，然后拼接端点
+                    base_url = self.base_url.rstrip("/") + "/chat/completions"
+                    self.client = openai.OpenAI(api_key=self.api_key, base_url=base_url)
+                else:
+                    self.client = openai.OpenAI(api_key=self.api_key)
             except ImportError:
                 raise ImportError(
                     "openai package not installed. Install with: pip install openai"
