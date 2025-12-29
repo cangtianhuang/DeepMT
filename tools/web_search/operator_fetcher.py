@@ -2,13 +2,10 @@
 算子信息获取器：自动从网络搜索获取算子的定义、代码、文档
 """
 
-import os
 import re
-from pathlib import Path
 from typing import Any, Dict, Optional
 
-import yaml
-
+from core.config_loader import get_config
 from core.logger import get_logger
 from tools.web_search.search_tool import WebSearchTool
 
@@ -26,12 +23,9 @@ class OperatorInfoFetcher:
     _instance: Optional["OperatorInfoFetcher"] = None
     _initialized = False
 
-    def __new__(cls, config_path: Optional[str] = None):
+    def __new__(cls):
         """
         创建或获取OperatorInfoFetcher实例（单例模式）
-
-        Args:
-            config_path: 配置文件路径（如果为None则使用默认路径）
 
         Returns:
             OperatorInfoFetcher实例
@@ -40,19 +34,19 @@ class OperatorInfoFetcher:
             cls._instance = super().__new__(cls)
         return cls._instance
 
-    def __init__(self, config_path: Optional[str] = None):
+    def __init__(self):
         """
         初始化算子信息获取器
 
-        Args:
-            config_path: 配置文件路径（如果为None则使用默认路径）
+        配置由 core/config_loader.py 统一管理
         """
         # 如果已经初始化过，跳过
         if OperatorInfoFetcher._initialized:
             return
 
         self.logger = get_logger()
-        self.config = self._load_config(config_path)
+        # 使用统一的配置加载器
+        self.config = get_config()
 
         # 初始化搜索工具（单例，传入配置）
         web_search_config = self.config.get("web_search", {})
@@ -64,31 +58,6 @@ class OperatorInfoFetcher:
 
         self.enabled = web_search_config.get("enabled", True)
         OperatorInfoFetcher._initialized = True
-
-    def _load_config(self, config_path: str | Path | None = None) -> Dict[str, Any]:
-        """
-        加载配置文件
-
-        Args:
-            config_path: 配置文件路径
-
-        Returns:
-            配置字典
-        """
-        if config_path is None:
-            config_path = Path(__file__).parent.parent / "config.yaml"
-
-        if not Path(config_path).exists():
-            self.logger.warning(f"Config file not found: {config_path}, using defaults")
-            return {}
-
-        try:
-            with open(config_path, "r", encoding="utf-8") as f:
-                config = yaml.safe_load(f)
-            return config or {}
-        except Exception as e:
-            self.logger.error(f"Failed to load config: {e}")
-            return {}
 
     def fetch_operator_info(
         self, operator_name: str, framework: str = "pytorch", use_cache: bool = True
