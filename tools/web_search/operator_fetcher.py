@@ -54,17 +54,18 @@ class OperatorInfoFetcher:
         self.logger = get_logger()
         self.config = self._load_config(config_path)
 
-        # 初始化搜索工具（单例）
+        # 初始化搜索工具（单例，传入配置）
         web_search_config = self.config.get("web_search", {})
         self.search_tool = WebSearchTool(
             timeout=web_search_config.get("timeout", 10),
             max_results_per_source=web_search_config.get("max_results", 5),
+            config=self.config,  # 传递完整配置
         )
 
         self.enabled = web_search_config.get("enabled", True)
         OperatorInfoFetcher._initialized = True
 
-    def _load_config(self, config_path: Optional[str] = None) -> Dict[str, Any]:
+    def _load_config(self, config_path: str | Path | None = None) -> Dict[str, Any]:
         """
         加载配置文件
 
@@ -77,7 +78,7 @@ class OperatorInfoFetcher:
         if config_path is None:
             config_path = Path(__file__).parent.parent / "config.yaml"
 
-        if not os.path.exists(config_path):
+        if not Path(config_path).exists():
             self.logger.warning(f"Config file not found: {config_path}, using defaults")
             return {}
 

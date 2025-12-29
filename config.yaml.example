@@ -21,12 +21,15 @@ mr_generation:
 web_search:
   enabled: true
   sources:
-    - "pytorch_docs"  # PyTorch官方文档
-    - "github"  # GitHub仓库
-    - "stackoverflow"  # Stack Overflow
-    - "blogs"  # 技术博客
+    docs: true  # 框架官方文档
+    github: true  # GitHub仓库
+    web_search: true  # 网络搜索
   max_results: 5  # 每个源的搜索结果数量
   timeout: 10  # 请求超时时间（秒）
+  custom_sites: []  # 用户指定的网站来源（可选），例如: ["pytorch.org", "github.com"]
+  # API配置
+  github_token: ""  # GitHub API token（可选）
+  baidu_api_key: ""  # 百度智能云千帆API Key
 
 # 日志配置
 logging:
