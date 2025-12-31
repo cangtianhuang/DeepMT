@@ -217,21 +217,26 @@ class WebSearchTool:
         docs_base = docs_config["docs_base"]
 
         try:
-            # 使用智能搜索代理进行搜索
-            search_results = self.search_agent.search_and_understand(
-                query=operator_name,
-                search_url=search_url,
-                max_results=self.max_results,
-            )
+            # 使用智能搜索代理进行搜索和重排
+            try:
+                search_results = self.search_agent.search_and_rerank(
+                    query=operator_name,
+                    search_url=search_url,
+                    max_results=self.max_results,
+                )
+            except ValueError as e:
+                # 输入错误（如拼写错误），重新抛出以便上层处理
+                self.logger.warning(f"Search input error detected: {e}")
+                raise
 
-            # 对每个搜索结果，获取并理解内容
+            # 对每个搜索结果，获取内容（不进行理解）
             for item in search_results:
                 url = item.get("url", "")
                 if not url:
                     continue
 
-                # 获取并理解内容
-                content = self.search_agent.fetch_and_understand_content(url)
+                # 获取内容（包括OCR识别的图片内容）
+                content = self.search_agent.fetch_content(url)
                 if content:
                     results.append(
                         SearchResult(
@@ -502,75 +507,3 @@ class WebSearchTool:
     def _clean_html(self, text: str) -> str:
         """清理HTML标签"""
         return re.sub(r"<[^>]+>", "", text)
-
-    def extract_operator_info(
-        self, search_results: List[SearchResult]
-    ) -> Dict[str, Any]:
-        """
-        从搜索结果中提取算子信息
-
-        Args:
-            search_results: 搜索结果列表
-
-        Returns:
-            算子信息字典（包含代码、文档、签名等）
-        """
-        info = {
-            "name": "",
-            "code": "",
-            "doc": "",
-            "signature": "",
-            "examples": [],
-            "source_urls": [],
-        }
-
-        # 优先使用框架官方文档的结果
-        docs_results = [r for r in search_results if r.source == "docs"]
-        if docs_results:
-            result = docs_results[0]
-            info["source_urls"].append(result.url)
-            info["doc"] = result.snippet
-
-            # 尝试从文档中提取代码示例
-            code_examples = self._extract_code_from_text(result.snippet)
-            if code_examples:
-                info["examples"] = code_examples
-
-        # 从GitHub结果中提取代码
-        github_results = [r for r in search_results if r.source == "github"]
-        for result in github_results[:2]:  # 最多使用2个GitHub结果
-            info["source_urls"].append(result.url)
-            code = self._extract_code_from_text(result.snippet)
-            if code and not info["code"]:
-                info["code"] = code[0]  # 使用第一个代码片段
-
-        # 从网络搜索结果中提取信息
-        web_results = [r for r in search_results if r.source == "web_search"]
-        for result in web_results[:2]:  # 最多使用2个网络搜索结果
-            info["source_urls"].append(result.url)
-            if result.snippet and not info["doc"]:
-                info["doc"] = result.snippet
-
-        # 合并所有文档片段
-        all_docs = [r.snippet for r in search_results if r.snippet]
-        if all_docs:
-            info["doc"] = "\n\n".join(all_docs[:3])  # 最多3个片段
-
-        return info
-
-    def _extract_code_from_text(self, text: str) -> List[str]:
-        """从文本中提取代码片段"""
-        code_blocks = []
-
-        # 查找代码块（```python ... ```）
-        pattern = r"```(?:python)?\s*\n(.*?)```"
-        matches = re.findall(pattern, text, re.DOTALL)
-        code_blocks.extend(matches)
-
-        # 查找内联代码（`code`）
-        pattern = r"`([^`]+)`"
-        matches = re.findall(pattern, text)
-        # 过滤出看起来像函数调用的
-        code_blocks.extend([m for m in matches if "(" in m and ")" in m])
-
-        return code_blocks

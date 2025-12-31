@@ -34,6 +34,7 @@ class MetamorphicRelation:
     expected: str  # 期望关系类型: "equal", "proportional", "invariant", etc.
     tolerance: Optional[float] = None  # 数值容差（用于浮点数比较）
     layer: str = "operator"  # MR所属层次: "operator", "model", "application"
+    verified: bool = False  # 是否已通过验证（自动推导或SymPy证明）
     
     def __post_init__(self):
         """验证MR对象的有效性"""

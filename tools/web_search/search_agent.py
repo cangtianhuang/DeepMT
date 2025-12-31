@@ -28,14 +28,14 @@ class SearchAgent:
         self.logger = get_logger()
         self.llm_client = llm_client or LLMClient()
 
-    def search_and_understand(
+    def search_and_rerank(
         self,
         query: str,
         search_url: str,
         max_results: int = 5,
     ) -> List[Dict[str, Any]]:
         """
-        使用LLM进行智能搜索和理解
+        使用LLM进行智能搜索和重排（不进行内容理解）
 
         Args:
             query: 搜索查询
@@ -43,67 +43,92 @@ class SearchAgent:
             max_results: 最大结果数
 
         Returns:
-            搜索结果列表，每个结果包含title, url, content等
+            搜索结果列表，每个结果包含title, url, snippet等
+
+        Raises:
+            ValueError: 如果搜索没有结果且检测到可能的输入错误（如拼写错误）
         """
-        # 第一步：使用LLM生成优化的搜索关键词列表
-        search_keywords = self._generate_search_strategy(query)
-        self.logger.debug(f"Generated search keywords: {search_keywords}")
-
-        # 第二步：使用多个关键词尝试搜索，直到找到足够的结果
-        all_results = []
-        for keyword in search_keywords:
-            raw_results = self._execute_search(search_url, keyword, max_results)
-            all_results.extend(raw_results)
-
-            # 如果已经找到足够的结果，停止搜索
-            if len(all_results) >= max_results:
-                break
+        # PyTorch 官网不支持多关键词搜索，直接使用原始查询
+        raw_results = self._execute_search(search_url, query, max_results)
 
         # 去重（基于URL）
         seen_urls = set()
         unique_results = []
-        for result in all_results:
+        for result in raw_results:
             url = result.get("url", "")
             if url and url not in seen_urls:
                 seen_urls.add(url)
                 unique_results.append(result)
 
-        # 第三步：使用LLM重排和理解结果
-        if unique_results:
-            ranked_results = self._rerank_with_llm(
-                query, unique_results[: max_results * 2]
-            )
-            return ranked_results[:max_results]
+        # 如果没有找到结果，使用LLM检测可能的输入错误
+        if not unique_results:
+            corrected_query = self._detect_and_correct_input_error(query)
+            if corrected_query and corrected_query.lower() != query.lower():
+                # 使用纠正后的查询重新搜索
+                self.logger.info(
+                    f"No results for '{query}', trying corrected query: '{corrected_query}'"
+                )
+                raw_results = self._execute_search(
+                    search_url, corrected_query, max_results
+                )
 
-        return []
+                # 再次去重
+                seen_urls = set()
+                unique_results = []
+                for result in raw_results:
+                    url = result.get("url", "")
+                    if url and url not in seen_urls:
+                        seen_urls.add(url)
+                        unique_results.append(result)
 
-    def _generate_search_strategy(self, query: str) -> List[str]:
+                # 如果纠正后的查询也没有结果，抛出错误
+                if not unique_results:
+                    raise ValueError(
+                        f"搜索 '{query}' 未找到结果。"
+                        f"系统建议您可能想搜索 '{corrected_query}'，但该查询也未找到结果。"
+                        f"请检查算子名称是否正确。"
+                    )
+                else:
+                    # 抛出错误告知用户可能的输入错误
+                    raise ValueError(
+                        f"搜索 '{query}' 未找到结果。"
+                        f"您是否想搜索 '{corrected_query}'？如果是，请使用 '{corrected_query}' 重新搜索。"
+                    )
+            else:
+                # 没有找到纠正建议，直接抛出错误
+                raise ValueError(f"搜索 '{query}' 未找到结果。请检查算子名称是否正确。")
+
+        # 使用LLM重排结果（不进行理解）
+        ranked_results = self._rerank_with_llm(query, unique_results[: max_results * 2])
+        return ranked_results[:max_results]
+
+    def _detect_and_correct_input_error(self, query: str) -> Optional[str]:
         """
-        使用LLM生成优化的搜索关键词列表
+        检测并纠正可能的输入错误（如拼写错误）
 
         Args:
             query: 原始搜索查询
 
         Returns:
-            优化的搜索关键词列表，用于多轮搜索尝试
+            纠正后的查询字符串，如果没有找到纠正建议则返回None
         """
-        prompt = f"""你是一个搜索优化专家。用户想要搜索：{query}
+        prompt = f"""你是一个PyTorch算子名称纠正专家。用户搜索了：{query}
 
-请分析这个查询，生成3-5个优化的搜索关键词，用于在不同搜索引擎中尝试。
+PyTorch文档中没有找到结果。请分析这个查询，判断是否是常见的拼写错误。
 
-要求：
-1. 关键词应该更精确、更具体
-2. 包含可能的同义词、变体或相关术语
-3. 考虑中英文混合的情况
-4. 优先使用最可能找到准确结果的关键词
+常见的PyTorch算子包括：
+- ReLU (不是 rlu, relu, ReLu)
+- Conv2d (不是 conv2D, Conv2D)
+- BatchNorm (不是 BatchNorm1d, BatchNorm2d 的简写)
+- MaxPool2d (不是 MaxPool)
+
+如果发现可能是拼写错误，请返回最可能的正确算子名称。
+如果无法确定或查询看起来合理，返回原始查询。
 
 返回JSON格式：
 {{
-    "keywords": [
-        "关键词1",
-        "关键词2",
-        "关键词3"
-    ]
+    "corrected_query": "正确的算子名称（如果发现错误）",
+    "confidence": "high/medium/low"
 }}
 
 只返回JSON，不要包含其他内容。
@@ -113,7 +138,7 @@ class SearchAgent:
             messages = [
                 {
                     "role": "system",
-                    "content": "You are a search optimization expert. Generate optimized search keywords.",
+                    "content": "You are a PyTorch operator name correction expert. Detect and correct spelling errors in operator names.",
                 },
                 {"role": "user", "content": prompt},
             ]
@@ -126,18 +151,18 @@ class SearchAgent:
             elif "```" in response:
                 response = response.split("```")[1].split("```")[0].strip()
 
-            strategy_data = json.loads(response)
-            keywords = strategy_data.get("keywords", [query])
+            correction_data = json.loads(response)
+            corrected_query = correction_data.get("corrected_query", query)
+            confidence = correction_data.get("confidence", "low")
 
-            # 确保至少包含原始查询
-            if query not in keywords:
-                keywords.insert(0, query)
-
-            return keywords[:5]  # 最多返回5个关键词
+            # 只在置信度较高时返回纠正结果
+            if confidence in ["high", "medium"] and corrected_query != query:
+                return corrected_query
+            return None
 
         except Exception as e:
-            self.logger.warning(f"Failed to generate search strategy: {e}")
-            return [query]  # 失败时返回原始查询
+            self.logger.warning(f"Failed to detect input error: {e}")
+            return None
 
     def _execute_search(
         self, search_url: str, query: str, max_results: int
@@ -341,15 +366,15 @@ class SearchAgent:
             self.logger.warning(f"LLM reranking failed: {e}, using original order")
             return results
 
-    def fetch_and_understand_content(self, url: str) -> Optional[str]:
+    def fetch_content(self, url: str) -> Optional[str]:
         """
-        获取URL内容并使用LLM理解
+        获取URL内容并提取（包括OCR识别图片，不进行理解）
 
         Args:
             url: 目标URL
 
         Returns:
-            理解后的内容摘要
+            原始内容文本（包含OCR识别的图片内容）
         """
         try:
             headers = {
@@ -361,21 +386,20 @@ class SearchAgent:
                 # 解析HTML内容
                 soup = BeautifulSoup(response.text, "html.parser")
 
-                # 检测并处理图片（特别是公式图片）
-                content = self._extract_content_with_ocr(soup, url)
-
                 # 提取文本内容
                 text_content = soup.get_text(separator="\n", strip=True)
-                if content:
-                    # 合并OCR识别的公式和文本内容
-                    full_content = f"{text_content}\n\n[公式识别结果]\n{content}"
+
+                # 检测并处理所有图片（使用OCR识别）
+                ocr_content = self._extract_content_with_ocr(soup, url)
+
+                # 合并OCR识别的内容和文本内容
+                if ocr_content:
+                    # 将OCR结果插入到原始文本中（替换图片位置）
+                    full_content = f"{text_content}\n\n[图片内容]\n{ocr_content}"
                 else:
                     full_content = text_content
 
-                # 使用LLM理解内容
-                return self._understand_content_with_llm(
-                    full_content[:5000]
-                )  # 限制长度
+                return full_content
 
         except Exception as e:
             self.logger.warning(f"Failed to fetch content from {url}: {e}")
@@ -386,7 +410,7 @@ class SearchAgent:
         self, soup: BeautifulSoup, base_url: str
     ) -> Optional[str]:
         """
-        从HTML中提取图片并使用OCR识别（特别是公式图片）
+        从HTML中提取所有图片并使用OCR识别
 
         Args:
             soup: BeautifulSoup解析的HTML对象
@@ -434,7 +458,7 @@ class SearchAgent:
 
                     img_url = urljoin(base_url, img_src)
 
-                # 判断是否为公式图片（通过alt、class等属性）
+                # 判断是否为公式图片（用于选择合适的OCR方法）
                 alt_attr = img.get("alt")
                 alt_text = str(alt_attr).lower() if alt_attr else ""
                 class_attr = img.get("class")
@@ -452,61 +476,27 @@ class SearchAgent:
                     or "equation" in class_str
                 )
 
-                # 使用OCR识别
+                # 使用OCR识别所有图片
                 if is_formula:
-                    # 识别公式
-                    formula_text = ocr_client.recognize_formula(
+                    # 识别公式（使用专门的公式识别）
+                    recognized_text = ocr_client.recognize_formula(
                         str(img_url), use_layout_detection=False
                     )
-                    if formula_text:
-                        ocr_results.append(f"公式: {formula_text}")
+                    if recognized_text:
+                        ocr_results.append(f"[公式] {recognized_text}")
                 else:
-                    # 识别普通文本（可选，如果图片看起来包含文本）
-                    # 这里可以根据需要决定是否识别所有图片
-                    pass
+                    # 识别普通图片（包括图表、文本等）
+                    # 使用版面分析以获得更好的识别效果
+                    recognized_text = ocr_client.recognize_text(
+                        str(img_url), use_layout_detection=True
+                    )
+                    if recognized_text:
+                        # 添加图片位置标记（如果有alt或class信息）
+                        img_label = alt_text or class_str or "图片"
+                        ocr_results.append(f"[{img_label}] {recognized_text}")
 
             return "\n".join(ocr_results) if ocr_results else None
 
         except Exception as e:
             self.logger.warning(f"OCR extraction failed: {e}")
             return None
-
-    def _understand_content_with_llm(self, content: str) -> str:
-        """
-        使用LLM理解内容并提取关键信息
-
-        Args:
-            content: 原始内容
-
-        Returns:
-            理解后的摘要
-        """
-        prompt = f"""你是一个文档分析专家。请分析以下内容，提取关键信息：
-
-{content[:3000]}
-
-请提取：
-1. 函数/类的定义和签名
-2. 主要功能和用途
-3. 参数说明
-4. 返回值说明
-5. 使用示例（如果有）
-
-返回结构化的摘要。
-"""
-
-        try:
-            messages = [
-                {
-                    "role": "system",
-                    "content": "You are a documentation analysis expert. Extract key information from documents.",
-                },
-                {"role": "user", "content": prompt},
-            ]
-
-            summary = self.llm_client.chat_completion(messages, temperature=0.3)
-            return summary
-
-        except Exception as e:
-            self.logger.warning(f"LLM content understanding failed: {e}")
-            return content[:500]  # 返回前500字符作为fallback

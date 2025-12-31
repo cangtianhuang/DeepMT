@@ -56,20 +56,17 @@ class OperatorInfoFetcher:
         self, operator_name: str, framework: str = "pytorch", use_cache: bool = True
     ) -> Dict[str, Any]:
         """
-        获取算子信息
+        获取算子信息（简化为直接返回文档内容）
 
         Args:
             operator_name: 算子名称（如 "relu", "ReLU", "torch.nn.ReLU"）
             framework: 框架名称（默认pytorch）
-            use_cache: 是否使用缓存
+            use_cache: 是否使用缓存（保留接口兼容性，暂未实现）
 
         Returns:
             算子信息字典，包含：
             - name: 算子名称
-            - code: 代码字符串
-            - doc: 文档字符串
-            - signature: 函数签名
-            - examples: 代码示例列表
+            - doc: 文档字符串（来自搜索结果，保留原始信息）
             - source_urls: 来源URL列表
         """
         if not self.enabled:
@@ -81,73 +78,58 @@ class OperatorInfoFetcher:
         )
 
         # 搜索算子信息
-        search_results = self.search_tool.search_operator(
-            operator_name=operator_name,
-            framework=framework,
-            sources=get_config_value("web_search.sources"),
-        )
+        try:
+            search_results = self.search_tool.search_operator(
+                operator_name=operator_name,
+                framework=framework,
+                sources=get_config_value("web_search.sources"),
+            )
+        except ValueError as e:
+            # 输入错误（如拼写错误），记录并返回空结果
+            self.logger.warning(f"Search failed: {e}")
+            return {"name": operator_name, "doc": "", "source_urls": []}
 
         if not search_results:
             self.logger.warning(f"No search results found for '{operator_name}'")
-            return {}
+            return {"name": operator_name, "doc": "", "source_urls": []}
 
-        # 提取算子信息
-        operator_info = self.search_tool.extract_operator_info(search_results)
-        operator_info["name"] = operator_name
+        # 直接合并所有搜索结果的文档内容（保留原始信息）
+        doc_parts = []
+        source_urls = []
 
-        # 尝试从文档中提取函数签名
-        if not operator_info.get("signature"):
-            operator_info["signature"] = self._extract_signature_from_doc(
-                operator_info.get("doc", "")
-            )
+        # 优先使用 docs 源的结果
+        docs_results = [r for r in search_results if r.source == "docs"]
+        if docs_results:
+            for result in docs_results:
+                if result.snippet:
+                    doc_parts.append(result.snippet)
+                if result.url:
+                    source_urls.append(result.url)
+
+        # 如果没有 docs 结果，使用其他源的结果
+        if not doc_parts:
+            for result in search_results:
+                if result.snippet:
+                    doc_parts.append(result.snippet)
+                if result.url:
+                    source_urls.append(result.url)
+
+        # 合并文档内容（保留所有信息，不进行理解）
+        doc = "\n\n".join(doc_parts) if doc_parts else ""
+
+        operator_info = {
+            "name": operator_name,
+            "doc": doc,
+            "source_urls": source_urls,
+        }
 
         self.logger.info(
             f"Fetched operator info: "
-            f"code={bool(operator_info.get('code'))}, "
-            f"doc={bool(operator_info.get('doc'))}, "
-            f"signature={bool(operator_info.get('signature'))}"
+            f"doc={'found' if doc else 'not found'} ({len(doc)} chars), "
+            f"source_urls={len(source_urls)}"
         )
 
         return operator_info
-
-    def _extract_signature_from_doc(self, doc: str) -> str:
-        """
-        从文档中提取函数签名
-
-        Args:
-            doc: 文档字符串
-
-        Returns:
-            函数签名字符串
-        """
-        # 查找函数签名模式
-        patterns = [
-            r"def\s+(\w+)\s*\([^)]*\)",  # def function_name(...)
-            r"(\w+)\s*\([^)]*\)",  # function_name(...)
-        ]
-
-        for pattern in patterns:
-            match = re.search(pattern, doc)
-            if match:
-                return match.group(0)
-
-        return ""
-
-    def get_operator_code(
-        self, operator_name: str, framework: str = "pytorch"
-    ) -> Optional[str]:
-        """
-        获取算子代码
-
-        Args:
-            operator_name: 算子名称
-            framework: 框架名称
-
-        Returns:
-            代码字符串，如果未找到则返回None
-        """
-        info = self.fetch_operator_info(operator_name, framework)
-        return info.get("code")
 
     def get_operator_doc(
         self, operator_name: str, framework: str = "pytorch"
