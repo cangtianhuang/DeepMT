@@ -12,7 +12,7 @@ from urllib.parse import quote, urljoin
 
 import requests
 
-from core.config_loader import get_config
+from core.config_loader import get_config_value, get_web_search_config
 from core.logger import get_logger
 from tools.web_search.search_agent import SearchAgent
 
@@ -63,13 +63,9 @@ class WebSearchTool:
             return
 
         self.logger = get_logger()
-        # 使用统一的配置加载器
-        self.config = get_config()
-        web_search_config = self.config.get("web_search", {})
-
-        # 从配置中获取参数
-        self.timeout = web_search_config.get("timeout", 10)
-        self.max_results = web_search_config.get("max_results", 5)
+        # 从配置加载器获取配置值（不保存完整配置）
+        self.timeout = get_config_value("web_search.timeout", 10)
+        self.max_results = get_config_value("web_search.max_results", 5)
 
         # 框架文档URL映射
         self.framework_docs = {
@@ -95,13 +91,13 @@ class WebSearchTool:
 
         # 百度搜索API配置
         self.baidu_search_url = "https://qianfan.baidubce.com/v2/ai_search/web_search"
-        self.baidu_api_key = web_search_config.get("baidu_api_key") or ""
+        self.baidu_api_key = get_config_value("web_search.baidu_api_key") or ""
 
         # GitHub API token
-        self.github_token = web_search_config.get("github_token") or ""
+        self.github_token = get_config_value("web_search.github_token") or ""
 
         # 用户指定的网站来源
-        self.custom_sites = web_search_config.get("custom_sites", [])
+        self.custom_sites = get_config_value("web_search.custom_sites", [])
 
         # 用户代理（避免被网站屏蔽）
         self.headers = {
@@ -134,10 +130,9 @@ class WebSearchTool:
         Returns:
             搜索结果列表
         """
-        web_search_config = self.config.get("web_search", {})
         if sources is None:
-            sources = web_search_config.get(
-                "sources",
+            sources = get_config_value(
+                "web_search.sources",
                 {
                     "docs": True,
                     "github": True,

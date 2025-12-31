@@ -216,6 +216,84 @@ class ConfigLoader:
         else:
             return self.load_config()
 
+    def get_value(self, key: str, default: Any = None) -> Any:
+        """
+        获取配置值（支持点号路径，如 "llm.api_key"）
+
+        Args:
+            key: 配置键，支持点号分隔的路径（如 "llm.api_key"）
+            default: 默认值（如果键不存在）
+
+        Returns:
+            配置值，如果不存在则返回默认值
+        """
+        config = self.load_config()
+        if not config:
+            return default
+
+        # 支持点号路径
+        keys = key.split(".")
+        value = config
+
+        for k in keys:
+            if isinstance(value, dict):
+                value = value.get(k)
+                if value is None:
+                    return default
+            else:
+                return default
+
+        return value if value is not None else default
+
+    def get_section(self, section: str) -> Dict[str, Any]:
+        """
+        获取配置节
+
+        Args:
+            section: 配置节名称（如 "llm", "web_search"）
+
+        Returns:
+            配置节字典，如果不存在则返回空字典
+        """
+        config = self.load_config()
+        return config.get(section, {})
+
+    def get_llm_config(self) -> Dict[str, Any]:
+        """
+        获取LLM配置节
+
+        Returns:
+            LLM配置字典
+        """
+        return self.get_section("llm")
+
+    def get_web_search_config(self) -> Dict[str, Any]:
+        """
+        获取网络搜索配置节
+
+        Returns:
+            网络搜索配置字典
+        """
+        return self.get_section("web_search")
+
+    def get_mr_generation_config(self) -> Dict[str, Any]:
+        """
+        获取MR生成配置节
+
+        Returns:
+            MR生成配置字典
+        """
+        return self.get_section("mr_generation")
+
+    def get_logging_config(self) -> Dict[str, Any]:
+        """
+        获取日志配置节
+
+        Returns:
+            日志配置字典
+        """
+        return self.get_section("logging")
+
 
 # 全局配置加载器实例
 _config_loader = ConfigLoader()
@@ -223,7 +301,10 @@ _config_loader = ConfigLoader()
 
 def get_config(config_path: Optional[Path] = None) -> Dict[str, Any]:
     """
-    获取配置（便捷函数）
+    获取完整配置（便捷函数）
+
+    注意：建议使用 get_config_value() 或 get_*_config() 方法
+    来获取特定配置值，而不是获取完整配置字典。
 
     Args:
         config_path: 配置文件路径（可选）
@@ -232,6 +313,78 @@ def get_config(config_path: Optional[Path] = None) -> Dict[str, Any]:
         配置字典
     """
     return _config_loader.load_config(config_path)
+
+
+def get_config_value(key: str, default: Any = None) -> Any:
+    """
+    获取配置值（支持点号路径）
+
+    Args:
+        key: 配置键，支持点号分隔的路径（如 "llm.api_key", "web_search.timeout"）
+        default: 默认值（如果键不存在）
+
+    Returns:
+        配置值，如果不存在则返回默认值
+
+    Examples:
+        >>> get_config_value("llm.api_key")
+        >>> get_config_value("web_search.timeout", 10)
+        >>> get_config_value("web_search.sources.docs", True)
+    """
+    return _config_loader.get_value(key, default)
+
+
+def get_config_section(section: str) -> Dict[str, Any]:
+    """
+    获取配置节
+
+    Args:
+        section: 配置节名称（如 "llm", "web_search"）
+
+    Returns:
+        配置节字典，如果不存在则返回空字典
+    """
+    return _config_loader.get_section(section)
+
+
+def get_llm_config() -> Dict[str, Any]:
+    """
+    获取LLM配置节
+
+    Returns:
+        LLM配置字典
+    """
+    return _config_loader.get_llm_config()
+
+
+def get_web_search_config() -> Dict[str, Any]:
+    """
+    获取网络搜索配置节
+
+    Returns:
+        网络搜索配置字典
+    """
+    return _config_loader.get_web_search_config()
+
+
+def get_mr_generation_config() -> Dict[str, Any]:
+    """
+    获取MR生成配置节
+
+    Returns:
+        MR生成配置字典
+    """
+    return _config_loader.get_mr_generation_config()
+
+
+def get_logging_config() -> Dict[str, Any]:
+    """
+    获取日志配置节
+
+    Returns:
+        日志配置字典
+    """
+    return _config_loader.get_logging_config()
 
 
 def get_config_path() -> Optional[Path]:

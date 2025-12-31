@@ -5,7 +5,7 @@
 import re
 from typing import Any, Dict, Optional
 
-from core.config_loader import get_config
+from core.config_loader import get_config_value
 from core.logger import get_logger
 from tools.web_search.search_tool import WebSearchTool
 
@@ -45,14 +45,11 @@ class OperatorInfoFetcher:
             return
 
         self.logger = get_logger()
-        # 使用统一的配置加载器
-        self.config = get_config()
-
         # 初始化搜索工具（单例，配置由内部从 config_loader 获取）
         self.search_tool = WebSearchTool()
 
-        web_search_config = self.config.get("web_search", {})
-        self.enabled = web_search_config.get("enabled", True)
+        # 从配置加载器获取配置值（不保存完整配置）
+        self.enabled = get_config_value("web_search.enabled", True)
         OperatorInfoFetcher._initialized = True
 
     def fetch_operator_info(
@@ -87,7 +84,7 @@ class OperatorInfoFetcher:
         search_results = self.search_tool.search_operator(
             operator_name=operator_name,
             framework=framework,
-            sources=self.config.get("web_search", {}).get("sources"),
+            sources=get_config_value("web_search.sources"),
         )
 
         if not search_results:

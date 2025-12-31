@@ -6,7 +6,7 @@ from typing import Any, Dict, Optional
 
 import requests
 
-from core.config_loader import get_config
+from core.config_loader import get_config_value
 from core.logger import get_logger
 
 
@@ -32,15 +32,12 @@ class OCRClient:
             return
 
         self.logger = get_logger()
-        # 从配置获取API密钥和基础URL
-        config = get_config()
-        web_search_config = config.get("web_search", {})
-        self.api_key = web_search_config.get("baidu_api_key", "")
-        self.enabled = web_search_config.get("ocr", False)
+        # 从配置加载器获取配置值（不保存完整配置）
+        self.api_key = get_config_value("web_search.baidu_api_key", "")
+        self.enabled = get_config_value("web_search.ocr", False)
 
         # 从LLM配置获取基础URL，如果没有则使用默认值
-        llm_config = config.get("llm", {})
-        base_url = llm_config.get("url", "https://qianfan.baidubce.com/v2/")
+        base_url = get_config_value("llm.url", "https://qianfan.baidubce.com/v2/")
         # 确保base_url以/结尾，然后拼接OCR端点
         self.ocr_api_url = base_url.rstrip("/") + "/ocr/paddleocr"
 

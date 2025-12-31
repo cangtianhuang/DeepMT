@@ -7,7 +7,7 @@ import hashlib
 import os
 from typing import Any, Dict, List, Optional
 
-from core.config_loader import get_config
+from core.config_loader import get_config_value, get_llm_config
 from core.logger import get_logger
 
 
@@ -82,19 +82,18 @@ class LLMClient:
         self.provider = provider
         self._config_key = config_key
 
-        # 使用统一的配置加载器
-        config = get_config()
-        llm_config = config.get("llm", {})
-
+        # 使用统一的配置加载器获取配置值
         # 获取API key（优先级：参数 > 配置文件 > 环境变量）
         self.api_key = (
-            api_key or llm_config.get("api_key") or os.getenv("OPENAI_API_KEY")
+            api_key
+            or get_config_value("llm.api_key")
+            or os.getenv("OPENAI_API_KEY")
         )
-        self.model = model or llm_config.get("model", "gpt-4")
+        self.model = model or get_config_value("llm.model", "gpt-4")
         # 获取API基础URL（如果配置了则使用，否则根据provider自动选择）
-        self.base_url = llm_config.get("url")
-        self.temperature = llm_config.get("temperature", 0.7)
-        self.max_tokens = llm_config.get("max_tokens", 2000)
+        self.base_url = get_config_value("llm.url")
+        self.temperature = get_config_value("llm.temperature", 0.7)
+        self.max_tokens = get_config_value("llm.max_tokens", 2000)
 
         if not self.api_key:
             raise ValueError(
@@ -139,11 +138,8 @@ class LLMClient:
             try:
                 import openai
 
-                # 如果配置了基础URL，拼接chat/completions端点
                 if self.base_url:
-                    # 确保base_url以/结尾，然后拼接端点
-                    base_url = self.base_url.rstrip("/") + "/chat/completions"
-                    self.client = openai.OpenAI(api_key=self.api_key, base_url=base_url)
+                    self.client = openai.OpenAI(api_key=self.api_key, base_url=self.base_url)
                 else:
                     self.client = openai.OpenAI(api_key=self.api_key)
             except ImportError:

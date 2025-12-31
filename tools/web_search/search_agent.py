@@ -395,13 +395,11 @@ class SearchAgent:
         Returns:
             OCR识别的文本内容，如果没有图片或OCR未启用则返回None
         """
-        from core.config_loader import get_config
+        from core.config_loader import get_config_value
         from tools.llm.ocr_client import OCRClient
 
-        # 检查OCR是否启用
-        config = get_config()
-        web_search_config = config.get("web_search", {})
-        if not web_search_config.get("ocr", False):
+        # 检查OCR是否启用（不保存完整配置）
+        if not get_config_value("web_search.ocr", False):
             return None
 
         try:
