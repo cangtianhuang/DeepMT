@@ -2,12 +2,28 @@
 OCR客户端：使用百度千帆OCR API识别图片中的公式和文本
 """
 
-from typing import Any, Dict, Optional
+import re
+from typing import Any, Dict, Optional, Set
+from urllib.parse import urlparse
 
 import requests
 
 from core.config_loader import get_config_value
 from core.logger import get_logger
+
+# OCR API 支持的图片格式
+SUPPORTED_IMAGE_FORMATS: Set[str] = {"pdf", "jpeg", "jpg", "png", "tiff", "tif", "bmp"}
+
+# 不支持的格式（直接跳过，不警告）
+UNSUPPORTED_IMAGE_FORMATS: Set[str] = {
+    "svg",
+    "webp",
+    "gif",
+    "ico",
+    "avif",
+    "heic",
+    "heif",
+}
 
 
 class OCRClient:
@@ -48,6 +64,65 @@ class OCRClient:
             self.enabled = False
 
         OCRClient._initialized = True
+
+    def _is_supported_format(self, image_url: str) -> bool:
+        """
+        检查图片URL是否为支持的格式
+
+        Args:
+            image_url: 图片URL
+
+        Returns:
+            是否为支持的格式
+        """
+        # 跳过 data URI
+        if image_url.startswith("data:"):
+            return False
+
+        # 提取文件扩展名
+        parsed = urlparse(image_url)
+        path = parsed.path.lower()
+        netloc = parsed.netloc.lower()
+
+        # 跳过追踪像素和分析脚本（常见的非图片 URL）
+        tracking_domains = {
+            "facebook.com",
+            "www.facebook.com",
+            "google.com",
+            "www.google.com",
+            "googletagmanager.com",
+            "www.googletagmanager.com",
+            "google-analytics.com",
+            "www.google-analytics.com",
+            "doubleclick.net",
+            "analytics.",  # 匹配任何包含 analytics 的域名
+        }
+        for domain in tracking_domains:
+            if domain in netloc:
+                return False
+
+        # 跳过常见的追踪路径
+        tracking_paths = {"/tr", "/pixel", "/beacon", "/track", "/analytics"}
+        for tracking_path in tracking_paths:
+            if path.startswith(tracking_path) or tracking_path + "?" in path:
+                return False
+
+        # 从路径中提取扩展名
+        ext_match = re.search(r"\.([a-z0-9]+)(?:\?|#|$)", path)
+        if ext_match:
+            ext = ext_match.group(1)
+            # 如果是不支持的格式，直接返回 False
+            if ext in UNSUPPORTED_IMAGE_FORMATS:
+                return False
+            # 如果是支持的格式，返回 True
+            if ext in SUPPORTED_IMAGE_FORMATS:
+                return True
+            # 其他扩展名（如 php、asp 等）跳过
+            return False
+
+        # 如果没有扩展名，默认跳过（避免调用无效的 API）
+        # 真正的图片 URL 通常都有明确的扩展名
+        return False
 
     def recognize_formula(
         self, image_url: str, use_layout_detection: bool = False
@@ -112,6 +187,11 @@ class OCRClient:
         """
         if not self.api_key:
             self.logger.warning("Baidu API key not configured")
+            return None
+
+        # 检查图片格式是否支持
+        if not self._is_supported_format(image_url):
+            self.logger.debug(f"Skipping unsupported image format: {image_url}")
             return None
 
         try:

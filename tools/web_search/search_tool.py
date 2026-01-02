@@ -70,8 +70,8 @@ class WebSearchTool:
         # 框架文档URL映射
         self.framework_docs = {
             "pytorch": {
-                "search_url": "https://pytorch.org/docs/stable/search.html",
-                "docs_base": "https://pytorch.org/docs/stable/",
+                "search_url": "https://docs.pytorch.org/docs/stable/search.html",
+                "docs_base": "https://docs.pytorch.org/docs/stable/",
                 "github_repo": "pytorch/pytorch",
             },
             "tensorflow": {
