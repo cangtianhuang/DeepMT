@@ -12,4 +12,5 @@ data/
 docs/
 examples/
 logs/
+test.py
 tests/

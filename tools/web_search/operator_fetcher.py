@@ -16,41 +16,25 @@ class OperatorInfoFetcher:
 
     功能：
     1. 从配置文件读取设置
-    2. 使用WebSearchTool搜索算子信息
+    2. 使用 WebSearchTool 搜索算子信息
     3. 提取和整理算子代码、文档、签名
     """
 
     _instance: Optional["OperatorInfoFetcher"] = None
-    _initialized = False
 
-    def __new__(cls):
-        """
-        创建或获取OperatorInfoFetcher实例（单例模式）
-
-        Returns:
-            OperatorInfoFetcher实例
-        """
+    def __new__(cls) -> "OperatorInfoFetcher":
         if cls._instance is None:
             cls._instance = super().__new__(cls)
+            cls._instance._init_instance()
         return cls._instance
 
-    def __init__(self):
-        """
-        初始化算子信息获取器
-
-        配置由 core/config_loader.py 统一管理
-        """
-        # 如果已经初始化过，跳过
-        if OperatorInfoFetcher._initialized:
-            return
-
+    def _init_instance(self) -> None:
+        """初始化实例属性（仅在首次创建时调用）"""
         self.logger = get_logger()
-        # 初始化搜索工具（单例，配置由内部从 config_loader 获取）
+        # 初始化搜索工具（单例）
         self.search_tool = WebSearchTool()
-
-        # 从配置加载器获取配置值（不保存完整配置）
+        # 从配置加载器获取配置值
         self.enabled = get_config_value("web_search.enabled", True)
-        OperatorInfoFetcher._initialized = True
 
     def fetch_operator_info(
         self, operator_name: str, framework: str = "pytorch", use_cache: bool = True

@@ -33,41 +33,27 @@ class WebSearchTool:
     网络搜索工具：从多个源搜索算子信息（单例模式）
 
     支持：
-    - 框架官方文档（使用智能搜索，支持PyTorch/TensorFlow/PaddlePaddle等）
-    - GitHub仓库
-    - 网络搜索（百度搜索API）
+    - 框架官方文档（使用智能搜索，支持 PyTorch/TensorFlow/PaddlePaddle 等）
+    - GitHub 仓库
+    - 网络搜索（百度搜索 API）
     """
 
     _instance: Optional["WebSearchTool"] = None
-    _initialized = False
 
-    def __new__(cls):
-        """
-        创建或获取WebSearchTool实例（单例模式）
-
-        Returns:
-            WebSearchTool实例
-        """
+    def __new__(cls) -> "WebSearchTool":
         if cls._instance is None:
             cls._instance = super().__new__(cls)
+            cls._instance._init_instance()
         return cls._instance
 
-    def __init__(self):
-        """
-        初始化搜索工具
-
-        所有配置从 core/config_loader.py 统一获取
-        """
-        # 如果已经初始化过，跳过
-        if WebSearchTool._initialized:
-            return
-
+    def _init_instance(self) -> None:
+        """初始化实例属性（仅在首次创建时调用）"""
         self.logger = get_logger()
-        # 从配置加载器获取配置值（不保存完整配置）
+        # 从配置加载器获取配置值
         self.timeout = get_config_value("web_search.timeout", 10)
         self.max_results = get_config_value("web_search.max_results", 5)
 
-        # 框架文档URL映射
+        # 框架文档 URL 映射
         self.framework_docs = {
             "pytorch": {
                 "search_url": "https://docs.pytorch.org/docs/stable/search.html",
@@ -86,10 +72,10 @@ class WebSearchTool:
             },
         }
 
-        # GitHub API配置
+        # GitHub API 配置
         self.github_base = "https://api.github.com/search/code"
 
-        # 百度搜索API配置
+        # 百度搜索 API 配置
         self.baidu_search_url = "https://qianfan.baidubce.com/v2/ai_search/web_search"
         self.baidu_api_key = get_config_value("web_search.baidu_api_key") or ""
 
@@ -109,8 +95,6 @@ class WebSearchTool:
 
         llm_client = LLMClient()
         self.search_agent = SearchAgent(llm_client=llm_client)
-
-        WebSearchTool._initialized = True
 
     def search_operator(
         self,

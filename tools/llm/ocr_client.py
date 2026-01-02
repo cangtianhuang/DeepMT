@@ -28,33 +28,20 @@ UNSUPPORTED_IMAGE_FORMATS: Set[str] = {
 
 class OCRClient:
     """
-    OCR客户端：使用百度千帆OCR API识别图片
+    OCR 客户端：使用百度千帆 OCR API 识别图片
 
     主要用于识别网页中的公式图片
     """
 
-    _instance: Optional["OCRClient"] = None
-    _initialized = False
-
-    def __new__(cls):
-        """单例模式"""
-        if cls._instance is None:
-            cls._instance = super().__new__(cls)
-        return cls._instance
-
-    def __init__(self):
-        """初始化OCR客户端"""
-        if OCRClient._initialized:
-            return
-
+    def __init__(self) -> None:
+        """初始化 OCR 客户端"""
         self.logger = get_logger()
-        # 从配置加载器获取配置值（不保存完整配置）
+        # 从配置加载器获取配置值
         self.api_key = get_config_value("web_search.baidu_api_key", "")
         self.enabled = get_config_value("web_search.ocr", False)
 
-        # 从LLM配置获取基础URL，如果没有则使用默认值
+        # 从 LLM 配置获取基础 URL
         base_url = get_config_value("llm.url", "https://qianfan.baidubce.com/v2/")
-        # 确保base_url以/结尾，然后拼接OCR端点
         self.ocr_api_url = base_url.rstrip("/") + "/ocr/paddleocr"
 
         if not self.api_key:
@@ -62,8 +49,6 @@ class OCRClient:
                 "Baidu API key not found. OCR functionality will be disabled."
             )
             self.enabled = False
-
-        OCRClient._initialized = True
 
     def _is_supported_format(self, image_url: str) -> bool:
         """
