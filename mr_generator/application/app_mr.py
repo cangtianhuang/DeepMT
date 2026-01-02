@@ -6,4 +6,4 @@ class ApplicationMRGenerator:
         # 调用LLM生成自然语言MR
         description = self.llm.ask("Generate MR for: " + app_ir.description)
         # 转换为代码
-        return self.parse_description_to_code(description) # type: ignore
+        return self.parse_description_to_code(description)

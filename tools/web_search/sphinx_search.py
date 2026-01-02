@@ -119,7 +119,7 @@ class SphinxSearchIndex:
                 {
                     "title": title,
                     "url": url,
-                    "relevance_score": min(score / 20.0, 1.0), # 归一化
+                    "relevance_score": min(score / 20.0, 1.0),  # 归一化
                     "snippet": "",
                 }
             )

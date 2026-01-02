@@ -46,9 +46,7 @@ class LLMClient:
         self.provider = provider
         self._config_key = config_key
         self.api_key = (
-            api_key
-            or get_config_value("llm.api_key")
-            or os.getenv("OPENAI_API_KEY")
+            api_key or get_config_value("llm.api_key") or os.getenv("OPENAI_API_KEY")
         )
         self.model = model or get_config_value("llm.model", "gpt-4")
         self.base_url = get_config_value("llm.url")
@@ -84,7 +82,9 @@ class LLMClient:
                 import openai
 
                 if self.base_url:
-                    self.client = openai.OpenAI(api_key=self.api_key, base_url=self.base_url)
+                    self.client = openai.OpenAI(
+                        api_key=self.api_key, base_url=self.base_url
+                    )
                 else:
                     self.client = openai.OpenAI(api_key=self.api_key)
             except ImportError:

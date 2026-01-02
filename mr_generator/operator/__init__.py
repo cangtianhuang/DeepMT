@@ -8,4 +8,9 @@ from mr_generator.base.knowledge_base import KnowledgeBase
 from mr_generator.operator.code_translator import CodeToSymPyTranslator
 from mr_generator.operator.ast_parser import ASTToSymPyParser
 
-__all__ = ["OperatorMRGenerator", "KnowledgeBase", "CodeToSymPyTranslator", "ASTToSymPyParser"]
+__all__ = [
+    "OperatorMRGenerator",
+    "KnowledgeBase",
+    "CodeToSymPyTranslator",
+    "ASTToSymPyParser",
+]
