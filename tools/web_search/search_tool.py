@@ -193,7 +193,7 @@ class WebSearchTool:
         self, operator_name: str, framework: str = "pytorch"
     ) -> List[SearchResult]:
         """
-        搜索框架官方文档（使用智能搜索代理）
+        搜索框架官方文档（委托给 SearchAgent）
 
         Args:
             operator_name: 算子名称
@@ -202,124 +202,29 @@ class WebSearchTool:
         Returns:
             搜索结果列表
         """
-        results = []
-
-        # 获取框架文档配置
         framework_lower = framework.lower()
         if framework_lower not in self.framework_docs:
             self.logger.warning(
-                f"Framework '{framework}' not supported. Supported frameworks: {list(self.framework_docs.keys())}"
+                f"Framework '{framework}' not supported. "
+                f"Supported: {list(self.framework_docs.keys())}"
             )
-            return results
+            return []
 
-        docs_config = self.framework_docs[framework_lower]
-        search_url = docs_config["search_url"]
-        docs_base = docs_config["docs_base"]
+        search_url = self.framework_docs[framework_lower]["search_url"]
 
         try:
-            # 使用智能搜索代理进行搜索和重排
-            try:
-                search_results = self.search_agent.search_and_rerank(
-                    query=operator_name,
-                    search_url=search_url,
-                    max_results=self.max_results,
-                )
-            except ValueError as e:
-                # 输入错误（如拼写错误），重新抛出以便上层处理
-                self.logger.warning(f"Search input error detected: {e}")
-                raise
-
-            # 对每个搜索结果，获取内容（不进行理解）
-            for item in search_results:
-                url = item.get("url", "")
-                if not url:
-                    continue
-
-                # 获取内容（包括OCR识别的图片内容）
-                content = self.search_agent.fetch_content(url)
-                if content:
-                    results.append(
-                        SearchResult(
-                            title=item.get(
-                                "title",
-                                f"{framework.capitalize()} {operator_name} Documentation",
-                            ),
-                            url=url,
-                            snippet=content,
-                            source="docs",
-                            relevance_score=item.get("relevance_score", 0.9),
-                        )
-                    )
-
-            # 如果没有找到结果，尝试直接访问常见路径（fallback）
-            if not results:
-                doc_urls = self._get_fallback_doc_urls(
-                    operator_name, framework_lower, docs_base
-                )
-
-                for url in doc_urls:
-                    try:
-                        response = requests.get(
-                            url, headers=self.headers, timeout=self.timeout
-                        )
-                        if response.status_code == 200:
-                            content = response.text
-                            title = self._extract_title(content)
-                            snippet = self._extract_snippet(content, operator_name)
-
-                            if snippet:
-                                results.append(
-                                    SearchResult(
-                                        title=title
-                                        or f"{framework.capitalize()} {operator_name} Documentation",
-                                        url=url,
-                                        snippet=snippet,
-                                        source="docs",
-                                        relevance_score=0.8,
-                                    )
-                                )
-                                break
-                    except Exception as e:
-                        self.logger.debug(f"Failed to fetch {url}: {e}")
-                        continue
-
+            return self.search_agent.search_docs(
+                query=operator_name,
+                search_url=search_url,
+                framework=framework,
+                max_results=self.max_results,
+            )
+        except ValueError as e:
+            # 输入错误（如拼写错误），重新抛出以便上层处理
+            self.logger.warning(f"Search input error: {e}")
+            raise
         except Exception as e:
             self.logger.warning(f"{framework.capitalize()} docs search failed: {e}")
-
-        return results[: self.max_results]
-
-    def _get_fallback_doc_urls(
-        self, operator_name: str, framework: str, docs_base: str
-    ) -> List[str]:
-        """
-        获取框架文档的fallback URL列表
-
-        Args:
-            operator_name: 算子名称
-            framework: 框架名称
-            docs_base: 文档基础URL
-
-        Returns:
-            URL列表
-        """
-        if framework == "pytorch":
-            return [
-                f"{docs_base}generated/torch.nn.{operator_name.capitalize()}.html",
-                f"{docs_base}nn.html#{operator_name}",
-                f"{docs_base}nn.functional.html#{operator_name}",
-            ]
-        elif framework == "tensorflow":
-            return [
-                f"{docs_base}tf/{operator_name}",
-                f"{docs_base}tf/nn/{operator_name}",
-                f"{docs_base}tf/keras/layers/{operator_name}",
-            ]
-        elif framework == "paddlepaddle":
-            return [
-                f"{docs_base}paddle/{operator_name}_cn.html",
-                f"{docs_base}paddle/nn/{operator_name}_cn.html",
-            ]
-        else:
             return []
 
     def _search_github(self, operator_name: str, framework: str) -> List[SearchResult]:

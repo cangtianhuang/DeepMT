@@ -2,15 +2,22 @@
 网络搜索智能体：使用LLM的react能力进行智能搜索和内容理解
 """
 
+from __future__ import annotations
+
 import json
 import re
-from typing import Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from urllib.parse import urlparse
 
 import requests
 from bs4 import BeautifulSoup
 
 from core.logger import get_logger
 from tools.llm.client import LLMClient
+from tools.web_search.sphinx_search import SphinxSearchIndex
+
+if TYPE_CHECKING:
+    from tools.web_search.search_tool import SearchResult
 
 
 class SearchAgent:
@@ -27,44 +34,102 @@ class SearchAgent:
         """
         self.logger = get_logger()
         self.llm_client = llm_client or LLMClient()
+        # 缓存 Sphinx 搜索索引实例
+        self._sphinx_indexes: Dict[str, SphinxSearchIndex] = {}
 
-    def search_and_rerank(
+    def search_docs(
         self,
         query: str,
         search_url: str,
+        framework: str = "pytorch",
         max_results: int = 5,
-    ) -> List[Dict[str, Any]]:
+    ) -> List[SearchResult]:
         """
-        使用LLM进行智能搜索和重排（不进行内容理解）
+        完整的文档搜索流程：搜索 -> 重新排序 -> 获取内容。
+
+        该方法集成了完整的搜索工作流：
+        1. 在文档站点执行搜索
+        2. 解析并去重结果
+        3. 使用LLM对结果重新排序
+        4. 获取每个结果的完整内容
 
         Args:
-            query: 搜索查询
-            search_url: 搜索URL（如PyTorch文档搜索）
-            max_results: 最大结果数
+            query: 搜索查询（算子名称）
+            search_url: 搜索页面的网址（例如PyTorch文档搜索）
+            framework: 结果元数据中的框架名称
+            max_results: 返回的最大结果数量
 
         Returns:
-            搜索结果列表，每个结果包含title, url, snippet等
+            List of SearchResult with full content（包含完整内容的搜索结果列表）
 
         Raises:
-            ValueError: 如果搜索没有结果且检测到可能的输入错误（如拼写错误）
+            ValueError: 如果未找到任何结果（如果有拼写错误建议则提供拼写建议）
         """
-        # PyTorch 官网不支持多关键词搜索，直接使用原始查询
+        # 运行时导入以避免循环依赖
+        from tools.web_search.search_tool import SearchResult
+
+        # 第一步：搜索并重新排序
+        ranked_results = self._search_and_rerank(search_url, query, max_results)
+
+        # 第二步：获取每个结果的完整内容
+        results: List[SearchResult] = []
+        for item in ranked_results:
+            url = item.get("url", "")
+            if not url:
+                continue
+
+            content = self.fetch_content(url)
+            if content:
+                results.append(
+                    SearchResult(
+                        title=item.get(
+                            "title",
+                            f"{framework.capitalize()} {query} Documentation",
+                        ),
+                        url=url,
+                        snippet=content,
+                        source="docs",
+                        relevance_score=item.get("relevance_score", 0.9),
+                    )
+                )
+
+        return results[:max_results]
+
+    def _search_and_rerank(
+        self,
+        search_url: str,
+        query: str,
+        max_results: int,
+    ) -> List[Dict[str, Any]]:
+        """
+        利用大语言模型（LLM）执行搜索并对结果进行重新排序。
+
+        Args:
+            search_url: 搜索页面的网址
+            query: 搜索查询内容
+            max_results: 结果的最大数量
+
+        Returns:
+            重新排序后的结果列表
+
+        Raises:
+            ValueError: 如果未找到任何结果
+        """
         raw_results = self._execute_search(search_url, query, max_results)
 
-        # 去重（基于URL）
-        seen_urls = set()
-        unique_results = []
+        # 去重：按URL
+        seen_urls: set = set()
+        unique_results: List[Dict[str, Any]] = []
         for result in raw_results:
             url = result.get("url", "")
             if url and url not in seen_urls:
                 seen_urls.add(url)
                 unique_results.append(result)
 
-        # 如果没有找到结果，使用LLM检测可能的输入错误
+        # 如果未找到结果，尝试检测并纠正拼写错误
         if not unique_results:
             corrected_query = self._detect_and_correct_input_error(query)
             if corrected_query and corrected_query.lower() != query.lower():
-                # 使用纠正后的查询重新搜索
                 self.logger.info(
                     f"No results for '{query}', trying corrected query: '{corrected_query}'"
                 )
@@ -72,7 +137,6 @@ class SearchAgent:
                     search_url, corrected_query, max_results
                 )
 
-                # 再次去重
                 seen_urls = set()
                 unique_results = []
                 for result in raw_results:
@@ -81,7 +145,6 @@ class SearchAgent:
                         seen_urls.add(url)
                         unique_results.append(result)
 
-                # 如果纠正后的查询也没有结果，抛出错误
                 if not unique_results:
                     raise ValueError(
                         f"搜索 '{query}' 未找到结果。"
@@ -89,16 +152,14 @@ class SearchAgent:
                         f"请检查算子名称是否正确。"
                     )
                 else:
-                    # 抛出错误告知用户可能的输入错误
                     raise ValueError(
                         f"搜索 '{query}' 未找到结果。"
                         f"您是否想搜索 '{corrected_query}'？如果是，请使用 '{corrected_query}' 重新搜索。"
                     )
             else:
-                # 没有找到纠正建议，直接抛出错误
                 raise ValueError(f"搜索 '{query}' 未找到结果。请检查算子名称是否正确。")
 
-        # 使用LLM重排结果（不进行理解）
+        # 使用LLM对结果进行重新排序
         ranked_results = self._rerank_with_llm(query, unique_results[: max_results * 2])
         return ranked_results[:max_results]
 
@@ -112,33 +173,25 @@ class SearchAgent:
         Returns:
             纠正后的查询字符串，如果没有找到纠正建议则返回None
         """
-        prompt = f"""你是一个PyTorch算子名称纠正专家。用户搜索了：{query}
+        prompt = f"""The user searched for: "{query}"
 
-PyTorch文档中没有找到结果。请分析这个查询，判断是否是常见的拼写错误。
+No results were found in PyTorch documentation. Analyze if this might be a spelling error.
 
-常见的PyTorch算子包括：
-- ReLU (不是 rlu, relu, ReLu)
-- Conv2d (不是 conv2D, Conv2D)
-- BatchNorm (不是 BatchNorm1d, BatchNorm2d 的简写)
-- MaxPool2d (不是 MaxPool)
+If you detect a spelling error, return the most likely correct operator name.
+If the query appears valid or you're unsure, return the original query.
 
-如果发现可能是拼写错误，请返回最可能的正确算子名称。
-如果无法确定或查询看起来合理，返回原始查询。
-
-返回JSON格式：
+Return JSON format only:
 {{
-    "corrected_query": "正确的算子名称（如果发现错误）",
+    "corrected_query": "corrected operator name",
     "confidence": "high/medium/low"
 }}
-
-只返回JSON，不要包含其他内容。
 """
 
         try:
             messages = [
                 {
                     "role": "system",
-                    "content": "You are a PyTorch operator name correction expert. Detect and correct spelling errors in operator names.",
+                    "content": "You are a PyTorch operator name correction expert. Detect and correct spelling errors.",
                 },
                 {"role": "user", "content": prompt},
             ]
@@ -178,25 +231,64 @@ PyTorch文档中没有找到结果。请分析这个查询，判断是否是常�
         Returns:
             原始搜索结果列表
         """
-        try:
-            # 构建搜索URL
-            if "?" in search_url:
-                full_url = f"{search_url}&q={query}"
-            else:
-                full_url = f"{search_url}?q={query}"
 
+        try:
+            # pytorch 使用 Sphinx 搜索索引
+            if "pytorch" in search_url:
+                return self._search_with_sphinx_index(search_url, query, max_results)
+
+            # 其他框架使用传统的 HTML 解析方式
+            full_url = f"{search_url}?q={query}"
             headers = {
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
             }
 
             response = requests.get(full_url, headers=headers, timeout=10)
-            if response.status_code == 200:
-                # 解析搜索结果页面
-                return self._parse_search_results(response.text, max_results)
+            response.raise_for_status()
+            return self._parse_search_results(response.text, max_results)
         except Exception as e:
             self.logger.warning(f"Search execution failed: {e}")
+            return []
 
-        return []
+    def _search_with_sphinx_index(
+        self, search_url: str, query: str, max_results: int
+    ) -> List[Dict[str, Any]]:
+        """
+        使用 Sphinx 搜索索引执行搜索
+
+        Args:
+            search_url: 搜索页面 URL
+            query: 搜索查询
+            max_results: 最大结果数
+
+        Returns:
+            搜索结果列表
+        """
+        try:
+            # 从 search_url 提取 base_url
+            parsed = urlparse(search_url)
+            path = parsed.path
+            # 移除 search.html 或类似的文件名
+            if path.endswith("/search.html"):
+                base_path = path[: -len("search.html")]
+            elif path.endswith("/search"):
+                base_path = path[: -len("search")] + "/"
+            else:
+                # 尝试获取目录路径
+                base_path = path.rsplit("/", 1)[0] + "/"
+
+            base_url = f"{parsed.scheme}://{parsed.netloc}{base_path}"
+
+            # 获取或创建搜索索引实例
+            if base_url not in self._sphinx_indexes:
+                self._sphinx_indexes[base_url] = SphinxSearchIndex(base_url)
+
+            sphinx_index = self._sphinx_indexes[base_url]
+            return sphinx_index.search(query, max_results)
+
+        except Exception as e:
+            self.logger.warning(f"Sphinx search index failed: {e}")
+            return []
 
     def _parse_search_results(
         self, html: str, max_results: int
@@ -215,64 +307,45 @@ PyTorch文档中没有找到结果。请分析这个查询，判断是否是常�
         try:
             soup = BeautifulSoup(html, "html.parser")
 
-            # 多种策略解析搜索结果
-            # 策略1: 查找包含搜索结果的容器
-            search_containers = soup.find_all(
-                ["div", "ul", "ol"],
-                class_=re.compile(r"search|result|item|hit", re.I),
-            )
+            # 以 pytorch 特有的结构为例：
+            # <div id="search-results"> -> <ul class="search"> -> <li>
+            search_results_div = soup.find("div", id="search-results")
+            if search_results_div:
+                search_ul = search_results_div.find("ul", class_="search")
+                if search_ul:
+                    list_items = search_ul.find_all("li", recursive=False)
+                    for li in list_items[:max_results]:
+                        link = li.find("a", href=True)
+                        if not link:
+                            continue
 
-            for container in search_containers:
-                # 在容器中查找链接
-                links = container.find_all("a", href=True)
-                for link in links[:max_results]:
-                    title = link.get_text(strip=True)
-                    url_attr = link.get("href")
-                    url = str(url_attr) if url_attr else ""
-                    if url:
-                        if not url.startswith("http"):
-                            # 相对URL转换为绝对URL
-                            if url.startswith("/"):
-                                url = f"https://pytorch.org{url}"
-                            else:
-                                url = (
-                                    f"https://pytorch.org/docs/stable/{url.lstrip('/')}"
-                                )
+                        title = link.get_text(strip=True)
+                        url = str(link.get("href", ""))
 
-                        if title and url and url not in [r.get("url") for r in results]:
-                            # 尝试获取摘要
-                            snippet = ""
-                            parent = link.find_parent()
-                            if parent:
-                                snippet_elem = parent.find(
-                                    ["p", "span", "div"],
-                                    class_=re.compile(r"snippet|summary|desc", re.I),
-                                )
-                                if snippet_elem:
-                                    snippet = snippet_elem.get_text(strip=True)[:200]
-
-                            results.append(
-                                {"title": title, "url": url, "snippet": snippet}
+                        # Get relevance score from data-score attribute
+                        score_attr = link.get("data-score")
+                        try:
+                            score = (
+                                float(str(score_attr)) / 100.0 if score_attr else 0.5
                             )
+                        except (ValueError, TypeError):
+                            score = 0.5
 
-            # 策略2: 如果策略1没有找到结果，直接查找所有链接
-            if not results:
-                all_links = soup.find_all("a", href=re.compile(r"\.html|#"))
-                for link in all_links[: max_results * 2]:
-                    title = link.get_text(strip=True)
-                    url_attr = link.get("href")
-                    url = str(url_attr) if url_attr else ""
-                    if url and title and len(title) > 3:
-                        if not url.startswith("http"):
-                            if url.startswith("/"):
-                                url = f"https://pytorch.org{url}"
-                            else:
-                                url = (
-                                    f"https://pytorch.org/docs/stable/{url.lstrip('/')}"
-                                )
+                        # Get snippet from <p class="context">
+                        snippet = ""
+                        context_p = li.find("p", class_="context")
+                        if context_p:
+                            snippet = context_p.get_text(strip=True)[:300]
 
-                        if url not in [r.get("url") for r in results]:
-                            results.append({"title": title, "url": url, "snippet": ""})
+                        if title and url:
+                            results.append(
+                                {
+                                    "title": title,
+                                    "url": url,
+                                    "snippet": snippet,
+                                    "relevance_score": score,
+                                }
+                            )
 
         except Exception as e:
             self.logger.warning(f"Failed to parse search results: {e}")
@@ -282,20 +355,21 @@ PyTorch文档中没有找到结果。请分析这个查询，判断是否是常�
     def _rerank_with_llm(
         self, query: str, results: List[Dict[str, Any]]
     ) -> List[Dict[str, Any]]:
-        """
-        使用LLM对搜索结果进行重排和理解
+        """使用LLM对搜索结果进行相关性重排序
 
         Args:
-            query: 原始查询
-            results: 搜索结果列表
+            query: 原始搜索查询
+            results: 待排序的搜索结果列表
 
         Returns:
-            重排后的结果列表
+            重排序后的结果列表。如果处理失败则返回原始顺序的结果。
+            每个结果字典中会新增'relevance_score'字段表示相关性分数(0-1)。
         """
+        # 空结果直接返回
         if not results:
             return []
 
-        # 构建重排提示
+        # 构建重排序提示词
         results_text = "\n".join(
             [
                 f"{i+1}. {r.get('title', '')} - {r.get('url', '')}"
@@ -303,35 +377,26 @@ PyTorch文档中没有找到结果。请分析这个查询，判断是否是常�
             ]
         )
 
-        prompt = f"""你是一个搜索结果分析专家。用户搜索了：{query}
+        prompt = f"""Query: "{query}"
 
-以下是搜索结果：
+Search results:
 {results_text}
 
-请：
-1. 评估每个结果与查询的相关性（0-1分）
-2. 选择最相关的Top-{len(results)}个结果
-3. 对每个选中的结果，生成一个简短的摘要说明为什么它相关
+Rate each result's relevance (0-1 scale) to the query.
 
-返回JSON格式：
+Return JSON only:
 {{
     "ranked_results": [
-        {{
-            "index": 1,
-            "relevance_score": 0.95,
-            "reason": "这个结果直接包含用户查询的内容"
-        }}
+        {{"index": 1, "relevance_score": 0.95}}
     ]
 }}
-
-只返回JSON，不要包含其他内容。
 """
 
         try:
             messages = [
                 {
                     "role": "system",
-                    "content": "You are a search result ranking expert. Analyze and rank search results.",
+                    "content": "You are a search result ranking expert. Rate relevance scores.",
                 },
                 {"role": "user", "content": prompt},
             ]
