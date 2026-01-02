@@ -8,6 +8,7 @@ from typing import Any, Optional, Union
 
 import yaml
 
+from core.framework import FrameworkType
 from core.logger import get_logger
 from ir.schema import ApplicationIR, ModelIR, OperatorIR
 
@@ -96,16 +97,21 @@ class IRManager:
 
         self.logger.info(f"Successfully saved {ir_type} to {path}")
 
-    def create_ir_from_framework(self, model_code: str, framework: str = "pytorch"):
+    def create_ir_from_framework(
+        self, model_code: str, framework: FrameworkType = "pytorch"
+    ):
         """
         从框架代码生成IR（基础实现，后续可扩展）
 
         Args:
             model_code: 框架代码字符串
-            framework: 框架名称
+            framework: 框架名称（"pytorch", "tensorflow", "paddlepaddle"）
 
         Returns:
             IR对象
+
+        Raises:
+            NotImplementedError: 功能尚未完全实现
         """
         self.logger.warning(
             f"create_ir_from_framework is not fully implemented for {framework}"

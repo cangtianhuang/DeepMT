@@ -10,6 +10,7 @@ from urllib.parse import quote, urljoin
 import requests
 
 from core.config_loader import get_config_value, get_web_search_config
+from core.framework import FrameworkType
 from core.logger import get_logger
 from tools.web_search.search_agent import SearchAgent
 
@@ -81,7 +82,7 @@ class WebSearchTool:
     def search_operator(
         self,
         operator_name: str,
-        framework: str = "pytorch",
+        framework: FrameworkType = "pytorch",
         sources: Optional[Dict[str, bool]] = None,
     ) -> List[SearchResult]:
         """
@@ -138,18 +139,17 @@ class WebSearchTool:
         return name.strip()
 
     def _search_docs(
-        self, operator_name: str, framework: str = "pytorch"
+        self, operator_name: str, framework: FrameworkType = "pytorch"
     ) -> List[SearchResult]:
         """搜索框架官方文档（委托给 SearchAgent）"""
-        framework_lower = framework.lower()
-        if framework_lower not in self.framework_docs:
+        if framework not in self.framework_docs:
             self.logger.warning(
-                f"Framework '{framework}' not supported. "
+                f"Framework '{framework}' not in framework_docs. "
                 f"Supported: {list(self.framework_docs.keys())}"
             )
             return []
 
-        search_url = self.framework_docs[framework_lower]["search_url"]
+        search_url = self.framework_docs[framework]["search_url"]
 
         try:
             return self.search_agent.search_docs(
@@ -164,19 +164,20 @@ class WebSearchTool:
             self.logger.warning(f"{framework.capitalize()} docs search failed: {e}")
             return []
 
-    def _search_github(self, operator_name: str, framework: str) -> List[SearchResult]:
+    def _search_github(
+        self, operator_name: str, framework: FrameworkType
+    ) -> List[SearchResult]:
         """搜索GitHub仓库"""
-        framework_lower = framework.lower()
-        if framework_lower not in self.framework_docs:
+        if framework not in self.framework_docs:
             return []
 
-        github_repo = self.framework_docs[framework_lower]["github_repo"]
+        github_repo = self.framework_docs[framework]["github_repo"]
         search_paths = {
             "pytorch": "torch/nn",
             "tensorflow": "tensorflow/python",
             "paddlepaddle": "paddle/fluid/operators",
         }
-        search_path = search_paths.get(framework_lower, "")
+        search_path = search_paths.get(framework, "")
 
         try:
             query = (
@@ -216,7 +217,9 @@ class WebSearchTool:
 
         return []
 
-    def _search_web(self, operator_name: str, framework: str) -> List[SearchResult]:
+    def _search_web(
+        self, operator_name: str, framework: FrameworkType
+    ) -> List[SearchResult]:
         """使用百度搜索API进行网络搜索"""
         if not self.baidu_api_key:
             self.logger.warning(

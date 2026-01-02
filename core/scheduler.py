@@ -5,6 +5,7 @@
 
 from typing import Any, List, Optional
 
+from core.framework import FrameworkType
 from core.ir_manager import IRManager
 from core.logger import get_logger
 from core.plugins_manager import PluginsManager
@@ -41,7 +42,7 @@ class TaskScheduler:
     def run_task(
         self,
         ir_object: Any,
-        target_framework: str,
+        target_framework: FrameworkType,
         pre_generated_mrs: Optional[List[MetamorphicRelation]] = None,
     ):
         """
@@ -49,7 +50,7 @@ class TaskScheduler:
 
         Args:
             ir_object: IR对象（OperatorIR, ModelIR, 或 ApplicationIR）
-            target_framework: 目标框架名称（如 "pytorch", "tensorflow", "paddle"）
+            target_framework: 目标框架名称（如 "pytorch", "tensorflow", "paddlepaddle"）
             pre_generated_mrs: 预生成的MR列表（可选，如果提供则跳过MR生成）
         """
         self.logger.info(

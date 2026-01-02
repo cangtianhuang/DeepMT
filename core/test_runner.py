@@ -5,6 +5,7 @@
 
 from typing import Any, List, Tuple
 
+from core.framework import FrameworkType
 from core.logger import get_logger
 from core.plugins_manager import PluginsManager
 from core.results_manager import ResultsManager
@@ -35,7 +36,10 @@ class TestRunner:
         self.logger = get_logger()
 
     def run_with_mrs(
-        self, ir_object: Any, mrs: List[MetamorphicRelation], target_framework: str
+        self,
+        ir_object: Any,
+        mrs: List[MetamorphicRelation],
+        target_framework: FrameworkType,
     ):
         """
         使用预生成的MR执行测试
@@ -43,7 +47,7 @@ class TestRunner:
         Args:
             ir_object: IR对象（OperatorIR, ModelIR, 或 ApplicationIR）
             mrs: 预生成的MR列表
-            target_framework: 目标框架名称
+            target_framework: 目标框架名称（"pytorch", "tensorflow", "paddlepaddle"）
         """
         self.logger.info(
             f"Running tests for {type(ir_object).__name__}: {ir_object.name if hasattr(ir_object, 'name') else 'unknown'}"

@@ -3,20 +3,21 @@ DeepMT 主API类
 用户友好的接口，隐藏IR和内部实现细节
 """
 
-from typing import Any, Dict, List, Optional, Union
 from pathlib import Path
+from typing import Any, Dict, List, Optional, Union
 
-from ir.converter import IRConverter
-from ir.schema import OperatorIR, ModelIR, ApplicationIR
-from mr_generator.operator.operator_mr import OperatorMRGenerator
-from mr_generator.base.knowledge_base import KnowledgeBase
-from mr_generator.base.mr_repository import MRRepository
-from core.scheduler import TaskScheduler
-from core.test_runner import TestRunner
+from core.framework import FrameworkType
 from core.ir_manager import IRManager
+from core.logger import get_logger
 from core.plugins_manager import PluginsManager
 from core.results_manager import ResultsManager
-from core.logger import get_logger
+from core.scheduler import TaskScheduler
+from core.test_runner import TestRunner
+from ir.converter import IRConverter
+from ir.schema import ApplicationIR, ModelIR, OperatorIR
+from mr_generator.base.knowledge_base import KnowledgeBase
+from mr_generator.base.mr_repository import MRRepository
+from mr_generator.operator.operator_mr import OperatorMRGenerator
 
 
 class TestResult:
@@ -25,7 +26,7 @@ class TestResult:
     def __init__(
         self,
         name: str,
-        framework: str,
+        framework: FrameworkType,
         total_tests: int,
         passed_tests: int,
         failed_tests: int,
@@ -112,7 +113,7 @@ class DeepMT:
         self,
         name: str,
         inputs: List[Any],
-        framework: str = "pytorch",
+        framework: FrameworkType = "pytorch",
         properties: Optional[Dict[str, Any]] = None,
     ) -> TestResult:
         """
@@ -121,7 +122,7 @@ class DeepMT:
         Args:
             name: 算子名称（如 "Add", "Multiply"）
             inputs: 输入值列表
-            framework: 目标框架（"pytorch", "tensorflow", "paddle"）
+            framework: 目标框架（"pytorch", "tensorflow", "paddlepaddle"）
             properties: 算子属性（可选，会自动推断）
 
         Returns:
@@ -198,14 +199,14 @@ class DeepMT:
             raise
 
     def test_operators(
-        self, operators: List[Dict[str, Any]], framework: str = "pytorch"
+        self, operators: List[Dict[str, Any]], framework: FrameworkType = "pytorch"
     ) -> List[TestResult]:
         """
         批量测试多个算子
 
         Args:
             operators: 算子列表，每个元素为 {"name": str, "inputs": List}
-            framework: 目标框架
+            framework: 目标框架（"pytorch", "tensorflow", "paddlepaddle"）
 
         Returns:
             TestResult列表
@@ -252,13 +253,14 @@ class DeepMT:
         results = []
         for test_config in config.get("tests", []):
             test_type = test_config.get("type", "operator")
-            framework = test_config.get("framework", "pytorch")
+            # 从配置文件读取框架名称，将由 test_operator 进行验证
+            config_framework = test_config.get("framework", "pytorch")
 
             if test_type == "operator":
                 result = self.test_operator(
                     name=test_config["name"],
                     inputs=test_config["inputs"],
-                    framework=framework,
+                    framework=config_framework,
                     properties=test_config.get("properties"),
                 )
                 results.append(result)

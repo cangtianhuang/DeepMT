@@ -105,7 +105,7 @@ class LLMClient:
 
     def chat_completion(
         self,
-        messages: List[Dict[str, str]],
+        messages: List[Dict[str, Any]],
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
         **kwargs,
@@ -123,9 +123,9 @@ class LLMClient:
             响应内容字符串
         """
         if self.provider == "openai":
-            response = self.client.chat.completions.create(
+            response = self.client.chat.completions.create(  # type: ignore
                 model=self.model,
-                messages=messages,
+                messages=messages,  # type: ignore
                 temperature=temperature or self.temperature,
                 max_tokens=max_tokens or self.max_tokens,
                 **kwargs,
@@ -133,7 +133,7 @@ class LLMClient:
             return response.choices[0].message.content.strip()
 
         elif self.provider == "anthropic":
-            system_msg = None
+            system_msg = ""
             user_msgs = []
             for msg in messages:
                 if msg["role"] == "system":
@@ -141,7 +141,7 @@ class LLMClient:
                 else:
                     user_msgs.append(msg["content"])
 
-            response = self.client.messages.create(
+            response = self.client.messages.create(  # type: ignore
                 model=self.model,
                 system=system_msg,
                 messages=[{"role": "user", "content": "\n".join(user_msgs)}],

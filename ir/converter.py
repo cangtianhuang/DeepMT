@@ -3,10 +3,11 @@ IR转换器：将用户输入自动转换为IR对象
 对用户隐藏IR的创建细节
 """
 
-from typing import Any, Dict, List, Union, Optional
+from typing import Any, Dict, List, Optional, Union
 
-from ir.schema import OperatorIR, ModelIR, ApplicationIR
+from core.framework import FrameworkType
 from core.logger import get_logger
+from ir.schema import ApplicationIR, ModelIR, OperatorIR
 
 
 class IRConverter:
@@ -100,16 +101,21 @@ class IRConverter:
         )
 
     @staticmethod
-    def from_framework_code(code: str, framework: str = "pytorch") -> OperatorIR:
+    def from_framework_code(
+        code: str, framework: FrameworkType = "pytorch"
+    ) -> OperatorIR:
         """
         从框架代码创建IR（简化实现，完整版需要AST解析）
 
         Args:
             code: 框架代码字符串
-            framework: 框架名称
+            framework: 框架名称（"pytorch", "tensorflow", "paddlepaddle"）
 
         Returns:
             OperatorIR对象
+
+        Raises:
+            NotImplementedError: 功能尚未完全实现
         """
         logger = get_logger()
         logger.warning("from_framework_code is a simplified implementation")

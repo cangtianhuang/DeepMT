@@ -5,6 +5,7 @@
 
 from typing import Any, Callable, List, Optional, Set
 
+from core.framework import FrameworkType
 from core.logger import get_logger
 from ir.schema import MetamorphicRelation, OperatorIR
 from mr_generator.base.knowledge_base import KnowledgeBase
@@ -161,7 +162,7 @@ class OperatorMRGenerator:
         operator_code: Optional[str] = None,
         operator_doc: Optional[str] = None,
         auto_fetch_info: bool = True,
-        framework: str = "pytorch",
+        framework: FrameworkType = "pytorch",
     ) -> List[MetamorphicRelation]:
         """
         为算子IR生成蜕变关系（多源融合自动生成引擎）
@@ -180,7 +181,7 @@ class OperatorMRGenerator:
                 - 用于LLM猜想生成MR
                 - 可以手动提供，或通过网络搜索获取
             auto_fetch_info: 是否自动从网络获取算子信息（默认True）
-            framework: 框架名称（默认pytorch）
+            framework: 框架名称（默认pytorch，支持pytorch/tensorflow/paddlepaddle）
 
         Returns:
             MR对象列表（已验证 + 经过筛选/证明的候选）
@@ -351,7 +352,7 @@ class OperatorMRGenerator:
         operator_code: Optional[str],
         operator_doc: Optional[str],
         auto_fetch_info: bool,
-        framework: str,
+        framework: FrameworkType,
     ) -> tuple:
         """
         准备算子信息（代码和文档）

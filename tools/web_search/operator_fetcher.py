@@ -4,6 +4,7 @@ import re
 from typing import Any, Dict, Optional
 
 from core.config_loader import get_config_value
+from core.framework import FrameworkType
 from core.logger import get_logger
 from tools.web_search.search_tool import WebSearchTool
 
@@ -26,14 +27,17 @@ class OperatorInfoFetcher:
         self.enabled = get_config_value("web_search.enabled", True)
 
     def fetch_operator_info(
-        self, operator_name: str, framework: str = "pytorch", use_cache: bool = True
+        self,
+        operator_name: str,
+        framework: FrameworkType = "pytorch",
+        use_cache: bool = True,
     ) -> Dict[str, Any]:
         """
         获取算子信息（简化为直接返回文档内容）
 
         Args:
             operator_name: 算子名称（如 "relu", "ReLU", "torch.nn.ReLU"）
-            framework: 框架名称（默认pytorch）
+            framework: 框架名称（默认pytorch，支持pytorch/tensorflow/paddlepaddle）
             use_cache: 是否使用缓存（保留接口兼容性，暂未实现）
 
         Returns:
@@ -83,7 +87,16 @@ class OperatorInfoFetcher:
         return operator_info
 
     def get_operator_doc(
-        self, operator_name: str, framework: str = "pytorch"
+        self, operator_name: str, framework: FrameworkType = "pytorch"
     ) -> Optional[str]:
-        """获取算子文档"""
+        """
+        获取算子文档
+
+        Args:
+            operator_name: 算子名称
+            framework: 框架名称（默认pytorch，支持pytorch/tensorflow/paddlepaddle）
+
+        Returns:
+            算子文档字符串，如果未找到则返回 None
+        """
         return self.fetch_operator_info(operator_name, framework).get("doc")
