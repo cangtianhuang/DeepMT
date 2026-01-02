@@ -1,9 +1,4 @@
-"""
-Sphinx 文档搜索索引解析器
-
-PyTorch 等使用 Sphinx 构建的文档使用 searchindex.js 存储搜索索引。
-该模块下载并解析索引，实现本地搜索功能，无需 JavaScript 执行。
-"""
+"""Sphinx 文档搜索索引解析器"""
 
 import json
 from typing import Any, Dict, List, Optional
@@ -15,20 +10,10 @@ from core.logger import get_logger
 
 
 class SphinxSearchIndex:
-    """
-    Sphinx 文档搜索索引解析器
-
-    PyTorch 等使用 Sphinx 构建的文档使用 searchindex.js 存储搜索索引。
-    该类下载并解析索引，实现本地搜索功能，无需 JavaScript 执行。
-    """
+    """Sphinx 文档搜索索引解析器"""
 
     def __init__(self, base_url: str):
-        """
-        初始化搜索索引
-
-        Args:
-            base_url: 文档基础 URL，如 "https://docs.pytorch.org/docs/stable/"
-        """
+        """初始化搜索索引"""
         self.base_url = base_url.rstrip("/") + "/"
         self.index_url = urljoin(self.base_url, "searchindex.js")
         self.logger = get_logger()
@@ -40,12 +25,7 @@ class SphinxSearchIndex:
         self._titleterms: Dict[str, List[int]] = {}
 
     def _load_index(self) -> bool:
-        """
-        下载并解析搜索索引
-
-        Returns:
-            是否成功加载
-        """
+        """下载并解析搜索索引"""
         if self._index is not None:
             return True
 
@@ -61,21 +41,15 @@ class SphinxSearchIndex:
                 )
                 return False
 
-            # searchindex.js 格式: Search.setIndex({...})
             text = response.text.strip()
-            # 移除 "Search.setIndex(" 前缀和 ")" 后缀
             if text.startswith("Search.setIndex("):
                 text = text[len("Search.setIndex(") : -1]
 
             index_data = json.loads(text)
             self._index = index_data
             self._docnames = index_data.get("docnames", [])
-            self._titles = {
-                i: title for i, title in enumerate(index_data.get("titles", []))
-            }
-            self._filenames = {
-                i: fname for i, fname in enumerate(index_data.get("filenames", []))
-            }
+            self._titles = dict(enumerate(index_data.get("titles", [])))
+            self._filenames = dict(enumerate(index_data.get("filenames", [])))
             self._terms = index_data.get("terms", {})
             self._titleterms = index_data.get("titleterms", {})
 
@@ -90,34 +64,15 @@ class SphinxSearchIndex:
             return False
 
     def _normalize_doc_ids(self, value: Any) -> List[int]:
-        """
-        标准化文档 ID 列表
-
-        Sphinx 索引中的值可能是单个整数或整数列表。
-
-        Args:
-            value: 索引值（可能是 int 或 list）
-
-        Returns:
-            文档 ID 列表
-        """
+        """标准化文档 ID 列表（Sphinx 索引中的值可能是单个整数或整数列表）"""
         if isinstance(value, int):
             return [value]
-        elif isinstance(value, list):
+        if isinstance(value, list):
             return value
         return []
 
     def search(self, query: str, max_results: int = 10) -> List[Dict[str, Any]]:
-        """
-        搜索文档
-
-        Args:
-            query: 搜索查询
-            max_results: 最大结果数
-
-        Returns:
-            搜索结果列表，每个结果包含 title, url, relevance_score, snippet
-        """
+        """搜索文档"""
         if not self._load_index():
             return []
 
@@ -125,11 +80,9 @@ class SphinxSearchIndex:
         if not query_terms:
             return []
 
-        # 计算每个文档的得分
         doc_scores: Dict[int, float] = {}
 
         for term in query_terms:
-            # 精确匹配得分更高
             if term in self._titleterms:
                 for doc_id in self._normalize_doc_ids(self._titleterms[term]):
                     doc_scores[doc_id] = doc_scores.get(doc_id, 0) + 10
@@ -137,7 +90,6 @@ class SphinxSearchIndex:
                 for doc_id in self._normalize_doc_ids(self._terms[term]):
                     doc_scores[doc_id] = doc_scores.get(doc_id, 0) + 1
 
-            # 前缀匹配
             for index_term, doc_ids in self._titleterms.items():
                 if index_term.startswith(term) and index_term != term:
                     for doc_id in self._normalize_doc_ids(doc_ids):
@@ -147,15 +99,14 @@ class SphinxSearchIndex:
                     for doc_id in self._normalize_doc_ids(doc_ids):
                         doc_scores[doc_id] = doc_scores.get(doc_id, 0) + 0.5
 
-        # 按得分排序
         sorted_docs = sorted(doc_scores.items(), key=lambda x: x[1], reverse=True)
 
         results = []
         for doc_id, score in sorted_docs[:max_results]:
             title = self._titles.get(doc_id, "")
             filename = self._filenames.get(doc_id, "")
+
             if filename:
-                # 移除 .rst 或 .html 扩展名，添加 .html
                 if filename.endswith(".rst"):
                     filename = filename[:-4] + ".html"
                 elif not filename.endswith(".html"):
@@ -168,7 +119,7 @@ class SphinxSearchIndex:
                 {
                     "title": title,
                     "url": url,
-                    "relevance_score": min(score / 20.0, 1.0),  # 归一化到 0-1
+                    "relevance_score": min(score / 20.0, 1.0), # 归一化
                     "snippet": "",
                 }
             )

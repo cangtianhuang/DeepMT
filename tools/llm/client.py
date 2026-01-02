@@ -1,7 +1,4 @@
-"""
-LLM客户端：通用的LLM调用接口
-支持OpenAI、Anthropic等不同提供商
-"""
+"""LLM客户端：通用的LLM调用接口，支持OpenAI、Anthropic等不同提供商"""
 
 import hashlib
 import os
@@ -12,20 +9,9 @@ from core.logger import get_logger
 
 
 class LLMClient:
-    """
-    通用LLM客户端（基于配置的多实例单例模式）
+    """通用LLM客户端（基于配置的多实例单例模式）"""
 
-    功能：
-    - 统一的LLM调用接口
-    - 支持多种LLM提供商
-    - 配置管理
-    - 错误处理
-    - 相同配置返回同一实例，不同配置返回不同实例
-    """
-
-    # 类级别的实例字典，key为配置hash，value为实例
     _instances: Dict[str, "LLMClient"] = {}
-    # 记录已初始化的配置key
     _initialized_keys: set = set()
 
     def __new__(
@@ -34,25 +20,12 @@ class LLMClient:
         api_key: Optional[str] = None,
         model: Optional[str] = None,
     ):
-        """
-        创建或获取LLM客户端实例（基于配置的单例）
-
-        Args:
-            provider: LLM提供商（openai, anthropic等）
-            api_key: API密钥（如果为None，则从配置文件或环境变量获取）
-            model: 模型名称（如果为None，则从配置文件获取）
-
-        Returns:
-            LLMClient实例
-        """
-        # 生成配置key（不再使用config_path，因为配置由统一加载器管理）
+        """创建或获取LLM客户端实例（基于配置的单例）"""
         config_key = cls._generate_config_key(provider, api_key, model)
 
-        # 如果该配置的实例已存在，直接返回
         if config_key in cls._instances:
             return cls._instances[config_key]
 
-        # 创建新实例
         instance = super().__new__(cls)
         cls._instances[config_key] = instance
         return instance
@@ -63,34 +36,21 @@ class LLMClient:
         api_key: Optional[str] = None,
         model: Optional[str] = None,
     ):
-        """
-        初始化LLM客户端
-
-        Args:
-            provider: LLM提供商（openai, anthropic等）
-            api_key: API密钥（如果为None，则从配置文件或环境变量获取）
-            model: 模型名称（如果为None，则从配置文件获取）
-        """
-        # 生成配置key（不再使用config_path，因为配置由统一加载器管理）
+        """初始化LLM客户端"""
         config_key = self._generate_config_key(provider, api_key, model)
 
-        # 如果已经初始化过，跳过
         if config_key in LLMClient._initialized_keys:
             return
 
         self.logger = get_logger()
         self.provider = provider
         self._config_key = config_key
-
-        # 使用统一的配置加载器获取配置值
-        # 获取API key（优先级：参数 > 配置文件 > 环境变量）
         self.api_key = (
             api_key
             or get_config_value("llm.api_key")
             or os.getenv("OPENAI_API_KEY")
         )
         self.model = model or get_config_value("llm.model", "gpt-4")
-        # 获取API基础URL（如果配置了则使用，否则根据provider自动选择）
         self.base_url = get_config_value("llm.url")
         self.temperature = get_config_value("llm.temperature", 0.7)
         self.max_tokens = get_config_value("llm.max_tokens", 2000)
@@ -103,10 +63,7 @@ class LLMClient:
                 "3. Pass api_key parameter"
             )
 
-        # 初始化提供商特定的客户端
         self._init_client()
-
-        # 标记为已初始化
         LLMClient._initialized_keys.add(config_key)
 
     @classmethod
@@ -116,20 +73,8 @@ class LLMClient:
         api_key: Optional[str],
         model: Optional[str],
     ) -> str:
-        """
-        根据配置参数生成唯一的配置key
-
-        Args:
-            provider: LLM提供商
-            api_key: API密钥
-            model: 模型名称
-
-        Returns:
-            配置key字符串
-        """
-        # 标准化配置参数（不再包含config_path，因为配置由统一加载器管理）
+        """根据配置参数生成唯一的配置key"""
         config_str = f"{provider}|{api_key or ''}|{model or ''}"
-        # 使用hash生成key
         return hashlib.md5(config_str.encode("utf-8")).hexdigest()
 
     def _init_client(self):
@@ -188,7 +133,6 @@ class LLMClient:
             return response.choices[0].message.content.strip()
 
         elif self.provider == "anthropic":
-            # Anthropic API格式不同
             system_msg = None
             user_msgs = []
             for msg in messages:
