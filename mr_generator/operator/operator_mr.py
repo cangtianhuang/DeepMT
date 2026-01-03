@@ -3,7 +3,7 @@
 支持自动推导、LLM猜想、模板池生成，包含快速筛选和SymPy证明
 """
 
-from typing import Any, Callable, List, Optional, Set
+from typing import Callable, Dict, List, Literal, Optional, Set
 
 from core.framework import FrameworkType
 from core.logger import get_logger
@@ -18,141 +18,73 @@ from mr_generator.operator.sympy_prover import SymPyProver
 from tools.llm.client import LLMClient
 from tools.web_search.operator_fetcher import OperatorInfoFetcher
 
+# MR生成来源类型
+MRSource = Literal["auto_derivation", "llm", "template"]
+
 
 class OperatorMRGenerator:
     """
     算子层MR生成器：多源融合自动生成引擎
 
-    执行路径：
-    ┌─────────────────────────────────────────────────────────────┐
-    │ 阶段0：信息准备                                               │
-    │   - 自动信息获取（网络搜索算子文档/代码）                        │
-    │   - 代码提取（从 operator_code 参数或网络获取）                 │
-    └─────────────────────────────────────────────────────────────┘
-                                  ↓
-    ┌─────────────────────────────────────────────────────────────┐
-    │ 阶段1：多源MR生成（并行执行，多源融合）                          │
-    │                                                             │
-    │   ┌─────────────────┐  ┌─────────────────┐  ┌─────────────┐ │
-    │   │ 自动推导        │  │ LLM猜想         │  │ 模板池猜测   │ │
-    │   │ (有代码时)      │  │ (始终执行)      │  │ (始终执行)   │ │
-    │   │ → 已验证MR      │  │ → 候选MR        │  │ → 候选MR     │ │
-    │   └────────┬────────┘  └────────┬────────┘  └──────┬──────┘ │
-    │            │                    │                  │        │
-    │            └────────────────────┴──────────────────┘        │
-    │                              ↓                              │
-    │                        合并 & 去重                           │
-    └─────────────────────────────────────────────────────────────┘
-                                  ↓
-    ┌─────────────────────────────────────────────────────────────┐
-    │ 阶段2：快速筛选（Pre-check）                                   │
-    │   - 需要 operator_func 参数                                  │
-    │   - 用随机输入执行算子，验证MR是否满足                          │
-    │   - 仅对候选MR执行，已验证MR跳过                                │
-    └─────────────────────────────────────────────────────────────┘
-                                  ↓
-    ┌─────────────────────────────────────────────────────────────┐
-    │ 阶段3：SymPy形式化证明                                        │
-    │   - 需要代码或SymPy表达式                                     │
-    │   - 仅对候选MR执行，已验证MR跳过                                │
-    └─────────────────────────────────────────────────────────────┘
-                                  ↓
-    ┌─────────────────────────────────────────────────────────────┐
-    │ 输出：合并后的MR列表（已验证 + 经过筛选/证明的候选）             │
-    └─────────────────────────────────────────────────────────────┘
+    执行流程：
+    1. 信息准备阶段
+       - 自动获取算子信息（网络搜索文档/代码）
+       - 提取算子代码（来自operator_code参数或网络）
+
+    2. 多源MR生成阶段（可配置）
+       - 自动推导（基于代码）→ 生成已验证MR
+       - LLM猜想 → 生成候选MR
+       - 模板池猜测 → 生成候选MR
+       → 合并去重所有生成的MR
+
+    3. 快速筛选阶段（Pre-check，可选）
+       - 要求：需提供operator_func参数
+       - 用随机输入执行算子验证候选MR
+
+    4. SymPy形式化证明阶段（可选）
+       - 要求：需提供代码或SymPy表达式
+       - 仅对候选MR执行证明
+
+    输出：合并后的MR列表
     """
 
-    def __init__(
-        self,
-        knowledge_base: Optional[KnowledgeBase] = None,
-        use_llm: bool = True,
-        use_template_pool: bool = True,
-        use_precheck: bool = True,
-        use_sympy_proof: bool = True,
-        llm_api_key: Optional[str] = None,
-        use_auto_derivation: bool = True,
-    ):
-        """
-        初始化算子MR生成器
-
-        Args:
-            knowledge_base: 知识库实例（向后兼容，保留旧接口）
-            use_llm: 是否使用LLM生成MR（默认True，始终执行）
-            use_template_pool: 是否使用模板池生成MR（默认True）
-            use_precheck: 是否使用快速筛选（默认True，需要operator_func）
-            use_sympy_proof: 是否使用SymPy证明（默认True，需要代码）
-            llm_api_key: LLM API密钥（可选）
-            use_auto_derivation: 是否使用自动推导（默认True，需要代码）
-        """
-        # 向后兼容：保留旧的知识库
-        self.kb = knowledge_base if knowledge_base else KnowledgeBase()
-
-        # 配置选项
-        self.use_llm = use_llm
-        self.use_template_pool = use_template_pool
-        self.use_precheck = use_precheck
-        self.use_sympy_proof = use_sympy_proof
-        self.use_auto_derivation = use_auto_derivation
-
+    def __init__(self):
+        """初始化算子MR生成器"""
         self.logger = get_logger()
 
-        # 初始化组件：模板池
-        if use_template_pool:
-            self.template_pool = MRTemplatePool()
-        else:
-            self.template_pool = None
-
-        # 初始化组件：快速筛选器
-        if use_precheck:
-            self.prechecker = MRPreChecker()
-        else:
-            self.prechecker = None
-
-        # 初始化组件：SymPy证明器
-        if use_sympy_proof:
-            try:
-                self.sympy_prover = SymPyProver()
-            except ImportError:
-                self.logger.warning("SymPy not available, disabling SymPy proof")
-                self.use_sympy_proof = False
-                self.sympy_prover = None
-        else:
-            self.sympy_prover = None
-
-        # 初始化组件：LLM客户端（共享使用）
-        try:
-            self.llm_client = LLMClient(api_key=llm_api_key)
-        except Exception as e:
-            self.logger.error(f"Failed to initialize LLM client: {e}")
-            raise
-
-        # 初始化组件：LLM MR生成器
-        try:
-            self.llm_generator = OperatorLLMMRGenerator(llm_client=self.llm_client)
-        except Exception as e:
-            self.logger.error(f"Failed to initialize LLM MR generator: {e}")
-            raise
-
-        # 初始化组件：代码到SymPy转换器和MR推导器
-        if use_auto_derivation:
-            self.code_translator = CodeToSymPyTranslator(llm_client=self.llm_client)
-            self.mr_deriver = MRDeriver(
-                template_pool=self.template_pool,
-                use_z3=False,  # 可选：启用Z3
-                llm_client=None,  # 自动推导中不再使用LLM，统一由阶段1的LLM猜想处理
-            )
-        else:
-            self.code_translator = None
-            self.mr_deriver = None
-
-        # 初始化组件：算子信息获取器
+        # 初始化核心组件
+        self.llm_client = LLMClient()
+        self.llm_generator = OperatorLLMMRGenerator(llm_client=self.llm_client)
+        self.template_pool = MRTemplatePool()
+        self.code_translator = CodeToSymPyTranslator(llm_client=self.llm_client)
+        self.mr_deriver = MRDeriver(template_pool=self.template_pool)
         self.info_fetcher = OperatorInfoFetcher()
+        self.prechecker = MRPreChecker()
+        self.sympy_prover = SymPyProver(code_translator=self.code_translator)
 
-        self.logger.info(
-            f"OperatorMRGenerator initialized: "
-            f"LLM={use_llm}, TemplatePool={use_template_pool}, "
-            f"PreCheck={use_precheck}, SymPyProof={use_sympy_proof}, "
-            f"AutoDerivation={use_auto_derivation}"
+        # 向后兼容：保留知识库（内部使用）
+        self._kb = KnowledgeBase()
+
+        self.logger.info("OperatorMRGenerator initialized")
+
+    def fetch_operator_info(
+        self,
+        operator_name: str,
+        framework: FrameworkType = "pytorch",
+    ) -> Dict[str, str]:
+        """
+        仅获取算子信息（不生成MR）
+
+        Args:
+            operator_name: 算子名称
+            framework: 框架名称
+
+        Returns:
+            包含 'doc', 'code', 'signature', 'examples' 的字典
+        """
+        self.logger.info(f"Fetching operator info for '{operator_name}'...")
+        return self.info_fetcher.fetch_operator_info(
+            operator_name=operator_name, framework=framework
         )
 
     def generate(
@@ -163,30 +95,38 @@ class OperatorMRGenerator:
         operator_doc: Optional[str] = None,
         auto_fetch_info: bool = True,
         framework: FrameworkType = "pytorch",
+        # 控制MR生成来源
+        sources: Optional[List[MRSource]] = None,
+        # 控制后处理步骤
+        use_precheck: bool = True,
+        use_sympy_proof: bool = True,
     ) -> List[MetamorphicRelation]:
         """
-        为算子IR生成蜕变关系（多源融合自动生成引擎）
+        为算子IR生成蜕变关系
 
         Args:
             operator_ir: 算子IR对象
-            operator_func: 算子函数对象（可选）
-                - 主要用途：快速筛选（Pre-check）需要执行函数验证MR
-                - 次要用途：通过inspect提取源码（仅对纯Python函数有效）
-                - 注意：对于PyTorch内置算子（C++实现），无法提取源码
-            operator_code: 算子源代码（可选）
-                - 用于自动推导（代码 → SymPy → MR）
-                - 用于SymPy形式化证明
-                - 可以手动提供，或通过网络搜索获取
-            operator_doc: 算子文档（可选）
-                - 用于LLM猜想生成MR
-                - 可以手动提供，或通过网络搜索获取
+            operator_func: 算子函数对象（可选，用于快速筛选）
+            operator_code: 算子源代码（可选，用于自动推导和证明）
+            operator_doc: 算子文档（可选，用于LLM猜想）
             auto_fetch_info: 是否自动从网络获取算子信息（默认True）
-            framework: 框架名称（默认pytorch，支持pytorch/tensorflow/paddlepaddle）
+            framework: 框架名称（默认pytorch）
+            sources: MR生成来源列表，可选值：
+                - "auto_derivation": 自动推导（需要代码）
+                - "llm": LLM猜想
+                - "template": 模板池
+                - None: 使用所有来源（默认）
+            use_precheck: 是否进行快速筛选（默认True，需要operator_func）
+            use_sympy_proof: 是否进行SymPy证明（默认True，需要代码）
 
         Returns:
-            MR对象列表（已验证 + 经过筛选/证明的候选）
+            MR对象列表
         """
         self.logger.info(f"Generating MRs for operator: {operator_ir.name}")
+
+        # 默认使用所有来源
+        if sources is None:
+            sources = ["auto_derivation", "llm", "template"]
 
         # ========== 阶段0：信息准备 ==========
         operator_code, operator_doc = self._prepare_info(
@@ -204,32 +144,23 @@ class OperatorMRGenerator:
         # 存储SymPy表达式（用于后续证明）
         sympy_expr = None
 
-        # ========== 阶段1：多源MR生成（并行执行） ==========
+        # ========== 阶段1：多源MR生成 ==========
         verified_mrs: List[MetamorphicRelation] = []  # 已验证的MR
         candidate_mrs: List[MetamorphicRelation] = []  # 待验证的候选MR
 
-        # --- 来源1：自动推导（有代码时执行，生成已验证MR）---
-        if (
-            self.use_auto_derivation
-            and has_code
-            and self.code_translator
-            and self.mr_deriver
-        ):
+        # --- 来源1：自动推导 ---
+        if "auto_derivation" in sources and has_code:
             self.logger.info("Source 1: Automatic derivation from code...")
             try:
-                # 转换为SymPy表达式
                 sympy_expr = self.code_translator.translate(
                     code=operator_code, func=operator_func, doc=operator_doc
                 )
-
                 if sympy_expr is not None:
-                    # 基于符号表达式自动推导MR（这些MR已通过符号验证）
                     derived_mrs = self.mr_deriver.derive_mrs(
                         sympy_expr=sympy_expr,
                         num_inputs=num_inputs,
                         operator_name=operator_ir.name,
                     )
-                    # 标记为已验证
                     for mr in derived_mrs:
                         mr.verified = True
                     verified_mrs.extend(derived_mrs)
@@ -241,8 +172,8 @@ class OperatorMRGenerator:
             except Exception as e:
                 self.logger.warning(f"  → Auto-derivation failed: {e}")
 
-        # --- 来源2：LLM猜想（始终执行，生成候选MR）---
-        if self.use_llm and self.llm_generator:
+        # --- 来源2：LLM猜想 ---
+        if "llm" in sources:
             self.logger.info("Source 2: LLM-based MR generation...")
             try:
                 llm_mrs = self.llm_generator.generate_mr_candidates(
@@ -257,8 +188,8 @@ class OperatorMRGenerator:
             except Exception as e:
                 self.logger.warning(f"  → LLM generation failed: {e}")
 
-        # --- 来源3：模板池猜测（始终执行，生成候选MR）---
-        if self.use_template_pool and self.template_pool:
+        # --- 来源3：模板池猜测 ---
+        if "template" in sources:
             self.logger.info("Source 3: Template pool generation...")
             try:
                 template_mrs = self.template_pool.generate_mr_candidates(
@@ -273,7 +204,7 @@ class OperatorMRGenerator:
         # --- 向后兼容：如果没有任何MR，使用旧的知识库方法 ---
         if not verified_mrs and not candidate_mrs:
             self.logger.info("Fallback: Using legacy knowledge base method...")
-            mr_functions = self.kb.get_mrs_for_operator(operator_ir.name)
+            mr_functions = self._kb.get_mrs_for_operator(operator_ir.name)
             for mr_func in mr_functions:
                 try:
                     mr_obj = mr_func(operator_ir.inputs)
@@ -292,8 +223,8 @@ class OperatorMRGenerator:
             self.logger.warning(f"No MRs generated for {operator_ir.name}")
             return []
 
-        # ========== 阶段2：快速筛选（仅对候选MR执行）==========
-        if candidate_mrs and self.use_precheck and self.prechecker:
+        # ========== 阶段2：快速筛选 ==========
+        if candidate_mrs and use_precheck:
             if operator_func:
                 self.logger.info("Pre-checking candidate MRs...")
                 candidate_mrs = self.prechecker.filter_mrs(
@@ -305,13 +236,10 @@ class OperatorMRGenerator:
                     f"  → After pre-check: {len(candidate_mrs)} candidates remain"
                 )
             else:
-                self.logger.warning(
-                    "Pre-check skipped: operator_func not provided. "
-                    "Pre-check requires a callable function to execute and validate MRs."
-                )
+                self.logger.warning("Pre-check skipped: operator_func not provided.")
 
-        # ========== 阶段3：SymPy形式化证明（仅对候选MR执行）==========
-        if candidate_mrs and self.use_sympy_proof and self.sympy_prover:
+        # ========== 阶段3：SymPy形式化证明 ==========
+        if candidate_mrs and use_sympy_proof:
             if has_code or sympy_expr is not None:
                 self.logger.info("Proving candidate MRs using SymPy...")
                 proven_mrs = self.sympy_prover.prove_mrs(
@@ -321,22 +249,19 @@ class OperatorMRGenerator:
                     operator_doc=operator_doc,
                     operator_name=operator_ir.name,
                     num_inputs=num_inputs,
+                    sympy_expr=sympy_expr,
                 )
-                # 标记为已验证
                 for mr in proven_mrs:
                     mr.verified = True
                 self.logger.info(f"  → Proven {len(proven_mrs)} MRs")
-                # 将证明后的MR加入已验证列表
                 verified_mrs.extend(proven_mrs)
             else:
                 self.logger.warning(
-                    "SymPy proof skipped: no code or SymPy expression available. "
-                    "Adding unproven candidates to output."
+                    "SymPy proof skipped: no code or SymPy expression available."
                 )
-                # 无法证明，将候选MR直接加入输出
                 verified_mrs.extend(candidate_mrs)
         elif candidate_mrs:
-            # SymPy证明未启用，将候选MR直接加入输出
+            # 不进行证明，直接加入输出
             verified_mrs.extend(candidate_mrs)
 
         # ========== 去重 ==========
@@ -354,13 +279,8 @@ class OperatorMRGenerator:
         auto_fetch_info: bool,
         framework: FrameworkType,
     ) -> tuple:
-        """
-        准备算子信息（代码和文档）
-
-        Returns:
-            (operator_code, operator_doc) 元组
-        """
-        # 尝试从函数对象提取代码（仅对纯Python函数有效）
+        """准备算子信息（代码和文档）"""
+        # 尝试从函数对象提取代码
         if operator_func and not operator_code:
             try:
                 import inspect
@@ -401,14 +321,11 @@ class OperatorMRGenerator:
     def _deduplicate_mrs(
         self, mrs: List[MetamorphicRelation]
     ) -> List[MetamorphicRelation]:
-        """
-        去重MR列表（基于描述）
-        """
+        """去重MR列表（基于描述）"""
         seen: Set[str] = set()
         unique_mrs: List[MetamorphicRelation] = []
 
         for mr in mrs:
-            # 使用描述作为唯一标识
             key = mr.description
             if key not in seen:
                 seen.add(key)
