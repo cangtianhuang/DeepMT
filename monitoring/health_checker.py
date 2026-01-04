@@ -80,9 +80,8 @@ class HealthChecker:
     MR_GENERATOR_MODULES = [
         ("mr_generator.operator.operator_mr", "算子MR生成器"),
         ("mr_generator.operator.mr_precheck", "MR快速筛选"),
-        ("mr_generator.operator.sympy_prover", "SymPy证明器"),
+        ("mr_generator.operator.sympy_prover", "SymPy验证器"),
         ("mr_generator.operator.code_translator", "代码翻译器"),
-        ("mr_generator.operator.mr_deriver", "MR推导器"),
         ("mr_generator.base.knowledge_base", "知识库"),
         ("mr_generator.base.mr_templates", "MR模板池"),
         ("mr_generator.base.mr_repository", "MR存储库"),

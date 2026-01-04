@@ -138,7 +138,7 @@ class LLMClient:
             for msg in messages:
                 if msg["role"] == "system":
                     system_msg = msg["content"]
-                else:
+                elif msg["role"] in ("user", "assistant"):
                     user_msgs.append(msg["content"])
 
             response = self.client.messages.create(  # type: ignore

@@ -82,7 +82,7 @@ class ProgressTracker:
             "mr_generator/operator/operator_mr.py",
             ModuleStatus.COMPLETED,
             100,
-            "多源融合MR生成",
+            "LLM猜想+SymPy验证",
         ),
         ModuleProgress(
             "LLM MR生成",
@@ -99,18 +99,11 @@ class ProgressTracker:
             "随机输入验证",
         ),
         ModuleProgress(
-            "SymPy证明器",
+            "SymPy验证器",
             "mr_generator/operator/sympy_prover.py",
             ModuleStatus.COMPLETED,
             100,
-            "形式化证明",
-        ),
-        ModuleProgress(
-            "MR推导器",
-            "mr_generator/operator/mr_deriver.py",
-            ModuleStatus.COMPLETED,
-            100,
-            "自动MR推导",
+            "形式化验证",
         ),
         ModuleProgress(
             "代码翻译器",

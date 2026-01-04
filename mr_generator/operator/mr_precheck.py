@@ -1,19 +1,44 @@
 """
 MR快速筛选器（Pre-check）：用随机数快速测试MR猜想
 过滤掉明显不满足的MR，减少后续SymPy证明的计算量
+
+设计要求：
+- 生成随机测试用例（支持标量、NumPy数组、PyTorch Tensor）
+- 通过率 > 80% 时保留MR
+- 仅对候选MR执行，已验证MR跳过
 """
 
 import traceback
-from typing import Any, Callable, List, Tuple
+from typing import Any, Callable, List, Optional, Tuple
 
 import numpy as np
 
 from core.logger import get_logger
 from ir.schema import MetamorphicRelation
 
+# 尝试导入 PyTorch
+try:
+    import torch
+    from torch import Tensor as TorchTensor
+
+    HAS_TORCH = True
+except ImportError:
+    HAS_TORCH = False
+    TorchTensor = None  # type: ignore
+
 
 class MRPreChecker:
-    """MR快速筛选器"""
+    """
+    MR快速筛选器
+
+    使用随机测试用例快速过滤明显不满足的MR，
+    减少后续SymPy证明的计算量。
+
+    通过率阈值：80%（即失败率 < 20%）
+    """
+
+    # 通过率阈值（设计文档规定 > 80%）
+    PASS_RATE_THRESHOLD = 0.8
 
     def __init__(self, num_test_cases: int = 5, tolerance: float = 1e-6):
         """
@@ -28,10 +53,16 @@ class MRPreChecker:
         self.logger = get_logger()
 
     def generate_test_inputs(
-        self, original_inputs: List[Any], num_cases: int = None
+        self, original_inputs: List[Any], num_cases: Optional[int] = None
     ) -> List[List[Any]]:
         """
         生成随机测试输入
+
+        支持的输入类型：
+        - 标量（int, float）
+        - NumPy数组（np.ndarray）
+        - PyTorch张量（torch.Tensor）
+        - 列表/元组
 
         Args:
             original_inputs: 原始输入（用于推断类型和形状）
@@ -48,24 +79,61 @@ class MRPreChecker:
         for _ in range(num_cases):
             test_input = []
             for inp in original_inputs:
-                # 根据输入类型生成随机值
-                if isinstance(inp, (int, float)):
-                    # 标量：生成随机数
-                    if isinstance(inp, int):
-                        test_input.append(np.random.randint(-10, 10))
-                    else:
-                        test_input.append(np.random.uniform(-10.0, 10.0))
-                elif isinstance(inp, (list, tuple, np.ndarray)):
-                    # 数组/张量：生成随机数组
-                    shape = np.array(inp).shape if hasattr(inp, "__len__") else (3,)
-                    test_input.append(np.random.uniform(-10.0, 10.0, size=shape))
-                else:
-                    # 其他类型：使用原值
-                    test_input.append(inp)
+                generated = self._generate_random_value(inp)
+                test_input.append(generated)
 
             test_cases.append(test_input)
 
         return test_cases
+
+    def _generate_random_value(self, original: Any) -> Any:
+        """
+        根据原始输入生成随机值
+
+        Args:
+            original: 原始输入值
+
+        Returns:
+            同类型的随机值
+        """
+        # PyTorch Tensor
+        if HAS_TORCH and TorchTensor is not None and isinstance(original, TorchTensor):
+            import torch as th
+
+            shape = original.shape
+            dtype = original.dtype
+            device = original.device
+            # 生成相同形状、类型、设备的随机Tensor
+            if dtype in (th.float32, th.float64, th.float16):
+                return th.randn(shape, dtype=dtype, device=device) * 10.0
+            elif dtype in (th.int32, th.int64):
+                return th.randint(-10, 10, shape, dtype=dtype, device=device)
+            else:
+                return th.randn(shape, device=device) * 10.0
+
+        # NumPy数组
+        if isinstance(original, np.ndarray):
+            shape = original.shape
+            dtype = original.dtype
+            if np.issubdtype(dtype, np.integer):
+                return np.random.randint(-10, 10, size=shape).astype(dtype)
+            else:
+                return np.random.uniform(-10.0, 10.0, size=shape).astype(dtype)
+
+        # 列表/元组：转为数组处理
+        if isinstance(original, (list, tuple)):
+            arr = np.array(original)
+            random_arr = np.random.uniform(-10.0, 10.0, size=arr.shape)
+            return type(original)(random_arr.flatten().tolist())
+
+        # 标量
+        if isinstance(original, int):
+            return np.random.randint(-10, 10)
+        if isinstance(original, float):
+            return np.random.uniform(-10.0, 10.0)
+
+        # 其他类型：使用原值
+        return original
 
     def check_mr(
         self,
@@ -105,12 +173,17 @@ class MRPreChecker:
                 # 执行变换后的输入
                 trans_output = self._execute_operator(operator_func, transformed_inputs)
 
+                # 获取第一个输入（用于 first_input 检查）
+                first_input = test_input[0] if test_input else None
+
                 # 检查是否满足期望关系
                 if self._check_expected_relation(
-                    orig_output,
-                    trans_output,
-                    mr.expected,
-                    mr.tolerance or self.tolerance,
+                    orig_output=orig_output,
+                    trans_output=trans_output,
+                    expected=mr.expected,
+                    tolerance=mr.tolerance or self.tolerance,
+                    orig_input=first_input,
+                    operator_func=operator_func,
                 ):
                     passed_count += 1
                 else:
@@ -126,20 +199,28 @@ class MRPreChecker:
                 error_messages.append(f"Test case {i+1} error: {str(e)}")
                 self.logger.debug(f"Pre-check error: {traceback.format_exc()}")
 
-        # 如果所有测试用例都通过，则认为MR可能满足
-        if failed_count == 0:
-            return True, ""
-        else:
-            # 如果失败率超过50%，认为MR不满足
-            failure_rate = failed_count / (passed_count + failed_count)
-            if failure_rate > 0.5:
-                error_msg = f"High failure rate: {failure_rate:.2%}. Errors: {error_messages[:3]}"
-                return False, error_msg
-            else:
-                # 部分失败，但可能由于数值精度问题，保留
-                return True, f"Partial failures: {failed_count}/{len(test_cases)}"
+        # 计算通过率
+        total_count = passed_count + failed_count
+        if total_count == 0:
+            return False, "No test cases executed"
 
-    def _execute_operator(self, operator_func: Callable, inputs: List[Any]) -> Any:
+        pass_rate = passed_count / total_count
+
+        # 通过率 > 80% 时保留MR（设计文档规定）
+        if pass_rate >= self.PASS_RATE_THRESHOLD:
+            if failed_count == 0:
+                return True, ""
+            else:
+                return True, f"Partial failures: {failed_count}/{total_count}"
+        else:
+            error_msg = (
+                f"Low pass rate: {pass_rate:.2%} "
+                f"(threshold: {self.PASS_RATE_THRESHOLD:.0%}). "
+                f"Errors: {error_messages[:3]}"
+            )
+            return False, error_msg
+
+    def _execute_operator(self, operator_func: Callable, inputs) -> Any:
         """
         执行算子函数
 
@@ -160,33 +241,56 @@ class MRPreChecker:
             return operator_func(*inputs)
 
     def _check_expected_relation(
-        self, orig_output: Any, trans_output: Any, expected: str, tolerance: float
+        self,
+        orig_output: Any,
+        trans_output: Any,
+        expected: str,
+        tolerance: float,
+        orig_input: Any = None,
+        operator_func: Optional[Callable] = None,
     ) -> bool:
         """
         检查输出是否满足期望关系
+
+        支持的关系类型：
+        - equal: 原始输出 == 变换后输出
+        - proportional: 原始输出 == k * 变换后输出（k为常数）
+        - invariant: 同 equal
+        - negate: 原始输出 == -变换后输出
+        - first_input: 变换后输出 == 第一个输入
+        - zero: 变换后输出 == 0
+        - idempotent: f(output) == output
 
         Args:
             orig_output: 原始输出
             trans_output: 变换后输出
             expected: 期望关系类型
             tolerance: 数值容差
+            orig_input: 原始输入（用于 first_input 检查）
+            operator_func: 算子函数（用于 idempotent 检查）
 
         Returns:
             是否满足
         """
         try:
             # 转换为numpy数组以便比较
-            orig = np.asarray(orig_output)
-            trans = np.asarray(trans_output)
+            orig = self._to_numpy(orig_output)
+            trans = self._to_numpy(trans_output)
 
-            if expected == "equal":
+            if expected == "equal" or expected == "invariant":
                 # 相等关系：orig == trans
                 if orig.shape != trans.shape:
                     return False
                 return np.allclose(orig, trans, atol=tolerance, rtol=tolerance)
 
+            elif expected == "negate":
+                # 取反关系：orig == -trans
+                if orig.shape != trans.shape:
+                    return False
+                return np.allclose(orig, -trans, atol=tolerance, rtol=tolerance)
+
             elif expected == "proportional":
-                # 比例关系：orig == k * trans 或 orig == -trans
+                # 比例关系：orig == k * trans（k为非零常数）
                 if orig.shape != trans.shape:
                     return False
                 # 检查是否成比例（包括负比例）
@@ -196,18 +300,40 @@ class MRPreChecker:
                 if np.allclose(orig, -trans, atol=tolerance, rtol=tolerance):
                     return True
                 # 检查 orig == k * trans (k != 0)
-                non_zero_mask = trans != 0
+                non_zero_mask = np.abs(trans) > tolerance
                 if np.any(non_zero_mask):
                     ratios = orig[non_zero_mask] / trans[non_zero_mask]
-                    if np.allclose(ratios, ratios[0], atol=tolerance, rtol=tolerance):
+                    if len(ratios) > 0 and np.allclose(
+                        ratios, ratios[0], atol=tolerance, rtol=tolerance
+                    ):
                         return True
                 return False
 
-            elif expected == "invariant":
-                # 不变关系：orig == trans
-                return self._check_expected_relation(
-                    orig_output, trans_output, "equal", tolerance
-                )
+            elif expected == "first_input":
+                # 输出等于第一个输入
+                if orig_input is None:
+                    self.logger.debug("first_input check: orig_input is None")
+                    return False
+                first_inp = self._to_numpy(orig_input)
+                return np.allclose(trans, first_inp, atol=tolerance, rtol=tolerance)
+
+            elif expected == "zero":
+                # 输出为零
+                return np.allclose(trans, 0, atol=tolerance)
+
+            elif expected == "idempotent":
+                # 幂等性：f(f(x)) == f(x)
+                # trans_output 已经是 f(x)，需要检查 f(trans_output) == trans_output
+                if operator_func is None:
+                    self.logger.debug("idempotent check: operator_func is None")
+                    return False
+                try:
+                    nested_output = operator_func(trans_output)
+                    nested = self._to_numpy(nested_output)
+                    return np.allclose(trans, nested, atol=tolerance, rtol=tolerance)
+                except Exception as e:
+                    self.logger.debug(f"idempotent check error: {e}")
+                    return False
 
             else:
                 # 其他关系类型，默认检查相等
@@ -221,6 +347,16 @@ class MRPreChecker:
         except Exception as e:
             self.logger.debug(f"Error checking expected relation: {e}")
             return False
+
+    def _to_numpy(self, value: Any) -> np.ndarray:
+        """
+        将值转换为NumPy数组
+
+        支持 PyTorch Tensor 和其他类型
+        """
+        if HAS_TORCH and TorchTensor is not None and isinstance(value, TorchTensor):
+            return value.detach().cpu().numpy()
+        return np.asarray(value)
 
     def filter_mrs(
         self,

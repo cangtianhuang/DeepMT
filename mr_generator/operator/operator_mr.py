@@ -1,6 +1,11 @@
 """
 算子层MR生成器：多源融合自动生成引擎
-支持自动推导、LLM猜想、模板池生成，包含快速筛选和SymPy证明
+
+生成流程：
+1. 信息准备：自动获取算子信息
+2. MR猜想生成：LLM猜想 + 模板池
+3. 快速筛选：Pre-check
+4. 形式化验证：SymPy证明
 """
 
 from typing import Callable, Dict, List, Literal, Optional, Set
@@ -11,7 +16,6 @@ from ir.schema import MetamorphicRelation, OperatorIR
 from mr_generator.base.knowledge_base import KnowledgeBase
 from mr_generator.base.mr_templates import MRTemplatePool
 from mr_generator.operator.code_translator import CodeToSymPyTranslator
-from mr_generator.operator.mr_deriver import MRDeriver
 from mr_generator.operator.mr_precheck import MRPreChecker
 from mr_generator.operator.operator_llm_mr_generator import OperatorLLMMRGenerator
 from mr_generator.operator.sympy_prover import SymPyProver
@@ -19,22 +23,22 @@ from tools.llm.client import LLMClient
 from tools.web_search.operator_fetcher import OperatorInfoFetcher
 
 # MR生成来源类型
-MRSource = Literal["auto_derivation", "llm", "template"]
+MRSource = Literal["llm", "template"]
 
 
 class OperatorMRGenerator:
     """
     算子层MR生成器：多源融合自动生成引擎
 
+
     执行流程：
     1. 信息准备阶段
        - 自动获取算子信息（网络搜索文档/代码）
        - 提取算子代码（来自operator_code参数或网络）
 
-    2. 多源MR生成阶段（可配置）
-       - 自动推导（基于代码）→ 生成已验证MR
-       - LLM猜想 → 生成候选MR
-       - 模板池猜测 → 生成候选MR
+    2. 多源MR生成阶段
+       - LLM猜想 → 生成候选MR（主要来源）
+       - 模板池猜测 → 生成候选MR（辅助来源）
        → 合并去重所有生成的MR
 
     3. 快速筛选阶段（Pre-check，可选）
@@ -43,9 +47,9 @@ class OperatorMRGenerator:
 
     4. SymPy形式化证明阶段（可选）
        - 要求：需提供代码或SymPy表达式
-       - 仅对候选MR执行证明
+       - 对候选MR进行形式化验证
 
-    输出：合并后的MR列表
+    输出：经过验证的MR列表
     """
 
     def __init__(self):
@@ -57,7 +61,6 @@ class OperatorMRGenerator:
         self.llm_generator = OperatorLLMMRGenerator(llm_client=self.llm_client)
         self.template_pool = MRTemplatePool()
         self.code_translator = CodeToSymPyTranslator(llm_client=self.llm_client)
-        self.mr_deriver = MRDeriver(template_pool=self.template_pool)
         self.info_fetcher = OperatorInfoFetcher()
         self.prechecker = MRPreChecker()
         self.sympy_prover = SymPyProver(code_translator=self.code_translator)
@@ -107,14 +110,13 @@ class OperatorMRGenerator:
         Args:
             operator_ir: 算子IR对象
             operator_func: 算子函数对象（可选，用于快速筛选）
-            operator_code: 算子源代码（可选，用于自动推导和证明）
+            operator_code: 算子源代码（可选，用于SymPy证明）
             operator_doc: 算子文档（可选，用于LLM猜想）
             auto_fetch_info: 是否自动从网络获取算子信息（默认True）
             framework: 框架名称（默认pytorch）
             sources: MR生成来源列表，可选值：
-                - "auto_derivation": 自动推导（需要代码）
-                - "llm": LLM猜想
-                - "template": 模板池
+                - "llm": LLM猜想（主要来源）
+                - "template": 模板池（辅助来源）
                 - None: 使用所有来源（默认）
             use_precheck: 是否进行快速筛选（默认True，需要operator_func）
             use_sympy_proof: 是否进行SymPy证明（默认True，需要代码）
@@ -126,9 +128,9 @@ class OperatorMRGenerator:
 
         # 默认使用所有来源
         if sources is None:
-            sources = ["auto_derivation", "llm", "template"]
+            sources = ["llm", "template"]
 
-        # ========== 阶段0：信息准备 ==========
+        # ========== 阶段1：信息准备 ==========
         operator_code, operator_doc = self._prepare_info(
             operator_ir=operator_ir,
             operator_func=operator_func,
@@ -144,37 +146,23 @@ class OperatorMRGenerator:
         # 存储SymPy表达式（用于后续证明）
         sympy_expr = None
 
-        # ========== 阶段1：多源MR生成 ==========
-        verified_mrs: List[MetamorphicRelation] = []  # 已验证的MR
-        candidate_mrs: List[MetamorphicRelation] = []  # 待验证的候选MR
-
-        # --- 来源1：自动推导 ---
-        if "auto_derivation" in sources and has_code:
-            self.logger.info("Source 1: Automatic derivation from code...")
+        # 如果有代码，预先转换为SymPy表达式（用于证明阶段）
+        if has_code and use_sympy_proof:
             try:
                 sympy_expr = self.code_translator.translate(
                     code=operator_code, func=operator_func, doc=operator_doc
                 )
                 if sympy_expr is not None:
-                    derived_mrs = self.mr_deriver.derive_mrs(
-                        sympy_expr=sympy_expr,
-                        num_inputs=num_inputs,
-                        operator_name=operator_ir.name,
-                    )
-                    for mr in derived_mrs:
-                        mr.verified = True
-                    verified_mrs.extend(derived_mrs)
-                    self.logger.info(f"  → Derived {len(derived_mrs)} verified MRs")
-                else:
-                    self.logger.warning(
-                        "  → Failed to convert code to SymPy expression"
-                    )
+                    self.logger.info("Successfully converted code to SymPy expression")
             except Exception as e:
-                self.logger.warning(f"  → Auto-derivation failed: {e}")
+                self.logger.warning(f"Failed to convert code to SymPy: {e}")
 
-        # --- 来源2：LLM猜想 ---
+        # ========== 阶段2：MR猜想生成 ==========
+        candidate_mrs: List[MetamorphicRelation] = []
+
+        # --- 来源1：LLM猜想（主要来源） ---
         if "llm" in sources:
-            self.logger.info("Source 2: LLM-based MR generation...")
+            self.logger.info("Source 1: LLM-based MR generation...")
             try:
                 llm_mrs = self.llm_generator.generate_mr_candidates(
                     operator_name=operator_ir.name,
@@ -188,21 +176,23 @@ class OperatorMRGenerator:
             except Exception as e:
                 self.logger.warning(f"  → LLM generation failed: {e}")
 
-        # --- 来源3：模板池猜测 ---
+        # --- 来源2：模板池猜测（辅助来源） ---
         if "template" in sources:
-            self.logger.info("Source 3: Template pool generation...")
+            self.logger.info("Source 2: Template pool generation...")
             try:
                 template_mrs = self.template_pool.generate_mr_candidates(
                     operator_name=operator_ir.name,
                     operator_inputs=operator_ir.inputs,
                 )
                 candidate_mrs.extend(template_mrs)
-                self.logger.info(f"  → Generated {len(template_mrs)} candidate MRs")
+                self.logger.info(
+                    f"  → Generated {len(template_mrs)} candidate MRs from templates"
+                )
             except Exception as e:
                 self.logger.warning(f"  → Template pool generation failed: {e}")
 
         # --- 向后兼容：如果没有任何MR，使用旧的知识库方法 ---
-        if not verified_mrs and not candidate_mrs:
+        if not candidate_mrs:
             self.logger.info("Fallback: Using legacy knowledge base method...")
             mr_functions = self._kb.get_mrs_for_operator(operator_ir.name)
             for mr_func in mr_functions:
@@ -215,16 +205,15 @@ class OperatorMRGenerator:
 
         # 统计
         self.logger.info(
-            f"After source generation: "
-            f"{len(verified_mrs)} verified MRs, {len(candidate_mrs)} candidate MRs"
+            f"After MR generation: {len(candidate_mrs)} candidate MRs to verify"
         )
 
-        if not verified_mrs and not candidate_mrs:
+        if not candidate_mrs:
             self.logger.warning(f"No MRs generated for {operator_ir.name}")
             return []
 
-        # ========== 阶段2：快速筛选 ==========
-        if candidate_mrs and use_precheck:
+        # ========== 阶段3：快速筛选 ==========
+        if use_precheck:
             if operator_func:
                 self.logger.info("Pre-checking candidate MRs...")
                 candidate_mrs = self.prechecker.filter_mrs(
@@ -238,8 +227,10 @@ class OperatorMRGenerator:
             else:
                 self.logger.warning("Pre-check skipped: operator_func not provided.")
 
-        # ========== 阶段3：SymPy形式化证明 ==========
-        if candidate_mrs and use_sympy_proof:
+        # ========== 阶段4：SymPy形式化证明 ==========
+        verified_mrs: List[MetamorphicRelation] = []
+
+        if use_sympy_proof:
             if has_code or sympy_expr is not None:
                 self.logger.info("Proving candidate MRs using SymPy...")
                 proven_mrs = self.sympy_prover.prove_mrs(
@@ -255,19 +246,29 @@ class OperatorMRGenerator:
                     mr.verified = True
                 self.logger.info(f"  → Proven {len(proven_mrs)} MRs")
                 verified_mrs.extend(proven_mrs)
+
+                # 未证明的MR也加入输出（标记为未验证）
+                proven_ids = {mr.id for mr in proven_mrs}
+                for mr in candidate_mrs:
+                    if mr.id not in proven_ids:
+                        mr.verified = False
+                        verified_mrs.append(mr)
             else:
                 self.logger.warning(
                     "SymPy proof skipped: no code or SymPy expression available."
                 )
                 verified_mrs.extend(candidate_mrs)
-        elif candidate_mrs:
+        else:
             # 不进行证明，直接加入输出
             verified_mrs.extend(candidate_mrs)
 
         # ========== 去重 ==========
         final_mrs = self._deduplicate_mrs(verified_mrs)
 
-        self.logger.info(f"Final output: {len(final_mrs)} MRs")
+        self.logger.info(
+            f"Final output: {len(final_mrs)} MRs "
+            f"({sum(1 for mr in final_mrs if mr.verified)} verified)"
+        )
         return final_mrs
 
     def _prepare_info(

@@ -12,11 +12,11 @@ llm:
 
 # MR生成配置
 mr_generation:
-  use_llm: true
-  use_template_pool: true
-  use_precheck: true
-  use_sympy_proof: true
-  use_auto_derivation: true
+  sources:
+    - llm  # LLM猜想（主要来源）
+    - template  # 模板池（辅助来源）
+  use_precheck: true  # 快速筛选
+  use_sympy_proof: true  # SymPy验证
 
 # 网络搜索配置
 web_search:

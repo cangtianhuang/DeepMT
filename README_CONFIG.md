@@ -47,11 +47,11 @@ web_search:
 
 ```yaml
 mr_generation:
-  use_llm: true  # LLM现在是必需的
-  use_template_pool: true
-  use_precheck: true
-  use_sympy_proof: true
-  use_auto_derivation: true
+  sources:
+    - llm  # LLM猜想（主要来源）
+    - template  # 模板池（辅助来源）
+  use_precheck: true  # 快速筛选
+  use_sympy_proof: true  # SymPy验证
 ```
 
 ---
@@ -98,15 +98,15 @@ python examples/test_relu_mr.py
     ↓
 [网络搜索] 获取代码、文档、示例
     ↓
-[LLM翻译] 代码 → SymPy表达式
+[LLM猜想] 理解算子语义，生成MR猜想
     ↓
-[MR推导] 基于符号表达式自动推导
+[模板池] 补充常见数学变换模板
     ↓
 [快速筛选] 用随机数快速验证
     ↓
-[SymPy证明] 形式化验证
+[SymPy验证] 形式化验证
     ↓
-最终MR列表
+最终MR列表（标记 verified=True/False）
 ```
 
 ---
@@ -148,24 +148,24 @@ pip install -r requirements.txt
 
 ```python
 from ir.schema import OperatorIR
-from mr_generator.operator_mr import OperatorMRGenerator
+from mr_generator.operator.operator_mr import OperatorMRGenerator
 import torch.nn.functional as F
 
 # 创建算子IR
 relu_ir = OperatorIR(name="ReLU", inputs=[-1.0, 0.0, 1.0], outputs=[], properties={})
 
 # 创建生成器
-generator = OperatorMRGenerator(
-    use_llm=True,
-    use_auto_derivation=True
-)
+generator = OperatorMRGenerator()
 
 # 生成MR（自动从网络获取信息）
 mrs = generator.generate(
     operator_ir=relu_ir,
     operator_func=F.relu,
     auto_fetch_info=True,
-    framework="pytorch"
+    framework="pytorch",
+    sources=["llm", "template"],  # LLM猜想 + 模板池
+    use_precheck=True,
+    use_sympy_proof=True,
 )
 ```
 
