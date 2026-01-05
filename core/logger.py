@@ -8,7 +8,7 @@ from typing import Optional
 
 
 class Logger:
-    """统一的日志管理器（单例模式）"""
+    """统一的日志管理器"""
 
     _instance: Optional["Logger"] = None
 
@@ -21,7 +21,7 @@ class Logger:
     def _init_instance(
         self, log_dir: str = "data/logs", level: int = logging.INFO
     ) -> None:
-        """初始化实例属性（仅在首次创建时调用）"""
+        """初始化实例属性"""
         self.log_dir = Path(log_dir)
         self.log_dir.mkdir(parents=True, exist_ok=True)
 
@@ -65,6 +65,9 @@ class Logger:
         self.logger.critical(message)
 
 
+_logger: Logger = Logger()
+
+
 def get_logger() -> Logger:
     """获取全局日志实例"""
-    return Logger()
+    return _logger

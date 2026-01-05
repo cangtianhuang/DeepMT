@@ -1,15 +1,11 @@
 """网络搜索工具：从PyTorch文档、GitHub、网络搜索等获取算子信息"""
 
-import json
-import re
-import time
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
-from urllib.parse import quote, urljoin
+from typing import Dict, List, Optional
 
 import requests
 
-from core.config_loader import get_config_value, get_web_search_config
+from core.config_loader import get_config_value
 from core.framework import FrameworkType
 from core.logger import get_logger
 from tools.web_search.search_agent import SearchAgent

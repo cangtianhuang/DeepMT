@@ -237,7 +237,7 @@ class SphinxSearchIndex:
         results = []
         for doc_id, score in sorted_docs:
             # 如果评分低于阈值，跳过
-            normalized_score = min(score / 20.0, 1.0)
+            normalized_score = min(score / 10.0, 1.0)
             if normalized_score < self.threshold:
                 continue
 

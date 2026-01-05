@@ -1,6 +1,5 @@
 """算子信息获取器：自动从网络搜索获取算子的定义、代码、文档"""
 
-import re
 from typing import Any, Dict, Optional
 
 from core.config_loader import get_config_value
@@ -10,7 +9,7 @@ from tools.web_search.search_tool import WebSearchTool
 
 
 class OperatorInfoFetcher:
-    """算子信息获取器（单例模式）"""
+    """算子信息获取器"""
 
     _instance: Optional["OperatorInfoFetcher"] = None
 
@@ -21,7 +20,7 @@ class OperatorInfoFetcher:
         return cls._instance
 
     def _init_instance(self) -> None:
-        """初始化实例属性（仅在首次创建时调用）"""
+        """初始化实例属性"""
         self.logger = get_logger()
         self.search_tool = WebSearchTool()
         self.enabled = get_config_value("web_search.enabled", True)

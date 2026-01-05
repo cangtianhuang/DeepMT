@@ -11,7 +11,7 @@ from core.logger import get_logger
 
 class ConfigLoader:
     """
-    配置加载器：统一的配置管理（单例模式）
+    配置加载器：统一的配置管理
 
     配置文件查找优先级：
     1. 环境变量 DEEPMT_CONFIG_PATH 指定的路径
@@ -32,9 +32,9 @@ class ConfigLoader:
         return cls._instance
 
     def _init_instance(self) -> None:
-        """初始化实例属性（仅在首次创建时调用）"""
+        """初始化实例属性"""
         self.logger = get_logger()
-        self._config: Dict[str, Any] = {}
+        self._config: Dict[str, Any] = self.load()
         self._config_path: Optional[Path] = None
         self._config_mtime: float = 0
 
@@ -132,8 +132,7 @@ class ConfigLoader:
 
     def get(self, key: str, default: Any = None) -> Any:
         """获取配置值（支持点号路径，如 "llm.api_key"）"""
-        config = self.load()
-        value = config
+        value = self._config
         for k in key.split("."):
             if isinstance(value, dict):
                 value = value.get(k)
@@ -145,7 +144,7 @@ class ConfigLoader:
 
     def section(self, name: str) -> Dict[str, Any]:
         """获取配置节（如 "llm", "web_search"）"""
-        return self.load().get(name, {})
+        return self._config.get(name, {})
 
     @property
     def path(self) -> Optional[Path]:
@@ -174,23 +173,3 @@ def get_config_section(section: str) -> Dict[str, Any]:
 def get_config_path() -> Optional[Path]:
     """获取当前配置文件路径"""
     return _config_loader.path
-
-
-def get_llm_config() -> Dict[str, Any]:
-    """获取 LLM 配置"""
-    return get_config_section("llm")
-
-
-def get_web_search_config() -> Dict[str, Any]:
-    """获取网络搜索配置"""
-    return get_config_section("web_search")
-
-
-def get_mr_generation_config() -> Dict[str, Any]:
-    """获取 MR 生成配置"""
-    return get_config_section("mr_generation")
-
-
-def get_logging_config() -> Dict[str, Any]:
-    """获取日志配置"""
-    return get_config_section("logging")

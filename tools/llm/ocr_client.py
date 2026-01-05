@@ -125,11 +125,15 @@ class OCRClient:
         if not self.enabled:
             return None
 
-        return self._call_ocr_api(
+        if result := self._call_ocr_api(
             image_url=image_url,
             prompt_label="formula" if not use_layout_detection else None,
             use_layout_detection=use_layout_detection,
-        )
+        ):
+            self.logger.info(f"OCR API result for {image_url}: {result[:100]}")
+            return result
+        self.logger.warning(f"OCR API failed for {image_url}")
+        return None
 
     def recognize_text(
         self, image_url: str, use_layout_detection: bool = True
@@ -152,7 +156,7 @@ class OCRClient:
             prompt_label="ocr" if not use_layout_detection else None,
             use_layout_detection=use_layout_detection,
         ):
-            self.logger.info(f"OCR API result for {image_url}: {result}")
+            self.logger.info(f"OCR API result for {image_url}: {result[:100]}")
             return result
 
         self.logger.warning(f"OCR API failed for {image_url}")
@@ -239,7 +243,6 @@ class OCRClient:
             # 合并所有文本
             if texts:
                 return "\n".join(texts).strip()
-
             return None
 
         except Exception as e:

@@ -2,18 +2,17 @@
 网络搜索智能体：使用LLM的react能力进行智能搜索和内容理解
 """
 
-from __future__ import annotations
-
 import json
-import re
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
-from urllib.parse import urlparse
+from urllib.parse import urljoin, urlparse
 
 import requests
 from bs4 import BeautifulSoup
 
+from core.config_loader import get_config_value
 from core.logger import get_logger
 from tools.llm.client import LLMClient
+from tools.llm.ocr_client import OCRClient
 from tools.web_search.sphinx_search import SphinxSearchIndex
 
 if TYPE_CHECKING:
@@ -25,7 +24,7 @@ class SearchAgent:
     网络搜索智能体：使用LLM进行智能搜索、重排和理解
     """
 
-    def __init__(self, llm_client: Optional[LLMClient] = None):
+    def __init__(self):
         """
         初始化搜索智能体
 
@@ -33,7 +32,8 @@ class SearchAgent:
             llm_client: LLM客户端（如果为None则创建默认客户端）
         """
         self.logger = get_logger()
-        self.llm_client = llm_client or LLMClient()
+        self.llm_client = LLMClient()
+        self.ocr_client = OCRClient()
         self._sphinx_indexes: Dict[str, SphinxSearchIndex] = {}
 
     def search_docs(
@@ -215,12 +215,10 @@ Return JSON format only:
                 base_path = path[: -len("search")] + "/"
             else:
                 base_path = path.rsplit("/", 1)[0] + "/"
-
             base_url = f"{parsed.scheme}://{parsed.netloc}{base_path}"
 
             if base_url not in self._sphinx_indexes:
                 self._sphinx_indexes[base_url] = SphinxSearchIndex(base_url)
-
             return self._sphinx_indexes[base_url].search(query, max_results)
 
         except Exception as e:
@@ -395,11 +393,6 @@ Return JSON only:
             base_url: 页面 URL，用于解析相对路径
             article_container: 文章容器元素，如果提供则只在容器内查找图片
         """
-        from urllib.parse import urljoin, urlparse
-
-        from core.config_loader import get_config_value
-        from tools.llm.ocr_client import OCRClient
-
         if not get_config_value("web_search.ocr", False):
             return None
 
@@ -409,7 +402,6 @@ Return JSON only:
             if not (images := search_scope.find_all("img")):
                 return None
 
-            ocr_client = OCRClient()
             ocr_results = []
 
             # 用于过滤小图标和无关图片的路径关键词
@@ -477,12 +469,12 @@ Return JSON only:
                 )
 
                 if is_formula:
-                    if recognized_text := ocr_client.recognize_formula(
+                    if recognized_text := self.ocr_client.recognize_formula(
                         img_url, use_layout_detection=False
                     ):
                         ocr_results.append(f"[公式] {recognized_text}")
                 else:
-                    if recognized_text := ocr_client.recognize_text(
+                    if recognized_text := self.ocr_client.recognize_text(
                         img_url, use_layout_detection=True
                     ):
                         img_label = alt_text or img_src.split("/")[-1].split(".")[0]

@@ -4,12 +4,12 @@ import hashlib
 import os
 from typing import Any, Dict, List, Optional
 
-from core.config_loader import get_config_value, get_llm_config
+from core.config_loader import get_config_value
 from core.logger import get_logger
 
 
 class LLMClient:
-    """通用LLM客户端（基于配置的多实例单例模式）"""
+    """通用LLM客户端"""
 
     _instances: Dict[str, "LLMClient"] = {}
     _initialized_keys: set = set()
@@ -20,7 +20,7 @@ class LLMClient:
         api_key: Optional[str] = None,
         model: Optional[str] = None,
     ):
-        """创建或获取LLM客户端实例（基于配置的单例）"""
+        """创建或获取LLM客户端实例"""
         config_key = cls._generate_config_key(provider, api_key, model)
 
         if config_key in cls._instances:
@@ -130,7 +130,13 @@ class LLMClient:
                 max_tokens=max_tokens or self.max_tokens,
                 **kwargs,
             )
-            return response.choices[0].message.content.strip()
+            content = response.choices[0].message.content.strip()
+            usage = response.usage
+            self.logger.info(
+                f"LLM API response for {self.model}: {content[:100]}..."
+                f" (total_tokens={usage.total_tokens})"
+            )
+            return content
 
         elif self.provider == "anthropic":
             system_msg = ""
@@ -149,7 +155,13 @@ class LLMClient:
                 max_tokens=max_tokens or self.max_tokens,
                 **kwargs,
             )
-            return response.content[0].text
+            content = response.content[0].text
+            usage = response.usage
+            self.logger.info(
+                f"LLM API response for {self.model}: {content[:100]}..."
+                f" (total_tokens={usage.total_tokens})"
+            )
+            return content
 
         else:
             raise ValueError(f"Unsupported provider: {self.provider}")
