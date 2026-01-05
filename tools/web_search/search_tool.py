@@ -82,7 +82,7 @@ class WebSearchTool:
     def search_operator(
         self,
         operator_name: str,
-        framework: FrameworkType = "pytorch",
+        framework: FrameworkType,
         sources: Optional[Dict[str, bool]] = None,
     ) -> List[SearchResult]:
         """
@@ -97,6 +97,13 @@ class WebSearchTool:
         Returns:
             搜索结果列表
         """
+        if framework not in self.framework_docs:
+            self.logger.warning(
+                f"Framework '{framework}' not in framework_docs. "
+                f"Supported: {list(self.framework_docs.keys())}"
+            )
+            return []
+
         if sources is None:
             sources = get_config_value(
                 "web_search.sources",
@@ -133,22 +140,21 @@ class WebSearchTool:
         return all_results
 
     def _normalize_operator_name(self, name: str) -> str:
-        """规范化算子名称，例如：ReLU -> relu, torch.nn.ReLU -> relu"""
-        name = re.sub(r"^(torch\.(nn\.)?|tf\.|paddle\.)", "", name.lower())
-        name = re.sub(r"(layer|module|function)$", "", name)
+        """规范化算子名称，如：torch.nn.ReLU -> relu, torch.nn.functional.relu -> relu"""
+        if not name:
+            return ""
+        name = name.lower()
+        # name = re.sub(r"^(torch|tf|paddle)\.", "", name)
+        if "." in name:
+            name = name.split(".")[-1]
+        # name = re.sub(r"_(layer|module|function)$", "", name)
+        # name = re.sub(r"(layer|module|function)$", "", name)
         return name.strip()
 
     def _search_docs(
-        self, operator_name: str, framework: FrameworkType = "pytorch"
+        self, operator_name: str, framework: FrameworkType
     ) -> List[SearchResult]:
-        """搜索框架官方文档（委托给 SearchAgent）"""
-        if framework not in self.framework_docs:
-            self.logger.warning(
-                f"Framework '{framework}' not in framework_docs. "
-                f"Supported: {list(self.framework_docs.keys())}"
-            )
-            return []
-
+        """搜索框架官方文档"""
         search_url = self.framework_docs[framework]["search_url"]
 
         try:
@@ -168,12 +174,15 @@ class WebSearchTool:
         self, operator_name: str, framework: FrameworkType
     ) -> List[SearchResult]:
         """搜索GitHub仓库"""
-        if framework not in self.framework_docs:
+        if not self.github_token:
+            self.logger.warning(
+                "GitHub API token not configured. Set web_search.github_token in config.yaml"
+            )
             return []
 
         github_repo = self.framework_docs[framework]["github_repo"]
         search_paths = {
-            "pytorch": "torch/nn",
+            "pytorch": "aten/src",
             "tensorflow": "tensorflow/python",
             "paddlepaddle": "paddle/fluid/operators",
         }
@@ -195,27 +204,22 @@ class WebSearchTool:
                 headers=headers,
                 timeout=self.timeout,
             )
+            response.raise_for_status()
 
-            if response.status_code == 200:
-                results = [
-                    SearchResult(
-                        title=f"{item.get('name', '')} - {item.get('path', '')}",
-                        url=item.get("html_url", ""),
-                        snippet=item.get("text_matches", [{}])[0].get("fragment", ""),
-                        source="github",
-                        relevance_score=0.8,
-                    )
-                    for item in response.json().get("items", [])[: self.max_results]
-                ]
-                return results
-            elif response.status_code == 403:
-                self.logger.warning(
-                    "GitHub API rate limit exceeded. Consider setting web_search.github_token in config.yaml"
+            results = response.json().get("items", [])[: self.max_results]
+            return [
+                SearchResult(
+                    title=result.get("name", ""),
+                    url=result.get("html_url", ""),
+                    snippet=result.get("text_matches", [{}])[0].get("fragment", ""),
+                    source="github",
+                    relevance_score=0.8,
                 )
+                for result in results
+            ]
         except Exception as e:
             self.logger.warning(f"GitHub search failed: {e}")
-
-        return []
+            return []
 
     def _search_web(
         self, operator_name: str, framework: FrameworkType
@@ -247,56 +251,19 @@ class WebSearchTool:
                 json=request_body,
                 timeout=self.timeout,
             )
+            response.raise_for_status()
 
-            if response.status_code == 200:
-                data = response.json()
-                if "code" in data and data["code"]:
-                    self.logger.warning(
-                        f"Baidu search API error: {data.get('message', 'Unknown error')}"
-                    )
-                    return []
-
-                return [
-                    SearchResult(
-                        title=ref.get("title", ""),
-                        url=ref.get("url", ""),
-                        snippet=ref.get("content", ""),
-                        source="web_search",
-                        relevance_score=ref.get("rerank_score", 0.7),
-                    )
-                    for ref in data.get("references", [])[: self.max_results]
-                    if ref.get("type") == "web"
-                ]
-
-            self.logger.warning(
-                f"Baidu search API request failed with status {response.status_code}"
-            )
+            results = response.json().get("references", [])[: self.max_results]
+            return [
+                SearchResult(
+                    title=result.get("title", ""),
+                    url=result.get("url", ""),
+                    snippet=result.get("content", ""),
+                    source="web_search",
+                    relevance_score=result.get("rerank_score", 0.7),
+                )
+                for result in results
+            ]
         except Exception as e:
             self.logger.warning(f"Web search failed: {e}")
-
-        return []
-
-    def _extract_title(self, html: str) -> Optional[str]:
-        """从HTML提取标题"""
-        if match := re.search(r"<title>(.*?)</title>", html, re.IGNORECASE):
-            return match.group(1)
-        return None
-
-    def _extract_snippet(
-        self, html: str, keyword: str, max_length: int = 500
-    ) -> Optional[str]:
-        """从HTML提取包含关键词的片段"""
-        text = re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", html))
-        keyword_lower = keyword.lower()
-        text_lower = text.lower()
-
-        if (idx := text_lower.find(keyword_lower)) != -1:
-            start = max(0, idx - 100)
-            end = min(len(text), idx + max_length)
-            return text[start:end].strip()
-
-        return text[:max_length].strip() if text else None
-
-    def _clean_html(self, text: str) -> str:
-        """清理HTML标签"""
-        return re.sub(r"<[^>]+>", "", text)
+            return []

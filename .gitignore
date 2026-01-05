@@ -1,6 +1,7 @@
 *.db
 *.log
 .DS_Store
+.cache/
 .idea/
 .tmp/
 .venv/

@@ -44,7 +44,7 @@ class SearchAgent:
         max_results: int = 5,
     ) -> List[SearchResult]:
         """
-        完整的文档搜索流程：搜索 -> 重新排序 -> 获取内容。
+        完整的文档搜索流程：搜索 -> 获取内容 -> 重新排序。
 
         Args:
             query: 搜索查询（算子名称）
@@ -60,50 +60,8 @@ class SearchAgent:
         """
         from tools.web_search.search_tool import SearchResult
 
-        ranked_results = self._search_and_rerank(search_url, query, max_results)
-
-        results: List[SearchResult] = []
-        for item in ranked_results:
-            if not (url := item.get("url")):
-                continue
-
-            if content := self.fetch_content(url):
-                results.append(
-                    SearchResult(
-                        title=item.get(
-                            "title",
-                            f"{framework.capitalize()} {query} Documentation",
-                        ),
-                        url=url,
-                        snippet=content,
-                        source="docs",
-                        relevance_score=item.get("relevance_score", 0.9),
-                    )
-                )
-
-        return results[:max_results]
-
-    def _search_and_rerank(
-        self,
-        search_url: str,
-        query: str,
-        max_results: int,
-    ) -> List[Dict[str, Any]]:
-        """
-        利用LLM执行搜索并对结果进行重新排序。
-
-        Args:
-            search_url: 搜索页面的网址
-            query: 搜索查询内容
-            max_results: 结果的最大数量
-
-        Returns:
-            重新排序后的结果列表
-
-        Raises:
-            ValueError: 如果未找到任何结果
-        """
-        raw_results = self._execute_search(search_url, query, max_results)
+        # 获取原始文档
+        raw_results = self._execute_search(search_url, query, max_results * 2)
         unique_results = self._deduplicate_results(raw_results)
 
         if not unique_results:
@@ -113,7 +71,7 @@ class SearchAgent:
                         f"No results for '{query}', trying corrected query: '{corrected_query}'"
                     )
                     raw_results = self._execute_search(
-                        search_url, corrected_query, max_results
+                        search_url, corrected_query, max_results * 2
                     )
                     unique_results = self._deduplicate_results(raw_results)
 
@@ -130,8 +88,40 @@ class SearchAgent:
 
             raise ValueError(f"搜索 '{query}' 未找到结果。请检查算子名称是否正确。")
 
-        ranked_results = self._rerank_with_llm(query, unique_results[: max_results * 2])
-        return ranked_results[:max_results]
+        # 获取文档内容
+        results: List[Dict[str, Any]] = []
+        for item in unique_results:
+            if not (url := item.get("url")):
+                continue
+
+            if content := self.fetch_content(url):
+                results.append(
+                    {
+                        **item,
+                        "content": content,
+                    }
+                )
+
+        # 根据内容进行重排
+        ranked_results = self._rerank_with_llm(query, results)
+
+        # 构建结果
+        final_results: List[SearchResult] = []
+        for item in ranked_results[:max_results]:
+            final_results.append(
+                SearchResult(
+                    title=item.get(
+                        "title",
+                        f"{framework.capitalize()} {query} Documentation",
+                    ),
+                    url=item.get("url", ""),
+                    snippet=item.get("content", ""),
+                    source="docs",
+                    relevance_score=item.get("relevance_score", 0.9),
+                )
+            )
+
+        return final_results
 
     def _deduplicate_results(
         self, results: List[Dict[str, Any]]
@@ -193,7 +183,7 @@ Return JSON format only:
     def _execute_search(
         self, search_url: str, query: str, max_results: int
     ) -> List[Dict[str, Any]]:
-        """执行搜索请求"""
+        """执行搜索请求 (PyTorch 使用 Sphinx 搜索索引，其他框架使用搜索引擎)"""
 
         try:
             if "pytorch" in search_url:
@@ -287,7 +277,11 @@ Return JSON format only:
         self, query: str, results: List[Dict[str, Any]]
     ) -> List[Dict[str, Any]]:
         """
-        使用LLM对搜索结果进行相关性重排序
+        使用LLM根据文档内容对搜索结果进行相关性重排序
+
+        Args:
+            query: 搜索查询
+            results: 包含content字段的搜索结果列表
 
         Returns:
             重排序后的结果列表，每个结果包含relevance_score字段(0-1)
@@ -351,30 +345,56 @@ Return JSON only:
             return results
 
     def fetch_content(self, url: str) -> Optional[str]:
-        """获取URL内容并提取（包括OCR识别图片）"""
+        """获取URL内容并提取关键信息"""
         try:
             headers = {
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
             }
             response = requests.get(url, headers=headers, timeout=10)
+            response.raise_for_status()
+            soup = BeautifulSoup(response.text, "html.parser")
 
-            if response.status_code == 200:
-                soup = BeautifulSoup(response.text, "html.parser")
-                text_content = soup.get_text(separator="\n", strip=True)
+            article_container = None
+            text_content = None
 
-                if ocr_content := self._extract_content_with_ocr(soup, url):
-                    return f"{text_content}\n\n[图片内容]\n{ocr_content}"
-                return text_content
+            # 尝试查找 pytorch-article
+            article_container = soup.find(id="pytorch-article")
+            if article_container:
+                text_content = article_container.get_text(separator="\n", strip=True)
+            else:
+                # 查找 main 或 article 标签
+                article_container = soup.find("main") or soup.find("article")
+                if article_container:
+                    text_content = article_container.get_text(
+                        separator="\n", strip=True
+                    )
+                else:
+                    text_content = soup.get_text(separator="\n", strip=True)
+
+            # 传递文章容器
+            if ocr_content := self._extract_content_with_ocr(
+                soup, url, article_container
+            ):
+                return f"{text_content}\n\n[图片内容]\n{ocr_content}"
+            return text_content
 
         except Exception as e:
             self.logger.warning(f"Failed to fetch content from {url}: {e}")
-
-        return None
+            return None
 
     def _extract_content_with_ocr(
-        self, soup: BeautifulSoup, base_url: str
+        self,
+        soup: BeautifulSoup,
+        base_url: str,
+        article_container: Optional[Any] = None,
     ) -> Optional[str]:
-        """从HTML中提取所有图片并使用OCR识别"""
+        """从HTML中提取内容相关的图片并使用OCR识别
+
+        Args:
+            soup: BeautifulSoup 解析对象
+            base_url: 页面 URL，用于解析相对路径
+            article_container: 文章容器元素，如果提供则只在容器内查找图片
+        """
         from urllib.parse import urljoin, urlparse
 
         from core.config_loader import get_config_value
@@ -384,18 +404,52 @@ Return JSON only:
             return None
 
         try:
-            if not (images := soup.find_all("img")):
+            # 优先在文章容器内查找图片
+            search_scope = article_container if article_container else soup
+            if not (images := search_scope.find_all("img")):
                 return None
 
             ocr_client = OCRClient()
             ocr_results = []
+
+            # 用于过滤小图标和无关图片的路径关键词
+            skip_patterns = {
+                "logo",
+                "icon",
+                "favicon",
+                "avatar",
+                "badge",
+                "button",
+                "arrow",
+                "spinner",
+                "loading",
+                "social",
+                "twitter",
+                "facebook",
+                "github",
+                "linkedin",
+            }
 
             for img in images:
                 if not (img_src := img.get("src")):
                     continue
 
                 img_src = str(img_src)
+                img_src_lower = img_src.lower()
 
+                # 跳过小图标和无关图片
+                if any(pattern in img_src_lower for pattern in skip_patterns):
+                    continue
+
+                # 跳过 data URI
+                if img_src.startswith("data:"):
+                    continue
+
+                # 跳过 PyTorch 示意图
+                if "_images/" in img_src:
+                    continue
+
+                # 解析图片 URL
                 if img_src.startswith(("http://", "https://")):
                     img_url = img_src
                 elif img_src.startswith("//"):
@@ -406,7 +460,8 @@ Return JSON only:
                 else:
                     img_url = urljoin(base_url, img_src)
 
-                alt_text = str(img.get("alt", "")).lower()
+                alt_text = str(img.get("alt", ""))
+                alt_text_lower = alt_text.lower()
                 class_attr = img.get("class")
                 class_str = (
                     " ".join(str(c) for c in class_attr).lower()
@@ -414,22 +469,23 @@ Return JSON only:
                     else str(class_attr).lower() if class_attr else ""
                 )
 
+                # 判断是否为公式图片
                 is_formula = any(
                     keyword in text
-                    for keyword in ["formula", "math", "equation"]
-                    for text in [alt_text, class_str]
+                    for keyword in ["formula", "math", "equation", "latex"]
+                    for text in [alt_text_lower, class_str, img_src_lower]
                 )
 
                 if is_formula:
                     if recognized_text := ocr_client.recognize_formula(
-                        str(img_url), use_layout_detection=False
+                        img_url, use_layout_detection=False
                     ):
                         ocr_results.append(f"[公式] {recognized_text}")
                 else:
                     if recognized_text := ocr_client.recognize_text(
-                        str(img_url), use_layout_detection=True
+                        img_url, use_layout_detection=True
                     ):
-                        img_label = alt_text or class_str or "图片"
+                        img_label = alt_text or img_src.split("/")[-1].split(".")[0]
                         ocr_results.append(f"[{img_label}] {recognized_text}")
 
             return "\n".join(ocr_results) if ocr_results else None

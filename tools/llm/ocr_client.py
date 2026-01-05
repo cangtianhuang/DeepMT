@@ -147,11 +147,16 @@ class OCRClient:
         if not self.enabled:
             return None
 
-        return self._call_ocr_api(
+        if result := self._call_ocr_api(
             image_url=image_url,
             prompt_label="ocr" if not use_layout_detection else None,
             use_layout_detection=use_layout_detection,
-        )
+        ):
+            self.logger.info(f"OCR API result for {image_url}: {result}")
+            return result
+
+        self.logger.warning(f"OCR API failed for {image_url}")
+        return None
 
     def _call_ocr_api(
         self,
@@ -205,52 +210,37 @@ class OCRClient:
             response = requests.post(
                 self.ocr_api_url, headers=headers, json=request_body, timeout=30
             )
+            response.raise_for_status()
+            data = response.json()
 
-            if response.status_code == 200:
-                data = response.json()
+            # 解析结果
+            result = data.get("result", {})
+            layout_parsing_results = result.get("layoutParsingResults", [])
 
-                # 检查错误
-                if "error" in data:
-                    error_info = data["error"]
-                    self.logger.warning(
-                        f"OCR API error: {error_info.get('message', 'Unknown error')}"
-                    )
-                    return None
-
-                # 解析结果
-                result = data.get("result", {})
-                layout_parsing_results = result.get("layoutParsingResults", [])
-
-                if not layout_parsing_results:
-                    return None
-
-                # 提取文本内容
-                texts = []
-                for layout_result in layout_parsing_results:
-                    # 优先使用markdown格式的文本
-                    markdown = layout_result.get("markdown", {})
-                    if markdown and markdown.get("text"):
-                        texts.append(markdown["text"])
-
-                    # 如果没有markdown，尝试从prunedResult中提取
-                    pruned_result = layout_result.get("prunedResult", {})
-                    parsing_res_list = pruned_result.get("parsing_res_list", [])
-                    for item in parsing_res_list:
-                        block_content = item.get("block_content", "")
-                        if block_content:
-                            texts.append(block_content)
-
-                # 合并所有文本
-                if texts:
-                    return "\n".join(texts).strip()
-
+            if not layout_parsing_results:
                 return None
 
-            else:
-                self.logger.warning(
-                    f"OCR API request failed with status {response.status_code}: {response.text}"
-                )
-                return None
+            # 提取文本内容
+            texts = []
+            for layout_result in layout_parsing_results:
+                # 优先使用markdown格式的文本
+                markdown = layout_result.get("markdown", {})
+                if markdown and markdown.get("text"):
+                    texts.append(markdown["text"])
+
+                # 如果没有markdown，尝试从prunedResult中提取
+                pruned_result = layout_result.get("prunedResult", {})
+                parsing_res_list = pruned_result.get("parsing_res_list", [])
+                for item in parsing_res_list:
+                    block_content = item.get("block_content", "")
+                    if block_content:
+                        texts.append(block_content)
+
+            # 合并所有文本
+            if texts:
+                return "\n".join(texts).strip()
+
+            return None
 
         except Exception as e:
             self.logger.warning(f"OCR API call failed: {e}")
