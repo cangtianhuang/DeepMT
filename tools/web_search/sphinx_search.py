@@ -129,7 +129,7 @@ class SphinxSearchIndex:
         )
 
         self.logger.info(
-            f"Sphinx search index loaded: {len(self._docnames)} docs, "
+            f"Sphinx search index loaded {len(self._docnames)} docs, "
             f"{len(self._terms)} terms"
         )
         return True

@@ -122,8 +122,14 @@ class LLMClient:
         Returns:
             响应内容字符串
         """
+        messages_preview = "\\n".join(
+            [
+                f"{msg['role']}: {msg['content'][:100].replace('\n', '\\n')}"
+                for msg in messages
+            ]
+        )
         self.logger.info(
-            f"LLM API called for model {self.model} with messages {messages[0]['content'][:10]}..."
+            f"LLM API called for model {self.model}: {messages_preview}..."
         )
         if self.provider == "openai":
             response = self.client.chat.completions.create(  # type: ignore

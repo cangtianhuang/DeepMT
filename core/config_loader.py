@@ -1,5 +1,6 @@
 """配置加载器：统一的配置文件管理，遵循 XDG Base Directory 规范"""
 
+import logging
 import os
 from pathlib import Path
 from typing import Any, Dict, Iterator, Optional
@@ -124,6 +125,12 @@ class ConfigLoader:
             self._config = config_data
             self._config_path = path
             self._config_mtime = path.stat().st_mtime
+
+            log_dir = self.get("logging.file", "data/logs")
+            level = getattr(
+                logging, self.get("logging.level", "INFO").upper(), logging.INFO
+            )
+            self.logger.reinitialize(log_dir, level)
             self.logger.info(f"Loaded config from: {path}")
         except (OSError, FileNotFoundError) as e:
             self.logger.error(f"Failed to access config file {path}: {e}")
