@@ -33,7 +33,7 @@ class TestRunner:
         """
         self.plugins_manager = plugins_manager
         self.results_manager = results_manager
-        self.logger = get_logger()
+        self.logger = get_logger(self.__class__.__name__)
 
     def run_with_mrs(
         self,

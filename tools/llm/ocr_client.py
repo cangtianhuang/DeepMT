@@ -35,7 +35,7 @@ class OCRClient:
 
     def __init__(self) -> None:
         """初始化 OCR 客户端"""
-        self.logger = get_logger()
+        self.logger = get_logger(self.__class__.__name__)
         # 从配置加载器获取配置值
         self.api_key = get_config_value("web_search.baidu_api_key", "")
         self.enabled = get_config_value("web_search.ocr", False)
@@ -125,12 +125,13 @@ class OCRClient:
         if not self.enabled:
             return None
 
+        self.logger.info(f"OCR API called for image {image_url}...")
         if result := self._call_ocr_api(
             image_url=image_url,
             prompt_label="formula" if not use_layout_detection else None,
             use_layout_detection=use_layout_detection,
         ):
-            self.logger.info(f"OCR API result for {image_url}: {result[:100]}")
+            self.logger.info(f"OCR API responsed for image {image_url}: {result[:100]}")
             return result
         self.logger.warning(f"OCR API failed for {image_url}")
         return None
@@ -151,12 +152,13 @@ class OCRClient:
         if not self.enabled:
             return None
 
+        self.logger.info(f"OCR API called for image {image_url}...")
         if result := self._call_ocr_api(
             image_url=image_url,
             prompt_label="ocr" if not use_layout_detection else None,
             use_layout_detection=use_layout_detection,
         ):
-            self.logger.info(f"OCR API result for {image_url}: {result[:100]}")
+            self.logger.info(f"OCR API responsed for image {image_url}: {result[:100]}")
             return result
 
         self.logger.warning(f"OCR API failed for {image_url}")

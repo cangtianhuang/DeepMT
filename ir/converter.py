@@ -14,7 +14,7 @@ class IRConverter:
     """IR转换器：将用户友好的输入转换为IR对象"""
 
     def __init__(self):
-        self.logger = get_logger()
+        self.logger = get_logger(self.__class__.__name__)
 
     @staticmethod
     def from_operator_name(
@@ -35,7 +35,7 @@ class IRConverter:
         Returns:
             OperatorIR对象
         """
-        logger = get_logger()
+        logger = get_logger(IRConverter.__name__)
         logger.debug(f"Creating OperatorIR from name: {name}")
 
         # 算子相关属性应该由后续的步骤推断，这里不再自动推断
@@ -117,7 +117,7 @@ class IRConverter:
         Raises:
             NotImplementedError: 功能尚未完全实现
         """
-        logger = get_logger()
+        logger = get_logger(IRConverter.__name__)
         logger.warning("from_framework_code is a simplified implementation")
 
         # TODO: 实现完整的AST解析

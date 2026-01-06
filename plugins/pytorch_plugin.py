@@ -14,7 +14,7 @@ class PyTorchPlugin:
     """PyTorch框架适配插件"""
 
     def __init__(self):
-        self.logger = get_logger()
+        self.logger = get_logger(self.__class__.__name__)
         # 算子名称到PyTorch函数的映射
         self.operator_map = {
             "Add": torch.add,

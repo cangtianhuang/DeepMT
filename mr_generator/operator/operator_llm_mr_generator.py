@@ -29,7 +29,7 @@ class OperatorLLMMRGenerator:
             api_key: API密钥（如果为None，则从配置文件或环境变量获取）
             model: 使用的模型名称（如果为None，则从配置文件获取）
         """
-        self.logger = get_logger()
+        self.logger = get_logger(self.__class__.__name__)
 
         if llm_client:
             self.llm_client = llm_client

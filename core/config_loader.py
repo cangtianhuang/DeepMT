@@ -20,52 +20,63 @@ class ConfigLoader:
     4. 用户配置目录（~/.config/deepmt/config.yaml）
     """
 
-    _instance: Optional["ConfigLoader"] = None
-
     PROJECT_MARKERS = (".git", "pyproject.toml", "setup.py", "config.yaml")
     MAX_PARENT_DEPTH = 10
 
-    def __new__(cls) -> "ConfigLoader":
-        if cls._instance is None:
-            cls._instance = super().__new__(cls)
-            cls._instance._init_instance()
-        return cls._instance
-
-    def _init_instance(self) -> None:
+    def __init__(self) -> None:
         """初始化实例属性"""
-        self.logger = get_logger()
-        self._config: Dict[str, Any] = self.load()
+        self.logger = get_logger(self.__class__.__name__)
+        self._config: Dict[str, Any] = {}
         self._config_path: Optional[Path] = None
         self._config_mtime: float = 0
+        self._project_root: Optional[Path] = None
+        self.load()
 
     def _candidate_paths(self, config_name: str = "config.yaml") -> Iterator[Path]:
         """生成候选配置文件路径（按优先级）"""
+        # 1. 环境变量指定的路径
         if env_path := os.getenv("DEEPMT_CONFIG_PATH"):
             path = Path(env_path).expanduser().resolve()
             if path.is_file():
                 yield path
             elif path.is_dir():
-                yield path / config_name
+                candidate = path / config_name
+                if candidate.exists():
+                    yield candidate
 
-        yield Path.cwd() / config_name
+        # 2. 当前工作目录
+        cwd_path = Path.cwd() / config_name
+        if cwd_path.exists():
+            yield cwd_path
 
+        # 3. 项目根目录
         if project_root := self._find_project_root():
-            yield project_root / config_name
+            project_path = project_root / config_name
+            if project_path.exists():
+                yield project_path
 
+        # 4. XDG 配置目录
         xdg_config = os.getenv("XDG_CONFIG_HOME", str(Path.home() / ".config"))
-        yield Path(xdg_config) / "deepmt" / config_name
+        xdg_path = Path(xdg_config) / "deepmt" / config_name
+        if xdg_path.exists():
+            yield xdg_path
 
     def _find_project_root(self) -> Optional[Path]:
         """向上查找项目根目录（通过项目标识文件）"""
+        if self._project_root is not None:
+            return self._project_root
+
         current = Path(__file__).resolve().parent.parent
 
         for _ in range(self.MAX_PARENT_DEPTH):
             if any((current / marker).exists() for marker in self.PROJECT_MARKERS):
+                self._project_root = current
                 return current
             if (parent := current.parent) == current:
                 break
             current = parent
 
+        self._project_root = None
         return None
 
     def find_config_file(self, config_name: str = "config.yaml") -> Optional[Path]:
@@ -83,7 +94,7 @@ class ConfigLoader:
         config_path: Optional[Path] = None,
         config_name: str = "config.yaml",
         force_reload: bool = False,
-    ) -> Dict[str, Any]:
+    ):
         """
         加载配置文件
 
@@ -99,36 +110,42 @@ class ConfigLoader:
             path = Path(config_path).expanduser().resolve()
             if not path.is_file():
                 self.logger.warning(f"Config file not found: {path}")
-                return {}
         else:
             if not (path := self.find_config_file(config_name)):
-                return {}
+                return
 
         if not force_reload and self._is_cache_valid(path):
-            return self._config
+            return
 
         try:
             with open(path, "r", encoding="utf-8") as f:
-                self._config = yaml.safe_load(f) or {}
+                config_data = yaml.safe_load(f) or {}
+
+            self._config = config_data
             self._config_path = path
             self._config_mtime = path.stat().st_mtime
             self.logger.info(f"Loaded config from: {path}")
-            return self._config
+        except (OSError, FileNotFoundError) as e:
+            self.logger.error(f"Failed to access config file {path}: {e}")
         except Exception as e:
-            self.logger.error(f"Failed to load config: {e}")
-            return {}
+            self.logger.error(f"Failed to load config from {path}: {e}")
 
     def _is_cache_valid(self, path: Path) -> bool:
         """检查配置缓存是否有效"""
-        return bool(
-            self._config
-            and self._config_path == path
-            and path.stat().st_mtime == self._config_mtime
-        )
+        if not self._config or self._config_path != path:
+            return False
 
-    def reload(self) -> Dict[str, Any]:
+        if not path.exists():
+            return False
+
+        try:
+            return path.stat().st_mtime == self._config_mtime
+        except (OSError, FileNotFoundError):
+            return False
+
+    def reload(self):
         """重新加载配置文件"""
-        return self.load(self._config_path, force_reload=True)
+        self.load(force_reload=True)
 
     def get(self, key: str, default: Any = None) -> Any:
         """获取配置值（支持点号路径，如 "llm.api_key"）"""
@@ -157,7 +174,8 @@ _config_loader = ConfigLoader()
 
 def get_config(config_path: Optional[Path] = None) -> Dict[str, Any]:
     """获取完整配置"""
-    return _config_loader.load(config_path)
+    _config_loader.load(config_path)
+    return _config_loader._config
 
 
 def get_config_value(key: str, default: Any = None) -> Any:

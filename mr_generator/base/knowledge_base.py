@@ -30,7 +30,7 @@ class KnowledgeBase:
         Args:
             config_path: 配置文件路径（如果为None，则使用默认路径）
         """
-        self.logger = get_logger()
+        self.logger = get_logger(self.__class__.__name__)
         self.operator_knowledge: Dict[str, List[Dict[str, Any]]] = {}
         self.model_knowledge: Dict[str, List[Dict[str, Any]]] = {}
         self.application_knowledge: Dict[str, List[Dict[str, Any]]] = {}

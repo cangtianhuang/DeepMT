@@ -32,7 +32,7 @@ class MRRepository:
         """
         self.db_path = Path(db_path)
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
-        self.logger = get_logger()
+        self.logger = get_logger(self.__class__.__name__)
         self._init_database()
 
     def _init_database(self):

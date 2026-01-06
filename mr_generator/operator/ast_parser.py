@@ -17,7 +17,7 @@ class ASTToSymPyParser:
     """
 
     def __init__(self):
-        self.logger = get_logger()
+        self.logger = get_logger(self.__class__.__name__)
 
         # AST二元操作符到SymPy操作的映射
         self.binop_mapping = {
@@ -184,7 +184,9 @@ class ASTToSymPyParser:
                 right = self._parse_expr(node.right, symbols, param_to_symbol)
                 return op_func(left, right)
             else:
-                raise ValueError(f"Unsupported binary operator: {type(node.op).__name__}")
+                raise ValueError(
+                    f"Unsupported binary operator: {type(node.op).__name__}"
+                )
 
         # 一元操作
         elif isinstance(node, ast.UnaryOp):
@@ -193,7 +195,9 @@ class ASTToSymPyParser:
                 operand = self._parse_expr(node.operand, symbols, param_to_symbol)
                 return op_func(operand)
             else:
-                raise ValueError(f"Unsupported unary operator: {type(node.op).__name__}")
+                raise ValueError(
+                    f"Unsupported unary operator: {type(node.op).__name__}"
+                )
 
         # 函数调用
         elif isinstance(node, ast.Call):
@@ -298,9 +302,7 @@ class ASTToSymPyParser:
 
         return result if result is not None else sp.true
 
-    def _make_comparison(
-        self, left: sp.Expr, op_type: type, right: sp.Expr
-    ) -> sp.Expr:
+    def _make_comparison(self, left: sp.Expr, op_type: type, right: sp.Expr) -> sp.Expr:
         """创建单个比较表达式"""
         if op_type == ast.Eq:
             return sp.Eq(left, right)

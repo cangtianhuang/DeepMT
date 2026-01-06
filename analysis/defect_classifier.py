@@ -13,7 +13,7 @@ class DefectClassifier:
     """缺陷分类器：检测和分类MR违反情况"""
 
     def __init__(self):
-        self.logger = get_logger()
+        self.logger = get_logger(self.__class__.__name__)
 
     def compare(
         self,

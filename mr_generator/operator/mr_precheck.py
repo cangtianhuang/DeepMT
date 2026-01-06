@@ -50,7 +50,7 @@ class MRPreChecker:
         """
         self.num_test_cases = num_test_cases
         self.tolerance = tolerance
-        self.logger = get_logger()
+        self.logger = get_logger(self.__class__.__name__)
 
     def generate_test_inputs(
         self, original_inputs: List[Any], num_cases: Optional[int] = None

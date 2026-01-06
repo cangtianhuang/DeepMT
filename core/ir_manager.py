@@ -17,7 +17,7 @@ class IRManager:
     """统一中间表示管理器"""
 
     def __init__(self):
-        self.logger = get_logger()
+        self.logger = get_logger(self.__class__.__name__)
         self.ir_types = {
             "OperatorIR": OperatorIR,
             "ModelIR": ModelIR,

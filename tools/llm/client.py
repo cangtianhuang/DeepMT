@@ -42,7 +42,7 @@ class LLMClient:
         if config_key in LLMClient._initialized_keys:
             return
 
-        self.logger = get_logger()
+        self.logger = get_logger(self.__class__.__name__)
         self.provider = provider
         self._config_key = config_key
         self.api_key = (
@@ -122,6 +122,9 @@ class LLMClient:
         Returns:
             响应内容字符串
         """
+        self.logger.info(
+            f"LLM API called for model {self.model} with messages {messages[0]['content'][:10]}..."
+        )
         if self.provider == "openai":
             response = self.client.chat.completions.create(  # type: ignore
                 model=self.model,
@@ -132,8 +135,10 @@ class LLMClient:
             )
             content = response.choices[0].message.content.strip()
             usage = response.usage
+            # 将换行符转换为 \n 以便在日志中显示
+            content_preview = content[:100].replace("\n", "\\n").replace("\r", "\\r")
             self.logger.info(
-                f"LLM API response for {self.model}: {content[:100]}..."
+                f"LLM API responsed for model {self.model}: {content_preview}..."
                 f" (total_tokens={usage.total_tokens})"
             )
             return content
@@ -157,8 +162,10 @@ class LLMClient:
             )
             content = response.content[0].text
             usage = response.usage
+            # 将换行符转换为 \n 以便在日志中显示
+            content_preview = content[:100].replace("\n", "\\n").replace("\r", "\\r")
             self.logger.info(
-                f"LLM API response for {self.model}: {content[:100]}..."
+                f"LLM API responsed for model {self.model}: {content_preview}..."
                 f" (total_tokens={usage.total_tokens})"
             )
             return content

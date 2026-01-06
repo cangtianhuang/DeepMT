@@ -4,35 +4,39 @@ import logging
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
 
 
 class Logger:
     """统一的日志管理器"""
 
-    _instance: Optional["Logger"] = None
-
-    def __new__(cls) -> "Logger":
-        if cls._instance is None:
-            cls._instance = super().__new__(cls)
-            cls._instance._init_instance()
-        return cls._instance
-
-    def _init_instance(
-        self, log_dir: str = "data/logs", level: int = logging.INFO
+    def __init__(
+        self,
+        name: str = "DeepMT",
+        log_dir: str = "data/logs",
+        level: int = logging.INFO,
     ) -> None:
-        """初始化实例属性"""
+        """初始化实例属性
+
+        Args:
+            name: 日志器名称
+            log_dir: 日志文件目录
+            level: 日志级别
+        """
+        self.name = name
         self.log_dir = Path(log_dir)
         self.log_dir.mkdir(parents=True, exist_ok=True)
 
-        self.logger = logging.getLogger("DeepMT")
+        self.logger = logging.getLogger(name)
         self.logger.setLevel(level)
+
+        if self.logger.handlers:
+            return
 
         console_handler = logging.StreamHandler(sys.stdout)
         console_handler.setLevel(level)
         console_handler.setFormatter(
             logging.Formatter(
-                "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+                "%(asctime)s - DeepMT - %(name)s - %(levelname)s - %(message)s",
                 datefmt="%Y-%m-%d %H:%M:%S",
             )
         )
@@ -43,7 +47,7 @@ class Logger:
         file_handler.setLevel(level)
         file_handler.setFormatter(
             logging.Formatter(
-                "%(asctime)s - %(name)s - %(levelname)s - [%(filename)s:%(lineno)d] - %(message)s",
+                "%(asctime)s - DeepMT - %(name)s - %(levelname)s - [%(filename)s:%(lineno)d] - %(message)s",
                 datefmt="%Y-%m-%d %H:%M:%S",
             )
         )
@@ -65,9 +69,10 @@ class Logger:
         self.logger.critical(message)
 
 
-_logger: Logger = Logger()
+_loggers: dict[str, Logger] = {}
 
 
-def get_logger() -> Logger:
-    """获取全局日志实例"""
-    return _logger
+def get_logger(name: str = "DeepMT") -> Logger:
+    if name not in _loggers:
+        _loggers[name] = Logger(name=name)
+    return _loggers[name]

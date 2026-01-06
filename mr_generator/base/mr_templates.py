@@ -36,7 +36,7 @@ class MRTemplatePool:
         Args:
             config_path: 配置文件路径（如果为None，则使用默认路径）
         """
-        self.logger = get_logger()
+        self.logger = get_logger(self.__class__.__name__)
         self.templates: Dict[str, MRTemplate] = {}
         self.operator_mr_mapping: Dict[str, List[str]] = {}
 

@@ -22,7 +22,7 @@ class PluginsManager:
         """
         self.plugins_dir = Path(plugins_dir)
         self.plugins: Dict[str, Any] = {}
-        self.logger = get_logger()
+        self.logger = get_logger(self.__class__.__name__)
 
     def load_plugins(self):
         """动态加载plugins目录中的所有插件"""

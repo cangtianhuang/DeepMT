@@ -54,7 +54,7 @@ class OperatorMRGenerator:
 
     def __init__(self):
         """初始化算子MR生成器"""
-        self.logger = get_logger()
+        self.logger = get_logger(self.__class__.__name__)
 
         # 初始化核心组件
         self.llm_client = LLMClient()

@@ -29,7 +29,7 @@ class CodeToSymPyTranslator:
         Args:
             llm_client: LLM客户端（如果为None则创建默认客户端）
         """
-        self.logger = get_logger()
+        self.logger = get_logger(self.__class__.__name__)
 
         # 导入AST解析器
         from mr_generator.operator.ast_parser import ASTToSymPyParser
@@ -98,9 +98,7 @@ class CodeToSymPyTranslator:
         self.logger.debug("Falling back to AST parsing of original code")
         return self.ast_parser.parse_to_sympy(code)
 
-    def _try_proxy_path(
-        self, code: str, doc: str, signature: str
-    ) -> Optional[sp.Expr]:
+    def _try_proxy_path(self, code: str, doc: str, signature: str) -> Optional[sp.Expr]:
         """
         尝试代理路径：LLM → Python参考实现 → AST → SymPy
         """
@@ -178,9 +176,7 @@ def reference_impl(x0, x1, ...):
             self.logger.debug(f"LLM to Python reference error: {e}")
             return None
 
-    def _llm_to_sympy_code(
-        self, code: str, doc: str, signature: str
-    ) -> Optional[str]:
+    def _llm_to_sympy_code(self, code: str, doc: str, signature: str) -> Optional[str]:
         """
         使用LLM将代码直接转换为SymPy表达式代码
         """

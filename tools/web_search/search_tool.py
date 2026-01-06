@@ -1,7 +1,7 @@
 """网络搜索工具：从PyTorch文档、GitHub、网络搜索等获取算子信息"""
 
 from dataclasses import dataclass
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 import requests
 
@@ -24,7 +24,7 @@ class SearchResult:
 
 class WebSearchTool:
     """
-    网络搜索工具：从多个源搜索算子信息（单例模式）
+    网络搜索工具：从多个源搜索算子信息
 
     支持：
     - 框架官方文档（使用智能搜索，支持 PyTorch/TensorFlow/PaddlePaddle 等）
@@ -32,17 +32,9 @@ class WebSearchTool:
     - 网络搜索（百度搜索 API）
     """
 
-    _instance: Optional["WebSearchTool"] = None
-
-    def __new__(cls) -> "WebSearchTool":
-        if cls._instance is None:
-            cls._instance = super().__new__(cls)
-            cls._instance._init_instance()
-        return cls._instance
-
-    def _init_instance(self) -> None:
-        """初始化实例属性（仅在首次创建时调用）"""
-        self.logger = get_logger()
+    def __init__(self) -> None:
+        """初始化实例属性"""
+        self.logger = get_logger(self.__class__.__name__)
         self.timeout = get_config_value("web_search.timeout", 10)
         self.max_results = get_config_value("web_search.max_results", 5)
 
@@ -130,7 +122,7 @@ class WebSearchTool:
         if sources.get("web_search", False):
             all_results.extend(self._search_web(normalized_name, framework))
 
-        all_results.sort(key=lambda x: x.relevance_score, reverse=True)
+        # all_results.sort(key=lambda x: x.relevance_score, reverse=True)
 
         self.logger.info(f"Found {len(all_results)} search results")
         return all_results
@@ -193,6 +185,7 @@ class WebSearchTool:
             headers = self.headers.copy()
             if self.github_token:
                 headers["Authorization"] = f"token {self.github_token}"
+            headers["Accept"] = "application/vnd.github.v3.text-match+json"
 
             response = requests.get(
                 self.github_base,
@@ -203,16 +196,27 @@ class WebSearchTool:
             response.raise_for_status()
 
             results = response.json().get("items", [])[: self.max_results]
-            return [
-                SearchResult(
-                    title=result.get("name", ""),
-                    url=result.get("html_url", ""),
-                    snippet=result.get("text_matches", [{}])[0].get("fragment", ""),
-                    source="github",
-                    relevance_score=0.8,
-                )
-                for result in results
-            ]
+            search_results = []
+
+            for result in results:
+                if text_matches := result.get("text_matches", []):
+                    snippet = "\n---\n".join(
+                        match.get("fragment", "")
+                        for match in text_matches[:3]
+                        if match.get("fragment")
+                    )
+
+                    search_results.append(
+                        SearchResult(
+                            title=f"{result.get('name', '')} ({result.get('path', '')})",
+                            url=result.get("html_url", ""),
+                            snippet=snippet,
+                            source="github",
+                            relevance_score=0.5,
+                        )
+                    )
+
+            return search_results
         except Exception as e:
             self.logger.warning(f"GitHub search failed: {e}")
             return []
@@ -256,7 +260,7 @@ class WebSearchTool:
                     url=result.get("url", ""),
                     snippet=result.get("content", ""),
                     source="web_search",
-                    relevance_score=result.get("rerank_score", 0.7),
+                    relevance_score=result.get("rerank_score", 0.5),
                 )
                 for result in results
             ]

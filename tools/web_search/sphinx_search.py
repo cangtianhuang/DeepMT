@@ -29,7 +29,7 @@ class SphinxSearchIndex:
         """
         self.base_url = base_url.rstrip("/") + "/"
         self.index_url = urljoin(self.base_url, "searchindex.js")
-        self.logger = get_logger()
+        self.logger = get_logger(self.__class__.__name__)
         self.threshold = threshold
         self._index: Optional[Dict[str, Any]] = None
         self._docnames: List[str] = []
@@ -58,16 +58,16 @@ class SphinxSearchIndex:
         # 检查缓存是否过期
         mtime = cache_path.stat().st_mtime
         if time.time() - mtime > CACHE_EXPIRY_SECONDS:
-            self.logger.info(f"Cache expired: {cache_path}")
+            self.logger.info(f"Sphinx search index cache expired: {cache_path}")
             return None
 
         try:
             with open(cache_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
-            self.logger.info(f"Loaded index from cache: {cache_path}")
+            self.logger.info(f"Sphinx search index loaded from cache: {cache_path}")
             return data
         except Exception as e:
-            self.logger.warning(f"Failed to load cache: {e}")
+            self.logger.warning(f"Sphinx search index failed to load from cache: {e}")
             return None
 
     def _save_to_cache(self, data: Dict[str, Any]) -> None:
@@ -77,9 +77,9 @@ class SphinxSearchIndex:
             CACHE_DIR.mkdir(parents=True, exist_ok=True)
             with open(cache_path, "w", encoding="utf-8") as f:
                 json.dump(data, f)
-            self.logger.info(f"Saved index to cache: {cache_path}")
+            self.logger.info(f"Sphinx search index saved to cache: {cache_path}")
         except Exception as e:
-            self.logger.warning(f"Failed to save cache: {e}")
+            self.logger.warning(f"Sphinx search index failed to save to cache: {e}")
 
     def _load_index(self) -> bool:
         """下载并解析搜索索引（支持缓存）"""
@@ -107,7 +107,7 @@ class SphinxSearchIndex:
                 self._save_to_cache(index_data)
 
             except Exception as e:
-                self.logger.warning(f"Failed to load search index: {e}")
+                self.logger.warning(f"Sphinx search index failed to load: {e}")
                 return False
 
         # 3. 解析索引数据
@@ -129,13 +129,13 @@ class SphinxSearchIndex:
         )
 
         self.logger.info(
-            f"Loaded search index: {len(self._docnames)} docs, "
+            f"Sphinx search index loaded: {len(self._docnames)} docs, "
             f"{len(self._terms)} terms"
         )
         return True
 
     def _normalize_doc_ids(self, value: Any) -> List[int]:
-        """标准化文档 ID 列表（Sphinx 索引中的值可能是单个整数或整数列表）"""
+        """标准化文档 ID 列表"""
         if isinstance(value, int):
             return [value]
         if isinstance(value, list):
@@ -145,7 +145,7 @@ class SphinxSearchIndex:
     def _find_prefix_matches(
         self, prefix: str, sorted_keys: List[str], term_dict: Dict[str, Any]
     ) -> List[Tuple[str, Any]]:
-        """使用二分查找找到所有前缀匹配的词项 - O(log n + m)，m 为匹配数"""
+        """使用二分查找找到所有前缀匹配的词项"""
         if not prefix:
             return []
         # 找到第一个 >= prefix 的位置
@@ -167,7 +167,7 @@ class SphinxSearchIndex:
         reversed_keys: List[Tuple[str, str]],
         term_dict: Dict[str, Any],
     ) -> List[Tuple[str, Any]]:
-        """使用二分查找找到所有后缀匹配的词项 - O(log n + m)"""
+        """使用二分查找找到所有后缀匹配的词项"""
         if not suffix:
             return []
         # 将后缀反转，在反向排序列表中进行前缀匹配
@@ -187,7 +187,7 @@ class SphinxSearchIndex:
         """搜索文档
 
         Args:
-            query: 单个算子名称（已由调用方预处理，如 "relu"）
+            query: 单个算子名称（已由调用方预处理）
             max_results: 最大返回结果数
         """
         if not self._load_index():

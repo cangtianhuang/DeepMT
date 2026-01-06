@@ -11,17 +11,9 @@ from tools.web_search.search_tool import WebSearchTool
 class OperatorInfoFetcher:
     """算子信息获取器"""
 
-    _instance: Optional["OperatorInfoFetcher"] = None
-
-    def __new__(cls) -> "OperatorInfoFetcher":
-        if cls._instance is None:
-            cls._instance = super().__new__(cls)
-            cls._instance._init_instance()
-        return cls._instance
-
-    def _init_instance(self) -> None:
+    def __init__(self) -> None:
         """初始化实例属性"""
-        self.logger = get_logger()
+        self.logger = get_logger(self.__class__.__name__)
         self.search_tool = WebSearchTool()
         self.enabled = get_config_value("web_search.enabled", True)
 

@@ -23,7 +23,7 @@ class SymPyProver:
         Args:
             code_translator: 代码转换器（如果为None则创建默认实例）
         """
-        self.logger = get_logger()
+        self.logger = get_logger(self.__class__.__name__)
         self.code_translator = code_translator or CodeToSymPyTranslator()
 
     def code_to_sympy(
