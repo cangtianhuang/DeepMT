@@ -375,7 +375,7 @@ Return JSON only:
             for (url, item), content in zip(urls_to_fetch, contents):
                 if isinstance(content, Exception):
                     self.logger.warning(
-                        f"Failed to fetch content from {url}: {content}"
+                        f"Failed to fetch content from {url}: {str(content)}"
                     )
                     continue
                 if content:

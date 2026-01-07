@@ -75,17 +75,7 @@ class OperatorMRGenerator:
         operator_name: str,
         framework: FrameworkType = "pytorch",
     ) -> Dict[str, str]:
-        """
-        仅获取算子信息（不生成MR）
-
-        Args:
-            operator_name: 算子名称
-            framework: 框架名称
-
-        Returns:
-            包含 'doc', 'code', 'signature', 'examples' 的字典
-        """
-        self.logger.info(f"Fetching operator info for '{operator_name}'...")
+        """获取算子信息"""
         return self.info_fetcher.fetch_operator_info(
             operator_name=operator_name, framework=framework
         )
@@ -98,33 +88,32 @@ class OperatorMRGenerator:
         operator_doc: Optional[str] = None,
         auto_fetch_info: bool = True,
         framework: FrameworkType = "pytorch",
-        # 控制MR生成来源
         sources: Optional[List[MRSource]] = None,
-        # 控制后处理步骤
         use_precheck: bool = True,
         use_sympy_proof: bool = True,
     ) -> List[MetamorphicRelation]:
         """
-        为算子IR生成蜕变关系
+        为算子生成蜕变关系
 
         Args:
             operator_ir: 算子IR对象
-            operator_func: 算子函数对象（可选，用于快速筛选）
-            operator_code: 算子源代码（可选，用于SymPy证明）
-            operator_doc: 算子文档（可选，用于LLM猜想）
+            operator_func: 算子函数对象（可选）
+            operator_code: 算子源代码（可选）
+            operator_doc: 算子文档（可选）
             auto_fetch_info: 是否自动从网络获取算子信息（默认True）
             framework: 框架名称（默认pytorch）
             sources: MR生成来源列表，可选值：
-                - "llm": LLM猜想（主要来源）
-                - "template": 模板池（辅助来源）
+                - "llm": LLM猜想
+                - "template": 模板池
                 - None: 使用所有来源（默认）
             use_precheck: 是否进行快速筛选（默认True，需要operator_func）
-            use_sympy_proof: 是否进行SymPy证明（默认True，需要代码）
+            use_sympy_proof: 是否进行SymPy证明（默认True）
 
         Returns:
             MR对象列表
         """
-        self.logger.info(f"Generating MRs for operator: {operator_ir.name}")
+        operator_name = operator_ir.name
+        self.logger.info(f"Generating MRs for operator: {operator_name}")
 
         # 默认使用所有来源
         if sources is None:
@@ -139,8 +128,6 @@ class OperatorMRGenerator:
             auto_fetch_info=auto_fetch_info,
             framework=framework,
         )
-
-        num_inputs = len(operator_ir.inputs)
         has_code = operator_code is not None
 
         # 存储SymPy表达式（用于后续证明）
@@ -160,15 +147,15 @@ class OperatorMRGenerator:
         # ========== 阶段2：MR猜想生成 ==========
         candidate_mrs: List[MetamorphicRelation] = []
 
-        # --- 来源1：LLM猜想（主要来源） ---
+        # --- 来源1：LLM猜想 ---
         if "llm" in sources:
             self.logger.info("Source 1: LLM-based MR generation...")
             try:
                 llm_mrs = self.llm_generator.generate_mr_candidates(
-                    operator_name=operator_ir.name,
+                    operator_name=operator_name,
+                    operator_func=operator_func,
                     operator_code=operator_code,
                     operator_doc=operator_doc,
-                    num_inputs=num_inputs,
                     top_k=5,
                 )
                 candidate_mrs.extend(llm_mrs)
@@ -176,13 +163,13 @@ class OperatorMRGenerator:
             except Exception as e:
                 self.logger.warning(f"  → LLM generation failed: {e}")
 
-        # --- 来源2：模板池猜测（辅助来源） ---
+        # --- 来源2：模板池猜测 ---
         if "template" in sources:
             self.logger.info("Source 2: Template pool generation...")
             try:
                 template_mrs = self.template_pool.generate_mr_candidates(
-                    operator_name=operator_ir.name,
-                    operator_inputs=operator_ir.inputs,
+                    operator_name=operator_name,
+                    operator_func=operator_func,
                 )
                 candidate_mrs.extend(template_mrs)
                 self.logger.info(
@@ -191,17 +178,17 @@ class OperatorMRGenerator:
             except Exception as e:
                 self.logger.warning(f"  → Template pool generation failed: {e}")
 
-        # --- 向后兼容：如果没有任何MR，使用旧的知识库方法 ---
-        if not candidate_mrs:
-            self.logger.info("Fallback: Using legacy knowledge base method...")
-            mr_functions = self._kb.get_mrs_for_operator(operator_ir.name)
-            for mr_func in mr_functions:
-                try:
-                    mr_obj = mr_func(operator_ir.inputs)
-                    if isinstance(mr_obj, MetamorphicRelation):
-                        candidate_mrs.append(mr_obj)
-                except Exception as e:
-                    self.logger.error(f"Error generating MR from knowledge base: {e}")
+        # --- 如果没有任何MR，使用旧的知识库方法 ---
+        # if not candidate_mrs:
+        #     self.logger.info("Fallback: Using legacy knowledge base method...")
+        #     mr_functions = self._kb.get_mrs_for_operator(operator_ir.name)
+        #     for mr_func in mr_functions:
+        #         try:
+        #             mr_obj = mr_func(operator_ir.inputs)
+        #             if isinstance(mr_obj, MetamorphicRelation):
+        #                 candidate_mrs.append(mr_obj)
+        #         except Exception as e:
+        #             self.logger.error(f"Error generating MR from knowledge base: {e}")
 
         # 统计
         self.logger.info(
@@ -209,7 +196,7 @@ class OperatorMRGenerator:
         )
 
         if not candidate_mrs:
-            self.logger.warning(f"No MRs generated for {operator_ir.name}")
+            self.logger.warning(f"No MRs generated for {operator_name}")
             return []
 
         # ========== 阶段3：快速筛选 ==========
@@ -219,7 +206,7 @@ class OperatorMRGenerator:
                 candidate_mrs = self.prechecker.filter_mrs(
                     operator_func=operator_func,
                     mr_candidates=candidate_mrs,
-                    original_inputs=operator_ir.inputs,
+                    original_inputs=operator_ir.inputs or [],
                 )
                 self.logger.info(
                     f"  → After pre-check: {len(candidate_mrs)} candidates remain"
@@ -238,7 +225,7 @@ class OperatorMRGenerator:
                     operator_func=operator_func,
                     operator_code=operator_code,
                     operator_doc=operator_doc,
-                    operator_name=operator_ir.name,
+                    operator_name=operator_name,
                     num_inputs=num_inputs,
                     sympy_expr=sympy_expr,
                 )
@@ -281,6 +268,8 @@ class OperatorMRGenerator:
         framework: FrameworkType,
     ) -> tuple:
         """准备算子信息（代码和文档）"""
+        operator_name = operator_ir.name
+
         # 尝试从函数对象提取代码
         if operator_func and not operator_code:
             try:
@@ -293,10 +282,10 @@ class OperatorMRGenerator:
 
         # 自动从网络获取信息
         if auto_fetch_info:
-            self.logger.info(f"Auto-fetching operator info for '{operator_ir.name}'...")
+            self.logger.info(f"Auto-fetching operator info for '{operator_name}'...")
             try:
                 fetched_info = self.info_fetcher.fetch_operator_info(
-                    operator_name=operator_ir.name, framework=framework
+                    operator_name=operator_name, framework=framework
                 )
 
                 # 合并文档
@@ -322,7 +311,7 @@ class OperatorMRGenerator:
     def _deduplicate_mrs(
         self, mrs: List[MetamorphicRelation]
     ) -> List[MetamorphicRelation]:
-        """去重MR列表（基于描述）"""
+        """去重MR列表"""
         seen: Set[str] = set()
         unique_mrs: List[MetamorphicRelation] = []
 

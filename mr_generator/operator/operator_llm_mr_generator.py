@@ -3,9 +3,11 @@
 专为算子层MR生成设计，因为大模型MR生成方法在后续也可能用于其他层次
 """
 
+import inspect
 import json
+import traceback
 import uuid
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 from core.logger import get_logger
 from ir.schema import MetamorphicRelation
@@ -15,38 +17,18 @@ from tools.llm.client import LLMClient
 class OperatorLLMMRGenerator:
     """算子层LLM MR生成器：使用LLM生成算子MR猜想"""
 
-    def __init__(
-        self,
-        llm_client: Optional[LLMClient] = None,
-        api_key: Optional[str] = None,
-        model: str = None,
-    ):
-        """
-        初始化算子层LLM MR生成器
-
-        Args:
-            llm_client: LLM客户端（如果为None则创建）
-            api_key: API密钥（如果为None，则从配置文件或环境变量获取）
-            model: 使用的模型名称（如果为None，则从配置文件获取）
-        """
+    def __init__(self):
+        """初始化算子层LLM MR生成器"""
         self.logger = get_logger(self.__class__.__name__)
 
-        if llm_client:
-            self.llm_client = llm_client
-            self.llm_available = True
-        else:
-            try:
-                self.llm_client = LLMClient(api_key=api_key, model=model)
-                self.llm_available = True
-            except Exception as e:
-                raise ValueError(f"Failed to initialize LLM client: {e}")
+        self.llm_client = LLMClient()
 
     def _build_prompt(
         self,
         operator_name: str,
+        operator_signature: str,
         operator_code: Optional[str] = None,
         operator_doc: Optional[str] = None,
-        num_inputs: int = 2,
     ) -> str:
         """
         构建LLM提示
@@ -55,92 +37,256 @@ class OperatorLLMMRGenerator:
             operator_name: 算子名称
             operator_code: 算子代码（可选）
             operator_doc: 算子文档（可选）
-            num_inputs: 输入数量
 
         Returns:
             提示字符串
         """
-        prompt = f"""你是一个蜕变测试专家。请为以下深度学习算子生成蜕变关系（MR）。
+        prompt = f"""You are a Deep Learning Metamorphic Testing Expert.
+Your task is to generate Metamorphic Relations (MRs) for the operator `{operator_name}`.
 
-算子信息：
-- 名称：{operator_name}
-- 输入数量：{num_inputs}
+### Operator Signature
+```python
+{operator_signature}
+```
+
 """
 
         if operator_code:
-            prompt += f"- 代码：\n```python\n{operator_code}\n```\n"
+            prompt += f"""### Operator Code
+```python
+{operator_code}
+```
+
+"""
 
         if operator_doc:
-            prompt += f"- 文档：\n{operator_doc}\n"
+            prompt += f"""### Documentation
+{operator_doc}
 
-        prompt += """
-要求：
-1. 生成Top-5个高质量的MR猜想
-2. 每个MR应该描述输入变换和期望的输出关系
-3. 使用清晰的数学或自然语言描述
-4. 考虑常见的数学性质：交换律、结合律、分配律、单位元、零元等
+"""
 
-输出格式（必须是有效的JSON）：
+        prompt += """### Transformation Protocol (CRITICAL)
+
+The input transformation must be a Python LAMBDA function that:
+
+1. **Receives a single argument `k`** (a dictionary containing ALL function arguments)
+2. **Returns a new dictionary** with modified values
+3. **Uses `{**k, 'key': new_value}` syntax** to modify specific parameters while keeping others unchanged
+4. **Focus on Tensor arguments** (like 'input', 'weight', 'bias'), NOT configuration parameters (like 'stride', 'padding', 'dilation') unless necessary
+
+### Transform Code Format Requirements
+
+- MUST be a valid Python lambda expression (NOT a def function)
+- Input: Receives a single dictionary argument `k` containing all function parameters
+- Output: MUST return a new dictionary using `{**k, 'key': new_value}` syntax
+- Only modify the parameters you want to transform, keep all others unchanged
+
+### CORRECT Examples
+
+1. **Scale input tensor:**
+   ```python
+   lambda k: {**k, 'input': 2 * k['input']}
+   ```
+   Explanation: Scales the 'input' parameter by 2, keeps all other parameters unchanged.
+
+2. **Negate input tensor:**
+   ```python
+   lambda k: {**k, 'input': -k['input']}
+   ```
+   Explanation: Negates the 'input' parameter, keeps all other parameters unchanged.
+
+3. **Modify multiple tensor parameters:**
+   ```python
+   lambda k: {**k, 'input': 2 * k['input'], 'weight': k['weight'] * 0.5}
+   ```
+   Explanation: Scales 'input' by 2 and 'weight' by 0.5, keeps other parameters unchanged.
+
+4. **Swap tensor parameters (if applicable):**
+   ```python
+   lambda k: {**k, 'input': k.get('other', k['input']), 'other': k['input']}
+   ```
+   Explanation: Swaps 'input' and 'other' parameters if both exist.
+
+### INCORRECT Examples (DO NOT USE)
+
+- `lambda k: k['input'] * 2`  ❌ WRONG: returns single value, not dictionary
+- `lambda x: (x,)`  ❌ WRONG: old args mode, not kwargs mode
+- `def transform(k): return {**k, 'input': 2*k['input']}`  ❌ WRONG: not a lambda expression
+- `lambda k: {**k, 'stride': 2}`  ❌ WRONG: modifying configuration parameter (usually not part of MR)
+
+### MR Categories & Examples
+
+1. **Affine/Linearity (Scaling):**
+   - Description: "Scaling input scales output proportionally"
+   - Transform: `lambda k: {**k, 'input': 2 * k['input']}`
+   - Expected: "proportional"
+
+2. **Negation:**
+   - Description: "Negating input negates output"
+   - Transform: `lambda k: {**k, 'input': -k['input']}`
+   - Expected: "negate"
+
+3. **Identity:**
+   - Description: "No transformation preserves output"
+   - Transform: `lambda k: k`
+   - Expected: "equal"
+
+4. **Idempotent (if applicable):**
+   - Description: "f(f(input)) == f(input)"
+   - Transform: `lambda k: k`  # Special handling needed
+   - Expected: "idempotent"
+
+### Output Format
+
+Return strictly valid JSON (no markdown code blocks, no extra text):
+
+```json
 {
     "mrs": [
         {
-            "description": "MR的数学描述，如：f(x, y) == f(y, x)",
-            "input_transform": "输入变换的描述，如：交换x和y",
-            "expected_relation": "期望关系类型：equal, proportional, invariant等",
-            "transform_code": "Python lambda表达式，如：lambda x, y: (y, x)"
+            "description": "Brief mathematical or natural language description",
+            "input_transform": "Text description of the transformation",
+            "expected_relation": "equal|proportional|invariant|negate|zero|first_input|idempotent",
+            "transform_code": "lambda k: {**k, 'input': k['input'] * 2}"
         }
     ]
 }
+```
 
-只返回JSON，不要包含其他文字说明。
+### Valid expected_relation Values
+
+- "equal": Outputs are equal (most common)
+- "proportional": Outputs are proportional (e.g., f(x) == k * f(y))
+- "invariant": Output remains invariant (same as equal)
+- "negate": Outputs are negated (f(x) == -f(y))
+- "zero": Output is zero
+- "first_input": Output equals the first input
+- "idempotent": f(f(x)) == f(x)
+
+### Important Notes
+
+- Focus on transforming TENSOR arguments ('input', 'weight', 'bias'), not configuration parameters
+- Use dictionary unpacking syntax: `{**k, 'key': new_value}`
+- Keep all non-transformed parameters unchanged
+- Return ONLY valid JSON, no markdown code blocks, no explanations
 """
         return prompt
 
     def generate_mr_candidates(
         self,
         operator_name: str,
+        operator_func: Optional[Callable] = None,
+        operator_signature: Optional[str] = None,
         operator_code: Optional[str] = None,
         operator_doc: Optional[str] = None,
-        num_inputs: int = 2,
         top_k: int = 5,
     ) -> List[MetamorphicRelation]:
         """
-        使用LLM生成MR候选列表（路径A）
+        使用LLM生成MR候选列表
 
         Args:
             operator_name: 算子名称
+            operator_func: 算子函数对象（可选）
+            operator_signature: 算子签名字符串（可选）
             operator_code: 算子代码（可选）
             operator_doc: 算子文档（可选）
-            num_inputs: 输入数量
             top_k: 生成Top-K个MR（默认5）
 
         Returns:
             MR候选列表
         """
-        if not self.llm_available or not self.llm_client:
-            self.logger.warning("LLM not available, returning empty list")
-            return []
+        # 获取算子签名
+        if operator_signature is None:
+            if operator_func is not None:
+                try:
+                    sig = inspect.signature(operator_func)
+                    operator_signature = str(sig)
+                    self.logger.info(f"Auto-extracted signature: {operator_signature}")
+                except Exception as e:
+                    self.logger.error(
+                        f"Failed to extract signature from function: {e}. "
+                        "Please provide operator_signature explicitly."
+                    )
+                    return []
+            else:
+                self.logger.error(
+                    "Either operator_func or operator_signature must be provided"
+                )
+                return []
 
         try:
-            # 构建提示
             prompt = self._build_prompt(
-                operator_name, operator_code, operator_doc, num_inputs
+                operator_name=operator_name,
+                operator_signature=operator_signature,
+                operator_code=operator_code,
+                operator_doc=operator_doc,
             )
 
-            # 调用LLM
+            # System prompt for kwargs mode
+            system_prompt = """You are an expert in metamorphic testing for deep learning operators.
+
+Your task is to generate Metamorphic Relations (MRs) using the Signature-based Kwargs Transformation protocol.
+
+═══════════════════════════════════════════════════════════════════
+CRITICAL REQUIREMENTS for transform_code (Kwargs Mode):
+═══════════════════════════════════════════════════════════════════
+
+1. FORMAT: MUST be a valid Python lambda expression (NOT a def function)
+
+2. INPUT: Receives a single argument `k` which is a dictionary containing ALL function parameters
+   - Example: lambda k: ...
+   - The dictionary `k` contains all arguments (positional and keyword)
+
+3. OUTPUT: MUST return a new dictionary (NOT a tuple or single value)
+   - Use dictionary unpacking and merging: {**k, 'key': new_value}
+   - Only modify the parameters you want to transform
+   - Keep all other parameters unchanged
+
+4. CORRECT Examples (Kwargs Mode):
+   - Scale input tensor: "lambda k: {**k, 'input': 2 * k['input']}"
+   - Negate input tensor: "lambda k: {**k, 'input': -k['input']}"
+   - Modify multiple tensors: "lambda k: {**k, 'input': 2 * k['input'], 'weight': k['weight'] * 0.5}"
+   - Swap tensor parameters: "lambda k: {**k, 'input': k.get('other', k['input']), 'other': k['input']}"
+
+5. INCORRECT Examples (DO NOT USE):
+   - "lambda k: k['input'] * 2"  ❌ WRONG: returns single value, not dictionary
+   - "lambda x: (x,)"  ❌ WRONG: old args mode, not kwargs mode
+   - "def transform(k): return {**k, 'input': 2*k['input']}"  ❌ WRONG: not a lambda expression
+   - "lambda k: {**k, 'stride': 2}"  ❌ WRONG: modifying configuration parameter
+
+6. Focus on Tensor Parameters:
+   - Transform tensor arguments like 'input', 'weight', 'bias'
+   - DO NOT modify configuration parameters like 'stride', 'padding', 'dilation' unless necessary
+   - Configuration parameters are usually not part of MR transformations
+
+7. MR Description Format:
+   - Mathematical: "f(2*input) == 2*f(input)" for scaling property
+   - Natural language: "Scaling input scales output proportionally"
+   - Be specific about which parameters are transformed
+
+8. Valid expected_relation values (use exactly as shown):
+   - "equal": Outputs are equal (most common)
+   - "proportional": Outputs are proportional (e.g., f(x) == k * f(y))
+   - "invariant": Output remains invariant (same as equal)
+   - "negate": Outputs are negated (f(x) == -f(y))
+   - "zero": Output is zero
+   - "first_input": Output equals the first input
+   - "idempotent": f(f(x)) == f(x)
+
+═══════════════════════════════════════════════════════════════════
+REMEMBER: transform_code MUST return a dictionary using {**k, ...} syntax!
+═══════════════════════════════════════════════════════════════════"""
+
             messages = [
-                {
-                    "role": "system",
-                    "content": "You are an expert in metamorphic testing for deep learning operators.",
-                },
+                {"role": "system", "content": system_prompt},
                 {"role": "user", "content": prompt},
             ]
 
             content = self.llm_client.chat_completion(
-                messages, temperature=0.7, max_tokens=1000
+                messages, temperature=0.7, max_tokens=3000
             )
 
-            # 提取JSON（可能包含markdown代码块）
+            # 提取JSON代码块
             if "```json" in content:
                 content = content.split("```json")[1].split("```")[0].strip()
             elif "```" in content:
@@ -150,14 +296,45 @@ class OperatorLLMMRGenerator:
             data = json.loads(content)
 
             # 转换为MR对象
+            if not isinstance(data, dict) or "mrs" not in data:
+                self.logger.error(
+                    f"Invalid JSON structure: expected dict with 'mrs' key, got {type(data)}"
+                )
+                if isinstance(data, dict):
+                    self.logger.debug(f"Available keys: {list(data.keys())}")
+                return []
+
             mrs = []
-            for mr_data in data.get("mrs", [])[:top_k]:
+            mr_list = data.get("mrs", [])
+            if not isinstance(mr_list, list):
+                self.logger.error(f"Expected 'mrs' to be a list, got {type(mr_list)}")
+                return []
+
+            self.logger.info(f"Parsed {len(mr_list)} MR entries from LLM response")
+
+            for idx, mr_data in enumerate(mr_list[:top_k]):
                 try:
-                    mr = self._parse_mr_response(mr_data, num_inputs)
+                    if not isinstance(mr_data, dict):
+                        self.logger.warning(f"MR entry {idx} is not a dict, skipping")
+                        continue
+
+                    mr = self._parse_mr_response(
+                        mr_data, operator_signature=operator_signature
+                    )
                     if mr:
                         mrs.append(mr)
+                        self.logger.debug(
+                            f"Successfully parsed MR {idx+1}: {mr.description[:50]}..."
+                        )
+                    else:
+                        self.logger.warning(
+                            f"Failed to parse MR {idx+1}: returned None"
+                        )
                 except Exception as e:
-                    self.logger.warning(f"Failed to parse MR: {e}")
+                    self.logger.warning(f"Failed to parse MR {idx+1}: {e}")
+                    import traceback
+
+                    self.logger.debug(traceback.format_exc())
                     continue
 
             self.logger.info(
@@ -165,41 +342,109 @@ class OperatorLLMMRGenerator:
             )
             return mrs
 
-        except json.JSONDecodeError as e:
-            self.logger.error(f"Failed to parse LLM response as JSON: {e}")
-            self.logger.debug(f"Response content: {content[:500]}")
-            return []
         except Exception as e:
             self.logger.error(f"LLM MR generation error: {e}")
+            self.logger.debug(traceback.format_exc())
             return []
 
     def _parse_mr_response(
-        self, mr_data: Dict[str, Any], num_inputs: int
+        self,
+        mr_data: Dict[str, Any],
+        operator_signature: Optional[str] = None,
     ) -> Optional[MetamorphicRelation]:
         """
-        解析LLM响应的MR数据
+        解析LLM响应的MR数据（Kwargs模式）
 
         Args:
             mr_data: MR数据字典
-            num_inputs: 输入数量
+            operator_signature: 算子签名字符串（用于验证）
 
         Returns:
             MetamorphicRelation对象，如果解析失败则返回None
         """
         try:
             description = mr_data.get("description", "")
-            expected = mr_data.get("expected_relation", "equal")
+            if not description:
+                self.logger.warning("MR data missing 'description' field")
+                return None
 
-            # 解析transform_code
-            transform_code = mr_data.get("transform_code", "")
-            if transform_code:
-                # 执行lambda表达式
-                transform = eval(transform_code)
-            else:
-                # 如果没有提供代码，尝试从描述推断
-                transform = self._infer_transform_from_description(
-                    mr_data.get("input_transform", ""), num_inputs
+            expected = mr_data.get("expected_relation", "equal")
+            # 规范化expected值
+            expected = expected.lower().strip()
+            valid_expecteds = [
+                "equal",
+                "proportional",
+                "invariant",
+                "negate",
+                "zero",
+                "first_input",
+                "idempotent",
+            ]
+            if expected not in valid_expecteds:
+                self.logger.warning(
+                    f"Unknown expected_relation '{expected}', using 'equal'"
                 )
+                expected = "equal"
+
+            # 解析transform_code（Kwargs模式）
+            transform_code = mr_data.get("transform_code", "").strip()
+            transform = None
+
+            if transform_code:
+                # 清理transform_code（移除可能的markdown代码块标记）
+                if "```python" in transform_code:
+                    transform_code = (
+                        transform_code.split("```python")[1].split("```")[0].strip()
+                    )
+                elif "```" in transform_code:
+                    transform_code = (
+                        transform_code.split("```")[1].split("```")[0].strip()
+                    )
+
+                # 安全地执行lambda表达式（Kwargs模式）
+                try:
+                    if transform_code.startswith("lambda"):
+                        # 创建安全的执行环境
+                        safe_dict = {}
+                        transform = eval(
+                            transform_code, {"__builtins__": {}}, safe_dict
+                        )
+                    else:
+                        # 如果不是lambda，警告
+                        self.logger.warning(
+                            f"transform_code doesn't look like a lambda: {transform_code[:50]}"
+                        )
+                        return None
+                except Exception as e:
+                    self.logger.warning(
+                        f"Failed to eval transform_code '{transform_code[:50]}...': {e}"
+                    )
+                    transform = None
+
+            # Kwargs模式：必须有transform_code，无法从描述推断
+            if transform is None:
+                self.logger.warning(
+                    "Kwargs mode requires transform_code, cannot infer from description"
+                )
+                return None
+
+            # 验证transform是可调用的
+            if not callable(transform):
+                self.logger.warning(f"Transform is not callable: {type(transform)}")
+                return None
+
+            # 验证transform接收kwargs并返回字典（简单测试）
+            try:
+                test_kwargs = {"input": 1.0, "weight": 2.0}
+                test_result = transform(test_kwargs)
+                if not isinstance(test_result, dict):
+                    self.logger.warning(
+                        f"Transform returned {type(test_result)}, expected dict"
+                    )
+                    return None
+            except Exception as e:
+                self.logger.warning(f"Transform validation failed: {e}")
+                # 不直接返回None，可能只是测试参数不匹配
 
             return MetamorphicRelation(
                 id=str(uuid.uuid4()),
@@ -208,35 +453,10 @@ class OperatorLLMMRGenerator:
                 expected=expected,
                 tolerance=1e-6,
                 layer="operator",
+                verified=False,  # LLM生成的MR默认未验证
             )
 
         except Exception as e:
             self.logger.warning(f"Failed to parse MR data: {e}")
+            self.logger.debug(traceback.format_exc())
             return None
-
-    def _infer_transform_from_description(
-        self, description: str, num_inputs: int
-    ) -> callable:
-        """
-        从描述推断变换函数（fallback方法）
-
-        Args:
-            description: 输入变换描述
-            num_inputs: 输入数量
-
-        Returns:
-            变换函数
-        """
-        description_lower = description.lower()
-
-        # 简单的启发式规则
-        if (
-            "交换" in description
-            or "swap" in description_lower
-            or "commut" in description_lower
-        ):
-            if num_inputs >= 2:
-                return lambda *args: (args[1], args[0]) + args[2:]
-
-        # 默认：恒等变换
-        return lambda *args: args

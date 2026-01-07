@@ -1,13 +1,13 @@
 from dataclasses import dataclass
-from typing import Any, List, Dict, Callable, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 
 @dataclass
 class OperatorIR:
     name: str
-    inputs: List[Any]
-    outputs: List[Any]
-    properties: Dict[str, Any]
+    inputs: Optional[List[Any]] = None
+    outputs: Optional[List[Any]] = None
+    properties: Optional[Dict[str, Any]] = None
 
 
 @dataclass

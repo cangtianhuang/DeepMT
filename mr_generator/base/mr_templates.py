@@ -3,6 +3,7 @@ MR模板池：从配置文件读取常见数学变换模板
 用于路径B（无知识）的MR猜想生成
 """
 
+import inspect
 import uuid
 from dataclasses import dataclass
 from pathlib import Path
@@ -94,19 +95,40 @@ class MRTemplatePool:
             self.logger.error(f"Failed to load MR templates config: {e}")
             raise
 
+    def _infer_num_inputs(self, operator_func: Optional[Callable]) -> int:
+        if operator_func is None:
+            return 2
+
+        try:
+            sig = inspect.signature(operator_func)
+            num_inputs = len(sig.parameters)
+            return num_inputs
+        except Exception as e:
+            self.logger.warning(
+                f"Failed to infer num_inputs from operator_func: {e}, using default: 2"
+            )
+            return 2
+
     def get_applicable_templates(
-        self, operator_name: str, num_inputs: int
+        self,
+        operator_name: str,
+        operator_func: Optional[Callable] = None,
+        num_inputs: Optional[int] = None,
     ) -> List[MRTemplate]:
         """
         获取适用于指定算子的模板列表
 
         Args:
             operator_name: 算子名称
+            operator_func: 算子函数对象
             num_inputs: 输入数量
 
         Returns:
             适用的模板列表
         """
+        if num_inputs is None:
+            num_inputs = self._infer_num_inputs(operator_func)
+
         applicable = []
 
         # 从算子到MR的映射中获取适用的模板名称
@@ -142,15 +164,12 @@ class MRTemplatePool:
 
         return applicable
 
-    def create_mr_from_template(
-        self, template: MRTemplate, operator_inputs: List[Any]
-    ) -> MetamorphicRelation:
+    def create_mr_from_template(self, template: MRTemplate) -> MetamorphicRelation:
         """
         从模板创建MR对象
 
         Args:
             template: MR模板
-            operator_inputs: 算子输入
 
         Returns:
             MetamorphicRelation对象
@@ -174,25 +193,30 @@ class MRTemplatePool:
         )
 
     def generate_mr_candidates(
-        self, operator_name: str, operator_inputs: List[Any]
+        self,
+        operator_name: str,
+        operator_func: Optional[Callable] = None,
+        num_inputs: Optional[int] = None,
     ) -> List[MetamorphicRelation]:
         """
         为算子生成MR候选列表（路径B：模板池）
 
         Args:
             operator_name: 算子名称
-            operator_inputs: 算子输入
+            operator_func: 算子函数对象
+            num_inputs: 输入数量
 
         Returns:
             MR候选列表
         """
-        num_inputs = len(operator_inputs)
-        templates = self.get_applicable_templates(operator_name, num_inputs)
+        templates = self.get_applicable_templates(
+            operator_name, operator_func=operator_func, num_inputs=num_inputs
+        )
 
         candidates = []
         for template in templates:
             try:
-                mr = self.create_mr_from_template(template, operator_inputs)
+                mr = self.create_mr_from_template(template)
                 candidates.append(mr)
             except Exception as e:
                 self.logger.warning(
