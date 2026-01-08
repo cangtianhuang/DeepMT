@@ -7,20 +7,19 @@ MR快速筛选器：使用 TestRunner 进行少量快速测试
 - 快速筛选：少量随机用例，快速过滤明显错误的 MR
 """
 
-import uuid
-from typing import Any, Callable, List, Dict
+from typing import Any, Callable, Dict, List
 
 from core.framework import FrameworkType
 from core.logger import get_logger
 from core.oracle_evaluator import OracleEvaluator
-from ir.schema import MetamorphicRelation
 from core.plugins_manager import PluginsManager
 from core.results_manager import ResultsManager
+from ir.schema import MetamorphicRelation
 
 
 class MRPreChecker:
     """
-    MR快速筛选器（重构版）
+    MR快速筛选器
 
     使用 TestRunner 进行少量快速测试，过滤明显不满足的 MR。
     完全框架无关，通过插件系统支持多个框架。
@@ -47,7 +46,7 @@ class MRPreChecker:
         operator_func: Callable,
         mr: MetamorphicRelation,
         original_inputs: List[Any],
-        framework: FrameworkType = "pytorch",
+        framework: FrameworkType,
     ) -> tuple[bool, str]:
         """
         快速检查单个MR是否满足
@@ -58,10 +57,25 @@ class MRPreChecker:
             operator_func: 算子函数
             mr: 蜕变关系
             original_inputs: 原始输入（用于推断类型和形状）
+            framework: 框架类型
 
         Returns:
             (是否通过, 详细信息）
         """
+        # 获取框架适配器
+        framework_adapter = self.plugins_manager.get_framework_adapter(framework)
+
+        # 绑定 transform 和 oracle 到具体框架（使用当前的 framework_adapter）
+        bound_transform = framework_adapter.bind_transform_code(
+            mr.transform_code, operator_func
+        )
+        if bound_transform is None:
+            return False, "Failed to bind transform code"
+
+        bound_oracle = framework_adapter.bind_oracle_expr(
+            mr.oracle_expr, operator_func, mr.tolerance
+        )
+
         # 生成随机测试用例
         test_cases = self._generate_test_cases(original_inputs, self.NUM_TEST_CASES)
 
@@ -77,9 +91,9 @@ class MRPreChecker:
                 # 2. 执行原始输入
                 orig_output = operator_func(**orig_kwargs)
 
-                # 3. 应用 MR 变换
+                # 3. 应用 MR 变换（使用绑定后的函数）
                 try:
-                    transformed_kwargs = mr.transform(orig_kwargs)
+                    transformed_kwargs = bound_transform(orig_kwargs)
                     if not isinstance(transformed_kwargs, dict):
                         failed_count += 1
                         error_messages.append(
@@ -95,15 +109,10 @@ class MRPreChecker:
                 # 4. 执行变换后的输入
                 trans_output = operator_func(**transformed_kwargs)
 
-                # 5. 使用 oracle_expr 验证（框架无关）
-                is_satisfied = self._verify_oracle_expr(
-                    mr.oracle_expr,
-                    orig_output,
-                    trans_output,
-                    orig_kwargs,
-                    transformed_kwargs,
-                    framework=framework,
-                )
+                # 5. 使用绑定后的 oracle 验证（框架无关）
+                # 提取原始输入（假设第一个参数是 'input' 或 'x'）
+                x = orig_kwargs.get("input", orig_kwargs.get("x", None))
+                is_satisfied = bound_oracle(orig_output, trans_output, x, mr.tolerance)
 
                 if is_satisfied:
                     passed_count += 1
@@ -140,55 +149,12 @@ class MRPreChecker:
             )
             return False, error_msg
 
-    def _verify_oracle_expr(
-        self,
-        oracle_expr: str,
-        orig_output: Any,
-        trans_output: Any,
-        orig_kwargs: Dict[str, Any],
-        trans_kwargs: Dict[str, Any],
-        framework: FrameworkType = "pytorch",
-    ) -> bool:
-        """
-        验证 oracle_expr（框架无关）
-
-        使用 OracleEvaluator 将表达式转换为框架特定的代码并执行。
-
-        Args:
-            oracle_expr: 框架无关的表达式（如 "orig == trans"）
-            orig_output: 原始输出
-            trans_output: 变换后输出
-            orig_kwargs: 原始输入字典
-            trans_kwargs: 变换后输入字典
-
-        Returns:
-            验证结果（True/False）
-        """
-        try:
-            # 提取原始输入（假设第一个参数是 'input' 或 'x'）
-            x = orig_kwargs.get("input", orig_kwargs.get("x", None))
-
-            # 使用 OracleEvaluator 编译并执行表达式
-            return self.oracle_evaluator.evaluate(
-                expr=oracle_expr,
-                orig=orig_output,
-                trans=trans_output,
-                x=x,
-                framework=framework,
-                tolerance=1e-6,  # 使用默认容差
-            )
-
-        except Exception as e:
-            self.logger.warning(f"Oracle expression evaluation failed: {e}")
-            self.logger.debug(f"Expression: {oracle_expr}")
-            return False
-
     def filter_mrs(
         self,
         operator_func: Callable,
         mr_candidates: List[MetamorphicRelation],
         original_inputs: List[Any],
-        framework: FrameworkType = "pytorch",
+        framework: FrameworkType,
     ) -> List[MetamorphicRelation]:
         """
         过滤MR候选列表，保留可能满足的MR
@@ -197,7 +163,7 @@ class MRPreChecker:
             operator_func: 算子函数
             mr_candidates: MR候选列表
             original_inputs: 原始输入
-            framework: 框架名称
+            framework: 框架类型
 
         Returns:
             过滤后的MR列表
@@ -207,7 +173,9 @@ class MRPreChecker:
         self.logger.info(f"Pre-checking {len(mr_candidates)} MR candidates...")
 
         for i, mr in enumerate(mr_candidates):
-            is_valid, error_msg = self.check_mr(operator_func, mr, original_inputs)
+            is_valid, error_msg = self.check_mr(
+                operator_func, mr, original_inputs, framework
+            )
 
             if is_valid:
                 filtered.append(mr)

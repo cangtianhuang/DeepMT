@@ -74,13 +74,6 @@ Before generating MRs, analyze the mathematical properties of {operator_name}:
 - What transformations preserve or predictably change the output?
 - What common mistakes should be avoided?
 
-For ReLU specifically:
-- ReLU(x) = max(0, x)
-- ReLU(-x) ≠ -ReLU(x)  ❌ INCORRECT
-- ReLU(ax) = a·ReLU(x) ONLY when a > 0
-- ReLU(x) + ReLU(-x) = |x|  ✓ CORRECT
-- ReLU is idempotent: ReLU(ReLU(x)) = ReLU(x)
-
 ### New MR Structure
 
 Each MR consists of:
@@ -95,6 +88,9 @@ Each MR consists of:
 - Input: 'k' is dictionary of all function arguments
 - Output: New dictionary with modified values
 - Focus on tensor arguments, not config parameters
+- IMPORTANT: Do NOT use framework-specific functions in transform_code (like torch.relu)
+- Instead, use simple mathematical operations: +, -, *, /, abs, etc.
+- For operations that need the function itself, use a generic placeholder like apply_operator()
 
 ### Oracle Expression Format (NEW)
 
@@ -104,8 +100,9 @@ Each MR consists of:
   - `trans`: Transformed output
   - `x`: Original input (if single input)
   - `tolerance`: Numerical tolerance value
-- NO framework-specific functions (e.g., do NOT use torch.allclose)
+- NO framework-specific functions (e.g., do NOT use torch.allclose, torch.relu, np.allclose)
 - The framework adapter will translate the expression to framework-specific code
+- Use simple operators: ==, !=, <, >, <=, >=, +, -, *, /, abs, etc.
 
 ### Complete MR Examples
 
@@ -122,9 +119,9 @@ Each MR consists of:
 **Example 2: Idempotency (for ReLU)**
 ```json
 {{
-  "description": "Applying ReLU twice is same as applying once: f(f(x)) = f(x)",
+  "description": "Applying operator twice is same as applying once: f(f(x)) = f(x)",
   "category": "idempotency",
-  "transform_code": "lambda k: {{**k, 'input': torch.relu(k['input'])}}",
+  "transform_code": "lambda k: {{**k, 'input': apply_operator(k['input'])}}",
   "oracle_expr": "orig == trans"
 }}
 ```
@@ -132,20 +129,20 @@ Each MR consists of:
 **Example 3: Absolute Value Identity (for ReLU)**
 ```json
 {{
-  "description": "ReLU(x) + ReLU(-x) equals |x|",
+  "description": "Operator(x) + Operator(-x) equals |x|",
   "category": "composition",
   "transform_code": "lambda k: {{**k, 'input': -k['input']}}",
   "oracle_expr": "orig + trans == abs(x)"
 }}
 ```
 
-**Example 4: Addition Invariance (for some operators)**
+**Example 4: Monotonicity (for ReLU)**
 ```json
 {{
-  "description": "Adding constant to inputs adds same constant to output",
-  "category": "invariance",
-  "transform_code": "lambda k: {{**k, 'input': k['input'] + 5.0}}",
-  "oracle_expr": "trans == orig + 5.0"
+  "description": "If input increases, output does not decrease",
+  "category": "monotonicity",
+  "transform_code": "lambda k: {{**k, 'input': k['input'] + 1.5}}",
+  "oracle_expr": "trans >= orig"
 }}
 ```
 
@@ -156,6 +153,16 @@ Each MR consists of:
   "category": "symmetry",
   "transform_code": "lambda k: {{**k, 'input': -k['input']}}",
   "oracle_expr": "trans == -orig"
+}}
+```
+
+**Example 6: Zero Output for Negative Input (for ReLU)**
+```json
+{{
+  "description": "Negative input produces zero output",
+  "category": "boundary",
+  "transform_code": "lambda k: {{**k, 'input': -abs(k['input']) - 1.0}}",
+  "oracle_expr": "all(trans == 0)"
 }}
 ```
 
@@ -172,24 +179,27 @@ Choose appropriate category:
 
 ### Common Mistakes to Avoid
 
-❌ **WRONG for ReLU**: "Negating input negates output"
-   - ReLU(-x) ≠ -ReLU(x) because ReLU is not odd function
+❌ **WRONG**: Hard-coded coefficients (e.g., "trans == 3.5 * orig")
+   - Use generic factors like "trans == 2 * orig" or describe as "trans == k * orig"
+   - Specify constraints in description (e.g., "for k > 0")
 
-❌ **WRONG**: "No transformation preserves output"
-   - This is trivial and useless
+❌ **WRONG**: "No transformation preserves output" or identity transformation
+   - This is trivial and useless for testing
 
-❌ **WRONG**: Using framework-specific functions in oracle_expr
-   - Do NOT use: torch.allclose, torch.equal, etc.
-   - Use: ==, <, >, +, -, *, /, abs, etc.
+❌ **WRONG**: Using framework-specific functions in transform_code or oracle_expr
+   - Do NOT use: torch.relu, torch.allclose, np.allclose, etc.
+   - Use: simple math operations +, -, *, /, abs, apply_operator(), etc.
 
 ❌ **WRONG**: Complex nested functions in oracle_expr
    - Keep it simple and mathematical
-   - Examples: "orig == trans", "trans == 2*orig", "orig + trans == abs(x)"
+   - Examples: "orig == trans", "trans == 2*orig", "trans >= orig"
 
 ✓ **CORRECT**: Write simple mathematical expressions
-   - "orig == trans"
-   - "trans == 2 * orig"
-   - "orig + trans == abs(x)"
+   - "orig == trans" (equality)
+   - "trans == 2 * orig" (proportional)
+   - "trans >= orig" (monotonicity)
+   - "all(trans == 0)" (zero output)
+   - "orig + trans == abs(x)" (composition)
 
 ### Output Format
 
@@ -216,6 +226,30 @@ Return ONLY valid JSON (no markdown, no extra text):
 4. Use SIMPLE mathematical expressions in oracle_expr (no framework-specific functions)
 5. Always consider numerical tolerance via the tolerance variable
 6. Return ONLY JSON object, no markdown blocks
+
+### QUALITY REQUIREMENTS (CRITICAL)
+
+✓ **GENERICITY**: MRs should work for ANY valid input, not just specific values
+  - Example: "Scaling by positive factor" (generic) vs "Scaling by 3.5" (specific)
+  - Use simple numbers (2, -1, etc.) in transform_code for demonstration
+  - Describe the general property in description
+
+✓ **CORRECTNESS**: Ensure mathematical correctness for the operator
+  - Double-check properties before including them
+  - Consider edge cases (zero, negative values, etc.)
+  - Add necessary constraints in description (e.g., "for positive scaling factor")
+
+✓ **FRAMEWORK INDEPENDENCE**:
+  - NO framework-specific functions anywhere (torch, tensorflow, numpy, etc.)
+  - Use: apply_operator() to denote applying the operator itself
+  - Use: simple math operations (+, -, *, /, abs, etc.)
+  - Use: comparison operators (==, !=, <, >, <=, >=)
+  - Use: all() for element-wise checks on arrays
+
+✓ **SIMPLICITY**:
+  - Keep oracle_expr concise and readable
+  - Prefer direct relationships over complex compositions
+  - Use standard mathematical notation
 """
         return prompt
 
@@ -284,28 +318,36 @@ CRITICAL REQUIREMENTS:
    - Generate 3-5 SOUND MRs
    - Each MR must be mathematically correct
    - Avoid trivial or obviously wrong MRs
+   - Ensure MRs are GENERIC, not tied to specific values
 
-2. transform_code FORMAT:
+2. transform_code FORMAT (Framework Independent):
    - Lambda: "lambda k: {{**k, 'input': modified}}"
    - Input: 'k' is dictionary of all function arguments
    - Output: New dictionary with modified values
    - Focus on tensor arguments, not config parameters
+   - NO framework-specific functions (torch.relu, np.abs, etc.)
+   - Use simple math: +, -, *, /, abs()
+   - For applying the operator itself, use: apply_operator()
 
-3. oracle_expr FORMAT (NEW - Framework Independent):
+3. oracle_expr FORMAT (Framework Independent):
    - Simple mathematical expression, NOT a lambda function
    - Available variables: orig, trans, x, tolerance
-   - NO framework-specific functions (torch, tensorflow, etc.)
+   - NO framework-specific functions (torch, tensorflow, numpy, etc.)
+   - Use standard operators: ==, !=, <, >, <=, >=, +, -, *, /, abs
+   - Use all() for element-wise checks on arrays
    - Examples:
      * "orig == trans"  # Equality
      * "trans == 2 * orig"  # Proportional (factor 2)
      * "trans == -orig"  # Negation
+     * "trans >= orig"  # Monotonicity
+     * "all(trans == 0)"  # Zero output
      * "orig + trans == abs(x)"  # Composition
 
-4. EXAMPLES:
+4. HIGH-QUALITY EXAMPLES:
    
    ✓ Positive Scaling (ReLU):
    {{
-     "description": "f(2x) = 2f(x) for positive scaling",
+     "description": "Scaling input by positive factor scales output by same factor",
      "category": "linearity",
      "transform_code": "lambda k: {{**k, 'input': 2 * k['input']}}",
      "oracle_expr": "trans == 2 * orig"
@@ -313,9 +355,9 @@ CRITICAL REQUIREMENTS:
    
    ✓ Idempotency (ReLU):
    {{
-     "description": "f(f(x)) = f(x)",
+     "description": "Applying operator twice is same as applying once: f(f(x)) = f(x)",
      "category": "idempotency",
-     "transform_code": "lambda k: {{**k, 'input': torch.relu(k['input'])}}",
+     "transform_code": "lambda k: {{**k, 'input': apply_operator(k['input'])}}",
      "oracle_expr": "orig == trans"
    }}
    
@@ -327,17 +369,34 @@ CRITICAL REQUIREMENTS:
      "oracle_expr": "orig + trans == abs(x)"
    }}
 
+   ✓ Monotonicity (ReLU):
+   {{
+     "description": "If input increases, output does not decrease",
+     "category": "monotonicity",
+     "transform_code": "lambda k: {{**k, 'input': k['input'] + 1.0}}",
+     "oracle_expr": "trans >= orig"
+   }}
+
+   ✓ Zero Output (ReLU):
+   {{
+     "description": "Negative input always produces zero output",
+     "category": "boundary",
+     "transform_code": "lambda k: {{**k, 'input': -abs(k['input']) - 1.0}}",
+     "oracle_expr": "all(trans == 0)"
+   }}
+
 5. COMMON MISTAKES TO AVOID:
-   ❌ For ReLU: "f(-x) = -f(x)" is WRONG
-   ❌ Using torch.allclose, np.allclose in oracle_expr
-   ❌ Trivial: "Identity transformation" is useless
+   ❌ Hard-coded specific values: "trans == 3.5 * orig" (should be generic)
+   ❌ Using framework-specific functions: torch.relu, torch.allclose, np.allclose
+   ❌ Trivial: "Identity transformation" or no transformation is useless
    ❌ Complex: Keep oracle_expr simple and mathematical
 
-6. OPERATOR-SPECIFIC KNOWLEDGE:
-   - ReLU: f(x) = max(0,x), NOT odd function, idempotent
-   - Sigmoid: f(x) bounded [0,1], f(-x) = 1-f(x)
-   - Tanh: f(x) odd function, f(-x) = -f(x)
-   - Softmax: permutation invariant, translation invariant
+6. FRAMEWORK INDEPENDENCE IS MANDATORY:
+   - NEVER use torch.relu, torch.max, torch.where, etc.
+   - NEVER use np.relu, np.maximum, etc.
+   - Use apply_operator() to denote applying the operator
+   - Use abs(x) for absolute value
+   - Use all(expr) for element-wise checks on arrays
 
 ═══════════════════════════════════════════════════════════════════
 OUTPUT: Return ONLY JSON with {{"mrs": [...]}}, no markdown blocks
@@ -349,7 +408,7 @@ OUTPUT: Return ONLY JSON with {{"mrs": [...]}}, no markdown blocks
             ]
 
             content = self.llm_client.chat_completion(
-                messages, temperature=0.7, max_tokens=3000
+                messages, temperature=0.7, max_tokens=3000, use_model_max=True
             )
 
             # 提取JSON代码块

@@ -5,9 +5,10 @@
 import importlib
 import inspect
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from core.logger import get_logger
+from plugins.framework_adapter import FrameworkAdapter
 
 
 class PluginsManager:
@@ -22,6 +23,7 @@ class PluginsManager:
         """
         self.plugins_dir = Path(plugins_dir)
         self.plugins: Dict[str, Any] = {}
+        self.framework_adapters: Dict[str, FrameworkAdapter] = {}
         self.logger = get_logger(self.__class__.__name__)
 
     def load_plugins(self):
@@ -52,6 +54,11 @@ class PluginsManager:
                         # 实例化插件
                         plugin_instance = obj()
                         self.plugins[plugin_name] = plugin_instance
+
+                        # 同时创建对应的框架适配器
+                        self.framework_adapters[plugin_name] = FrameworkAdapter(
+                            framework=plugin_name
+                        )
 
                         self.logger.info(f"Loaded plugin: {plugin_name} ({name})")
 
@@ -102,6 +109,29 @@ class PluginsManager:
             raise KeyError(f"Plugin '{name}' not found. Available plugins: {available}")
 
         return self.plugins[name]
+
+    def get_framework_adapter(self, framework: str) -> FrameworkAdapter:
+        """
+        获取指定框架的适配器
+
+        Args:
+            framework: 框架名称（如 "pytorch", "tensorflow", "paddle"）
+
+        Returns:
+            FrameworkAdapter 实例
+
+        Raises:
+            KeyError: 如果框架适配器不存在
+        """
+        framework = framework.lower()
+
+        if framework not in self.framework_adapters:
+            available = ", ".join(self.framework_adapters.keys())
+            raise KeyError(
+                f"Framework adapter for '{framework}' not found. Available adapters: {available}"
+            )
+
+        return self.framework_adapters[framework]
 
     def register_plugin(self, name: str, plugin_instance: Any):
         """

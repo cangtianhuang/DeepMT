@@ -48,7 +48,8 @@ class LLMClient:
         self.api_key = (
             api_key or get_config_value("llm.api_key") or os.getenv("OPENAI_API_KEY")
         )
-        self.model = model or get_config_value("llm.model", "gpt-4")
+        self.model_base = get_config_value("llm.model_base", "ernie-4.5-turbo-latest")
+        self.model_max = get_config_value("llm.model_max", "ernie-5.0-thinking-latest")
         self.base_url = get_config_value("llm.url")
         self.temperature = get_config_value("llm.temperature", 0.7)
         self.max_tokens = get_config_value("llm.max_tokens", 2000)
@@ -108,6 +109,7 @@ class LLMClient:
         messages: List[Dict[str, Any]],
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
+        use_model_max: bool = False,
         **kwargs,
     ) -> str:
         """
@@ -117,23 +119,25 @@ class LLMClient:
             messages: 消息列表，格式：[{"role": "user", "content": "..."}]
             temperature: 温度参数（如果为None则使用配置值）
             max_tokens: 最大token数（如果为None则使用配置值）
+            use_model_max: 是否使用高级模型（model_max）而非基础模型（model_base）
             **kwargs: 其他参数
 
         Returns:
             响应内容字符串
         """
+        # 根据任务类型选择模型
+        model = self.model_max if use_model_max else self.model_base
+
         messages_preview = "\\n".join(
             [
                 f"{msg['role']}: {msg['content'][:100].replace('\n', '\\n')}"
                 for msg in messages
             ]
         )
-        self.logger.info(
-            f"LLM API called for model {self.model}: {messages_preview}..."
-        )
+        self.logger.info(f"LLM API called for model {model}: {messages_preview}...")
         if self.provider == "openai":
             response = self.client.chat.completions.create(  # type: ignore
-                model=self.model,
+                model=model,
                 messages=messages,  # type: ignore
                 temperature=temperature or self.temperature,
                 max_tokens=max_tokens or self.max_tokens,

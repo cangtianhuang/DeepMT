@@ -203,6 +203,7 @@ class OperatorMRGenerator:
                     operator_func=operator_func,
                     mr_candidates=candidate_mrs,
                     original_inputs=operator_ir.inputs or [],
+                    framework=framework,
                 )
                 self.logger.info(
                     f"  → After pre-check: {len(candidate_mrs)} candidates remain"
