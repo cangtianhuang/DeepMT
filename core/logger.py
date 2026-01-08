@@ -12,21 +12,18 @@ from typing import Optional
 
 class ColoredFormatter(logging.Formatter):
     COLORS = {
-        "DEBUG": "\033[38;2;113;119;144m",
-        "INFO": "\033[38;2;46;144;188m",
-        "WARNING": "\033[38;2;255;165;0m",
-        "ERROR": "\033[38;2;220;38;38m",
-        "CRITICAL": "\033[38;2;139;0;0m",
+        "DEBUG": "\033[38;2;148;163;184m",
+        "INFO": "\033[38;2;56;189;248m",
+        "WARNING": "\033[38;2;250;204;21m",
+        "ERROR": "\033[38;2;248;113;113m",
+        "CRITICAL": "\033[38;2;220;38;38m",
     }
-
-    ACCENT = "\033[38;2;88;166;255m"
-    MUTED = "\033[38;2;156;163;175m"
-    BRIGHT = "\033[38;2;249;250;251m"
-    DIM = "\033[38;2;107;114;128m"
-
+    ACCENT = "\033[38;2;167;139;250m"
+    MUTED = "\033[38;2;100;116;139m"
+    BRIGHT = "\033[38;2;226;232;240m"
+    DIM = "\033[38;2;71;85;105m"
     RESET = "\033[0m"
     BOLD = "\033[1m"
-    RESET_BOLD = "\033[22m"
 
     def __init__(
         self, fmt: str, datefmt: Optional[str] = None, enable_color: bool = True
@@ -41,10 +38,11 @@ class ColoredFormatter(logging.Formatter):
         record = logging.makeLogRecord(record.__dict__)
         levelname = record.levelname
         if levelname in self.COLORS:
-            level_prefix = f"{self.COLORS[levelname]}"
-            if levelname in ["ERROR", "CRITICAL", "WARNING"]:
-                level_prefix += self.BOLD
-            record.levelname = f"{level_prefix}{levelname}{self.RESET}"
+            color = self.COLORS[levelname]
+            extra_style = ""
+            if levelname in ["WARNING", "ERROR", "CRITICAL"]:
+                extra_style = self.BOLD
+            record.levelname = f"{color}{extra_style}{levelname}{self.RESET}"
         record.name = f"{self.MUTED}{record.name}{self.RESET}"
         record.filename = f"{self.ACCENT}{record.filename}{self.RESET}"
         record.module = f"{self.MUTED}{record.module}{self.RESET}"

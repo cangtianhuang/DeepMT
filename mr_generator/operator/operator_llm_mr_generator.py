@@ -257,7 +257,6 @@ Return ONLY valid JSON (no markdown, no extra text):
         self,
         operator_name: str,
         operator_func: Optional[Callable] = None,
-        operator_signature: Optional[str] = None,
         operator_code: Optional[str] = None,
         operator_doc: Optional[str] = None,
         top_k: int = 5,
@@ -277,34 +276,24 @@ Return ONLY valid JSON (no markdown, no extra text):
             MR候选列表
         """
         # 获取算子签名
-        if operator_signature is None:
-            if operator_func is not None:
-                try:
-                    sig = inspect.signature(operator_func)
-                    operator_signature = str(sig)
-                    self.logger.info(f"Auto-extracted signature: {operator_signature}")
-                except Exception as e:
-                    self.logger.error(
-                        f"Failed to extract signature from function: {e}. "
-                        "Please provide operator_signature explicitly."
-                    )
-                    return []
-            else:
-                self.logger.error(
-                    "Either operator_func or operator_signature must be provided"
-                )
-                return []
+        operator_signature = ""
+        if operator_func is not None:
+            try:
+                sig = inspect.signature(operator_func)
+                operator_signature = str(sig)
+                self.logger.info(f"Auto-extracted signature: {operator_signature}")
+            except Exception as e:
+                self.logger.warning(f"Failed to extract signature from function: {e}. ")
 
-        try:
-            prompt = self._build_prompt(
-                operator_name=operator_name,
-                operator_signature=operator_signature,
-                operator_code=operator_code,
-                operator_doc=operator_doc,
-            )
+        prompt = self._build_prompt(
+            operator_name=operator_name,
+            operator_signature=operator_signature,
+            operator_code=operator_code,
+            operator_doc=operator_doc,
+        )
 
-            # System prompt
-            system_prompt = """You are an expert in metamorphic testing for deep learning operators.
+        # System prompt
+        system_prompt = """You are an expert in metamorphic testing for deep learning operators.
 
 Your task is to generate HIGH-QUALITY Metamorphic Relations (MRs) with:
 1. transform_code: Lambda to transform inputs
@@ -402,15 +391,14 @@ CRITICAL REQUIREMENTS:
 OUTPUT: Return ONLY JSON with {{"mrs": [...]}}, no markdown blocks
 ═══════════════════════════════════════════════════════════════════"""
 
-            messages = [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": prompt},
-            ]
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": prompt},
+        ]
 
-            content = self.llm_client.chat_completion(
-                messages, use_model_max=True
-            )
+        content = self.llm_client.chat_completion(messages, use_model_max=True)
 
+        try:
             # 提取JSON代码块
             if "```json" in content:
                 content = content.split("```json")[1].split("```")[0].strip()
