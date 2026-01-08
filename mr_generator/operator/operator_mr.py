@@ -13,13 +13,11 @@ from typing import Callable, Dict, List, Literal, Optional, Set
 from core.framework import FrameworkType
 from core.logger import get_logger
 from ir.schema import MetamorphicRelation, OperatorIR
-from mr_generator.base.knowledge_base import KnowledgeBase
 from mr_generator.base.mr_templates import MRTemplatePool
-from mr_generator.operator.code_translator import CodeToSymPyTranslator
-from mr_generator.operator.mr_precheck import MRPreChecker
+from mr_generator.operator.mr_prechecker import MRPreChecker
 from mr_generator.operator.operator_llm_mr_generator import OperatorLLMMRGenerator
 from mr_generator.operator.sympy_prover import SymPyProver
-from tools.llm.client import LLMClient
+from mr_generator.operator.sympy_translator import SympyTranslator
 from tools.web_search.operator_fetcher import OperatorInfoFetcher
 
 # MR生成来源类型
@@ -56,17 +54,15 @@ class OperatorMRGenerator:
         """初始化算子MR生成器"""
         self.logger = get_logger(self.__class__.__name__)
 
-        # 初始化核心组件
-        self.llm_client = LLMClient()
-        self.llm_generator = OperatorLLMMRGenerator(llm_client=self.llm_client)
+        self.llm_generator = OperatorLLMMRGenerator()
         self.template_pool = MRTemplatePool()
-        self.code_translator = CodeToSymPyTranslator(llm_client=self.llm_client)
+        self.code_translator = SympyTranslator()
         self.info_fetcher = OperatorInfoFetcher()
         self.prechecker = MRPreChecker()
         self.sympy_prover = SymPyProver(code_translator=self.code_translator)
 
         # 向后兼容：保留知识库（内部使用）
-        self._kb = KnowledgeBase()
+        # self._kb = KnowledgeBase()
 
         self.logger.info("OperatorMRGenerator initialized")
 
@@ -219,6 +215,9 @@ class OperatorMRGenerator:
 
         if use_sympy_proof:
             if has_code or sympy_expr is not None:
+                # 获取输入数量
+                num_inputs = len(operator_ir.inputs) if operator_ir.inputs else None
+
                 self.logger.info("Proving candidate MRs using SymPy...")
                 proven_mrs = self.sympy_prover.prove_mrs(
                     mrs=candidate_mrs,

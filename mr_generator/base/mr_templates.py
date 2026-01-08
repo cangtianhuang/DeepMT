@@ -1,6 +1,7 @@
 """
 MR模板池：从配置文件读取常见数学变换模板
 用于路径B（无知识）的MR猜想生成
+
 """
 
 import inspect
@@ -22,7 +23,8 @@ class MRTemplate:
     name: str  # 模板名称
     description: str  # MR描述
     transform_func: Callable  # 输入变换函数
-    expected: str  # 期望关系类型
+    oracle_expr: str  # 框架无关的验证表达式
+    category: str = "general"  # MR类别
     min_inputs: int = 1  # 最小输入数量
     max_inputs: Optional[int] = None  # 最大输入数量（None表示无限制）
 
@@ -42,7 +44,7 @@ class MRTemplatePool:
         self.operator_mr_mapping: Dict[str, List[str]] = {}
 
         if config_path is None:
-            # 默认配置文件路径：mr_generator/config/mr_templates.yaml
+            # 默认配置文件路径
             base_dir = Path(__file__).parent.parent
             default_path = base_dir / "config" / "mr_templates.yaml"
             self.config_path = default_path
@@ -71,11 +73,18 @@ class MRTemplatePool:
                         eval(transform_code) if transform_code else lambda *args: args
                     )
 
+                    # 解析 oracle_expr
+                    oracle_expr = template_data.get(
+                        "oracle_expr",
+                        template_data.get("expected", "orig == trans"),  # 向后兼容
+                    )
+
                     template = MRTemplate(
                         name=template_data.get("name", template_name),
                         description=template_data.get("description", ""),
                         transform_func=transform_func,
-                        expected=template_data.get("expected", "equal"),
+                        oracle_expr=oracle_expr,
+                        category=template_data.get("category", "general"),
                         min_inputs=template_data.get("min_inputs", 1),
                         max_inputs=template_data.get("max_inputs"),
                     )
@@ -96,6 +105,7 @@ class MRTemplatePool:
             raise
 
     def _infer_num_inputs(self, operator_func: Optional[Callable]) -> int:
+        """推断算子的输入数量"""
         if operator_func is None:
             return 2
 
@@ -183,13 +193,24 @@ class MRTemplatePool:
                 self.logger.warning(f"Transform function error: {e}")
                 return args
 
+        # 生成 transform_code
+        try:
+            import inspect
+
+            transform_code = inspect.getsource(template.transform_func).strip()
+        except:
+            transform_code = f"# Template: {template.name}"
+
         return MetamorphicRelation(
             id=str(uuid.uuid4()),
             description=template.description,
             transform=transform,
-            expected=template.expected,
+            transform_code=transform_code,
+            oracle_expr=template.oracle_expr,
+            category=template.category,
             tolerance=1e-6,
             layer="operator",
+            verified=False,
         )
 
     def generate_mr_candidates(

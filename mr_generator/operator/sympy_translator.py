@@ -12,30 +12,18 @@ from core.logger import get_logger
 from tools.llm.client import LLMClient
 
 
-class CodeToSymPyTranslator:
-    """
-    代码到SymPy转换器
+class SympyTranslator:
+    """代码到SymPy转换器"""
 
-    转换路径：
-    1. 代理路径（推荐）：LLM → Python参考实现 → AST → SymPy
-    2. 直接路径（备选）：LLM → SymPy表达式代码
-    3. 纯AST路径（回退）：原始代码 → AST → SymPy
-    """
+    def __init__(self):
 
-    def __init__(self, llm_client: Optional[LLMClient] = None):
-        """
-        初始化转换器
-
-        Args:
-            llm_client: LLM客户端（如果为None则创建默认客户端）
-        """
         self.logger = get_logger(self.__class__.__name__)
 
         # 导入AST解析器
-        from mr_generator.operator.ast_parser import ASTToSymPyParser
+        from mr_generator.operator.ast_parser import ASTParser
 
-        self.ast_parser = ASTToSymPyParser()
-        self.llm_client = llm_client or LLMClient()
+        self.ast_parser = ASTParser()
+        self.llm_client = LLMClient()
 
     def translate(
         self,
@@ -241,3 +229,5 @@ result = <SymPy表达式>
         except Exception as e:
             self.logger.debug(f"Error executing SymPy code: {e}")
             return None
+
+

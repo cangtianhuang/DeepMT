@@ -10,13 +10,13 @@ import sympy as sp
 
 from core.logger import get_logger
 from ir.schema import MetamorphicRelation
-from mr_generator.operator.code_translator import CodeToSymPyTranslator
+from mr_generator.operator.sympy_translator import SympyTranslator
 
 
 class SymPyProver:
     """SymPy形式化证明引擎：使用动态代码转换"""
 
-    def __init__(self, code_translator: Optional[CodeToSymPyTranslator] = None):
+    def __init__(self, code_translator: Optional[SympyTranslator] = None):
         """
         初始化SymPy证明引擎
 
@@ -24,7 +24,7 @@ class SymPyProver:
             code_translator: 代码转换器（如果为None则创建默认实例）
         """
         self.logger = get_logger(self.__class__.__name__)
-        self.code_translator = code_translator or CodeToSymPyTranslator()
+        self.code_translator = code_translator or SympyTranslator()
 
     def code_to_sympy(
         self,
@@ -47,7 +47,7 @@ class SymPyProver:
         Returns:
             SymPy表达式，如果转换失败则返回None
         """
-        # 使用 CodeToSymPyTranslator 进行动态转换
+        # 使用 SympyTranslator 进行动态转换
         sympy_expr = self.code_translator.translate(
             code=code,
             func=func,
