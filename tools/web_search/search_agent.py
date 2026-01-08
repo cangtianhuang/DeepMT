@@ -152,7 +152,7 @@ Return JSON format only:
                 {"role": "user", "content": prompt},
             ]
 
-            response = self.llm_client.chat_completion(messages, temperature=0.3)
+            response = self.llm_client.chat_completion(messages)
 
             if "```json" in response:
                 response = response.split("```json")[1].split("```")[0].strip()
@@ -321,7 +321,7 @@ Return JSON only:
                 {"role": "user", "content": prompt},
             ]
 
-            response = self.llm_client.chat_completion(messages, temperature=0.3)
+            response = self.llm_client.chat_completion(messages)
 
             if "```json" in response:
                 response = response.split("```json")[1].split("```")[0].strip()

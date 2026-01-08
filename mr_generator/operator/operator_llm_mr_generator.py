@@ -408,7 +408,7 @@ OUTPUT: Return ONLY JSON with {{"mrs": [...]}}, no markdown blocks
             ]
 
             content = self.llm_client.chat_completion(
-                messages, temperature=0.7, max_tokens=3000, use_model_max=True
+                messages, use_model_max=True
             )
 
             # 提取JSON代码块

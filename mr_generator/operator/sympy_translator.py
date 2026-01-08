@@ -158,7 +158,7 @@ def reference_impl(x0, x1, ...):
                 },
                 {"role": "user", "content": prompt},
             ]
-            content = self.llm_client.chat_completion(messages, temperature=0.2)
+            content = self.llm_client.chat_completion(messages)
             return self._extract_code_block(content)
         except Exception as e:
             self.logger.debug(f"LLM to Python reference error: {e}")
@@ -202,7 +202,7 @@ result = <SymPy表达式>
                 },
                 {"role": "user", "content": prompt},
             ]
-            content = self.llm_client.chat_completion(messages, temperature=0.2)
+            content = self.llm_client.chat_completion(messages)
             return self._extract_code_block(content)
         except Exception as e:
             self.logger.debug(f"LLM to SymPy code error: {e}")

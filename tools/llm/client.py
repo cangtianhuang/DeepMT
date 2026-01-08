@@ -51,8 +51,7 @@ class LLMClient:
         self.model_base = get_config_value("llm.model_base", "ernie-4.5-turbo-latest")
         self.model_max = get_config_value("llm.model_max", "ernie-5.0-thinking-latest")
         self.base_url = get_config_value("llm.url")
-        self.temperature = get_config_value("llm.temperature", 0.7)
-        self.max_tokens = get_config_value("llm.max_tokens", 2000)
+        self.temperature = get_config_value("llm.temperature", 0.2)
 
         if not self.api_key:
             raise ValueError(
@@ -105,22 +104,14 @@ class LLMClient:
             raise ValueError(f"Unsupported LLM provider: {self.provider}")
 
     def chat_completion(
-        self,
-        messages: List[Dict[str, Any]],
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
-        use_model_max: bool = False,
-        **kwargs,
+        self, messages: List[Dict[str, Any]], use_model_max: bool = False
     ) -> str:
         """
         发送聊天完成请求
 
         Args:
             messages: 消息列表，格式：[{"role": "user", "content": "..."}]
-            temperature: 温度参数（如果为None则使用配置值）
-            max_tokens: 最大token数（如果为None则使用配置值）
-            use_model_max: 是否使用高级模型（model_max）而非基础模型（model_base）
-            **kwargs: 其他参数
+            use_model_max: 是否使用高级模型（model_max）而非基础模型（model_base
 
         Returns:
             响应内容字符串
@@ -139,17 +130,15 @@ class LLMClient:
             response = self.client.chat.completions.create(  # type: ignore
                 model=model,
                 messages=messages,  # type: ignore
-                temperature=temperature or self.temperature,
-                max_tokens=max_tokens or self.max_tokens,
-                **kwargs,
+                temperature=self.temperature,
             )
-            content = response.choices[0].message.content.strip()
+            content = response.choices[0].message.content.strip()  # type: ignore
             usage = response.usage
             # 将换行符转换为 \n 以便在日志中显示
             content_preview = content[:100].replace("\n", "\\n").replace("\r", "\\r")
             self.logger.info(
-                f"LLM API responsed for model {self.model}: {content_preview}..."
-                f" (total_tokens={usage.total_tokens})"
+                f"LLM API responsed for model {model}: {content_preview}..."
+                f" (total_tokens={usage.total_tokens})"  # type: ignore
             )
             return content
 
@@ -163,19 +152,17 @@ class LLMClient:
                     user_msgs.append(msg["content"])
 
             response = self.client.messages.create(  # type: ignore
-                model=self.model,
+                model=model,
                 system=system_msg,
                 messages=[{"role": "user", "content": "\n".join(user_msgs)}],
-                temperature=temperature or self.temperature,
-                max_tokens=max_tokens or self.max_tokens,
-                **kwargs,
+                temperature=self.temperature,
             )
             content = response.content[0].text
             usage = response.usage
             # 将换行符转换为 \n 以便在日志中显示
             content_preview = content[:100].replace("\n", "\\n").replace("\r", "\\r")
             self.logger.info(
-                f"LLM API responsed for model {self.model}: {content_preview}..."
+                f"LLM API responsed for model {model}: {content_preview}..."
                 f" (total_tokens={usage.total_tokens})"
             )
             return content
