@@ -7,7 +7,7 @@ from typing import Any, Dict, Iterator, Optional
 
 import yaml
 
-from core.logger import get_logger
+from core.logger import get_logger, reconfigure_logger
 
 
 class ConfigLoader:
@@ -130,7 +130,7 @@ class ConfigLoader:
             level = getattr(
                 logging, self.get("logging.level", "INFO").upper(), logging.INFO
             )
-            self.logger.reinitialize(log_dir, level)
+            reconfigure_logger(log_dir=log_dir, level=level)
             self.logger.info(f"Loaded config from: {path}")
         except (OSError, FileNotFoundError) as e:
             self.logger.error(f"Failed to access config file {path}: {e}")
