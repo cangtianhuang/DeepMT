@@ -4,6 +4,7 @@
 
 import asyncio
 import json
+import re
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 from urllib.parse import urljoin, urlparse
 
@@ -27,12 +28,6 @@ class SearchAgent:
     """
 
     def __init__(self):
-        """
-        初始化搜索智能体
-
-        Args:
-            llm_client: LLM客户端（如果为None则创建默认客户端）
-        """
         self.logger = get_logger(self.__class__.__name__)
         self.llm_client = LLMClient()
         self.ocr_client = OCRClient()
@@ -46,7 +41,7 @@ class SearchAgent:
         max_results: int = 5,
     ) -> List["SearchResult"]:
         """
-        完整的文档搜索流程：搜索 -> 获取内容 -> 重新排序。
+        完整的文档搜索和处理流程：搜索 -> 获取内容 -> 重排 -> 过滤 -> 清洗
 
         Args:
             query: 搜索查询（算子名称）
@@ -55,7 +50,7 @@ class SearchAgent:
             max_results: 返回的最大结果数量
 
         Returns:
-            包含完整内容的搜索结果列表
+            包含处理后内容的搜索结果列表
 
         Raises:
             ValueError: 如果未找到任何结果（如果有拼写错误建议则提供拼写建议）
@@ -77,42 +72,37 @@ class SearchAgent:
                     f"搜索 '{query}' 未找到结果。"
                     f"您是否想搜索 '{corrected_query}'？如果是，请使用 '{corrected_query}' 重新搜索。"
                 )
-
             raise ValueError(f"搜索 '{query}' 未找到结果。请检查算子名称是否正确。")
 
         # 获取文档内容
         self.logger.info(f"Fetching {len(unique_results)} search results contents...")
-        urls_to_fetch: List[tuple[str, Dict[str, Any]]] = []
-        for item in unique_results:
-            if not (url := item.get("url")):
-                continue
-            urls_to_fetch.append((url, item))
+        urls_to_fetch: List[tuple[str, Dict[str, Any]]] = [
+            (item["url"], item) for item in unique_results if item.get("url")
+        ]
 
         results = asyncio.run(self._fetch_contents_async(urls_to_fetch))
-
         self.logger.info(f"Successfully fetched {len(results)} search results contents")
 
-        # 根据内容进行重排
-        self.logger.info(f"Reranking {len(results)} search results with LLM...")
-        ranked_results = self._rerank_with_llm(query, results)
+        for result in results:
+            result["content"] = self._clean_document(result["content"])
+
+        # 根据内容进行重排和过滤
+        self.logger.info(f"Reranking and filtering {len(results)} search results...")
+        ranked_results = self._rerank_and_filter(query, results)
 
         # 构建结果
-        final_results: List[SearchResult] = []
-        for item in ranked_results[:max_results]:
-            final_results.append(
-                SearchResult(
-                    title=item.get(
-                        "title",
-                        f"{framework.capitalize()} {query} Documentation",
-                    ),
-                    url=item.get("url", ""),
-                    snippet=item.get("content", ""),
-                    source="docs",
-                    relevance_score=item.get("relevance_score", 0.9),
-                )
+        return [
+            SearchResult(
+                title=item.get(
+                    "title", f"{framework.capitalize()} {query} Documentation"
+                ),
+                url=item.get("url", ""),
+                snippet=item.get("content", ""),
+                source="docs",
+                relevance_score=item.get("relevance_score", 0.9),
             )
-
-        return final_results
+            for item in ranked_results[:max_results]
+        ]
 
     def _deduplicate_results(
         self, results: List[Dict[str, Any]]
@@ -175,11 +165,9 @@ Return JSON format only:
         self, search_url: str, query: str, max_results: int
     ) -> List[Dict[str, Any]]:
         """执行搜索请求 (PyTorch 使用 Sphinx 搜索索引，其他框架使用搜索引擎)"""
-
         try:
             if "pytorch" in search_url:
                 return self._search_with_sphinx_index(search_url, query, max_results)
-                return results
 
             headers = {
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
@@ -207,10 +195,11 @@ Return JSON format only:
                 base_path = path[: -len("search")] + "/"
             else:
                 base_path = path.rsplit("/", 1)[0] + "/"
-            base_url = f"{parsed.scheme}://{parsed.netloc}{base_path}"
 
+            base_url = f"{parsed.scheme}://{parsed.netloc}{base_path}"
             if base_url not in self._sphinx_indexes:
                 self._sphinx_indexes[base_url] = SphinxSearchIndex(base_url)
+
             return self._sphinx_indexes[base_url].search(query, max_results)
 
         except Exception as e:
@@ -221,7 +210,6 @@ Return JSON format only:
         self, html: str, max_results: int
     ) -> List[Dict[str, Any]]:
         """解析搜索结果HTML"""
-        results = []
         try:
             soup = BeautifulSoup(html, "html.parser")
             search_results_div = soup.find("div", id="search-results")
@@ -231,46 +219,49 @@ Return JSON format only:
                 else None
             )
 
-            if search_ul:
-                for li in search_ul.find_all("li", recursive=False)[:max_results]:
-                    if not (link := li.find("a", href=True)):
-                        continue
+            if not search_ul:
+                return []
 
-                    title = link.get_text(strip=True)
-                    url = str(link.get("href", ""))
+            results = []
+            for li in search_ul.find_all("li", recursive=False)[:max_results]:
+                if not (link := li.find("a", href=True)):
+                    continue
 
-                    score_attr = link.get("data-score")
-                    try:
-                        score = float(str(score_attr)) / 100.0 if score_attr else 0.5
-                    except (ValueError, TypeError):
-                        score = 0.5
+                title = link.get_text(strip=True)
+                url = str(link.get("href", ""))
 
+                score_attr = link.get("data-score")
+                try:
+                    score = float(str(score_attr)) / 100.0 if score_attr else 0.5
+                except (ValueError, TypeError):
+                    score = 0.5
+
+                if title and url:
                     context_p = li.find("p", class_="context")
                     snippet = context_p.get_text(strip=True)[:300] if context_p else ""
+                    results.append(
+                        {
+                            "title": title,
+                            "url": url,
+                            "snippet": snippet,
+                            "relevance_score": score,
+                        }
+                    )
 
-                    if title and url:
-                        results.append(
-                            {
-                                "title": title,
-                                "url": url,
-                                "snippet": snippet,
-                                "relevance_score": score,
-                            }
-                        )
+            return results
 
         except Exception as e:
             self.logger.warning(f"Failed to parse search results: {e}")
+            return []
 
-        return results[:max_results]
-
-    def _rerank_with_llm(
+    def _rerank_and_filter(
         self,
         query: str,
         results: List[Dict[str, Any]],
         filter_zero_score: bool = True,
     ) -> List[Dict[str, Any]]:
         """
-        使用LLM根据文档内容对搜索结果进行相关性重排序
+        使用LLM根据文档内容对搜索结果进行相关性重排序和过滤
 
         Args:
             query: 搜索查询
@@ -278,8 +269,7 @@ Return JSON format only:
             filter_zero_score: 是否过滤掉0分（不相关）的结果
 
         Returns:
-            重排序后的结果列表，每个结果包含relevance_score字段(0-1)
-            如果 filter_zero_score=True，则0分结果会被排除
+            重排序并过滤后的结果列表，每个结果包含relevance_score字段(0-1)
         """
         if not results:
             return []
@@ -297,16 +287,26 @@ Search results:
 {results_text}
 
 Rate each result's relevance to the query on a 0-1 scale:
-- 1.0: Perfectly matches the query (exact operator documentation)
-- 0.7-0.9: Highly relevant (related API, similar functionality)
-- 0.4-0.6: Moderately relevant (mentions the topic but not directly about it)
-- 0.1-0.3: Slightly relevant (tangentially related)
-- 0: NOT relevant at all (completely unrelated, should be excluded from results)
+
+**Scoring Guidelines:**
+- **1.0**: Perfect match for the EXACT operator documentation
+- **0.7-0.9**: Highly relevant - standard API for the same operator (e.g., class vs functional)
+- **0.4-0.6**: Moderately relevant - mentions the operator but not the main documentation
+- **0.1-0.3**: Slightly relevant - tangentially related content
+- **0.0**: NOT RELEVANT - should be completely excluded, including:
+  * Quantized/quantization versions (quantized.Conv1d, int8 variants)
+  * Specialized variants that are not the standard operator
+  * Unrelated content that happens to contain the keyword
+
+**IMPORTANT**: Be strict! Give score 0.0 for:
+- Any result with "quantized", "quantize", "int8" in title or URL (unless the query itself is about quantization)
+- Variants that are clearly different from the standard operator
+- Duplicate or redundant content when the standard version is already present
 
 Return JSON only:
 {{
     "ranked_results": [
-        {{"index": 1, "relevance_score": 0.95}}
+        {{"index": 1, "relevance_score": 0.95, "reason": "brief explanation"}}
     ]
 }}
 """
@@ -334,17 +334,12 @@ Return JSON only:
                 for item in ranking_data.get("ranked_results", [])
             }
 
-            ranked_results = []
-            for i, result in enumerate(results):
-                if i not in ranked_indices:
-                    continue
-                score = ranked_indices[i]
-                if filter_zero_score and score == 0:
-                    self.logger.debug(
-                        f"Filtering out irrelevant result: {result.get('title', '')}"
-                    )
-                    continue
-                ranked_results.append({**result, "relevance_score": score})
+            ranked_results = [
+                {**result, "relevance_score": ranked_indices[i]}
+                for i, result in enumerate(results)
+                if i in ranked_indices
+                and not (filter_zero_score and ranked_indices[i] == 0)
+            ]
 
             ranked_results.sort(key=lambda x: x.get("relevance_score", 0), reverse=True)
 
@@ -358,8 +353,6 @@ Return JSON only:
         self, urls_to_fetch: List[tuple[str, Dict[str, Any]]]
     ) -> List[Dict[str, Any]]:
         """异步并发获取多个URL的内容"""
-        results: List[Dict[str, Any]] = []
-
         async with aiohttp.ClientSession(
             timeout=aiohttp.ClientTimeout(total=10),
             headers={
@@ -367,24 +360,18 @@ Return JSON only:
             },
         ) as session:
             tasks = [
-                self._fetch_content_async(session, url) for url, item in urls_to_fetch
+                self._fetch_content_async(session, url) for url, _ in urls_to_fetch
             ]
-
             contents = await asyncio.gather(*tasks, return_exceptions=True)
 
+            results = []
             for (url, item), content in zip(urls_to_fetch, contents):
                 if isinstance(content, Exception):
                     self.logger.warning(
                         f"Failed to fetch content from {url}: {str(content)}"
                     )
-                    continue
-                if content:
-                    results.append(
-                        {
-                            **item,
-                            "content": content,
-                        }
-                    )
+                elif content:
+                    results.append({**item, "content": content})
 
         return results
 
@@ -398,30 +385,24 @@ Return JSON only:
                 html = await response.text()
                 soup = BeautifulSoup(html, "html.parser")
 
-                article_container = None
-                text_content = None
-
                 # 尝试查找 pytorch-article
-                article_container = soup.find(id="pytorch-article")
-                if article_container:
-                    text_content = article_container.get_text(
-                        separator="\n", strip=True
-                    )
-                else:
-                    # 查找 main 或 article 标签
-                    article_container = soup.find("main") or soup.find("article")
-                    if article_container:
-                        text_content = article_container.get_text(
-                            separator="\n", strip=True
-                        )
-                    else:
-                        text_content = soup.get_text(separator="\n", strip=True)
+                article_container = (
+                    soup.find(id="pytorch-article")
+                    or soup.find("main")
+                    or soup.find("article")
+                )
+                text_content = (
+                    article_container.get_text(separator="\n", strip=True)
+                    if article_container
+                    else soup.get_text(separator="\n", strip=True)
+                )
 
                 # 传递文章容器
                 if ocr_content := self._extract_content_with_ocr(
                     soup, url, article_container
                 ):
                     return f"{text_content}\n\n[图片内容]\n{ocr_content}"
+
                 return text_content
 
         except Exception as e:
@@ -434,23 +415,14 @@ Return JSON only:
         base_url: str,
         article_container: Optional[Any] = None,
     ) -> Optional[str]:
-        """从HTML中提取内容相关的图片并使用OCR识别
-
-        Args:
-            soup: BeautifulSoup 解析对象
-            base_url: 页面 URL，用于解析相对路径
-            article_container: 文章容器元素，如果提供则只在容器内查找图片
-        """
+        """从HTML中提取内容相关的图片并使用OCR识别"""
         if not get_config_value("web_search.ocr", False):
             return None
 
         try:
-            # 优先在文章容器内查找图片
             search_scope = article_container if article_container else soup
             if not (images := search_scope.find_all("img")):
                 return None
-
-            ocr_results = []
 
             # 用于过滤小图标和无关图片的路径关键词
             skip_patterns = {
@@ -470,6 +442,7 @@ Return JSON only:
                 "linkedin",
             }
 
+            ocr_results = []
             for img in images:
                 if not (img_src := img.get("src")):
                     continue
@@ -478,11 +451,11 @@ Return JSON only:
                 img_src_lower = img_src.lower()
 
                 # 跳过小图标和无关图片
-                if any(pattern in img_src_lower for pattern in skip_patterns):
-                    continue
-
-                # 跳过 data URI
-                if img_src.startswith("data:"):
+                if (
+                    any(pattern in img_src_lower for pattern in skip_patterns)
+                    or img_src.startswith("data:")
+                    or "_images/" in img_src
+                ):
                     continue
 
                 # 跳过 PyTorch 示意图
@@ -533,3 +506,25 @@ Return JSON only:
         except Exception as e:
             self.logger.warning(f"OCR extraction failed: {e}")
             return None
+
+    def _clean_document(self, doc: str, clean_latex: bool = True) -> str:
+        """清洗文档内容：删除HTML标签、多余空白字符、LaTeX公式"""
+        if not doc or not doc.strip():
+            return ""
+
+        doc = re.sub(r"<[^>]+>", "", doc)
+        doc = "\n".join(
+            re.sub(r"\s+", " ", line).strip()
+            for line in doc.split("\n")
+            if line.strip()
+        )
+
+        return self._clean_latex(doc) if clean_latex else doc
+
+    def _clean_latex(self, doc: str) -> str:
+        """使用 pylatexenc 清洗 LaTeX 公式，转换为可读的纯文本"""
+        from pylatexenc.latex2text import LatexNodes2Text
+
+        self.logger.debug("Using pylatexenc for LaTeX cleaning")
+        text = LatexNodes2Text().latex_to_text(doc)
+        return re.sub(r"\n\s*\n", "\n\n", text)

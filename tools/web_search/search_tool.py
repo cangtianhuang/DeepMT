@@ -35,7 +35,6 @@ class WebSearchTool:
     def __init__(self) -> None:
         """初始化实例属性"""
         self.logger = get_logger(self.__class__.__name__)
-        self.timeout = get_config_value("web_search.timeout", 10)
         self.max_results = get_config_value("web_search.max_results", 5)
 
         self.framework_docs = {
@@ -113,14 +112,35 @@ class WebSearchTool:
             f"in framework '{framework}' from sources: {sources}"
         )
 
-        if sources.get("docs", False):
-            all_results.extend(self._search_docs(normalized_name, framework))
+        # 按比例分配结果数量：docs:github:web=2:1:2
+        source_ratios = {"docs": 2, "github": 1, "web_search": 2}
+        total_ratio = sum(source_ratios[s] for s, enabled in sources.items() if enabled)
+        if total_ratio == 0:
+            self.logger.warning("No search sources enabled")
+            return []
 
-        if sources.get("github", False):
-            all_results.extend(self._search_github(normalized_name, framework))
+        # 计算每个源的结果数量
+        source_results = {}
+        for source, enabled in sources.items():
+            if enabled:
+                ratio = source_ratios[source]
+                count = max(1, int(self.max_results * ratio / total_ratio))
+                if source == "docs":
+                    source_results[source] = self._search_docs(
+                        normalized_name, framework, max_results=count
+                    )
+                elif source == "github":
+                    source_results[source] = self._search_github(
+                        normalized_name, framework, max_results=count
+                    )
+                elif source == "web_search":
+                    source_results[source] = self._search_web(
+                        normalized_name, framework, max_results=count
+                    )
 
-        if sources.get("web_search", False):
-            all_results.extend(self._search_web(normalized_name, framework))
+        # 合并所有结果
+        for source, results in source_results.items():
+            all_results.extend(results)
 
         # all_results.sort(key=lambda x: x.relevance_score, reverse=True)
 
@@ -140,7 +160,10 @@ class WebSearchTool:
         return name.strip()
 
     def _search_docs(
-        self, operator_name: str, framework: FrameworkType
+        self,
+        operator_name: str,
+        framework: FrameworkType,
+        max_results: int,
     ) -> List[SearchResult]:
         """搜索框架官方文档"""
         search_url = self.framework_docs[framework]["search_url"]
@@ -150,7 +173,7 @@ class WebSearchTool:
                 query=operator_name,
                 search_url=search_url,
                 framework=framework,
-                max_results=self.max_results,
+                max_results=max_results,
             )
         except ValueError:
             raise
@@ -159,7 +182,10 @@ class WebSearchTool:
             return []
 
     def _search_github(
-        self, operator_name: str, framework: FrameworkType
+        self,
+        operator_name: str,
+        framework: FrameworkType,
+        max_results: int,
     ) -> List[SearchResult]:
         """搜索GitHub仓库"""
         if not self.github_token:
@@ -189,13 +215,13 @@ class WebSearchTool:
 
             response = requests.get(
                 self.github_base,
-                params={"q": query, "per_page": self.max_results},
+                params={"q": query, "per_page": max_results},
                 headers=headers,
-                timeout=self.timeout,
+                timeout=10,
             )
             response.raise_for_status()
 
-            results = response.json().get("items", [])[: self.max_results]
+            results = response.json().get("items", [])[:max_results]
             search_results = []
 
             for result in results:
@@ -222,7 +248,10 @@ class WebSearchTool:
             return []
 
     def _search_web(
-        self, operator_name: str, framework: FrameworkType
+        self,
+        operator_name: str,
+        framework: FrameworkType,
+        max_results: int,
     ) -> List[SearchResult]:
         """使用百度搜索API进行网络搜索"""
         if not self.baidu_api_key:
@@ -236,7 +265,7 @@ class WebSearchTool:
             request_body = {
                 "messages": [{"content": query, "role": "user"}],
                 "search_source": "baidu_search_v2",
-                "resource_type_filter": [{"type": "web", "top_k": self.max_results}],
+                "resource_type_filter": [{"type": "web", "top_k": max_results}],
             }
 
             if self.custom_sites:
@@ -249,11 +278,11 @@ class WebSearchTool:
                     "Content-Type": "application/json",
                 },
                 json=request_body,
-                timeout=self.timeout,
+                timeout=10,
             )
             response.raise_for_status()
 
-            results = response.json().get("references", [])[: self.max_results]
+            results = response.json().get("references", [])[:max_results]
             return [
                 SearchResult(
                     title=result.get("title", ""),

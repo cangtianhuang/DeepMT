@@ -24,7 +24,7 @@ class OperatorInfoFetcher:
         use_cache: bool = True,
     ) -> Dict[str, Any]:
         """
-        获取算子信息（简化为直接返回文档内容）
+        获取算子信息
 
         Args:
             operator_name: 算子名称（如 "relu", "ReLU", "torch.nn.ReLU"）

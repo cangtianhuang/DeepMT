@@ -9,3 +9,8 @@ dependencies = [
     "numpy>=1.21.0",
     "pyyaml>=5.4.0",
 ]
+
+[project.optional-dependencies]
+web-search = [
+    "pylatexenc>=2.10",
+]
