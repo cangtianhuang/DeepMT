@@ -59,6 +59,17 @@ class OperatorInfoFetcher:
         docs_results = [r for r in search_results if r.source == "docs"]
         source_results = docs_results if docs_results else search_results
 
+        # Debug: 打印每个搜索结果的详情
+        for idx, result in enumerate(search_results):
+            self.logger.debug(
+                f"Search result {idx + 1}: "
+                f"source={result.source}, "
+                f"score={result.relevance_score:.4f}, "
+                f"title={result.title[:80]}, "
+                f"url={result.url}, "
+                f"snippet_length={len(result.snippet)}"
+            )
+
         doc_parts = [r.snippet for r in source_results if r.snippet]
         source_urls = [r.url for r in source_results if r.url]
         doc = "\n\n".join(doc_parts)
@@ -74,6 +85,16 @@ class OperatorInfoFetcher:
             f"doc={'found' if doc else 'not found'} ({len(doc)} chars), "
             f"source_urls={len(source_urls)}"
         )
+
+        # Debug: 打印重排后的结果分数和摘要
+        self.logger.debug("Document reranking results:")
+        for idx, result in enumerate(source_results[:5]):  # 只显示前5个
+            snippet_preview = result.snippet[:100] + "..." if len(result.snippet) > 100 else result.snippet
+            self.logger.debug(
+                f"  Rank {idx + 1}: score={result.relevance_score:.4f}, "
+                f"source={result.source}, "
+                f"summary=\"{snippet_preview}\""
+            )
 
         return operator_info
 

@@ -1,6 +1,7 @@
 """日志模块：提供统一的日志记录功能"""
 
 import logging
+import os
 import re
 import sys
 import threading
@@ -76,6 +77,10 @@ class Logger:
         """
         self.name = name
         self.log_dir = Path(log_dir or self._default_log_dir)
+        if level is None:
+            env_level = os.getenv("DEEPMT_LOG_LEVEL")
+            if env_level:
+                level = getattr(logging, env_level.upper(), logging.INFO)
         self.level = level or self._default_level
 
         self.logger = logging.getLogger(name)

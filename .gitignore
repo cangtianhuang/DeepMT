@@ -9,7 +9,7 @@
 .vscode/
 Thumbs.db
 __pycache__/
-config.yaml
+config*.yaml
 data/
 docs/
 examples/

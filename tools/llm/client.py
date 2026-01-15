@@ -49,7 +49,7 @@ class LLMClient:
             api_key or get_config_value("llm.api_key") or os.getenv("OPENAI_API_KEY")
         )
         self.model_base = get_config_value("llm.model_base", "ernie-4.5-turbo-latest")
-        self.model_max = get_config_value("llm.model_max", "ernie-5.0-thinking-latest")
+        self.model_max = get_config_value("llm.model_max", self.model_base)
         self.base_url = get_config_value("llm.url")
         self.temperature = get_config_value("llm.temperature", 0.2)
 
@@ -125,7 +125,8 @@ class LLMClient:
                 for msg in messages
             ]
         )
-        self.logger.info(f"LLM API called for model {model}: {messages_preview}...")
+        self.logger.debug(f"LLM request prompt for model {model}:\n{messages_preview}...")
+        self.logger.info(f"LLM API called for model {model}")
         if self.provider == "openai":
             response = self.client.chat.completions.create(  # type: ignore
                 model=model,
@@ -135,10 +136,13 @@ class LLMClient:
             content = response.choices[0].message.content.strip()  # type: ignore
             usage = response.usage
             # 将换行符转换为 \n 以便在日志中显示
-            content_preview = content[:100].replace("\n", "\\n").replace("\r", "\\r")
+            content_preview = content[:200].replace("\n", "\\n").replace("\r", "\\r")
+            self.logger.debug(
+                f"LLM response content for model {model}:\n{content_preview}..."
+            )
             self.logger.info(
-                f"LLM API responsed for model {model}: {content_preview}..."
-                f" (total_tokens={usage.total_tokens})"  # type: ignore
+                f"LLM API responded for model {model} "
+                f"(total_tokens={usage.total_tokens})"  # type: ignore
             )
             return content
 
@@ -160,10 +164,13 @@ class LLMClient:
             content = response.content[0].text
             usage = response.usage
             # 将换行符转换为 \n 以便在日志中显示
-            content_preview = content[:100].replace("\n", "\\n").replace("\r", "\\r")
+            content_preview = content[:200].replace("\n", "\\n").replace("\r", "\\r")
+            self.logger.debug(
+                f"LLM response content for model {model}:\n{content_preview}..."
+            )
             self.logger.info(
-                f"LLM API responsed for model {model}: {content_preview}..."
-                f" (total_tokens={usage.total_tokens})"
+                f"LLM API responded for model {model} "
+                f"(total_tokens={usage.total_tokens})"
             )
             return content
 
