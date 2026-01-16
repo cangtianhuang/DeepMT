@@ -345,7 +345,7 @@ Return JSON only:
 
         except Exception as e:
             self.logger.warning(
-                f"⚠️  WARN │ LLM reranking failed: {e}, using original order"
+                f"⚠️  WARN | LLM reranking failed: {e}, using original order"
             )
             return results
 

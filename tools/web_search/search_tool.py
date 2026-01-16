@@ -107,13 +107,15 @@ class WebSearchTool:
         all_results = []
         normalized_name = self._normalize_operator_name(operator_name)
 
-        self.logger.debug(f"Searching '{operator_name}' ({normalized_name}) in {framework} from {sources}")
+        self.logger.debug(
+            f"Searching '{operator_name}' ({normalized_name}) in {framework} from {sources}"
+        )
 
         # 按比例分配结果数量：docs:github:web=2:1:2
         source_ratios = {"docs": 2, "github": 1, "web_search": 2}
         total_ratio = sum(source_ratios[s] for s, enabled in sources.items() if enabled)
         if total_ratio == 0:
-            self.logger.warning("⚠️  WARN │ No search sources enabled")
+            self.logger.warning("⚠️  WARN | No search sources enabled")
             return []
 
         # 计算每个源的结果数量

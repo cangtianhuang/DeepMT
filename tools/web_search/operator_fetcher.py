@@ -35,7 +35,7 @@ class OperatorInfoFetcher:
             算子信息字典，包含 name, doc, source_urls
         """
         if not self.enabled:
-            self.logger.warning("⚠️  WARN │ Web search is disabled in config")
+            self.logger.warning("⚠️  WARN | Web search is disabled in config")
             return {}
 
         try:
@@ -49,7 +49,7 @@ class OperatorInfoFetcher:
             return {"name": operator_name, "doc": "", "source_urls": []}
 
         if not search_results:
-            self.logger.warning(f"⚠️  WARN │ No results found for '{operator_name}'")
+            self.logger.warning(f"⚠️  WARN | No results found for '{operator_name}'")
             return {"name": operator_name, "doc": "", "source_urls": []}
 
         docs_results = [r for r in search_results if r.source == "docs"]
@@ -57,11 +57,13 @@ class OperatorInfoFetcher:
 
         # Debug: 打印每个搜索结果的详情
         for idx, result in enumerate(search_results):
-            self.logger.debug(
-                f"  Result {idx + 1}: {result.source} │ "
-                f"score={result.relevance_score:.3f} │ "
-                f'"{result.title[:60]}..." '
-                f"({len(result.snippet)} chars)"
+            snippet_full = result.snippet.replace("\n", "\\n").replace("\r", "\\r")
+            log_structured(
+                self.logger,
+                "SEARCH",
+                f"Result {idx + 1}: {result.source} | score {result.relevance_score:.3f} | {result.title[:60]}...",
+                details=snippet_full,
+                level="DEBUG",
             )
 
         doc_parts = [r.snippet for r in source_results if r.snippet]
@@ -78,20 +80,19 @@ class OperatorInfoFetcher:
             self.logger,
             "SEARCH",
             f"Found {len(source_urls)} sources | {len(doc)} chars",
+            level="DEBUG",
         )
 
         # Debug: 打印重排后的结果分数和摘要
         if source_results:
-            self.logger.debug("  Top results:")
             for idx, result in enumerate(source_results[:3]):  # 只显示前3个
-                snippet_preview = (
-                    result.snippet[:80] + "..."
-                    if len(result.snippet) > 80
-                    else result.snippet
-                )
-                self.logger.debug(
-                    f"    [{idx + 1}] {result.source} │ score={result.relevance_score:.3f}\n"
-                    f'        "{snippet_preview}"'
+                snippet_full = result.snippet.replace("\n", "\\n").replace("\r", "\\r")
+                log_structured(
+                    self.logger,
+                    "SEARCH",
+                    f"Top result {idx + 1}: {result.source} | score {result.relevance_score:.3f} | {result.title[:60]}...",
+                    details=snippet_full,
+                    level="DEBUG",
                 )
 
         return operator_info

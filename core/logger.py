@@ -159,14 +159,14 @@ def log_structured(
     **details: Any,
 ):
     icon = LOG_ICONS.get(category.upper(), "•")
-    header = f"{icon} {category.upper():<7} │ {message}"
+    header = f"{icon} {category.upper():<7} | {message}"
 
     lines = [header]
     for k, v in details.items():
-        lines.append(f"  {k:<7} │ {v}")
+        lines.append(f"  {k:<7} | {v}")
 
     level_int = getattr(logging, level.upper(), logging.INFO)
-    logger.log(level_int, "\n".join(lines))
+    logger.log(level_int, "\n".join(lines), stacklevel=2)
 
 
 def log_error(
@@ -174,8 +174,9 @@ def log_error(
 ):
     if exception:
         logger.error(
-            f"{LOG_ICONS['ERROR']} ERROR   │ {message} - Reason: {exception}",
+            f"{LOG_ICONS['ERROR']} ERROR   | {message} - Reason: {exception}",
             exc_info=True,
+            stacklevel=2,
         )
     else:
-        logger.error(f"{LOG_ICONS['ERROR']} ERROR   │ {message}")
+        logger.error(f"{LOG_ICONS['ERROR']} ERROR   | {message}", stacklevel=2)

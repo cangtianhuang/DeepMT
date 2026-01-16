@@ -165,7 +165,7 @@ class OperatorMRGenerator:
         if "llm" in sources:
             log_structured(
                 self.logger,
-                "LLM",
+                "GEN",
                 "Generating MR candidates...",
             )
             try:
@@ -180,7 +180,7 @@ class OperatorMRGenerator:
                 log_structured(
                     self.logger,
                     "GEN",
-                    f"Generated {len(llm_mrs)} candidates from LLM",
+                    f"Generated {len(llm_mrs)} candidates from LLM for '{operator_name}'",
                 )
             except Exception as e:
                 log_error(
@@ -201,7 +201,7 @@ class OperatorMRGenerator:
                 log_structured(
                     self.logger,
                     "GEN",
-                    f"Generated {len(template_mrs)} candidates from templates",
+                    f"Generated {len(template_mrs)} candidates from templates for '{operator_name}'",
                 )
             except Exception as e:
                 log_error(
@@ -364,7 +364,7 @@ class OperatorMRGenerator:
                     log_structured(
                         self.logger,
                         "SEARCH",
-                        f"Fetched {len(fetched_doc)} chars from {len(source_urls)} sources",
+                        f"Fetched {len(source_urls)} sources | {len(fetched_doc)} chars",
                     )
                     # Debug: 打印获取到的文档链接
                     if source_urls:

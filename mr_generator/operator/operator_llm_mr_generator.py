@@ -242,12 +242,6 @@ Generate the response for the user's operator. Start with **Analysis**, then pro
                 )
                 return []
 
-            log_structured(
-                self.logger,
-                "GEN",
-                f"Parsed {len(mr_list)} MR entries from LLM response",
-            )
-
             for idx, mr_data in enumerate(mr_list[:top_k]):
                 try:
                     if not isinstance(mr_data, dict):
@@ -272,7 +266,7 @@ Generate the response for the user's operator. Start with **Analysis**, then pro
             log_structured(
                 self.logger,
                 "GEN",
-                f"Generated {len(mrs)} MR candidates from LLM for {operator_name}",
+                f"Parsed {len(mr_list)} MR entries from LLM response",
             )
             return mrs
 

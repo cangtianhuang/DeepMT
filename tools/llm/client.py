@@ -169,7 +169,7 @@ class LLMClient:
         content_full = content.replace("\n", "\\n").replace("\r", "\\r")
         if usage:
             self.logger.debug(
-                f"📤 LLM Response │ {model}\\n"
+                f"📤 LLM Response | {model}\\n"
                 f"  Tokens: {usage.total_tokens} (prompt: {usage.prompt_tokens}, completion: {usage.completion_tokens})\\n"  # type: ignore
                 f"  Content:\\n{content_full}"
             )
@@ -183,7 +183,7 @@ class LLMClient:
             log_structured(
                 self.logger,
                 "LLM",
-                f"{model} │ {usage.total_tokens} tokens │ {duration:.1f}s",  # type: ignore
+                f"Resposed from {model} | {usage.total_tokens} tokens | {duration:.1f}s",  # type: ignore
             )
         else:
             log_structured(
@@ -197,6 +197,6 @@ class LLMClient:
             log_structured(
                 self.logger,
                 "LLM",
-                f"{model} │ {usage.total_tokens} tokens │ {duration:.1f}s",  # type: ignore
+                f"Resposed from {model} | {usage.total_tokens} tokens | {duration:.1f}s",  # type: ignore
             )
         return content
