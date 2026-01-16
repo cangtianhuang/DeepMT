@@ -9,7 +9,7 @@ from urllib.parse import urlparse
 import requests
 
 from core.config_loader import get_config_value
-from core.logger import get_logger
+from core.logger import get_logger, log_structured
 
 # OCR API 支持的图片格式
 SUPPORTED_IMAGE_FORMATS: Set[str] = {"pdf", "jpeg", "jpg", "png", "tiff", "tif", "bmp"}
@@ -125,13 +125,21 @@ class OCRClient:
         if not self.enabled:
             return None
 
-        self.logger.info(f"OCR API called for image {image_url}...")
+        log_structured(
+            self.logger,
+            "OCR",
+            f"OCR API called for image {image_url}...",
+        )
         if result := self._call_ocr_api(
             image_url=image_url,
             prompt_label="formula" if not use_layout_detection else None,
             use_layout_detection=use_layout_detection,
         ):
-            self.logger.info(f"OCR API responsed for image {image_url}: {result[:100]}")
+            log_structured(
+                self.logger,
+                "OCR",
+                f"OCR API responsed for image {image_url}: {result[:100]}",
+            )
             return result
         self.logger.warning(f"OCR API failed for {image_url}")
         return None
@@ -152,13 +160,21 @@ class OCRClient:
         if not self.enabled:
             return None
 
-        self.logger.info(f"OCR API called for image {image_url}...")
+        log_structured(
+            self.logger,
+            "OCR",
+            f"OCR API called for image {image_url}...",
+        )
         if result := self._call_ocr_api(
             image_url=image_url,
             prompt_label="ocr" if not use_layout_detection else None,
             use_layout_detection=use_layout_detection,
         ):
-            self.logger.info(f"OCR API responsed for image {image_url}: {result[:100]}")
+            log_structured(
+                self.logger,
+                "OCR",
+                f"OCR API responsed for image {image_url}: {result[:100]}",
+            )
             return result
 
         self.logger.warning(f"OCR API failed for {image_url}")

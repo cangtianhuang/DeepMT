@@ -23,7 +23,7 @@ class FrameworkAdapter:
         self.logger = get_logger(self.__class__.__name__)
         self.framework = framework
         self.oracle_evaluator = OracleEvaluator()
-        self.logger.info(f"FrameworkAdapter initialized for {framework}")
+        self.logger.debug(f"FrameworkAdapter initialized for {framework}")
 
     def bind_transform_code(
         self,

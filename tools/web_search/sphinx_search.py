@@ -58,16 +58,16 @@ class SphinxSearchIndex:
         # 检查缓存是否过期
         mtime = cache_path.stat().st_mtime
         if time.time() - mtime > CACHE_EXPIRY_SECONDS:
-            self.logger.info(f"Sphinx search index cache expired: {cache_path}")
+            self.logger.debug(f"Sphinx search index cache expired: {cache_path}")
             return None
 
         try:
             with open(cache_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
-            self.logger.info(f"Sphinx search index loaded from cache: {cache_path}")
+            self.logger.debug(f"Sphinx search index loaded from cache: {cache_path}")
             return data
         except Exception as e:
-            self.logger.warning(f"Sphinx search index failed to load from cache: {e}")
+            self.logger.debug(f"Sphinx search index failed to load from cache: {e}")
             return None
 
     def _save_to_cache(self, data: Dict[str, Any]) -> None:
@@ -77,9 +77,9 @@ class SphinxSearchIndex:
             CACHE_DIR.mkdir(parents=True, exist_ok=True)
             with open(cache_path, "w", encoding="utf-8") as f:
                 json.dump(data, f)
-            self.logger.info(f"Sphinx search index saved to cache: {cache_path}")
+            self.logger.debug(f"Sphinx search index saved to cache: {cache_path}")
         except Exception as e:
-            self.logger.warning(f"Sphinx search index failed to save to cache: {e}")
+            self.logger.debug(f"Sphinx search index failed to save to cache: {e}")
 
     def _load_index(self) -> bool:
         """下载并解析搜索索引（支持缓存）"""
@@ -128,7 +128,7 @@ class SphinxSearchIndex:
             (t[::-1], t) for t in self._titleterms.keys()
         )
 
-        self.logger.info(
+        self.logger.debug(
             f"Sphinx search index loaded {len(self._docnames)} docs, "
             f"{len(self._terms)} terms"
         )

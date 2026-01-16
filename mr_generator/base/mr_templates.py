@@ -8,11 +8,11 @@ import inspect
 import uuid
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional
+from typing import Callable, Dict, List, Optional
 
 import yaml
 
-from core.logger import get_logger
+from core.logger import get_logger, log_structured
 from ir.schema import MetamorphicRelation
 
 
@@ -93,7 +93,7 @@ class MRTemplatePool:
                 except Exception as e:
                     self.logger.warning(f"Failed to load template {template_name}: {e}")
 
-            self.logger.info(
+            self.logger.debug(
                 f"Loaded {len(self.templates)} MR templates from {self.config_path}"
             )
 
@@ -244,9 +244,11 @@ class MRTemplatePool:
                     f"Failed to create MR from template {template.name}: {e}"
                 )
 
-        self.logger.info(
+        log_structured(
+            self.logger,
+            "GEN",
             f"Generated {len(candidates)} MR candidates from templates "
-            f"for operator {operator_name}"
+            f"for operator {operator_name}",
         )
 
         return candidates

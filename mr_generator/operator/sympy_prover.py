@@ -4,11 +4,11 @@ SymPy证明引擎：使用SymPy进行形式化证明
 然后使用 simplify(LHS - RHS) == 0 进行证明
 """
 
-from typing import Any, Callable, List, Optional, Tuple
+from typing import Callable, List, Optional, Tuple
 
 import sympy as sp
 
-from core.logger import get_logger
+from core.logger import get_logger, log_structured
 from ir.schema import MetamorphicRelation
 from mr_generator.operator.sympy_translator import SympyTranslator
 
@@ -245,7 +245,11 @@ class SymPyProver:
             return []
 
         proven_mrs = []
-        self.logger.info(f"Proving {len(mrs)} MRs using SymPy...")
+        log_structured(
+            self.logger,
+            "GEN",
+            f"Proving {len(mrs)} MRs using SymPy...",
+        )
 
         # 优化：只转换一次代码为 SymPy，对所有 MR 复用
         if sympy_expr is None:
@@ -291,8 +295,10 @@ class SymPyProver:
                     f"MR {i+1} proof failed: {mr.description}. Reason: {error_msg}"
                 )
 
-        self.logger.info(
-            f"SymPy proof completed: {len(proven_mrs)}/{len(mrs)} MRs proven"
+        log_structured(
+            self.logger,
+            "GEN",
+            f"SymPy proof completed: {len(proven_mrs)}/{len(mrs)} MRs proven",
         )
 
         return proven_mrs

@@ -58,16 +58,14 @@ class SearchAgent:
         from tools.web_search.search_tool import SearchResult
 
         # 获取原始文档
-        self.logger.info(f"Executing search for '{query}'...")
+        self.logger.debug(f"Executing search for '{query}'...")
         raw_results = self._execute_search(search_url, query, max_results * 2)
         unique_results = self._deduplicate_results(raw_results)
-        self.logger.info(f"Found {len(unique_results)} search results")
+        self.logger.debug(f"Found {len(unique_results)} raw results")
 
         if not unique_results:
             if corrected_query := self._detect_and_correct_input_error(query):
-                self.logger.info(
-                    f"No results for '{query}', trying corrected query: '{corrected_query}'"
-                )
+                self.logger.debug(f"No results, try '{corrected_query}' instead?")
                 raise ValueError(
                     f"搜索 '{query}' 未找到结果。"
                     f"您是否想搜索 '{corrected_query}'？如果是，请使用 '{corrected_query}' 重新搜索。"
@@ -75,19 +73,19 @@ class SearchAgent:
             raise ValueError(f"搜索 '{query}' 未找到结果。请检查算子名称是否正确。")
 
         # 获取文档内容
-        self.logger.info(f"Fetching {len(unique_results)} search results contents...")
+        self.logger.debug(f"Fetching {len(unique_results)} result contents...")
         urls_to_fetch: List[tuple[str, Dict[str, Any]]] = [
             (item["url"], item) for item in unique_results if item.get("url")
         ]
 
         results = asyncio.run(self._fetch_contents_async(urls_to_fetch))
-        self.logger.info(f"Successfully fetched {len(results)} search results contents")
+        self.logger.debug(f"Fetched {len(results)} result contents")
 
         for result in results:
             result["content"] = self._clean_document(result["content"])
 
         # 根据内容进行重排和过滤
-        self.logger.info(f"Reranking and filtering {len(results)} search results...")
+        self.logger.debug(f"Reranking {len(results)} results...")
         ranked_results = self._rerank_and_filter(query, results)
 
         # 构建结果
@@ -346,7 +344,9 @@ Return JSON only:
             return ranked_results
 
         except Exception as e:
-            self.logger.warning(f"LLM reranking failed: {e}, using original order")
+            self.logger.warning(
+                f"⚠️  WARN │ LLM reranking failed: {e}, using original order"
+            )
             return results
 
     async def _fetch_contents_async(
@@ -507,7 +507,7 @@ Return JSON only:
             self.logger.warning(f"OCR extraction failed: {e}")
             return None
 
-    def _clean_document(self, doc: str, clean_latex: bool = True) -> str:
+    def _clean_document(self, doc: str, clean_latex: bool = False) -> str:
         """清洗文档内容：删除HTML标签、多余空白字符、LaTeX公式"""
         if not doc or not doc.strip():
             return ""

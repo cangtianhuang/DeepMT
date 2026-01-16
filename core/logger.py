@@ -2,155 +2,180 @@
 
 import logging
 import os
-import re
 import sys
 import threading
 from datetime import datetime
 from logging.handlers import TimedRotatingFileHandler
 from pathlib import Path
-from typing import Optional
+from typing import Any, Literal, Optional
+
+# --- 样式常量 ---
+ANSI_COLORS = {
+    "DEBUG": "\033[38;2;148;163;184m",
+    "INFO": "\033[38;2;56;189;248m",
+    "WARNING": "\033[38;2;250;204;21m",
+    "ERROR": "\033[38;2;248;113;113m",
+    "CRITICAL": "\033[38;2;220;38;38m",
+    "RESET": "\033[0m",
+    "BOLD": "\033[1m",
+}
+
+LOG_ICONS = {
+    "INIT": "🚀",
+    "SEARCH": "🔍",
+    "LLM": "🤖",
+    "OCR": "📷",
+    "GEN": "⚡",
+    "CHECK": "✅",
+    "WARN": "⚠️",
+    "SUCCESS": "✨",
+    "DEBUG": "🐛",
+    "INFO": "💡",
+    "WARNING": "🚨",
+    "ERROR": "❌",
+    "CRITICAL": "❌",
+}
+Log_Categories = Literal[
+    "INIT",
+    "SEARCH",
+    "LLM",
+    "OCR",
+    "GEN",
+    "CHECK",
+    "WARN",
+    "SUCCESS",
+    "DEBUG",
+    "INFO",
+    "WARNING",
+    "ERROR",
+    "CRITICAL",
+]
 
 
-class ColoredFormatter(logging.Formatter):
-    COLORS = {
-        "DEBUG": "\033[38;2;148;163;184m",
-        "INFO": "\033[38;2;56;189;248m",
-        "WARNING": "\033[38;2;250;204;21m",
-        "ERROR": "\033[38;2;248;113;113m",
-        "CRITICAL": "\033[38;2;220;38;38m",
-    }
-    ACCENT = "\033[38;2;167;139;250m"
-    MUTED = "\033[38;2;100;116;139m"
-    BRIGHT = "\033[38;2;226;232;240m"
-    DIM = "\033[38;2;71;85;105m"
-    RESET = "\033[0m"
-    BOLD = "\033[1m"
+class ModernFormatter(logging.Formatter):
 
     def __init__(
-        self, fmt: str, datefmt: Optional[str] = None, enable_color: bool = True
-    ) -> None:
-        super().__init__(fmt=fmt, datefmt=datefmt)
-        self.enable_color = enable_color
+        self, fmt: str, datefmt: str = "%Y-%m-%d %H:%M:%S", in_terminal: bool = False
+    ):
+        super().__init__(fmt, datefmt)
+        self.in_terminal = in_terminal
+        self.project_root = Path(__file__).resolve().parent.parent
 
     def format(self, record: logging.LogRecord) -> str:
-        if not self.enable_color:
-            return super().format(record)
+        orig_levelname = record.levelname
 
-        record = logging.makeLogRecord(record.__dict__)
-        levelname = record.levelname
-        if levelname in self.COLORS:
-            color = self.COLORS[levelname]
-            extra_style = ""
-            if levelname in ["WARNING", "ERROR", "CRITICAL"]:
-                extra_style = self.BOLD
-            record.levelname = f"{color}{extra_style}{levelname}{self.RESET}"
-        record.name = f"{self.MUTED}{record.name}{self.RESET}"
-        record.filename = f"{self.ACCENT}{record.filename}{self.RESET}"
-        record.module = f"{self.MUTED}{record.module}{self.RESET}"
+        if self.in_terminal:
+            color = ANSI_COLORS.get(orig_levelname, "")
+            bold = ANSI_COLORS["BOLD"] if record.levelno >= logging.WARNING else ""
+            record.levelname = f"{color}{bold}{orig_levelname}{ANSI_COLORS['RESET']}"
+            result = record.getMessage()
+        else:
+            result = super().format(record)
 
-        result = super().format(record)
-
-        colored_asctime = f"{self.DIM}{record.asctime}{self.RESET}"
-        result = result.replace(record.asctime, colored_asctime, 1)
-        result = result.replace("DeepMT", f"{self.BRIGHT}DeepMT{self.RESET}")
+        record.levelname = orig_levelname
         return result
 
 
-class Logger:
+class LogManager:
     """统一的日志管理器"""
 
-    _default_log_dir: str = "data/logs"
-    _default_level: int = logging.INFO
+    _instance = None
+    _lock = threading.Lock()
 
-    def __init__(
-        self,
-        name: str = "DeepMT",
-        log_dir: Optional[str] = None,
-        level: Optional[int] = None,
-    ) -> None:
-        """初始化实例属性
+    def __new__(cls):
+        with cls._lock:
+            if cls._instance is None:
+                cls._instance = super().__new__(cls)
+                cls._instance._initialized = False
+            return cls._instance
 
-        Args:
-            name: 日志器名称
-            log_dir: 日志文件目录
-            level: 日志级别
-        """
-        self.name = name
-        self.log_dir = Path(log_dir or self._default_log_dir)
-        if level is None:
-            env_level = os.getenv("DEEPMT_LOG_LEVEL")
-            if env_level:
-                level = getattr(logging, env_level.upper(), logging.INFO)
-        self.level = level or self._default_level
-
-        self.logger = logging.getLogger(name)
-        self.logger.setLevel(self.level)
-        self.logger.propagate = False
-
-        self._apply_config()
-
-    def _apply_config(self):
-        """根据配置应用日志设置"""
-        if self.logger.handlers:
+    def __init__(self):
+        if self._initialized:
             return
+        self.log_dir = Path(os.getenv("DEEPMT_LOG_DIR", "data/logs"))
+        self.level = getattr(
+            logging, os.getenv("DEEPMT_LOG_LEVEL", "INFO").upper(), logging.INFO
+        )
+        self._loggers = {}
+        self._initialized = True
 
+    def get_logger(self, name: str) -> logging.Logger:
+        with self._lock:
+            if name not in self._loggers:
+                logger = logging.getLogger(name)
+                logger.setLevel(logging.DEBUG)
+                logger.propagate = False
+                self._setup_handlers(logger)
+                self._loggers[name] = logger
+            return self._loggers[name]
+
+    def _setup_handlers(self, logger: logging.Logger):
+        logger.handlers.clear()
         self.log_dir.mkdir(parents=True, exist_ok=True)
 
-        console_handler = logging.StreamHandler(sys.stdout)
-        console_handler.setLevel(self.level)
-        console_handler.setFormatter(
-            ColoredFormatter(
-                fmt="%(asctime)s %(levelname)s DeepMT %(filename)s:%(lineno)d [%(name)s] %(message)s",
-                datefmt="%m-%d %H:%M:%S",
-                enable_color=sys.stdout.isatty(),
-            )
+        # 终端 Handler
+        console = logging.StreamHandler(sys.stdout)
+        console.setLevel(self.level)
+        console.setFormatter(
+            ModernFormatter(fmt="%(message)s", in_terminal=sys.stdout.isatty())
         )
-        log_file = self.log_dir / f"deepmt_{datetime.now().strftime('%Y%m%d')}.log"
-        file_handler = TimedRotatingFileHandler(
-            filename=log_file,
-            when="midnight",
-            interval=1,
-            backupCount=14,
-            encoding="utf-8",
-            utc=False,
+
+        # 文件 Handler
+        log_path = self.log_dir / f"deepmt_{datetime.now().strftime('%Y%m%d')}.log"
+        file_h = TimedRotatingFileHandler(
+            log_path, when="midnight", backupCount=14, encoding="utf-8"
         )
-        file_handler.setLevel(self.level)
-        file_handler.setFormatter(
-            logging.Formatter(
-                fmt="%(asctime)s %(levelname)s DeepMT %(filename)s:%(lineno)d [%(name)s] %(message)s",
-                datefmt="%Y-%m-%d %H:%M:%S",
+        file_h.setLevel(logging.DEBUG)
+        file_h.setFormatter(
+            ModernFormatter(
+                fmt="%(asctime)s %(levelname)s [%(name)s] %(filename)s:%(lineno)d - %(message)s",
+                in_terminal=False,
             )
         )
 
-        self.logger.addHandler(console_handler)
-        self.logger.addHandler(file_handler)
+        logger.addHandler(console)
+        logger.addHandler(file_h)
 
 
-_logger_lock = threading.Lock()
-_loggers: dict[str, Logger] = {}
-
-
+# --- 工具函数 ---
 def get_logger(name: str = "DeepMT") -> logging.Logger:
-    with _logger_lock:
-        if name not in _loggers:
-            _loggers[name] = Logger(name=name)
-        return _loggers[name].logger
+    return LogManager().get_logger(name)
 
 
-def reconfigure_logger(
-    log_dir: str | None = None,
-    level: int | None = None,
-) -> None:
-    with _logger_lock:
-        for logger in _loggers.values():
-            if log_dir is not None:
-                logger.log_dir = Path(log_dir)
-            if level is not None:
-                logger.level = level
+def reconfigure_logger(log_dir: str = "data/logs", level: int = logging.INFO) -> None:
+    manager = LogManager()
+    manager.log_dir = Path(log_dir)
+    manager.level = level
 
-            for handler in logger.logger.handlers[:]:
-                handler.close()
-                logger.logger.removeHandler(handler)
+    for name, logger in manager._loggers.items():
+        manager._setup_handlers(logger)
 
-            logger.logger.setLevel(logger.level)
-            logger._apply_config()
+
+def log_structured(
+    logger: logging.Logger,
+    category: Log_Categories,
+    message: str,
+    level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = "INFO",
+    **details: Any,
+):
+    icon = LOG_ICONS.get(category.upper(), "•")
+    header = f"{icon} {category.upper():<7} │ {message}"
+
+    lines = [header]
+    for k, v in details.items():
+        lines.append(f"  {k:<7} │ {v}")
+
+    level_int = getattr(logging, level.upper(), logging.INFO)
+    logger.log(level_int, "\n".join(lines))
+
+
+def log_error(
+    logger: logging.Logger, message: str, exception: Optional[Exception] = None
+):
+    if exception:
+        logger.error(
+            f"{LOG_ICONS['ERROR']} ERROR   │ {message} - Reason: {exception}",
+            exc_info=True,
+        )
+    else:
+        logger.error(f"{LOG_ICONS['ERROR']} ERROR   │ {message}")

@@ -107,16 +107,13 @@ class WebSearchTool:
         all_results = []
         normalized_name = self._normalize_operator_name(operator_name)
 
-        self.logger.info(
-            f"Searching for operator '{operator_name}' ({normalized_name}) "
-            f"in framework '{framework}' from sources: {sources}"
-        )
+        self.logger.debug(f"Searching '{operator_name}' ({normalized_name}) in {framework} from {sources}")
 
         # 按比例分配结果数量：docs:github:web=2:1:2
         source_ratios = {"docs": 2, "github": 1, "web_search": 2}
         total_ratio = sum(source_ratios[s] for s, enabled in sources.items() if enabled)
         if total_ratio == 0:
-            self.logger.warning("No search sources enabled")
+            self.logger.warning("⚠️  WARN │ No search sources enabled")
             return []
 
         # 计算每个源的结果数量
@@ -144,7 +141,7 @@ class WebSearchTool:
 
         # all_results.sort(key=lambda x: x.relevance_score, reverse=True)
 
-        self.logger.info(f"Found {len(all_results)} search results")
+        self.logger.debug(f"Found {len(all_results)} total results")
         return all_results
 
     def _normalize_operator_name(self, name: str) -> str:

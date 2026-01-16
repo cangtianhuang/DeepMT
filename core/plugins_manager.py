@@ -5,9 +5,9 @@
 import importlib
 import inspect
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
-from core.logger import get_logger
+from core.logger import get_logger, log_structured
 from plugins.framework_adapter import FrameworkAdapter
 
 
@@ -29,10 +29,10 @@ class PluginsManager:
     def load_plugins(self):
         """动态加载plugins目录中的所有插件"""
         if not self.plugins_dir.exists():
-            self.logger.warning(f"Plugins directory not found: {self.plugins_dir}")
+            self.logger.debug(f"Plugins directory not found: {self.plugins_dir}")
             return
 
-        self.logger.info(f"Loading plugins from {self.plugins_dir}")
+        self.logger.debug(f"Loading plugins from {self.plugins_dir}")
 
         # 查找所有插件文件
         plugin_files = list(self.plugins_dir.glob("*_plugin.py"))
@@ -60,12 +60,19 @@ class PluginsManager:
                             framework=plugin_name
                         )
 
-                        self.logger.info(f"Loaded plugin: {plugin_name} ({name})")
+                        self.logger.debug(f"Loaded plugin: {plugin_name} ({name})")
 
             except Exception as e:
                 self.logger.error(f"Failed to load plugin {plugin_file}: {e}")
 
-        self.logger.info(f"Total plugins loaded: {len(self.plugins)}")
+        if self.plugins:
+            log_structured(
+                self.logger,
+                "INIT",
+                f"{len(self.plugins)} plugin(s) loaded: {list(self.plugins.keys())}",
+            )
+        else:
+            self.logger.debug("Total plugins loaded: 0")
 
     def _extract_plugin_name(self, class_name: str) -> str:
         """
@@ -142,7 +149,11 @@ class PluginsManager:
             plugin_instance: 插件实例
         """
         self.plugins[name.lower()] = plugin_instance
-        self.logger.info(f"Manually registered plugin: {name}")
+        log_structured(
+            self.logger,
+            "INIT",
+            f"Manually registered plugin: {name}",
+        )
 
     def list_plugins(self) -> list:
         """列出所有已加载的插件"""

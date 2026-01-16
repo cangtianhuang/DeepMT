@@ -2,10 +2,11 @@
 
 import hashlib
 import os
+import time
 from typing import Any, Dict, List, Optional
 
 from core.config_loader import get_config_value
-from core.logger import get_logger
+from core.logger import get_logger, log_structured
 
 
 class LLMClient:
@@ -119,14 +120,23 @@ class LLMClient:
         # 根据任务类型选择模型
         model = self.model_max if use_model_max else self.model_base
 
-        messages_preview = "\\n".join(
+        messages_full = "\\n".join(
             [
-                f"{msg['role']}: {msg['content'][:100].replace('\n', '\\n')}"
+                f"{msg['role']}: {msg['content'].replace('\n', '\\n').replace('\r', '\\r')}"
                 for msg in messages
             ]
         )
-        self.logger.debug(f"LLM request prompt for model {model}:\n{messages_preview}...")
-        self.logger.info(f"LLM API called for model {model}")
+        log_structured(
+            self.logger,
+            "LLM",
+            "Request Message",
+            details=messages_full,
+            level="DEBUG",
+        )
+
+        log_structured(self.logger, "LLM", f"Calling {model}...")
+        start_time = time.time()
+
         if self.provider == "openai":
             response = self.client.chat.completions.create(  # type: ignore
                 model=model,
@@ -135,17 +145,7 @@ class LLMClient:
             )
             content = response.choices[0].message.content.strip()  # type: ignore
             usage = response.usage
-            # 将换行符转换为 \n 以便在日志中显示
-            content_preview = content[:200].replace("\n", "\\n").replace("\r", "\\r")
-            self.logger.debug(
-                f"LLM response content for model {model}:\n{content_preview}..."
-            )
-            self.logger.info(
-                f"LLM API responded for model {model} "
-                f"(total_tokens={usage.total_tokens})"  # type: ignore
-            )
-            return content
-
+            duration = time.time() - start_time
         elif self.provider == "anthropic":
             system_msg = ""
             user_msgs = []
@@ -154,7 +154,6 @@ class LLMClient:
                     system_msg = msg["content"]
                 elif msg["role"] in ("user", "assistant"):
                     user_msgs.append(msg["content"])
-
             response = self.client.messages.create(  # type: ignore
                 model=model,
                 system=system_msg,
@@ -163,16 +162,41 @@ class LLMClient:
             )
             content = response.content[0].text
             usage = response.usage
-            # 将换行符转换为 \n 以便在日志中显示
-            content_preview = content[:200].replace("\n", "\\n").replace("\r", "\\r")
-            self.logger.debug(
-                f"LLM response content for model {model}:\n{content_preview}..."
-            )
-            self.logger.info(
-                f"LLM API responded for model {model} "
-                f"(total_tokens={usage.total_tokens})"
-            )
-            return content
-
+            duration = time.time() - start_time
         else:
             raise ValueError(f"Unsupported provider: {self.provider}")
+
+        content_full = content.replace("\n", "\\n").replace("\r", "\\r")
+        if usage:
+            self.logger.debug(
+                f"📤 LLM Response │ {model}\\n"
+                f"  Tokens: {usage.total_tokens} (prompt: {usage.prompt_tokens}, completion: {usage.completion_tokens})\\n"  # type: ignore
+                f"  Content:\\n{content_full}"
+            )
+            log_structured(
+                self.logger,
+                "LLM",
+                "Response Message | Tokens: {usage.total_tokens} (prompt: {usage.prompt_tokens}, completion: {usage.completion_tokens})\\n",
+                details=content_full,
+                level="DEBUG",
+            )
+            log_structured(
+                self.logger,
+                "LLM",
+                f"{model} │ {usage.total_tokens} tokens │ {duration:.1f}s",  # type: ignore
+            )
+        else:
+            log_structured(
+                self.logger,
+                "LLM",
+                "Response Message | Tokens: {usage.total_tokens} (prompt: {usage.prompt_tokens}, completion: {usage.completion_tokens})\\n",
+                details=content_full,
+                level="DEBUG",
+            )
+
+            log_structured(
+                self.logger,
+                "LLM",
+                f"{model} │ {usage.total_tokens} tokens │ {duration:.1f}s",  # type: ignore
+            )
+        return content

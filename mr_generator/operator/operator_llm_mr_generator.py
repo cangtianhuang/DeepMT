@@ -10,7 +10,7 @@ import traceback
 import uuid
 from typing import Any, Callable, Dict, List, Optional
 
-from core.logger import get_logger
+from core.logger import get_logger, log_error, log_structured
 from ir.schema import MetamorphicRelation
 from tools.llm.client import LLMClient
 
@@ -96,9 +96,9 @@ class OperatorLLMMRGenerator:
             try:
                 sig = inspect.signature(operator_func)
                 operator_signature = str(sig)
-                self.logger.info(f"Auto-extracted signature: {operator_signature}")
+                self.logger.debug(f"Auto-extracted signature: {operator_signature}")
             except Exception as e:
-                self.logger.warning(f"Failed to extract signature from function: {e}. ")
+                self.logger.debug(f"Failed to extract signature from function: {e}")
 
         # User prompt
         user_prompt = self._build_user_prompt(
@@ -221,8 +221,12 @@ Generate the response for the user's operator. Start with **Analysis**, then pro
 
             # 转换为MR对象
             if not isinstance(data, dict) or "mrs" not in data:
-                self.logger.error(
-                    f"Invalid JSON structure: expected dict with 'mrs' key, got {type(data)}"
+                log_error(
+                    self.logger,
+                    f"Invalid JSON structure from LLM",
+                    exception=TypeError(
+                        f"Expected dict with 'mrs' key, got {type(data)}"
+                    ),
                 )
                 if isinstance(data, dict):
                     self.logger.debug(f"Available keys: {list(data.keys())}")
@@ -231,10 +235,18 @@ Generate the response for the user's operator. Start with **Analysis**, then pro
             mrs = []
             mr_list = data.get("mrs", [])
             if not isinstance(mr_list, list):
-                self.logger.error(f"Expected 'mrs' to be a list, got {type(mr_list)}")
+                log_error(
+                    self.logger,
+                    f"Invalid 'mrs' field type",
+                    exception=TypeError(f"Expected list, got {type(mr_list)}"),
+                )
                 return []
 
-            self.logger.info(f"Parsed {len(mr_list)} MR entries from LLM response")
+            log_structured(
+                self.logger,
+                "GEN",
+                f"Parsed {len(mr_list)} MR entries from LLM response",
+            )
 
             for idx, mr_data in enumerate(mr_list[:top_k]):
                 try:
@@ -257,14 +269,19 @@ Generate the response for the user's operator. Start with **Analysis**, then pro
                     self.logger.debug(traceback.format_exc())
                     continue
 
-            self.logger.info(
-                f"Generated {len(mrs)} MR candidates from LLM for {operator_name}"
+            log_structured(
+                self.logger,
+                "GEN",
+                f"Generated {len(mrs)} MR candidates from LLM for {operator_name}",
             )
             return mrs
 
         except Exception as e:
-            self.logger.error(f"LLM MR generation error: {e}")
-            self.logger.debug(traceback.format_exc())
+            log_error(
+                self.logger,
+                f"LLM MR generation failed for '{operator_name}'",
+                exception=e,
+            )
             return []
 
     def _parse_mr_response(

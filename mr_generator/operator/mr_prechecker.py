@@ -10,7 +10,7 @@ MR快速筛选器：使用 TestRunner 进行少量快速测试
 from typing import Any, Callable, Dict, List
 
 from core.framework import FrameworkType
-from core.logger import get_logger
+from core.logger import get_logger, log_structured
 from core.oracle_evaluator import OracleEvaluator
 from core.plugins_manager import PluginsManager
 from core.results_manager import ResultsManager
@@ -170,7 +170,11 @@ class MRPreChecker:
         """
         filtered = []
 
-        self.logger.info(f"Pre-checking {len(mr_candidates)} MR candidates...")
+        log_structured(
+            self.logger,
+            "CHECK",
+            f"Pre-checking {len(mr_candidates)} MR candidates...",
+        )
 
         for i, mr in enumerate(mr_candidates):
             is_valid, error_msg = self.check_mr(
@@ -186,8 +190,10 @@ class MRPreChecker:
                     f"Reason: {error_msg}"
                 )
 
-        self.logger.info(
-            f"Pre-check completed: {len(filtered)}/{len(mr_candidates)} MRs passed"
+        log_structured(
+            self.logger,
+            "CHECK",
+            f"Pre-check completed: {len(filtered)}/{len(mr_candidates)} MRs passed",
         )
 
         return filtered

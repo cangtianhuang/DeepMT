@@ -4,7 +4,7 @@ from typing import Any, Dict, Optional
 
 from core.config_loader import get_config_value
 from core.framework import FrameworkType
-from core.logger import get_logger
+from core.logger import get_logger, log_error, log_structured
 from tools.web_search.search_tool import WebSearchTool
 
 
@@ -35,12 +35,8 @@ class OperatorInfoFetcher:
             算子信息字典，包含 name, doc, source_urls
         """
         if not self.enabled:
-            self.logger.warning("Web search is disabled in config")
+            self.logger.warning("⚠️  WARN │ Web search is disabled in config")
             return {}
-
-        self.logger.info(
-            f"Fetching operator info for '{operator_name}' from {framework}"
-        )
 
         try:
             search_results = self.search_tool.search_operator(
@@ -49,11 +45,11 @@ class OperatorInfoFetcher:
                 sources=get_config_value("web_search.sources"),
             )
         except ValueError as e:
-            self.logger.warning(f"Search failed: {e}")
+            log_error(self.logger, f"Search failed for '{operator_name}'", exception=e)
             return {"name": operator_name, "doc": "", "source_urls": []}
 
         if not search_results:
-            self.logger.warning(f"No search results found for '{operator_name}'")
+            self.logger.warning(f"⚠️  WARN │ No results found for '{operator_name}'")
             return {"name": operator_name, "doc": "", "source_urls": []}
 
         docs_results = [r for r in search_results if r.source == "docs"]
@@ -62,12 +58,10 @@ class OperatorInfoFetcher:
         # Debug: 打印每个搜索结果的详情
         for idx, result in enumerate(search_results):
             self.logger.debug(
-                f"Search result {idx + 1}: "
-                f"source={result.source}, "
-                f"score={result.relevance_score:.4f}, "
-                f"title={result.title[:80]}, "
-                f"url={result.url}, "
-                f"snippet_length={len(result.snippet)}"
+                f"  Result {idx + 1}: {result.source} │ "
+                f"score={result.relevance_score:.3f} │ "
+                f'"{result.title[:60]}..." '
+                f"({len(result.snippet)} chars)"
             )
 
         doc_parts = [r.snippet for r in source_results if r.snippet]
@@ -80,21 +74,25 @@ class OperatorInfoFetcher:
             "source_urls": source_urls,
         }
 
-        self.logger.info(
-            f"Fetched operator info: "
-            f"doc={'found' if doc else 'not found'} ({len(doc)} chars), "
-            f"source_urls={len(source_urls)}"
+        log_structured(
+            self.logger,
+            "SEARCH",
+            f"Found {len(source_urls)} sources | {len(doc)} chars",
         )
 
         # Debug: 打印重排后的结果分数和摘要
-        self.logger.debug("Document reranking results:")
-        for idx, result in enumerate(source_results[:5]):  # 只显示前5个
-            snippet_preview = result.snippet[:100] + "..." if len(result.snippet) > 100 else result.snippet
-            self.logger.debug(
-                f"  Rank {idx + 1}: score={result.relevance_score:.4f}, "
-                f"source={result.source}, "
-                f"summary=\"{snippet_preview}\""
-            )
+        if source_results:
+            self.logger.debug("  Top results:")
+            for idx, result in enumerate(source_results[:3]):  # 只显示前3个
+                snippet_preview = (
+                    result.snippet[:80] + "..."
+                    if len(result.snippet) > 80
+                    else result.snippet
+                )
+                self.logger.debug(
+                    f"    [{idx + 1}] {result.source} │ score={result.relevance_score:.3f}\n"
+                    f'        "{snippet_preview}"'
+                )
 
         return operator_info
 

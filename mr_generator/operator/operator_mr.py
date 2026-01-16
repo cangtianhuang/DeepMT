@@ -11,7 +11,7 @@
 from typing import Callable, Dict, List, Literal, Optional, Set
 
 from core.framework import FrameworkType
-from core.logger import get_logger
+from core.logger import get_logger, log_error, log_structured
 from ir.schema import MetamorphicRelation, OperatorIR
 from mr_generator.base.mr_templates import MRTemplatePool
 from mr_generator.operator.mr_prechecker import MRPreChecker
@@ -64,7 +64,12 @@ class OperatorMRGenerator:
         # 向后兼容：保留知识库（内部使用）
         # self._kb = KnowledgeBase()
 
-        self.logger.info("OperatorMRGenerator initialized")
+        log_structured(
+            self.logger,
+            "INIT",
+            "OperatorMRGenerator initialized",
+            level="DEBUG",
+        )
 
     def fetch_operator_info(
         self,
@@ -108,12 +113,16 @@ class OperatorMRGenerator:
         Returns:
             MR对象列表
         """
-        operator_name = operator_ir.name
-        self.logger.info(f"Generating MRs for operator: {operator_name}")
-
         # 默认使用所有来源
         if sources is None:
             sources = ["llm", "template"]
+
+        operator_name = operator_ir.name
+        log_structured(
+            self.logger,
+            "GEN",
+            f"Generating MRs for '{operator_name}' | sources from {sources}",
+        )
 
         # ========== 阶段1：信息准备 ==========
         operator_code, operator_doc = self._prepare_info(
@@ -136,16 +145,29 @@ class OperatorMRGenerator:
                     code=operator_code, func=operator_func, doc=operator_doc
                 )
                 if sympy_expr is not None:
-                    self.logger.info("Successfully converted code to SymPy expression")
+                    log_structured(
+                        self.logger,
+                        "GEN",
+                        "Successfully converted code to SymPy expression",
+                    )
             except Exception as e:
-                self.logger.warning(f"Failed to convert code to SymPy: {e}")
+                log_structured(
+                    self.logger,
+                    "WARN",
+                    f"Failed to convert code to SymPy: {e}",
+                    level="WARNING",
+                )
 
         # ========== 阶段2：MR猜想生成 ==========
         candidate_mrs: List[MetamorphicRelation] = []
 
         # --- 来源1：LLM猜想 ---
         if "llm" in sources:
-            self.logger.info("Source 1: LLM-based MR generation...")
+            log_structured(
+                self.logger,
+                "LLM",
+                "Generating MR candidates...",
+            )
             try:
                 llm_mrs = self.llm_generator.generate_mr_candidates(
                     operator_name=operator_name,
@@ -155,24 +177,38 @@ class OperatorMRGenerator:
                     top_k=5,
                 )
                 candidate_mrs.extend(llm_mrs)
-                self.logger.info(f"  → Generated {len(llm_mrs)} candidate MRs")
+                log_structured(
+                    self.logger,
+                    "GEN",
+                    f"Generated {len(llm_mrs)} candidates from LLM",
+                )
             except Exception as e:
-                self.logger.warning(f"  → LLM generation failed: {e}")
+                log_error(
+                    self.logger,
+                    f"LLM generation failed for '{operator_name}'",
+                    exception=e,
+                )
 
         # --- 来源2：模板池猜测 ---
         if "template" in sources:
-            self.logger.info("Source 2: Template pool generation...")
+            log_structured(self.logger, "GEN", "Template pool matching...")
             try:
                 template_mrs = self.template_pool.generate_mr_candidates(
                     operator_name=operator_name,
                     operator_func=operator_func,
                 )
                 candidate_mrs.extend(template_mrs)
-                self.logger.info(
-                    f"  → Generated {len(template_mrs)} candidate MRs from templates"
+                log_structured(
+                    self.logger,
+                    "GEN",
+                    f"Generated {len(template_mrs)} candidates from templates",
                 )
             except Exception as e:
-                self.logger.warning(f"  → Template pool generation failed: {e}")
+                log_error(
+                    self.logger,
+                    f"Template pool generation failed for '{operator_name}'",
+                    exception=e,
+                )
 
         # --- 如果没有任何MR，使用旧的知识库方法 ---
         # if not candidate_mrs:
@@ -187,29 +223,41 @@ class OperatorMRGenerator:
         #             self.logger.error(f"Error generating MR from knowledge base: {e}")
 
         # 统计
-        self.logger.info(
-            f"After MR generation: {len(candidate_mrs)} candidate MRs to verify"
-        )
-
-        if not candidate_mrs:
-            self.logger.warning(f"No MRs generated for {operator_name}")
+        if candidate_mrs:
+            log_structured(
+                self.logger,
+                "GEN",
+                f"Total {len(candidate_mrs)} candidates to verify",
+            )
+        else:
+            log_structured(
+                self.logger,
+                "WARN",
+                f"No MRs generated for '{operator_name}'",
+                level="WARNING",
+            )
             return []
 
         # ========== 阶段3：快速筛选 ==========
         if use_precheck:
             if operator_func:
-                self.logger.info("Pre-checking candidate MRs...")
+                log_structured(self.logger, "CHECK", "Pre-checking candidates...")
                 candidate_mrs = self.prechecker.filter_mrs(
                     operator_func=operator_func,
                     mr_candidates=candidate_mrs,
                     original_inputs=operator_ir.inputs or [],
                     framework=framework,
                 )
-                self.logger.info(
-                    f"  → After pre-check: {len(candidate_mrs)} candidates remain"
+                log_structured(
+                    self.logger, "CHECK", f"{len(candidate_mrs)} candidates passed"
                 )
             else:
-                self.logger.warning("Pre-check skipped: operator_func not provided.")
+                log_structured(
+                    self.logger,
+                    "CHECK",
+                    "Skipped (no operator_func)",
+                    level="DEBUG",
+                )
 
         # ========== 阶段4：SymPy形式化证明 ==========
         verified_mrs: List[MetamorphicRelation] = []
@@ -219,7 +267,7 @@ class OperatorMRGenerator:
                 # 获取输入数量
                 num_inputs = len(operator_ir.inputs) if operator_ir.inputs else None
 
-                self.logger.info("Proving candidate MRs using SymPy...")
+                log_structured(self.logger, "CHECK", "Proving with SymPy...")
                 proven_mrs = self.sympy_prover.prove_mrs(
                     mrs=candidate_mrs,
                     operator_func=operator_func,
@@ -231,7 +279,7 @@ class OperatorMRGenerator:
                 )
                 for mr in proven_mrs:
                     mr.verified = True
-                self.logger.info(f"  → Proven {len(proven_mrs)} MRs")
+                log_structured(self.logger, "CHECK", f"{len(proven_mrs)} MRs proven")
                 verified_mrs.extend(proven_mrs)
 
                 # 未证明的MR也加入输出（标记为未验证）
@@ -241,8 +289,11 @@ class OperatorMRGenerator:
                         mr.verified = False
                         verified_mrs.append(mr)
             else:
-                self.logger.warning(
-                    "SymPy proof skipped: no code or SymPy expression available."
+                log_structured(
+                    self.logger,
+                    "CHECK",
+                    "SymPy proof skipped (no code)",
+                    level="DEBUG",
                 )
                 verified_mrs.extend(candidate_mrs)
         else:
@@ -252,10 +303,20 @@ class OperatorMRGenerator:
         # ========== 去重 ==========
         final_mrs = self._deduplicate_mrs(verified_mrs)
 
-        self.logger.info(
-            f"Final output: {len(final_mrs)} MRs "
-            f"({sum(1 for mr in final_mrs if mr.verified)} verified)"
-        )
+        verified_count = sum(1 for mr in final_mrs if mr.verified)
+        if verified_count == len(final_mrs):
+            log_structured(
+                self.logger, "SUCCESS", f"{len(final_mrs)} MRs (all verified)"
+            )
+        elif verified_count > 0:
+            log_structured(
+                self.logger,
+                "GEN",
+                f"{len(final_mrs)} MRs ({verified_count} verified)",
+            )
+        else:
+            log_structured(self.logger, "GEN", f"{len(final_mrs)} MRs (unverified)")
+
         return final_mrs
 
     def _prepare_info(
@@ -276,13 +337,17 @@ class OperatorMRGenerator:
                 import inspect
 
                 operator_code = inspect.getsource(operator_func)
-                self.logger.info("Extracted code from function object using inspect")
+                log_structured(
+                    self.logger,
+                    "GEN",
+                    "Extracted code from function object using inspect",
+                )
             except Exception as e:
                 self.logger.debug(f"Cannot extract code from function: {e}")
 
         # 自动从网络获取信息
         if auto_fetch_info:
-            self.logger.info(f"Auto-fetching operator info for '{operator_name}'...")
+            log_structured(self.logger, "SEARCH", f"Fetching '{operator_name}' docs...")
             try:
                 fetched_info = self.info_fetcher.fetch_operator_info(
                     operator_name=operator_name, framework=framework
@@ -295,16 +360,35 @@ class OperatorMRGenerator:
                         operator_doc = f"{operator_doc}\n\n---\n\n[网络搜索获取的文档]\n{fetched_doc}"
                     else:
                         operator_doc = fetched_doc
-                    self.logger.info(f"  → Fetched doc ({len(fetched_doc)} chars)")
+                    source_urls = fetched_info.get("source_urls", [])
+                    log_structured(
+                        self.logger,
+                        "SEARCH",
+                        f"Fetched {len(fetched_doc)} chars from {len(source_urls)} sources",
+                    )
+                    # Debug: 打印获取到的文档链接
+                    if source_urls:
+                        self.logger.debug("  Sources:")
+                        for idx, url in enumerate(source_urls):
+                            self.logger.debug(f"    [{idx + 1}] {url}")
 
                 # 如果本地没有代码，使用网络获取的代码
                 if not operator_code and fetched_info.get("code"):
                     fetched_code = fetched_info["code"]
                     operator_code = fetched_code
-                    self.logger.info(f"  → Fetched code ({len(fetched_code)} chars)")
+                    log_structured(
+                        self.logger,
+                        "SEARCH",
+                        f"Fetched code ({len(fetched_code)} chars)",
+                        level="DEBUG",
+                    )
 
             except Exception as e:
-                self.logger.warning(f"  → Failed to fetch operator info: {e}")
+                log_error(
+                    self.logger,
+                    f"Failed to fetch info for '{operator_name}'",
+                    exception=e,
+                )
 
         return operator_code, operator_doc
 
@@ -322,6 +406,11 @@ class OperatorMRGenerator:
                 unique_mrs.append(mr)
 
         if len(mrs) != len(unique_mrs):
-            self.logger.info(f"Deduplicated: {len(mrs)} → {len(unique_mrs)} MRs")
+            log_structured(
+                self.logger,
+                "DEBUG",
+                f"Deduplicated: {len(mrs)} → {len(unique_mrs)} MRs",
+                level="DEBUG",
+            )
 
         return unique_mrs

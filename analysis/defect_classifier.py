@@ -3,10 +3,10 @@
 """
 
 import numpy as np
-from typing import Any, Tuple, Dict, Optional
+from typing import Any, Tuple, Dict
 
 from ir.schema import MetamorphicRelation
-from core.logger import get_logger
+from core.logger import get_logger, log_error
 
 
 class DefectClassifier:
@@ -67,7 +67,7 @@ class DefectClassifier:
             return is_match, defect_info
 
         except Exception as e:
-            self.logger.error(f"Error in compare: {e}")
+            log_error(self.logger, "Error in compare", exception=e)
             return False, {
                 "type": "EXCEPTION",
                 "details": f"Comparison failed: {str(e)}",
