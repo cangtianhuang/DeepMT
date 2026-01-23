@@ -34,6 +34,7 @@ LOG_ICONS = {
     "WARNING": "🚨",
     "ERROR": "❌",
     "CRITICAL": "❌",
+    "REPO": "📦",
 }
 Log_Categories = Literal[
     "INIT",
@@ -49,6 +50,7 @@ Log_Categories = Literal[
     "WARNING",
     "ERROR",
     "CRITICAL",
+    "REPO",
 ]
 
 
