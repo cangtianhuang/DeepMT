@@ -7,7 +7,7 @@ from typing import Any, Dict, Iterator, Optional
 
 import yaml
 
-from core.logger import get_logger, log_structured, reconfigure_logger
+from core.logger import get_logger, log_structured
 
 
 class ConfigLoader:
@@ -126,11 +126,6 @@ class ConfigLoader:
             self._config_path = path
             self._config_mtime = path.stat().st_mtime
 
-            log_dir = self.get("logging.file", "data/logs")
-            level = getattr(
-                logging, self.get("logging.level", "INFO").upper(), logging.INFO
-            )
-            reconfigure_logger(log_dir=log_dir, level=level)
             log_structured(
                 self.logger,
                 "INIT",

@@ -13,7 +13,7 @@ import requests
 from bs4 import BeautifulSoup
 
 from core.config_loader import get_config_value
-from core.logger import get_logger
+from core.logger import get_logger, log_structured
 from tools.llm.client import LLMClient
 from tools.llm.ocr_client import OCRClient
 from tools.web_search.sphinx_search import SphinxSearchIndex

@@ -120,6 +120,8 @@ class LLMClient:
         # 根据任务类型选择模型
         model = self.model_max if use_model_max else self.model_base
 
+        # Log request summary
+        total_chars = sum(len(msg.get("content", "")) for msg in messages)
         messages_full = "\\n".join(
             [
                 f"{msg['role']}: {msg['content'].replace('\n', '\\n').replace('\r', '\\r')}"
@@ -129,7 +131,9 @@ class LLMClient:
         log_structured(
             self.logger,
             "LLM",
-            "Request Message",
+            f"Calling {model}",
+            message_count=len(messages),
+            total_chars=total_chars,
             details=messages_full,
             level="DEBUG",
         )
@@ -166,37 +170,27 @@ class LLMClient:
         else:
             raise ValueError(f"Unsupported provider: {self.provider}")
 
+        # Log response
         content_full = content.replace("\n", "\\n").replace("\r", "\\r")
         if usage:
-            self.logger.debug(
-                f"📤 LLM Response | {model}\\n"
-                f"  Tokens: {usage.total_tokens} (prompt: {usage.prompt_tokens}, completion: {usage.completion_tokens})\\n"  # type: ignore
-                f"  Content:\\n{content_full}"
-            )
             log_structured(
                 self.logger,
                 "LLM",
-                "Response Message | Tokens: {usage.total_tokens} (prompt: {usage.prompt_tokens}, completion: {usage.completion_tokens})\\n",
+                f"Response from {model}",
+                prompt_tokens=usage.prompt_tokens,  # type: ignore
+                completion_tokens=usage.completion_tokens,  # type: ignore
+                total_tokens=usage.total_tokens,  # type: ignore
+                duration=f"{duration:.1f}s",
                 details=content_full,
                 level="DEBUG",
-            )
-            log_structured(
-                self.logger,
-                "LLM",
-                f"Resposed from {model} | {usage.total_tokens} tokens | {duration:.1f}s",  # type: ignore
             )
         else:
             log_structured(
                 self.logger,
                 "LLM",
-                "Response Message | Tokens: {usage.total_tokens} (prompt: {usage.prompt_tokens}, completion: {usage.completion_tokens})\\n",
+                f"Response from {model} (no usage info)",
+                duration=f"{duration:.1f}s",
                 details=content_full,
                 level="DEBUG",
-            )
-
-            log_structured(
-                self.logger,
-                "LLM",
-                f"Resposed from {model} | {usage.total_tokens} tokens | {duration:.1f}s",  # type: ignore
             )
         return content

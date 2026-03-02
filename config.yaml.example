@@ -33,7 +33,3 @@ web_search:
   ocr: false  # 是否启用OCR（用于处理网页中的公式图片）
   # clean_latex: true  # 是否清洗LaTeX公式
 
-# 日志配置
-logging:
-  level: "INFO"  # DEBUG, INFO, WARNING, ERROR
-  file: "data/logs/deepmt.log"

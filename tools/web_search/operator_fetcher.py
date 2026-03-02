@@ -35,7 +35,7 @@ class OperatorInfoFetcher:
             算子信息字典，包含 name, doc, source_urls
         """
         if not self.enabled:
-            self.logger.warning("⚠️  WARN | Web search is disabled in config")
+            log_structured(self.logger, "WARN", "Web search is disabled in config", level="WARNING")
             return {}
 
         try:
@@ -49,7 +49,7 @@ class OperatorInfoFetcher:
             return {"name": operator_name, "doc": "", "source_urls": []}
 
         if not search_results:
-            self.logger.warning(f"⚠️  WARN | No results found for '{operator_name}'")
+            log_structured(self.logger, "WARN", f"No results found for '{operator_name}'", level="WARNING")
             return {"name": operator_name, "doc": "", "source_urls": []}
 
         docs_results = [r for r in search_results if r.source == "docs"]
