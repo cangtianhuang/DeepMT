@@ -82,13 +82,32 @@ class OracleEvaluator:
             # 如果没有显式比较，添加容差检查
             return self._generate_tolerance_check(expr, framework, tolerance)
         else:
-            # 如果有显式比较，简单比较使用 all_equal
+            # 如果有显式比较，需要区分比较类型
             # 复杂表达式（包含运算）使用 numpy 处理
             if any(op in expr for op in ["+", "-", "*", "/"]):
                 # 复杂表达式，需要转换为 numpy
                 return self._generate_complex_expression(expr, framework, tolerance)
             else:
-                # 简单比较，使用 all_equal
+                # 简单比较，根据操作符选择处理方式（注意按长度降序匹配，避免 >= 匹配到 >）
+                for op in ["==", "!=", ">=", "<=", ">", "<"]:
+                    if op in expr:
+                        parts = expr.split(op, 1)
+                        if len(parts) == 2:
+                            left = parts[0].strip()
+                            right = parts[1].strip()
+                            if op == "==":
+                                return f"return all_equal({left}, {right}, {tolerance})"
+                            elif op == ">=":
+                                return f"return all_geq({left}, {right}, {tolerance})"
+                            elif op == "<=":
+                                return f"return all_leq({left}, {right}, {tolerance})"
+                            elif op == ">":
+                                return f"return bool(np.all(to_numpy({left}) > to_numpy({right}) + {tolerance}))"
+                            elif op == "<":
+                                return f"return bool(np.all(to_numpy({left}) < to_numpy({right}) - {tolerance}))"
+                            elif op == "!=":
+                                return f"return not all_equal({left}, {right}, {tolerance})"
+                # 无法识别，默认使用 all_equal
                 return f"return all_equal(orig, trans, {tolerance})"
 
     def _generate_complex_expression(
