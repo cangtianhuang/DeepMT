@@ -131,14 +131,14 @@ class LLMClient:
         log_structured(
             self.logger,
             "LLM",
-            f"Calling {model}",
+            f"Calling {model} ...",
             message_count=len(messages),
             total_chars=total_chars,
             details=messages_full,
             level="DEBUG",
+            max_detail_width=len(messages_full),
         )
-
-        log_structured(self.logger, "LLM", f"Calling {model}...")
+        log_structured(self.logger, "LLM", f"Calling {model} ...")
         start_time = time.time()
 
         if self.provider == "openai":
@@ -183,6 +183,7 @@ class LLMClient:
                 duration=f"{duration:.1f}s",
                 details=content_full,
                 level="DEBUG",
+                max_detail_width=len(content_full),
             )
         else:
             log_structured(

@@ -51,6 +51,10 @@ class MetamorphicRelation:
     # - "orig == trans"  # 幂等性（f(f(x)) == f(x)）
     oracle_expr: str = ""  # 框架无关的验证表达式
 
+    # 期望关系类型（用于SymPy证明）
+    # 可选值：equal, proportional, invariant
+    expected: str = "equal"  # 期望关系类型
+
     # 元数据
     category: str = "general"
     # MR类别：linearity, monotonicity, idempotency, composition, invariance, symmetry, boundary

@@ -8,13 +8,11 @@
 4. 形式化验证：SymPy证明
 """
 
-from datetime import datetime
 from typing import Callable, Dict, List, Literal, Optional, Set
 
 from core.framework import FrameworkType
 from core.logger import get_logger, log_error, log_structured
 from ir.schema import MetamorphicRelation, OperatorIR
-from mr_generator.base.mr_repository import MRRepository
 from mr_generator.base.mr_templates import MRTemplatePool
 from mr_generator.operator.mr_prechecker import MRPreChecker
 from mr_generator.operator.operator_llm_mr_generator import OperatorLLMMRGenerator
@@ -124,8 +122,6 @@ class OperatorMRGenerator:
             auto_fetch_info=auto_fetch_info,
             framework=framework,
         )
-        has_code = operator_code is not None
-
         # ========== 阶段2：MR猜想生成 ==========
         candidate_mrs = self._generate_candidates(
             operator_ir=operator_ir,
@@ -156,7 +152,6 @@ class OperatorMRGenerator:
             operator_name=operator_ir.name,
             num_inputs=len(operator_ir.inputs) if operator_ir.inputs else None,
             use_sympy_proof=use_sympy_proof,
-            has_code=has_code,
         )
 
         # ========== 去重 ==========
@@ -253,8 +248,6 @@ class OperatorMRGenerator:
         use_precheck: bool = True,
         use_sympy_proof: bool = True,
         framework: FrameworkType = "pytorch",
-        save_validation: bool = True,
-        repo: Optional["MRRepository"] = None,
     ) -> List[MetamorphicRelation]:
         """
         对已生成的MR进行验证
@@ -262,19 +255,15 @@ class OperatorMRGenerator:
         执行阶段：
         1. 快速筛选 (Pre-check, 可选)
         2. SymPy形式化证明 (可选)
-        3. 保存验证记录
 
         参数：
             mrs: 待验证的MR列表
-            use_precheck: 是否进行快速筛选
+            use_precheck: 是否进行快速筛选（需提供 operator_func）
             use_sympy_proof: 是否进行SymPy证明
-            save_validation: 是否保存验证记录
-            repo: MR知识库实例
 
         返回：
             经过验证的MR列表
         """
-
         operator_name = operator_ir.name
         log_structured(
             self.logger,
@@ -282,169 +271,35 @@ class OperatorMRGenerator:
             f"Verifying {len(mrs)} MRs for '{operator_name}'",
         )
 
-        # 准备信息
         operator_code, operator_doc = self._prepare_info(
             operator_ir=operator_ir,
             operator_func=operator_func,
             operator_code=operator_code,
             operator_doc=operator_doc,
-            auto_fetch_info=False,  # 不自动获取，使用提供的
+            auto_fetch_info=False,
             framework=framework,
         )
-        has_code = operator_code is not None
-
-        # 存储验证记录
-        validation_records = []
 
         # ========== 阶段1：快速筛选 ==========
         if use_precheck and operator_func:
-            mrs_after_precheck = []
-            for mr in mrs:
-                is_valid, error_msg = self.prechecker.check_mr(
-                    operator_func=operator_func,
-                    mr=mr,
-                    original_inputs=operator_ir.inputs or [],
-                    framework=framework,
-                )
-
-                # 记录验证结果
-                validation_records.append(
-                    {
-                        "mr_id": mr.id,
-                        "validation_type": "precheck",
-                        "result": "passed" if is_valid else "failed",
-                        "error_message": "" if is_valid else error_msg,
-                        "details": {"passed": is_valid, "message": error_msg},
-                        "validated_at": datetime.now().isoformat(),
-                    }
-                )
-
-                if is_valid:
-                    mrs_after_precheck.append(mr)
-                    log_structured(
-                        self.logger, "CHECK", f"MR passed pre-check: {mr.description}"
-                    )
-                else:
-                    log_structured(
-                        self.logger,
-                        "CHECK",
-                        f"MR failed pre-check: {mr.description}. Reason: {error_msg}",
-                        level="DEBUG",
-                    )
-
-            mrs = mrs_after_precheck
-            log_structured(
-                self.logger,
-                "CHECK",
-                f"Pre-check: {len(mrs_after_precheck)}/{len(mrs_after_precheck) + len(validation_records) - len(mrs_after_precheck)} MRs passed",
+            mrs = self._apply_precheck(
+                operator_func=operator_func,
+                mr_candidates=mrs,
+                original_inputs=operator_ir.inputs or [],
+                framework=framework,
             )
 
         # ========== 阶段2：SymPy形式化证明 ==========
-        if use_sympy_proof and (has_code or operator_code):
-            num_inputs = len(operator_ir.inputs) if operator_ir.inputs else None
+        mrs = self._apply_sympy_proof(
+            candidate_mrs=mrs,
+            operator_func=operator_func,
+            operator_code=operator_code,
+            operator_doc=operator_doc,
+            operator_name=operator_name,
+            num_inputs=len(operator_ir.inputs) if operator_ir.inputs else None,
+            use_sympy_proof=use_sympy_proof,
+        )
 
-            # 转换为SymPy表达式
-            sympy_expr = None
-            try:
-                sympy_expr = self.code_translator.translate(
-                    code=operator_code, func=operator_func, doc=operator_doc
-                )
-                if sympy_expr is not None:
-                    log_structured(
-                        self.logger,
-                        "CHECK",
-                        "Successfully converted code to SymPy expression",
-                    )
-            except Exception as e:
-                log_structured(
-                    self.logger,
-                    "WARN",
-                    f"Failed to convert code to SymPy: {e}",
-                    level="WARNING",
-                )
-
-            if sympy_expr is not None:
-                # 验证每个MR
-                proven_mrs = []
-                for mr in mrs:
-                    is_proven, error_msg = self.sympy_prover.prove_mr_with_expr(
-                        mr=mr,
-                        sympy_expr=sympy_expr,
-                        num_inputs=num_inputs if num_inputs else 1,
-                        operator_name=operator_name,
-                    )
-
-                    # 记录验证结果
-                    validation_records.append(
-                        {
-                            "mr_id": mr.id,
-                            "validation_type": "sympy",
-                            "result": "passed" if is_proven else "failed",
-                            "error_message": "" if is_proven else error_msg,
-                            "details": {"proven": is_proven, "message": error_msg},
-                            "validated_at": datetime.now().isoformat(),
-                        }
-                    )
-
-                    if is_proven:
-                        mr.verified = True
-                        proven_mrs.append(mr)
-                        log_structured(
-                            self.logger,
-                            "CHECK",
-                            f"MR proven by SymPy: {mr.description}",
-                        )
-                    else:
-                        log_structured(
-                            self.logger,
-                            "CHECK",
-                            f"MR proof failed: {mr.description}. Reason: {error_msg}",
-                            level="DEBUG",
-                        )
-
-                # 更新MR列表
-                proven_ids = {mr.id for mr in proven_mrs}
-                final_mrs = []
-                for mr in mrs:
-                    if mr.id in proven_ids:
-                        final_mrs.append(mr)
-                    else:
-                        # 未证明的MR也保留，但标记为未验证
-                        mr.verified = False
-                        final_mrs.append(mr)
-
-                mrs = final_mrs
-                log_structured(
-                    self.logger,
-                    "CHECK",
-                    f"SymPy: {len(proven_mrs)}/{len(final_mrs)} MRs proven",
-                )
-
-        # ========== 阶段3：保存验证记录 ==========
-        if save_validation and repo is None:
-            repo = MRRepository()
-
-        if save_validation and repo:
-            # 获取每个MR的record_id
-            for mr in mrs:
-                record_id = repo.get_record_id_by_mr_id(
-                    mr_id=mr.id,
-                    operator_name=operator_name,
-                )
-                if record_id:
-                    # 更新验证状态
-                    for record in validation_records:
-                        if record["mr_id"] == mr.id:
-                            repo.update_validation_status(
-                                record_id=record_id,
-                                mr_id=mr.id,
-                                validation_type=record["validation_type"],
-                                result=record["validation_result"],
-                                error_message=record["error_message"],
-                                details=record["details"],
-                            )
-
-        # ========== 去重 ==========
         final_mrs = self._deduplicate_mrs(mrs)
 
         verified_count = sum(1 for mr in final_mrs if mr.verified)
@@ -508,8 +363,6 @@ class OperatorMRGenerator:
             use_precheck=use_precheck,
             use_sympy_proof=use_sympy_proof,
             framework=framework,
-            save_validation=True,
-            repo=repo,
         )
 
         return verified_mrs
@@ -680,7 +533,7 @@ class OperatorMRGenerator:
 
         # --- 来源2：模板池猜测 ---
         if "template" in sources:
-            log_structured(self.logger, "GEN", "Template pool matching...")
+            log_structured(self.logger, "GEN", "Template pool matching ...")
             try:
                 template_mrs = self.template_pool.generate_mr_candidates(
                     operator_name=operator_name,
@@ -758,7 +611,6 @@ class OperatorMRGenerator:
         operator_name: str,
         num_inputs: Optional[int],
         use_sympy_proof: bool,
-        has_code: bool,
     ) -> List[MetamorphicRelation]:
         """
         应用SymPy形式化证明
@@ -771,14 +623,13 @@ class OperatorMRGenerator:
             operator_name: 算子名称
             num_inputs: 输入数量
             use_sympy_proof: 是否使用SymPy证明
-            has_code: 是否有代码
 
         Returns:
             经过验证的MR列表
         """
         verified_mrs: List[MetamorphicRelation] = []
 
-        if use_sympy_proof and (has_code or operator_code):
+        if use_sympy_proof and operator_code:
             # 转换为SymPy表达式
             sympy_expr = None
             try:
