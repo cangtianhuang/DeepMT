@@ -229,6 +229,16 @@ class OperatorMRGenerator:
             经过验证的MR列表
         """
         operator_name = operator_ir.name
+
+        if not mrs:
+            log_structured(
+                self.logger,
+                "CHECK",
+                f"No MRs to verify for '{operator_name}', skipping",
+                level="DEBUG",
+            )
+            return []
+
         log_structured(
             self.logger,
             "CHECK",
@@ -458,6 +468,16 @@ class OperatorMRGenerator:
         )
 
         candidate_mrs: List[MetamorphicRelation] = []
+
+        # 无算子信息时给出明显提示
+        if not operator_code and not operator_doc:
+            log_structured(
+                self.logger,
+                "WARN",
+                f"[NO OPERATOR INFO] No code or doc available for '{operator_name}'. "
+                "MR generation will proceed without operator context — quality may be degraded.",
+                level="WARNING",
+            )
 
         # --- 来源1：LLM猜想 ---
         if "llm" in sources:

@@ -53,6 +53,16 @@ class _MockTorch:
 
 _MOCK_TORCH = _MockTorch()
 
+
+def _mock_import(name, *args, **kwargs):
+    """transform_code eval 上下文中的 __import__ mock。
+    仅支持 'torch'，返回 _MOCK_TORCH，使 __import__('torch').relu(x) 等写法可符号化求值。
+    """
+    if name == "torch":
+        return _MOCK_TORCH
+    return None
+
+
 # oracle_expr 关键字映射（向后兼容旧模板的 expected 字段）
 _ORACLE_KEYWORD_MAP = {
     "equal": "",      # 空字符串 → 默认相等检查
@@ -330,8 +340,9 @@ class SymPyProver:
         if transform_code.startswith("lambda"):
             try:
                 # 用 mock torch 重新 eval transform_code，使符号运算可用
+                # __builtins__ 中注入 __import__ mock，支持 __import__('torch').xxx 写法
                 eval_ctx = {
-                    "__builtins__": {},
+                    "__builtins__": {"__import__": _mock_import},
                     "torch": _MOCK_TORCH,
                     "sp": sp,
                     "abs": sp.Abs,

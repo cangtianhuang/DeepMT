@@ -168,6 +168,9 @@ class MRPreChecker:
         Returns:
             过滤后的MR列表
         """
+        if not mr_candidates:
+            return []
+
         filtered = []
 
         log_structured(

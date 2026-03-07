@@ -133,6 +133,9 @@ class MRRepository:
         Returns:
             保存的MR数量
         """
+        if not mrs:
+            return 0
+
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
 
