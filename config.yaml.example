@@ -18,18 +18,10 @@ mr_generation:
   use_precheck: true  # 快速筛选
   use_sympy_proof: true  # SymPy验证
 
-# 网络搜索配置
-web_search:
-  enabled: true
-  sources:
-    docs: true  # 框架官方文档
-    github: true  # GitHub仓库
-    web_search: true  # 网络搜索
-  max_results: 5  # 最大搜索结果数量
-  custom_sites: []  # 用户指定的网站来源（可选）
-  # API配置
-  github_token: ""  # GitHub API token（可选）
-  baidu_api_key: ""  # 百度智能云千帆API Key
-  ocr: false  # 是否启用OCR（用于处理网页中的公式图片）
-  # clean_latex: true  # 是否清洗LaTeX公式
+# CrawlAgent 配置
+agent:
+  enabled: false              # 是否启用智能体获取算子文档（true 后 OperatorInfoFetcher 才生效）
+  max_steps: null             # 全局最大步数上限（覆盖各任务 YAML 中的 max_steps；null 表示不覆盖）
+  cache_ttl_days: null        # 全局缓存有效期（天；null 表示使用各任务默认值）
+  cache_dir: "data/agent_cache"  # 缓存目录
 

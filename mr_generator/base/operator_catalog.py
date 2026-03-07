@@ -6,10 +6,16 @@
 支持按框架、版本、分类进行过滤查询。
 
 目录数据来源：mr_generator/config/operator_catalog/<framework>.yaml
+
+Phase 2 新增：
+- OperatorEntry 新增 doc_url 字段
+- OperatorCatalog 新增 merge_from_agent_result() / save_yaml() 写入接口
+  用于将 CrawlAgent 抓取的算子列表自动合并到持久化 YAML
 """
 
+from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 import yaml
 
@@ -50,6 +56,8 @@ class OperatorEntry:
         )
         self.aliases: List[str] = data.get("aliases") or []
         self.note: str = data.get("note", "")
+        # Phase 2 新增：文档 URL（由 CrawlAgent 填充，可选）
+        self.doc_url: str = data.get("doc_url", "")
 
     def is_available_in(self, version: str) -> bool:
         """
@@ -72,7 +80,7 @@ class OperatorEntry:
         return _version_ge(version, self.deprecated)
 
     def to_dict(self) -> dict:
-        d = {
+        d: Dict[str, Any] = {
             "name": self.name,
             "category": self.category,
             "since": self.since,
@@ -85,6 +93,8 @@ class OperatorEntry:
             d["aliases"] = self.aliases
         if self.note:
             d["note"] = self.note
+        if self.doc_url:
+            d["doc_url"] = self.doc_url
         return d
 
     def __repr__(self) -> str:
@@ -328,3 +338,153 @@ class OperatorCatalog:
         self._entries.clear()
         self._load_all()
         self.logger.info("Operator catalog reloaded.")
+
+    # ------------------------------------------------------------------
+    # Phase 2：写入接口（供 CrawlAgent 结果合并使用）
+    # ------------------------------------------------------------------
+
+    def merge_from_agent_result(
+        self,
+        framework: str,
+        agent_result: Dict[str, Any],
+        overwrite_doc_url: bool = True,
+    ) -> Dict[str, int]:
+        """
+        将 CrawlAgent 获取的算子列表合并到当前目录。
+
+        agent_result 期望包含：
+          - operators: list[str]          算子名称列表
+          - doc_urls:  dict[str, str]     算子名 -> 文档 URL（可选）
+          - version:   str                版本号（可选，用于设置 since 字段）
+
+        合并规则：
+          - 名称已存在的条目：不改变 category/since/aliases，可选更新 doc_url
+          - 名称不存在的新条目：以 since="0.0"、category="" 创建占位条目
+
+        Args:
+            framework:        框架名称
+            agent_result:     TaskRunner.get_operator_list() 的返回结果
+            overwrite_doc_url: 是否用 agent 结果覆盖已有条目的 doc_url
+
+        Returns:
+            {"added": int, "updated": int, "skipped": int}
+        """
+        fw = self._normalize_framework(framework)
+        existing_names = {e.name for e in self._entries.get(fw, [])}
+
+        operators: List[str] = agent_result.get("operators", [])
+        doc_urls: Dict[str, str] = agent_result.get("doc_urls", {})
+        version: str = str(agent_result.get("version", "0.0"))
+
+        stats = {"added": 0, "updated": 0, "skipped": 0}
+
+        for op_name in operators:
+            if not op_name or not isinstance(op_name, str):
+                continue
+
+            if op_name in existing_names:
+                # 已存在：按需更新 doc_url
+                if overwrite_doc_url and op_name in doc_urls:
+                    for entry in self._entries[fw]:
+                        if entry.name == op_name:
+                            entry.doc_url = doc_urls[op_name]
+                            break
+                    stats["updated"] += 1
+                else:
+                    stats["skipped"] += 1
+            else:
+                # 新条目：创建占位条目
+                new_entry = OperatorEntry(
+                    {
+                        "name": op_name,
+                        "category": "",
+                        "since": version,
+                        "doc_url": doc_urls.get(op_name, ""),
+                    }
+                )
+                self._entries.setdefault(fw, []).append(new_entry)
+                existing_names.add(op_name)
+                stats["added"] += 1
+
+        self.logger.info(
+            f"Merged agent result into '{fw}' catalog: "
+            f"added={stats['added']}, updated={stats['updated']}, skipped={stats['skipped']}"
+        )
+        return stats
+
+    def save_yaml(self, framework: str) -> Path:
+        """
+        将指定框架的目录写回 YAML 文件（更新 last_updated）。
+
+        Args:
+            framework: 框架名称
+
+        Returns:
+            保存的文件路径
+        """
+        fw = self._normalize_framework(framework)
+        filename = self._FRAMEWORK_FILES[fw]
+        path = self._catalog_dir / f"{filename}.yaml"
+
+        # 读取现有文件头部（description、注释等），保留 framework/description/注释行
+        header_lines: List[str] = []
+        if path.exists():
+            with path.open("r", encoding="utf-8") as f:
+                for line in f:
+                    if line.startswith("operators:"):
+                        break
+                    # 跳过 last_updated 行，稍后重写
+                    if line.startswith("last_updated:"):
+                        continue
+                    header_lines.append(line.rstrip())
+
+        # 构造新的文件内容
+        today = datetime.now().strftime("%Y-%m-%d")
+        entries = self._entries.get(fw, [])
+
+        with path.open("w", encoding="utf-8") as f:
+            # 写入头部（framework/description/注释）
+            for line in header_lines:
+                f.write(line + "\n")
+            # 插入更新日期
+            f.write(f'last_updated: "{today}"\n')
+            f.write("\n")
+            f.write("operators:\n")
+            # 写入所有条目
+            for entry in entries:
+                d = entry.to_dict()
+                f.write(f"  - name: {d['name']}\n")
+                if d.get("category"):
+                    f.write(f"    category: {d['category']}\n")
+                f.write(f"    since: \"{d['since']}\"\n")
+                if d.get("deprecated"):
+                    f.write(f"    deprecated: \"{d['deprecated']}\"\n")
+                if d.get("removed"):
+                    f.write(f"    removed: \"{d['removed']}\"\n")
+                if d.get("aliases"):
+                    aliases_str = "[" + ", ".join(d["aliases"]) + "]"
+                    f.write(f"    aliases: {aliases_str}\n")
+                if d.get("doc_url"):
+                    f.write(f"    doc_url: {d['doc_url']}\n")
+                if d.get("note"):
+                    f.write(f"    note: \"{d['note']}\"\n")
+                f.write("\n")
+
+        self.logger.info(f"Saved {len(entries)} operators for '{fw}' to {path}")
+        return path
+
+    def get_doc_url(self, framework: str, operator_name: str) -> str:
+        """
+        获取指定算子的文档 URL。
+
+        Args:
+            framework:     框架名称
+            operator_name: 算子名称或别名
+
+        Returns:
+            文档 URL 字符串，未找到时返回空字符串
+        """
+        entry = self.get_operator_info(framework, operator_name)
+        if entry is None:
+            return ""
+        return entry.doc_url

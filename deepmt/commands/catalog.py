@@ -5,6 +5,7 @@ deepmt catalog — 算子目录管理子命令组
     list    列出指定框架的算子（支持按分类筛选）
     search  跨框架模糊搜索算子
     info    查询某算子的跨框架分布及知识库 MR 数量
+    sync    通过 CrawlAgent 自动更新算子目录
 """
 
 import json
@@ -261,3 +262,112 @@ def catalog_info(operator, as_json):
     else:
         click.echo(f"    {click.style('—', fg='yellow')} 知识库中暂无该算子的 MR")
         click.echo(f"    提示: 运行 'deepmt mr generate {operator} --save' 生成")
+
+
+# ── sync ───────────────────────────────────────────────────────────────────────
+
+@catalog.command("sync")
+@click.option(
+    "--framework", "-f",
+    default=None,
+    type=click.Choice(_ALL_FRAMEWORKS, case_sensitive=False),
+    help="目标框架（不指定则同步所有框架）",
+)
+@click.option(
+    "--version", "-v",
+    default="latest",
+    show_default=True,
+    metavar="VERSION",
+    help="框架版本号（如 2.5.1），默认 latest",
+)
+@click.option(
+    "--no-cache",
+    is_flag=True,
+    default=False,
+    help="忽略缓存，强制重新爬取",
+)
+@click.option(
+    "--dry-run",
+    is_flag=True,
+    default=False,
+    help="试运行：仅打印将写入的内容，不修改 YAML",
+)
+def catalog_sync(framework, version, no_cache, dry_run):
+    """通过 CrawlAgent 自动爬取并更新算子目录 YAML。
+
+    需要在 config.yaml 中设置 agent.enabled: true 且配置 LLM API Key。
+
+    \b
+    示例:
+      deepmt catalog sync                              # 同步所有框架
+      deepmt catalog sync --framework pytorch          # 仅同步 PyTorch
+      deepmt catalog sync --framework pytorch --no-cache   # 忽略缓存重新爬取
+      deepmt catalog sync --framework pytorch --dry-run    # 试运行
+    """
+    from core.config_loader import get_config_value
+
+    if not get_config_value("agent.enabled", False):
+        click.echo(click.style(
+            "错误：agent 未启用。请在 config.yaml 中设置 agent.enabled: true。",
+            fg="red",
+        ))
+        sys.exit(1)
+
+    try:
+        from tools.agent.task_runner import TaskRunner
+        runner = TaskRunner()
+    except Exception as e:
+        click.echo(click.style(f"错误：无法初始化 TaskRunner：{e}", fg="red"))
+        sys.exit(1)
+
+    frameworks_to_sync = [framework] if framework else _ALL_FRAMEWORKS
+    use_cache = not no_cache
+    save_yaml = not dry_run
+
+    total_added = 0
+    total_updated = 0
+    errors = []
+
+    for fw in frameworks_to_sync:
+        click.echo(f"\n正在同步 {click.style(fw, bold=True)}（version={version}）…")
+        try:
+            stats = runner.sync_catalog(fw, version=version, use_cache=use_cache, save_yaml=save_yaml)
+            added = stats.get("added", 0)
+            updated = stats.get("updated", 0)
+            skipped = stats.get("skipped", 0)
+            total_added += added
+            total_updated += updated
+
+            status_parts = []
+            if added:
+                status_parts.append(click.style(f"+{added} 新增", fg="green"))
+            if updated:
+                status_parts.append(click.style(f"~{updated} 更新", fg="cyan"))
+            if skipped:
+                status_parts.append(f"{skipped} 跳过")
+            status_str = "  ".join(status_parts) if status_parts else "无变化"
+
+            prefix = click.style("✓", fg="green") if not dry_run else click.style("~", fg="yellow")
+            dry_tag = "  [dry-run，未写入]" if dry_run else ""
+            click.echo(f"  {prefix} {fw}: {status_str}{dry_tag}")
+
+        except Exception as e:
+            errors.append((fw, str(e)))
+            click.echo(f"  {click.style('✗', fg='red')} {fw}: {e}")
+
+    # 汇总
+    click.echo("")
+    if not errors:
+        if dry_run:
+            click.echo(click.style("试运行完成，未写入任何文件。", fg="yellow"))
+        else:
+            click.echo(click.style(
+                f"同步完成：{len(frameworks_to_sync)} 个框架，新增 {total_added}，更新 {total_updated}。",
+                fg="green",
+            ))
+    else:
+        click.echo(click.style(
+            f"同步完成（有 {len(errors)} 个框架失败）：新增 {total_added}，更新 {total_updated}。",
+            fg="yellow",
+        ))
+        sys.exit(1)

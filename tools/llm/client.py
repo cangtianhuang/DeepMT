@@ -195,3 +195,91 @@ class LLMClient:
                 level="DEBUG",
             )
         return content
+
+    def chat_completion_with_tools(
+        self,
+        messages: List[Dict[str, Any]],
+        tools: List[Dict[str, Any]],
+        tool_choice: str = "auto",
+        use_model_max: bool = False,
+    ) -> Dict[str, Any]:
+        """
+        发送带工具定义的聊天请求（Function Calling）。
+
+        Args:
+            messages: 消息列表
+            tools: OpenAI 格式的工具定义列表
+            tool_choice: "auto" | "none" | {"type": "function", "function": {"name": ...}}
+            use_model_max: 是否使用高级模型
+
+        Returns:
+            {
+                "content": str or None,       # 文本回复（无工具调用时）
+                "tool_calls": [               # 工具调用列表（有调用时）
+                    {"id": str, "name": str, "arguments": dict}
+                ] or None
+            }
+        """
+        if self.provider != "openai":
+            raise NotImplementedError(
+                f"chat_completion_with_tools 目前仅支持 openai 兼容接口，当前 provider: {self.provider}"
+            )
+
+        model = self.model_max if use_model_max else self.model_base
+        total_chars = sum(len(msg.get("content", "") or "") for msg in messages)
+        log_structured(
+            self.logger,
+            "LLM",
+            f"Calling {model} with {len(tools)} tools ...",
+            message_count=len(messages),
+            total_chars=total_chars,
+            level="DEBUG",
+        )
+        log_structured(self.logger, "LLM", f"Calling {model} with tools ...")
+        start_time = time.time()
+
+        response = self.client.chat.completions.create(  # type: ignore
+            model=model,
+            messages=messages,  # type: ignore
+            tools=tools,  # type: ignore
+            tool_choice=tool_choice,
+            temperature=self.temperature,
+        )
+
+        duration = time.time() - start_time
+        choice = response.choices[0]
+        message = choice.message
+
+        result: Dict[str, Any] = {"content": None, "tool_calls": None}
+
+        if message.tool_calls:
+            import json as _json
+
+            parsed_calls = []
+            for tc in message.tool_calls:
+                try:
+                    args = _json.loads(tc.function.arguments)
+                except Exception:
+                    args = {"_raw": tc.function.arguments}
+                parsed_calls.append(
+                    {"id": tc.id, "name": tc.function.name, "arguments": args}
+                )
+            result["tool_calls"] = parsed_calls
+            log_structured(
+                self.logger,
+                "LLM",
+                f"Tool calls: {[c['name'] for c in parsed_calls]}",
+                duration=f"{duration:.1f}s",
+                level="DEBUG",
+            )
+        else:
+            result["content"] = (message.content or "").strip()
+            log_structured(
+                self.logger,
+                "LLM",
+                f"Text response ({len(result['content'])} chars)",
+                duration=f"{duration:.1f}s",
+                level="DEBUG",
+            )
+
+        return result
