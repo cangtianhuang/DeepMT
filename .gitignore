@@ -2,6 +2,7 @@
 *.log
 .DS_Store
 .cache/
+.claude/
 .cursor/
 .idea/
 .tmp/

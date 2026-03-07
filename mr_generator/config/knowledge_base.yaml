@@ -8,51 +8,51 @@ operator:
     - name: "commutative"
       description: "交换律: f(x, y) == f(y, x)"
       transform_code: "lambda *args: ((args[1], args[0]) + args[2:] if len(args) >= 2 else args)"
-      expected: "equal"
-    
+      oracle_expr: "orig == trans"
+
     - name: "associative"
       description: "结合律: f(f(x, y), z) == f(x, f(y, z))"
       transform_code: "lambda *args: args"
-      expected: "equal"
-    
+      oracle_expr: "orig == trans"
+
     - name: "identity"
       description: "单位元: f(x, 0) == x"
       transform_code: "lambda x: (x, 0)"
-      expected: "equal"
-  
+      oracle_expr: "orig == trans"
+
   Multiply:
     - name: "commutative"
       description: "交换律: f(x, y) == f(y, x)"
       transform_code: "lambda *args: ((args[1], args[0]) + args[2:] if len(args) >= 2 else args)"
-      expected: "equal"
-    
+      oracle_expr: "orig == trans"
+
     - name: "associative"
       description: "结合律: f(f(x, y), z) == f(x, f(y, z))"
       transform_code: "lambda *args: args"
-      expected: "equal"
-    
+      oracle_expr: "orig == trans"
+
     - name: "identity"
       description: "单位元: f(x, 1) == x"
       transform_code: "lambda x: (x, 1)"
-      expected: "equal"
-  
+      oracle_expr: "orig == trans"
+
   Subtract:
     - name: "anti_commutative"
       description: "反交换律: f(x, y) == -f(y, x)"
       transform_code: "lambda *args: ((args[1], args[0]) + args[2:] if len(args) >= 2 else args)"
-      expected: "proportional"
-  
+      oracle_expr: "trans == -orig"
+
   Divide:
     - name: "reciprocal"
       description: "倒数关系: f(x, y) == 1 / f(y, x)"
       transform_code: "lambda a, b: (b, a)"
-      expected: "proportional"
-  
+      oracle_expr: "orig * trans == 1"
+
   MatMul:
     - name: "transpose"
       description: "转置关系: f(A, B) == f(B^T, A^T)^T"
       transform_code: "lambda A, B: (B.T, A.T)"
-      expected: "equal"
+      oracle_expr: "orig == trans"
 
 # 模型层知识库（待扩展）
 model:
@@ -62,7 +62,7 @@ model:
   #   - name: "rotation_invariant"
   #     description: "旋转不变性: 输入旋转90度，输出分类不变"
   #     transform_code: "lambda x: rotate_90(x)"
-  #     expected: "invariant"
+  #     oracle_expr: "orig == trans"
 
 # 应用层知识库（待扩展）
 application:
@@ -72,5 +72,5 @@ application:
   #   - name: "brightness_invariant"
   #     description: "亮度不变性: 调整亮度，输出分类不变"
   #     transform_code: "lambda x: adjust_brightness(x)"
-  #     expected: "invariant"
+  #     oracle_expr: "orig == trans"
 

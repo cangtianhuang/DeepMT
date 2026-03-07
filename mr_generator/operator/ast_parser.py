@@ -239,7 +239,11 @@ class ASTParser:
         param_to_symbol: Dict[str, sp.Symbol],
     ) -> sp.Expr:
         """解析函数调用"""
-        # 获取函数名
+        # 方法调用 (obj.method(...))：单独处理
+        if isinstance(node.func, ast.Attribute):
+            return self._parse_method_call(node, symbols, param_to_symbol)
+
+        # 普通函数调用
         func_name = self._get_func_name(node.func)
 
         # 解析参数
@@ -253,6 +257,78 @@ class ASTParser:
         # 未知函数，创建符号函数
         self.logger.debug(f"Unknown function '{func_name}', creating symbolic function")
         return sp.Function(func_name)(*args)
+
+    def _parse_method_call(
+        self,
+        node: ast.Call,
+        symbols: List[sp.Symbol],
+        param_to_symbol: Dict[str, sp.Symbol],
+    ) -> sp.Expr:
+        """解析方法调用 obj.method(args, **kwargs)"""
+        method = node.func.attr
+        args = [self._parse_expr(arg, symbols, param_to_symbol) for arg in node.args]
+        kwargs = {
+            kw.arg: self._parse_expr(kw.value, symbols, param_to_symbol)
+            for kw in node.keywords
+            if kw.arg is not None  # 忽略 **kwargs 展开
+        }
+
+        # 检查是否是模块调用（如 torch.relu(x), np.sqrt(x), math.exp(x)）
+        # 此时 args 中已包含实际参数，按普通函数映射处理
+        if isinstance(node.func.value, ast.Name):
+            obj_name = node.func.value.id
+            if obj_name not in param_to_symbol:
+                # obj 不是参数变量，是模块名（torch, np, math 等）
+                sympy_func = self.func_mapping.get(method)
+                if sympy_func:
+                    return sympy_func(*args)
+                # 未知模块函数，退化为符号函数
+                self.logger.debug(f"Unknown function '{method}', creating symbolic function")
+                return sp.Function(method)(*args)
+
+        # 对象是参数变量，解析为方法调用
+        obj = self._parse_expr(node.func.value, symbols, param_to_symbol)
+
+        # Tensor 常见方法映射
+        if method in ("clone", "detach", "contiguous", "float", "double", "cpu", "cuda"):
+            return obj
+        elif method == "relu":
+            return sp.Max(0, obj)
+        elif method == "abs":
+            return sp.Abs(obj)
+        elif method == "clamp":
+            result = obj
+            # 支持位置参数 clamp(min, max) 和关键字参数 clamp(min=a, max=b)
+            min_val = kwargs.get("min", args[0] if len(args) >= 1 else None)
+            max_val = kwargs.get("max", args[1] if len(args) >= 2 else None)
+            if min_val is not None:
+                result = sp.Max(min_val, result)
+            if max_val is not None:
+                result = sp.Min(max_val, result)
+            return result
+        elif method == "exp":
+            return sp.exp(obj)
+        elif method == "log":
+            return sp.log(obj)
+        elif method == "sqrt":
+            return sp.sqrt(obj)
+        elif method == "sigmoid":
+            return sp.Rational(1) / (1 + sp.exp(-obj))
+        elif method == "tanh":
+            return sp.tanh(obj)
+        elif method == "neg":
+            return -obj
+        elif method == "square":
+            return obj ** 2
+        elif method == "sign":
+            return sp.sign(obj)
+        elif method in self.func_mapping:
+            return self.func_mapping[method](obj, *args)
+        else:
+            # 未知方法：将 obj 作为第一个位置参数
+            all_args = [obj] + args
+            self.logger.debug(f"Unknown method '{method}', creating symbolic function")
+            return sp.Function(method)(*all_args)
 
     def _get_func_name(self, node: ast.AST) -> str:
         """获取函数名（支持简单名称和属性访问）"""

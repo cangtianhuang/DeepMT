@@ -1,0 +1,641 @@
+framework: paddlepaddle
+last_updated: "2026-03-06"
+description: "PaddlePaddle 常用算子目录（PaddlePaddle >= 2.0）"
+
+# 字段说明：
+#   name         算子的完整 Python API 路径
+#   category     算子分类（同 pytorch.yaml）
+#   since        首次引入该算子的 PaddlePaddle 版本（"major.minor"）
+#   deprecated   标记废弃的起始版本（可选）
+#   removed      正式移除的版本（可选）
+#   aliases      其他等价 API 路径（可选列表）
+#   note         补充说明（可选）
+
+operators:
+  # ============================
+  # 激活函数（activation）
+  # ============================
+  - name: paddle.nn.ReLU
+    category: activation
+    since: "2.0"
+    aliases: [paddle.nn.functional.relu]
+
+  - name: paddle.nn.LeakyReLU
+    category: activation
+    since: "2.0"
+    aliases: [paddle.nn.functional.leaky_relu]
+
+  - name: paddle.nn.PReLU
+    category: activation
+    since: "2.0"
+
+  - name: paddle.nn.ELU
+    category: activation
+    since: "2.0"
+    aliases: [paddle.nn.functional.elu]
+
+  - name: paddle.nn.SELU
+    category: activation
+    since: "2.0"
+    aliases: [paddle.nn.functional.selu]
+
+  - name: paddle.nn.GELU
+    category: activation
+    since: "2.0"
+    aliases: [paddle.nn.functional.gelu]
+
+  - name: paddle.nn.Mish
+    category: activation
+    since: "2.2"
+    aliases: [paddle.nn.functional.mish]
+
+  - name: paddle.nn.Swish
+    category: activation
+    since: "2.0"
+    aliases: [paddle.nn.functional.swish]
+
+  - name: paddle.nn.Sigmoid
+    category: activation
+    since: "2.0"
+    aliases: [paddle.nn.functional.sigmoid, paddle.sigmoid]
+
+  - name: paddle.nn.Tanh
+    category: activation
+    since: "2.0"
+    aliases: [paddle.nn.functional.tanh, paddle.tanh]
+
+  - name: paddle.nn.Softmax
+    category: activation
+    since: "2.0"
+    aliases: [paddle.nn.functional.softmax]
+
+  - name: paddle.nn.LogSoftmax
+    category: activation
+    since: "2.0"
+    aliases: [paddle.nn.functional.log_softmax]
+
+  - name: paddle.nn.Hardswish
+    category: activation
+    since: "2.0"
+    aliases: [paddle.nn.functional.hardswish]
+
+  - name: paddle.nn.Hardsigmoid
+    category: activation
+    since: "2.0"
+    aliases: [paddle.nn.functional.hardsigmoid]
+
+  - name: paddle.nn.ReLU6
+    category: activation
+    since: "2.0"
+    aliases: [paddle.nn.functional.relu6]
+
+  - name: paddle.nn.Silu
+    category: activation
+    since: "2.4"
+    aliases: [paddle.nn.functional.silu]
+
+  # ============================
+  # 归一化（normalization）
+  # ============================
+  - name: paddle.nn.BatchNorm1D
+    category: normalization
+    since: "2.0"
+
+  - name: paddle.nn.BatchNorm2D
+    category: normalization
+    since: "2.0"
+
+  - name: paddle.nn.BatchNorm3D
+    category: normalization
+    since: "2.0"
+
+  - name: paddle.nn.LayerNorm
+    category: normalization
+    since: "2.0"
+
+  - name: paddle.nn.GroupNorm
+    category: normalization
+    since: "2.0"
+
+  - name: paddle.nn.InstanceNorm1D
+    category: normalization
+    since: "2.0"
+
+  - name: paddle.nn.InstanceNorm2D
+    category: normalization
+    since: "2.0"
+
+  - name: paddle.nn.InstanceNorm3D
+    category: normalization
+    since: "2.0"
+
+  - name: paddle.nn.SyncBatchNorm
+    category: normalization
+    since: "2.0"
+
+  # ============================
+  # 池化（pooling）
+  # ============================
+  - name: paddle.nn.MaxPool1D
+    category: pooling
+    since: "2.0"
+
+  - name: paddle.nn.MaxPool2D
+    category: pooling
+    since: "2.0"
+
+  - name: paddle.nn.MaxPool3D
+    category: pooling
+    since: "2.0"
+
+  - name: paddle.nn.AvgPool1D
+    category: pooling
+    since: "2.0"
+
+  - name: paddle.nn.AvgPool2D
+    category: pooling
+    since: "2.0"
+
+  - name: paddle.nn.AvgPool3D
+    category: pooling
+    since: "2.0"
+
+  - name: paddle.nn.AdaptiveAvgPool1D
+    category: pooling
+    since: "2.0"
+
+  - name: paddle.nn.AdaptiveAvgPool2D
+    category: pooling
+    since: "2.0"
+
+  - name: paddle.nn.AdaptiveAvgPool3D
+    category: pooling
+    since: "2.0"
+
+  - name: paddle.nn.AdaptiveMaxPool1D
+    category: pooling
+    since: "2.0"
+
+  - name: paddle.nn.AdaptiveMaxPool2D
+    category: pooling
+    since: "2.0"
+
+  - name: paddle.nn.AdaptiveMaxPool3D
+    category: pooling
+    since: "2.0"
+
+  # ============================
+  # 卷积（convolution）
+  # ============================
+  - name: paddle.nn.Conv1D
+    category: convolution
+    since: "2.0"
+
+  - name: paddle.nn.Conv2D
+    category: convolution
+    since: "2.0"
+
+  - name: paddle.nn.Conv3D
+    category: convolution
+    since: "2.0"
+
+  - name: paddle.nn.Conv1DTranspose
+    category: convolution
+    since: "2.0"
+
+  - name: paddle.nn.Conv2DTranspose
+    category: convolution
+    since: "2.0"
+
+  - name: paddle.nn.Conv3DTranspose
+    category: convolution
+    since: "2.0"
+
+  # ============================
+  # 线性层（linear）
+  # ============================
+  - name: paddle.nn.Linear
+    category: linear
+    since: "2.0"
+    aliases: [paddle.nn.functional.linear]
+
+  - name: paddle.nn.Bilinear
+    category: linear
+    since: "2.0"
+
+  # ============================
+  # 循环网络（recurrent）
+  # ============================
+  - name: paddle.nn.RNN
+    category: recurrent
+    since: "2.0"
+
+  - name: paddle.nn.LSTM
+    category: recurrent
+    since: "2.0"
+
+  - name: paddle.nn.GRU
+    category: recurrent
+    since: "2.0"
+
+  - name: paddle.nn.SimpleRNN
+    category: recurrent
+    since: "2.0"
+
+  - name: paddle.nn.LSTMCell
+    category: recurrent
+    since: "2.0"
+
+  - name: paddle.nn.GRUCell
+    category: recurrent
+    since: "2.0"
+
+  - name: paddle.nn.SimpleRNNCell
+    category: recurrent
+    since: "2.0"
+
+  # ============================
+  # Transformer（transformer）
+  # ============================
+  - name: paddle.nn.Transformer
+    category: transformer
+    since: "2.0"
+
+  - name: paddle.nn.TransformerEncoder
+    category: transformer
+    since: "2.0"
+
+  - name: paddle.nn.TransformerDecoder
+    category: transformer
+    since: "2.0"
+
+  - name: paddle.nn.TransformerEncoderLayer
+    category: transformer
+    since: "2.0"
+
+  - name: paddle.nn.TransformerDecoderLayer
+    category: transformer
+    since: "2.0"
+
+  - name: paddle.nn.MultiHeadAttention
+    category: transformer
+    since: "2.0"
+
+  # ============================
+  # Dropout（dropout）
+  # ============================
+  - name: paddle.nn.Dropout
+    category: dropout
+    since: "2.0"
+    aliases: [paddle.nn.functional.dropout]
+
+  - name: paddle.nn.Dropout2D
+    category: dropout
+    since: "2.0"
+
+  - name: paddle.nn.Dropout3D
+    category: dropout
+    since: "2.0"
+
+  - name: paddle.nn.AlphaDropout
+    category: dropout
+    since: "2.0"
+
+  # ============================
+  # 嵌入层（embedding）
+  # ============================
+  - name: paddle.nn.Embedding
+    category: embedding
+    since: "2.0"
+
+  # ============================
+  # 损失函数（loss）
+  # ============================
+  - name: paddle.nn.MSELoss
+    category: loss
+    since: "2.0"
+
+  - name: paddle.nn.CrossEntropyLoss
+    category: loss
+    since: "2.0"
+
+  - name: paddle.nn.NLLLoss
+    category: loss
+    since: "2.0"
+
+  - name: paddle.nn.BCELoss
+    category: loss
+    since: "2.0"
+
+  - name: paddle.nn.BCEWithLogitsLoss
+    category: loss
+    since: "2.0"
+
+  - name: paddle.nn.L1Loss
+    category: loss
+    since: "2.0"
+
+  - name: paddle.nn.SmoothL1Loss
+    category: loss
+    since: "2.0"
+
+  - name: paddle.nn.KLDivLoss
+    category: loss
+    since: "2.0"
+
+  - name: paddle.nn.CosineEmbeddingLoss
+    category: loss
+    since: "2.0"
+
+  - name: paddle.nn.TripletMarginLoss
+    category: loss
+    since: "2.0"
+
+  - name: paddle.nn.CTCLoss
+    category: loss
+    since: "2.0"
+
+  # ============================
+  # 数学运算（math）
+  # ============================
+  - name: paddle.add
+    category: math
+    since: "2.0"
+
+  - name: paddle.subtract
+    category: math
+    since: "2.0"
+
+  - name: paddle.multiply
+    category: math
+    since: "2.0"
+
+  - name: paddle.divide
+    category: math
+    since: "2.0"
+
+  - name: paddle.matmul
+    category: math
+    since: "2.0"
+
+  - name: paddle.bmm
+    category: math
+    since: "2.0"
+
+  - name: paddle.mm
+    category: math
+    since: "2.0"
+
+  - name: paddle.mv
+    category: math
+    since: "2.0"
+
+  - name: paddle.dot
+    category: math
+    since: "2.0"
+
+  - name: paddle.abs
+    category: math
+    since: "2.0"
+
+  - name: paddle.sqrt
+    category: math
+    since: "2.0"
+
+  - name: paddle.exp
+    category: math
+    since: "2.0"
+
+  - name: paddle.log
+    category: math
+    since: "2.0"
+
+  - name: paddle.log2
+    category: math
+    since: "2.0"
+
+  - name: paddle.log10
+    category: math
+    since: "2.0"
+
+  - name: paddle.pow
+    category: math
+    since: "2.0"
+
+  - name: paddle.sin
+    category: math
+    since: "2.0"
+
+  - name: paddle.cos
+    category: math
+    since: "2.0"
+
+  - name: paddle.tan
+    category: math
+    since: "2.0"
+
+  - name: paddle.clip
+    category: math
+    since: "2.0"
+
+  - name: paddle.floor
+    category: math
+    since: "2.0"
+
+  - name: paddle.ceil
+    category: math
+    since: "2.0"
+
+  - name: paddle.round
+    category: math
+    since: "2.0"
+
+  - name: paddle.max
+    category: math
+    since: "2.0"
+
+  - name: paddle.min
+    category: math
+    since: "2.0"
+
+  - name: paddle.sum
+    category: math
+    since: "2.0"
+
+  - name: paddle.mean
+    category: math
+    since: "2.0"
+
+  - name: paddle.std
+    category: math
+    since: "2.0"
+
+  - name: paddle.var
+    category: math
+    since: "2.0"
+
+  - name: paddle.cumsum
+    category: math
+    since: "2.0"
+
+  - name: paddle.sigmoid
+    category: math
+    since: "2.0"
+
+  - name: paddle.nn.functional.softmax
+    category: math
+    since: "2.0"
+
+  - name: paddle.nn.functional.relu
+    category: math
+    since: "2.0"
+
+  - name: paddle.norm
+    category: math
+    since: "2.0"
+
+  - name: paddle.linalg.norm
+    category: math
+    since: "2.1"
+
+  - name: paddle.linalg.svd
+    category: math
+    since: "2.1"
+
+  - name: paddle.linalg.eig
+    category: math
+    since: "2.2"
+
+  - name: paddle.linalg.det
+    category: math
+    since: "2.1"
+
+  - name: paddle.linalg.inv
+    category: math
+    since: "2.1"
+
+  - name: paddle.linalg.solve
+    category: math
+    since: "2.1"
+
+  # ============================
+  # 张量操作（tensor_ops）
+  # ============================
+  - name: paddle.concat
+    category: tensor_ops
+    since: "2.0"
+
+  - name: paddle.stack
+    category: tensor_ops
+    since: "2.0"
+
+  - name: paddle.split
+    category: tensor_ops
+    since: "2.0"
+
+  - name: paddle.chunk
+    category: tensor_ops
+    since: "2.0"
+
+  - name: paddle.reshape
+    category: tensor_ops
+    since: "2.0"
+
+  - name: paddle.flatten
+    category: tensor_ops
+    since: "2.0"
+
+  - name: paddle.squeeze
+    category: tensor_ops
+    since: "2.0"
+
+  - name: paddle.unsqueeze
+    category: tensor_ops
+    since: "2.0"
+
+  - name: paddle.transpose
+    category: tensor_ops
+    since: "2.0"
+
+  - name: paddle.gather
+    category: tensor_ops
+    since: "2.0"
+
+  - name: paddle.scatter
+    category: tensor_ops
+    since: "2.0"
+
+  - name: paddle.index_select
+    category: tensor_ops
+    since: "2.0"
+
+  - name: paddle.where
+    category: tensor_ops
+    since: "2.0"
+
+  - name: paddle.masked_select
+    category: tensor_ops
+    since: "2.0"
+
+  - name: paddle.topk
+    category: tensor_ops
+    since: "2.0"
+
+  - name: paddle.sort
+    category: tensor_ops
+    since: "2.0"
+
+  - name: paddle.argsort
+    category: tensor_ops
+    since: "2.0"
+
+  - name: paddle.unique
+    category: tensor_ops
+    since: "2.0"
+
+  - name: paddle.zeros
+    category: tensor_ops
+    since: "2.0"
+
+  - name: paddle.ones
+    category: tensor_ops
+    since: "2.0"
+
+  - name: paddle.rand
+    category: tensor_ops
+    since: "2.0"
+
+  - name: paddle.randn
+    category: tensor_ops
+    since: "2.0"
+
+  - name: paddle.arange
+    category: tensor_ops
+    since: "2.0"
+
+  - name: paddle.linspace
+    category: tensor_ops
+    since: "2.0"
+
+  - name: paddle.eye
+    category: tensor_ops
+    since: "2.0"
+
+  - name: paddle.full
+    category: tensor_ops
+    since: "2.0"
+
+  - name: paddle.nn.Flatten
+    category: tensor_ops
+    since: "2.0"
+
+  # ============================
+  # 距离 / 相似度（distance）
+  # ============================
+  - name: paddle.nn.CosineSimilarity
+    category: distance
+    since: "2.0"
+
+  - name: paddle.nn.PairwiseDistance
+    category: distance
+    since: "2.0"

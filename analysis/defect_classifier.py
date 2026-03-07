@@ -41,28 +41,14 @@ class DefectClassifier:
             orig_arr = self._to_numpy(orig_output)
             trans_arr = self._to_numpy(trans_output)
 
-            # 根据MR的期望类型进行比对
-            if mr.expected == "equal":
-                is_match, defect_info = self._check_equal(
-                    orig_arr, trans_arr, tolerance
-                )
-            elif mr.expected == "proportional":
-                is_match, defect_info = self._check_proportional(
-                    orig_arr, trans_arr, tolerance
-                )
-            elif mr.expected == "invariant":
-                is_match, defect_info = self._check_invariant(
-                    orig_arr, trans_arr, tolerance
-                )
-            elif mr.expected == "monotonic":
-                is_match, defect_info = self._check_monotonic(
-                    orig_arr, trans_arr, tolerance
+            # 优先使用 oracle_expr 进行数值验证
+            if mr.oracle_expr:
+                is_match, defect_info = self._eval_oracle_expr(
+                    mr.oracle_expr, orig_arr, trans_arr, tolerance
                 )
             else:
-                # 自定义比对逻辑
-                is_match, defect_info = self._check_custom(
-                    orig_arr, trans_arr, mr, tolerance
-                )
+                # oracle_expr 为空时默认检查相等
+                is_match, defect_info = self._check_equal(orig_arr, trans_arr, tolerance)
 
             return is_match, defect_info
 
@@ -97,6 +83,84 @@ class DefectClassifier:
 
         # 其他情况
         return np.array(output)
+
+    def _eval_oracle_expr(
+        self,
+        oracle_expr: str,
+        orig: np.ndarray,
+        trans: np.ndarray,
+        tolerance: float = 1e-6,
+    ) -> Tuple[bool, Dict[str, Any]]:
+        """使用 oracle_expr 表达式进行数值验证（`==` 自动使用容差比较）
+
+        oracle_expr 中可用变量：
+          - orig: 原始输出
+          - trans: 变换后输出
+          - x: orig 的别名（兼容 SymPy 证明侧的命名）
+          - all / any / abs：numpy 对应函数
+        """
+        # 包装数组：让 == 走 np.isclose，其余算术/比较保持原样
+        tol = tolerance
+
+        class _T:
+            """浮点容差感知的数组包装器"""
+            __slots__ = ("v",)
+
+            def __init__(self, v):
+                self.v = np.asarray(v, dtype=float) if not isinstance(v, np.ndarray) else v
+
+            # 算术运算 —— 结果仍为 _T，保持容差传递
+            def __add__(self, o):  return _T(self.v + _u(o))
+            def __radd__(self, o): return _T(_u(o) + self.v)
+            def __sub__(self, o):  return _T(self.v - _u(o))
+            def __rsub__(self, o): return _T(_u(o) - self.v)
+            def __mul__(self, o):  return _T(self.v * _u(o))
+            def __rmul__(self, o): return _T(_u(o) * self.v)
+            def __truediv__(self, o):  return _T(self.v / _u(o))
+            def __rtruediv__(self, o): return _T(_u(o) / self.v)
+            def __neg__(self): return _T(-self.v)
+            def __abs__(self): return _T(np.abs(self.v))
+
+            # 比较 —— 返回普通 np.ndarray（bool），可参与 | & 运算
+            def __eq__(self, o):  return np.isclose(self.v, _u(o), atol=tol, rtol=0)
+            def __lt__(self, o):  return self.v <  _u(o)
+            def __le__(self, o):  return self.v <= _u(o)
+            def __gt__(self, o):  return self.v >  _u(o)
+            def __ge__(self, o):  return self.v >= _u(o)
+
+        def _u(x):
+            return x.v if isinstance(x, _T) else x
+
+        # 去掉外层 all(...) 包装，交由末尾的 np.all 统一处理
+        expr = oracle_expr.strip()
+        if expr.startswith("all(") and expr.endswith(")"):
+            expr = expr[4:-1]
+
+        ctx = {
+            "__builtins__": {},
+            "orig":  _T(orig),
+            "trans": _T(trans),
+            "x":     _T(orig),
+            "all": np.all,
+            "any": np.any,
+            "abs": lambda v: _T(np.abs(_u(v))),
+            "np": np,
+        }
+        try:
+            result = eval(expr, ctx)  # noqa: S307
+            raw = _u(result)
+            is_match = bool(np.all(raw))
+            if is_match:
+                return True, {}
+            return False, {
+                "type": "ORACLE_VIOLATION",
+                "details": f"oracle_expr '{oracle_expr}' not satisfied (tolerance={tolerance})",
+            }
+        except Exception as e:
+            return False, {
+                "type": "ORACLE_EVAL_ERROR",
+                "details": f"Failed to evaluate oracle_expr '{oracle_expr}': {e}",
+            }
 
     def _check_equal(
         self, orig: np.ndarray, trans: np.ndarray, tolerance: float

@@ -74,10 +74,7 @@ class MRTemplatePool:
                     )
 
                     # 解析 oracle_expr
-                    oracle_expr = template_data.get(
-                        "oracle_expr",
-                        template_data.get("expected", "orig == trans"),  # 向后兼容
-                    )
+                    oracle_expr = template_data.get("oracle_expr", "")
 
                     template = MRTemplate(
                         name=template_data.get("name", template_name),

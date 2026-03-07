@@ -28,26 +28,20 @@ class OperatorMRGenerator:
     """
     算子层MR生成器：多源融合自动生成引擎
 
+    内部流程（四个阶段）：
+      1. 信息准备 — 从函数对象/网络获取算子代码与文档
+      2. MR猜想生成 — LLM猜想（主要来源）+ 模板池匹配（辅助来源）
+      3. 快速筛选（Pre-check，可选）— 用随机输入数值验证候选MR
+      4. SymPy形式化证明（可选）— 对候选MR进行符号化验证
 
-    执行流程：
-    1. 信息准备阶段
-       - 自动获取算子信息（网络搜索文档/代码）
-       - 提取算子代码（来自operator_code参数或网络）
+    核心公开方法：
+      generate()               完整流程：生成候选 → 验证 → 返回结果
+      generate_only()          仅执行阶段1-2：生成候选，不做任何验证
+      verify_mrs(mrs, ...)     仅执行阶段3-4：对已有MR列表进行验证
+      verify_from_repository() 从知识库加载MR后调用 verify_mrs()
+      fetch_operator_info()    单独调用网络搜索获取算子信息
 
-    2. 多源MR生成阶段
-       - LLM猜想 → 生成候选MR（主要来源）
-       - 模板池猜测 → 生成候选MR（辅助来源）
-       → 合并去重所有生成的MR
-
-    3. 快速筛选阶段（Pre-check，可选）
-       - 要求：需提供operator_func参数
-       - 用随机输入执行算子验证候选MR
-
-    4. SymPy形式化证明阶段（可选）
-       - 要求：需提供代码或SymPy表达式
-       - 对候选MR进行形式化验证
-
-    输出：经过验证的MR列表
+    generate() ≈ generate_only() + verify_mrs()，三个方法共享相同的私有实现。
     """
 
     def __init__(self):
@@ -60,9 +54,6 @@ class OperatorMRGenerator:
         self.info_fetcher = OperatorInfoFetcher()
         self.prechecker = MRPreChecker()
         self.sympy_prover = SymPyProver(code_translator=self.code_translator)
-
-        # 向后兼容：保留知识库（内部使用）
-        # self._kb = KnowledgeBase()
 
         log_structured(
             self.logger,
@@ -184,27 +175,14 @@ class OperatorMRGenerator:
         sources: Optional[List[MRSource]] = None,
     ) -> List[MetamorphicRelation]:
         """
-        仅生成MR候选（不进行验证）
+        仅生成MR候选，不进行任何验证（阶段1-2）。
 
-        执行阶段：
-        1. 信息准备
-        2. MR猜想生成 (LLM + 模板池)
-
-        参数：
-            save_to_repo: 是否保存到MR知识库
-            repo: MR知识库实例（如果为None则创建默认实例）
+        等价于 generate(..., use_precheck=False, use_sympy_proof=False)，
+        但更轻量——跳过所有验证相关的初始化逻辑。
 
         返回：
-            未验证的MR列表
+            未验证的MR列表（mr.verified 均为 False）
         """
-        operator_name = operator_ir.name
-        log_structured(
-            self.logger,
-            "GEN",
-            f"Generating MR candidates (no validation) for '{operator_name}'",
-        )
-
-        # ========== 阶段1：信息准备 ==========
         operator_code, operator_doc = self._prepare_info(
             operator_ir=operator_ir,
             operator_func=operator_func,
@@ -214,7 +192,6 @@ class OperatorMRGenerator:
             framework=framework,
         )
 
-        # ========== 阶段2：MR猜想生成 ==========
         candidate_mrs = self._generate_candidates(
             operator_ir=operator_ir,
             operator_func=operator_func,
@@ -223,20 +200,7 @@ class OperatorMRGenerator:
             sources=sources,
         )
 
-        # ========== 去重 ==========
-        final_mrs = self._deduplicate_mrs(candidate_mrs)
-
-        # 标记为未验证
-        for mr in final_mrs:
-            mr.verified = False
-
-        log_structured(
-            self.logger,
-            "GEN",
-            f"Generated {len(final_mrs)} MR candidates (unverified)",
-        )
-
-        return final_mrs
+        return self._deduplicate_mrs(candidate_mrs)
 
     def verify_mrs(
         self,
@@ -336,12 +300,8 @@ class OperatorMRGenerator:
         """
         from mr_generator.base.mr_repository import MRRepository
 
-        # 创建生成器实例
         generator = OperatorMRGenerator()
-
-        # 加载MR
         repo = MRRepository()
-
         mrs = repo.load(operator_name=operator_name, version=version)
 
         if not mrs:
@@ -353,7 +313,6 @@ class OperatorMRGenerator:
             )
             return []
 
-        # 验证MR
         verified_mrs = generator.verify_mrs(
             mrs=mrs,
             operator_ir=operator_ir,
@@ -498,18 +457,10 @@ class OperatorMRGenerator:
             f"Generating MRs for '{operator_name}' | sources from {sources}",
         )
 
-        # 信息准备已在调用方完成
-
-        # MR猜想生成
         candidate_mrs: List[MetamorphicRelation] = []
 
         # --- 来源1：LLM猜想 ---
         if "llm" in sources:
-            log_structured(
-                self.logger,
-                "GEN",
-                "Generating MR candidates...",
-            )
             try:
                 llm_mrs = self.llm_generator.generate_mr_candidates(
                     operator_name=operator_name,
@@ -639,7 +590,7 @@ class OperatorMRGenerator:
                 if sympy_expr is not None:
                     log_structured(
                         self.logger,
-                        "GEN",
+                        "CHECK",
                         "Successfully converted code to SymPy expression",
                     )
             except Exception as e:

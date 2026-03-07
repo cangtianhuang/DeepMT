@@ -1,0 +1,568 @@
+framework: tensorflow
+last_updated: "2026-03-06"
+description: "TensorFlow/Keras 常用算子目录（TensorFlow >= 2.0）"
+
+# 字段说明：
+#   name         算子的完整 Python API 路径
+#   category     算子分类（同 pytorch.yaml）
+#   since        首次引入该算子的 TensorFlow 版本（"major.minor"）
+#   deprecated   标记废弃的起始版本（可选）
+#   removed      正式移除的版本（可选）
+#   aliases      其他等价 API 路径（可选列表）
+#   note         补充说明（可选）
+
+operators:
+  # ============================
+  # 激活函数（activation）
+  # ============================
+  - name: tf.keras.layers.ReLU
+    category: activation
+    since: "2.0"
+    aliases: [tf.keras.activations.relu, tf.nn.relu]
+
+  - name: tf.keras.layers.LeakyReLU
+    category: activation
+    since: "2.0"
+    aliases: [tf.nn.leaky_relu]
+
+  - name: tf.keras.layers.PReLU
+    category: activation
+    since: "2.0"
+
+  - name: tf.keras.layers.ELU
+    category: activation
+    since: "2.0"
+    aliases: [tf.nn.elu]
+
+  - name: tf.keras.layers.Activation
+    category: activation
+    since: "2.0"
+    note: "通用激活层，通过 activation 参数指定"
+
+  - name: tf.keras.activations.gelu
+    category: activation
+    since: "2.4"
+    aliases: [tf.nn.gelu]
+
+  - name: tf.keras.activations.sigmoid
+    category: activation
+    since: "2.0"
+    aliases: [tf.nn.sigmoid, tf.sigmoid]
+
+  - name: tf.keras.activations.tanh
+    category: activation
+    since: "2.0"
+    aliases: [tf.nn.tanh, tf.tanh]
+
+  - name: tf.keras.activations.softmax
+    category: activation
+    since: "2.0"
+    aliases: [tf.nn.softmax]
+
+  - name: tf.keras.activations.softplus
+    category: activation
+    since: "2.0"
+    aliases: [tf.nn.softplus]
+
+  - name: tf.keras.activations.selu
+    category: activation
+    since: "2.0"
+    aliases: [tf.nn.selu]
+
+  - name: tf.keras.activations.swish
+    category: activation
+    since: "2.0"
+    aliases: [tf.nn.swish]
+
+  - name: tf.keras.activations.mish
+    category: activation
+    since: "2.12"
+
+  # ============================
+  # 归一化（normalization）
+  # ============================
+  - name: tf.keras.layers.BatchNormalization
+    category: normalization
+    since: "2.0"
+
+  - name: tf.keras.layers.LayerNormalization
+    category: normalization
+    since: "2.0"
+
+  - name: tf.keras.layers.GroupNormalization
+    category: normalization
+    since: "2.12"
+
+  - name: tf.keras.layers.UnitNormalization
+    category: normalization
+    since: "2.12"
+
+  - name: tf.keras.layers.SpectralNormalization
+    category: normalization
+    since: "2.11"
+
+  # ============================
+  # 池化（pooling）
+  # ============================
+  - name: tf.keras.layers.MaxPooling1D
+    category: pooling
+    since: "2.0"
+    aliases: [tf.keras.layers.MaxPool1D]
+
+  - name: tf.keras.layers.MaxPooling2D
+    category: pooling
+    since: "2.0"
+    aliases: [tf.keras.layers.MaxPool2D]
+
+  - name: tf.keras.layers.MaxPooling3D
+    category: pooling
+    since: "2.0"
+    aliases: [tf.keras.layers.MaxPool3D]
+
+  - name: tf.keras.layers.AveragePooling1D
+    category: pooling
+    since: "2.0"
+    aliases: [tf.keras.layers.AvgPool1D]
+
+  - name: tf.keras.layers.AveragePooling2D
+    category: pooling
+    since: "2.0"
+    aliases: [tf.keras.layers.AvgPool2D]
+
+  - name: tf.keras.layers.AveragePooling3D
+    category: pooling
+    since: "2.0"
+    aliases: [tf.keras.layers.AvgPool3D]
+
+  - name: tf.keras.layers.GlobalMaxPooling1D
+    category: pooling
+    since: "2.0"
+
+  - name: tf.keras.layers.GlobalMaxPooling2D
+    category: pooling
+    since: "2.0"
+
+  - name: tf.keras.layers.GlobalMaxPooling3D
+    category: pooling
+    since: "2.0"
+
+  - name: tf.keras.layers.GlobalAveragePooling1D
+    category: pooling
+    since: "2.0"
+
+  - name: tf.keras.layers.GlobalAveragePooling2D
+    category: pooling
+    since: "2.0"
+
+  - name: tf.keras.layers.GlobalAveragePooling3D
+    category: pooling
+    since: "2.0"
+
+  # ============================
+  # 卷积（convolution）
+  # ============================
+  - name: tf.keras.layers.Conv1D
+    category: convolution
+    since: "2.0"
+
+  - name: tf.keras.layers.Conv2D
+    category: convolution
+    since: "2.0"
+
+  - name: tf.keras.layers.Conv3D
+    category: convolution
+    since: "2.0"
+
+  - name: tf.keras.layers.Conv1DTranspose
+    category: convolution
+    since: "2.0"
+
+  - name: tf.keras.layers.Conv2DTranspose
+    category: convolution
+    since: "2.0"
+
+  - name: tf.keras.layers.Conv3DTranspose
+    category: convolution
+    since: "2.0"
+
+  - name: tf.keras.layers.DepthwiseConv1D
+    category: convolution
+    since: "2.6"
+
+  - name: tf.keras.layers.DepthwiseConv2D
+    category: convolution
+    since: "2.0"
+
+  - name: tf.keras.layers.SeparableConv1D
+    category: convolution
+    since: "2.0"
+
+  - name: tf.keras.layers.SeparableConv2D
+    category: convolution
+    since: "2.0"
+
+  # ============================
+  # 线性层（linear）
+  # ============================
+  - name: tf.keras.layers.Dense
+    category: linear
+    since: "2.0"
+
+  - name: tf.keras.layers.EinsumDense
+    category: linear
+    since: "2.12"
+
+  # ============================
+  # 循环网络（recurrent）
+  # ============================
+  - name: tf.keras.layers.LSTM
+    category: recurrent
+    since: "2.0"
+
+  - name: tf.keras.layers.GRU
+    category: recurrent
+    since: "2.0"
+
+  - name: tf.keras.layers.SimpleRNN
+    category: recurrent
+    since: "2.0"
+
+  - name: tf.keras.layers.Bidirectional
+    category: recurrent
+    since: "2.0"
+
+  - name: tf.keras.layers.LSTMCell
+    category: recurrent
+    since: "2.0"
+
+  - name: tf.keras.layers.GRUCell
+    category: recurrent
+    since: "2.0"
+
+  - name: tf.keras.layers.SimpleRNNCell
+    category: recurrent
+    since: "2.0"
+
+  # ============================
+  # Transformer（transformer）
+  # ============================
+  - name: tf.keras.layers.MultiHeadAttention
+    category: transformer
+    since: "2.4"
+
+  - name: tf.keras.layers.Attention
+    category: transformer
+    since: "2.0"
+
+  - name: tf.keras.layers.AdditiveAttention
+    category: transformer
+    since: "2.0"
+
+  # ============================
+  # Dropout（dropout）
+  # ============================
+  - name: tf.keras.layers.Dropout
+    category: dropout
+    since: "2.0"
+
+  - name: tf.keras.layers.SpatialDropout1D
+    category: dropout
+    since: "2.0"
+
+  - name: tf.keras.layers.SpatialDropout2D
+    category: dropout
+    since: "2.0"
+
+  - name: tf.keras.layers.SpatialDropout3D
+    category: dropout
+    since: "2.0"
+
+  - name: tf.keras.layers.GaussianDropout
+    category: dropout
+    since: "2.0"
+
+  # ============================
+  # 嵌入层（embedding）
+  # ============================
+  - name: tf.keras.layers.Embedding
+    category: embedding
+    since: "2.0"
+
+  # ============================
+  # 损失函数（loss）
+  # ============================
+  - name: tf.keras.losses.MeanSquaredError
+    category: loss
+    since: "2.0"
+
+  - name: tf.keras.losses.MeanAbsoluteError
+    category: loss
+    since: "2.0"
+
+  - name: tf.keras.losses.CategoricalCrossentropy
+    category: loss
+    since: "2.0"
+
+  - name: tf.keras.losses.SparseCategoricalCrossentropy
+    category: loss
+    since: "2.0"
+
+  - name: tf.keras.losses.BinaryCrossentropy
+    category: loss
+    since: "2.0"
+
+  - name: tf.keras.losses.KLDivergence
+    category: loss
+    since: "2.0"
+
+  - name: tf.keras.losses.Huber
+    category: loss
+    since: "2.0"
+
+  - name: tf.keras.losses.LogCosh
+    category: loss
+    since: "2.0"
+
+  - name: tf.keras.losses.CosineSimilarity
+    category: loss
+    since: "2.0"
+
+  - name: tf.keras.losses.CTC
+    category: loss
+    since: "2.12"
+
+  # ============================
+  # 数学运算（math）
+  # ============================
+  - name: tf.math.add
+    category: math
+    since: "2.0"
+    aliases: [tf.add]
+
+  - name: tf.math.subtract
+    category: math
+    since: "2.0"
+    aliases: [tf.subtract]
+
+  - name: tf.math.multiply
+    category: math
+    since: "2.0"
+    aliases: [tf.multiply]
+
+  - name: tf.math.divide
+    category: math
+    since: "2.0"
+    aliases: [tf.divide]
+
+  - name: tf.linalg.matmul
+    category: math
+    since: "2.0"
+    aliases: [tf.matmul]
+
+  - name: tf.math.abs
+    category: math
+    since: "2.0"
+    aliases: [tf.abs]
+
+  - name: tf.math.sqrt
+    category: math
+    since: "2.0"
+    aliases: [tf.sqrt]
+
+  - name: tf.math.exp
+    category: math
+    since: "2.0"
+    aliases: [tf.exp]
+
+  - name: tf.math.log
+    category: math
+    since: "2.0"
+    aliases: [tf.math.log]
+
+  - name: tf.math.pow
+    category: math
+    since: "2.0"
+    aliases: [tf.pow]
+
+  - name: tf.math.sin
+    category: math
+    since: "2.0"
+    aliases: [tf.sin]
+
+  - name: tf.math.cos
+    category: math
+    since: "2.0"
+    aliases: [tf.cos]
+
+  - name: tf.math.tanh
+    category: math
+    since: "2.0"
+    aliases: [tf.tanh]
+
+  - name: tf.math.sigmoid
+    category: math
+    since: "2.0"
+    aliases: [tf.sigmoid]
+
+  - name: tf.math.reduce_sum
+    category: math
+    since: "2.0"
+
+  - name: tf.math.reduce_mean
+    category: math
+    since: "2.0"
+
+  - name: tf.math.reduce_max
+    category: math
+    since: "2.0"
+
+  - name: tf.math.reduce_min
+    category: math
+    since: "2.0"
+
+  - name: tf.math.reduce_std
+    category: math
+    since: "2.0"
+
+  - name: tf.math.cumsum
+    category: math
+    since: "2.0"
+
+  - name: tf.math.softmax
+    category: math
+    since: "2.0"
+    aliases: [tf.nn.softmax]
+
+  - name: tf.linalg.norm
+    category: math
+    since: "2.0"
+
+  - name: tf.linalg.svd
+    category: math
+    since: "2.0"
+
+  - name: tf.linalg.eig
+    category: math
+    since: "2.0"
+
+  - name: tf.linalg.det
+    category: math
+    since: "2.0"
+
+  - name: tf.linalg.inv
+    category: math
+    since: "2.0"
+
+  - name: tf.linalg.solve
+    category: math
+    since: "2.0"
+
+  # ============================
+  # 张量操作（tensor_ops）
+  # ============================
+  - name: tf.concat
+    category: tensor_ops
+    since: "2.0"
+
+  - name: tf.stack
+    category: tensor_ops
+    since: "2.0"
+
+  - name: tf.split
+    category: tensor_ops
+    since: "2.0"
+
+  - name: tf.reshape
+    category: tensor_ops
+    since: "2.0"
+
+  - name: tf.squeeze
+    category: tensor_ops
+    since: "2.0"
+
+  - name: tf.expand_dims
+    category: tensor_ops
+    since: "2.0"
+
+  - name: tf.transpose
+    category: tensor_ops
+    since: "2.0"
+
+  - name: tf.gather
+    category: tensor_ops
+    since: "2.0"
+
+  - name: tf.scatter_nd
+    category: tensor_ops
+    since: "2.0"
+
+  - name: tf.where
+    category: tensor_ops
+    since: "2.0"
+
+  - name: tf.boolean_mask
+    category: tensor_ops
+    since: "2.0"
+
+  - name: tf.math.top_k
+    category: tensor_ops
+    since: "2.0"
+
+  - name: tf.sort
+    category: tensor_ops
+    since: "2.0"
+
+  - name: tf.argsort
+    category: tensor_ops
+    since: "2.0"
+
+  - name: tf.unique
+    category: tensor_ops
+    since: "2.0"
+
+  - name: tf.zeros
+    category: tensor_ops
+    since: "2.0"
+
+  - name: tf.ones
+    category: tensor_ops
+    since: "2.0"
+
+  - name: tf.random.normal
+    category: tensor_ops
+    since: "2.0"
+
+  - name: tf.random.uniform
+    category: tensor_ops
+    since: "2.0"
+
+  - name: tf.range
+    category: tensor_ops
+    since: "2.0"
+
+  - name: tf.linspace
+    category: tensor_ops
+    since: "2.0"
+
+  - name: tf.eye
+    category: tensor_ops
+    since: "2.0"
+
+  - name: tf.fill
+    category: tensor_ops
+    since: "2.0"
+
+  - name: tf.keras.layers.Flatten
+    category: tensor_ops
+    since: "2.0"
+
+  - name: tf.keras.layers.Reshape
+    category: tensor_ops
+    since: "2.0"
+
+  # ============================
+  # 距离 / 相似度（distance）
+  # ============================
+  - name: tf.keras.losses.CosineSimilarity
+    category: distance
+    since: "2.0"

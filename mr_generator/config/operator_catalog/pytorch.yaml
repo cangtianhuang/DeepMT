@@ -1,0 +1,693 @@
+framework: pytorch
+last_updated: "2026-03-06"
+description: "PyTorch 常用算子目录（torch >= 1.0）"
+
+# 字段说明：
+#   name         算子的完整 Python API 路径（字符串）
+#   category     算子分类（见下方分类表）
+#   since        首次引入该算子的 PyTorch 版本（"major.minor"）
+#   deprecated   标记废弃的起始版本（可选）
+#   removed      正式移除的版本（可选）
+#   aliases      其他等价 API 路径（可选列表）
+#   note         补充说明（可选）
+#
+# 分类（category）：
+#   activation       激活函数
+#   normalization    归一化层
+#   pooling          池化层
+#   convolution      卷积层
+#   linear           线性/全连接层
+#   recurrent        循环神经网络层
+#   loss             损失函数
+#   dropout          Dropout 类
+#   embedding        嵌入层
+#   transformer      Transformer 系列
+#   math             逐元素/矩阵数学运算
+#   tensor_ops       张量操作（拼接、切分、变形等）
+#   sparse           稀疏张量运算
+#   distance         距离 / 相似度度量
+
+operators:
+  # ============================
+  # 激活函数（activation）
+  # ============================
+  - name: torch.nn.ReLU
+    category: activation
+    since: "1.0"
+    aliases: [torch.nn.functional.relu]
+
+  - name: torch.nn.LeakyReLU
+    category: activation
+    since: "1.0"
+    aliases: [torch.nn.functional.leaky_relu]
+
+  - name: torch.nn.PReLU
+    category: activation
+    since: "1.0"
+
+  - name: torch.nn.ELU
+    category: activation
+    since: "1.0"
+    aliases: [torch.nn.functional.elu]
+
+  - name: torch.nn.SELU
+    category: activation
+    since: "1.0"
+    aliases: [torch.nn.functional.selu]
+
+  - name: torch.nn.GELU
+    category: activation
+    since: "1.1"
+    aliases: [torch.nn.functional.gelu]
+
+  - name: torch.nn.Mish
+    category: activation
+    since: "1.9"
+    aliases: [torch.nn.functional.mish]
+
+  - name: torch.nn.SiLU
+    category: activation
+    since: "1.7"
+    aliases: [torch.nn.functional.silu]
+    note: "Swish 激活函数"
+
+  - name: torch.nn.Sigmoid
+    category: activation
+    since: "1.0"
+    aliases: [torch.sigmoid, torch.nn.functional.sigmoid]
+
+  - name: torch.nn.Tanh
+    category: activation
+    since: "1.0"
+    aliases: [torch.tanh, torch.nn.functional.tanh]
+
+  - name: torch.nn.Softmax
+    category: activation
+    since: "1.0"
+    aliases: [torch.nn.functional.softmax]
+
+  - name: torch.nn.LogSoftmax
+    category: activation
+    since: "1.0"
+    aliases: [torch.nn.functional.log_softmax]
+
+  - name: torch.nn.Hardswish
+    category: activation
+    since: "1.6"
+    aliases: [torch.nn.functional.hardswish]
+
+  - name: torch.nn.Hardsigmoid
+    category: activation
+    since: "1.6"
+    aliases: [torch.nn.functional.hardsigmoid]
+
+  - name: torch.nn.ReLU6
+    category: activation
+    since: "1.0"
+    aliases: [torch.nn.functional.relu6]
+
+  # ============================
+  # 归一化（normalization）
+  # ============================
+  - name: torch.nn.BatchNorm1d
+    category: normalization
+    since: "1.0"
+
+  - name: torch.nn.BatchNorm2d
+    category: normalization
+    since: "1.0"
+
+  - name: torch.nn.BatchNorm3d
+    category: normalization
+    since: "1.0"
+
+  - name: torch.nn.LayerNorm
+    category: normalization
+    since: "1.1"
+
+  - name: torch.nn.GroupNorm
+    category: normalization
+    since: "1.1"
+
+  - name: torch.nn.InstanceNorm1d
+    category: normalization
+    since: "1.0"
+
+  - name: torch.nn.InstanceNorm2d
+    category: normalization
+    since: "1.0"
+
+  - name: torch.nn.InstanceNorm3d
+    category: normalization
+    since: "1.0"
+
+  - name: torch.nn.SyncBatchNorm
+    category: normalization
+    since: "1.1"
+
+  - name: torch.nn.RMSNorm
+    category: normalization
+    since: "2.4"
+
+  # ============================
+  # 池化（pooling）
+  # ============================
+  - name: torch.nn.MaxPool1d
+    category: pooling
+    since: "1.0"
+
+  - name: torch.nn.MaxPool2d
+    category: pooling
+    since: "1.0"
+
+  - name: torch.nn.MaxPool3d
+    category: pooling
+    since: "1.0"
+
+  - name: torch.nn.AvgPool1d
+    category: pooling
+    since: "1.0"
+
+  - name: torch.nn.AvgPool2d
+    category: pooling
+    since: "1.0"
+
+  - name: torch.nn.AvgPool3d
+    category: pooling
+    since: "1.0"
+
+  - name: torch.nn.AdaptiveAvgPool1d
+    category: pooling
+    since: "1.0"
+
+  - name: torch.nn.AdaptiveAvgPool2d
+    category: pooling
+    since: "1.0"
+
+  - name: torch.nn.AdaptiveAvgPool3d
+    category: pooling
+    since: "1.0"
+
+  - name: torch.nn.AdaptiveMaxPool1d
+    category: pooling
+    since: "1.0"
+
+  - name: torch.nn.AdaptiveMaxPool2d
+    category: pooling
+    since: "1.0"
+
+  - name: torch.nn.AdaptiveMaxPool3d
+    category: pooling
+    since: "1.0"
+
+  # ============================
+  # 卷积（convolution）
+  # ============================
+  - name: torch.nn.Conv1d
+    category: convolution
+    since: "1.0"
+
+  - name: torch.nn.Conv2d
+    category: convolution
+    since: "1.0"
+
+  - name: torch.nn.Conv3d
+    category: convolution
+    since: "1.0"
+
+  - name: torch.nn.ConvTranspose1d
+    category: convolution
+    since: "1.0"
+
+  - name: torch.nn.ConvTranspose2d
+    category: convolution
+    since: "1.0"
+
+  - name: torch.nn.ConvTranspose3d
+    category: convolution
+    since: "1.0"
+
+  - name: torch.nn.LazyConv2d
+    category: convolution
+    since: "1.8"
+
+  - name: torch.nn.Unfold
+    category: convolution
+    since: "1.0"
+
+  - name: torch.nn.Fold
+    category: convolution
+    since: "1.0"
+
+  # ============================
+  # 线性层（linear）
+  # ============================
+  - name: torch.nn.Linear
+    category: linear
+    since: "1.0"
+    aliases: [torch.nn.functional.linear]
+
+  - name: torch.nn.Bilinear
+    category: linear
+    since: "1.0"
+
+  - name: torch.nn.LazyLinear
+    category: linear
+    since: "1.8"
+
+  # ============================
+  # 循环网络（recurrent）
+  # ============================
+  - name: torch.nn.RNN
+    category: recurrent
+    since: "1.0"
+
+  - name: torch.nn.LSTM
+    category: recurrent
+    since: "1.0"
+
+  - name: torch.nn.GRU
+    category: recurrent
+    since: "1.0"
+
+  - name: torch.nn.RNNCell
+    category: recurrent
+    since: "1.0"
+
+  - name: torch.nn.LSTMCell
+    category: recurrent
+    since: "1.0"
+
+  - name: torch.nn.GRUCell
+    category: recurrent
+    since: "1.0"
+
+  # ============================
+  # Transformer（transformer）
+  # ============================
+  - name: torch.nn.Transformer
+    category: transformer
+    since: "1.1"
+
+  - name: torch.nn.TransformerEncoder
+    category: transformer
+    since: "1.1"
+
+  - name: torch.nn.TransformerDecoder
+    category: transformer
+    since: "1.1"
+
+  - name: torch.nn.TransformerEncoderLayer
+    category: transformer
+    since: "1.1"
+
+  - name: torch.nn.TransformerDecoderLayer
+    category: transformer
+    since: "1.1"
+
+  - name: torch.nn.MultiheadAttention
+    category: transformer
+    since: "1.1"
+
+  # ============================
+  # Dropout（dropout）
+  # ============================
+  - name: torch.nn.Dropout
+    category: dropout
+    since: "1.0"
+    aliases: [torch.nn.functional.dropout]
+
+  - name: torch.nn.Dropout1d
+    category: dropout
+    since: "1.12"
+
+  - name: torch.nn.Dropout2d
+    category: dropout
+    since: "1.0"
+
+  - name: torch.nn.Dropout3d
+    category: dropout
+    since: "1.0"
+
+  - name: torch.nn.AlphaDropout
+    category: dropout
+    since: "1.0"
+
+  # ============================
+  # 嵌入层（embedding）
+  # ============================
+  - name: torch.nn.Embedding
+    category: embedding
+    since: "1.0"
+
+  - name: torch.nn.EmbeddingBag
+    category: embedding
+    since: "1.0"
+
+  # ============================
+  # 损失函数（loss）
+  # ============================
+  - name: torch.nn.MSELoss
+    category: loss
+    since: "1.0"
+
+  - name: torch.nn.CrossEntropyLoss
+    category: loss
+    since: "1.0"
+
+  - name: torch.nn.NLLLoss
+    category: loss
+    since: "1.0"
+
+  - name: torch.nn.BCELoss
+    category: loss
+    since: "1.0"
+
+  - name: torch.nn.BCEWithLogitsLoss
+    category: loss
+    since: "1.0"
+
+  - name: torch.nn.L1Loss
+    category: loss
+    since: "1.0"
+
+  - name: torch.nn.SmoothL1Loss
+    category: loss
+    since: "1.0"
+
+  - name: torch.nn.HuberLoss
+    category: loss
+    since: "1.9"
+
+  - name: torch.nn.KLDivLoss
+    category: loss
+    since: "1.0"
+
+  - name: torch.nn.CosineEmbeddingLoss
+    category: loss
+    since: "1.0"
+
+  - name: torch.nn.TripletMarginLoss
+    category: loss
+    since: "1.0"
+
+  - name: torch.nn.CTCLoss
+    category: loss
+    since: "1.0"
+
+  # ============================
+  # 数学运算（math）
+  # ============================
+  - name: torch.add
+    category: math
+    since: "1.0"
+
+  - name: torch.sub
+    category: math
+    since: "1.0"
+    aliases: [torch.subtract]
+
+  - name: torch.mul
+    category: math
+    since: "1.0"
+    aliases: [torch.multiply]
+
+  - name: torch.div
+    category: math
+    since: "1.0"
+    aliases: [torch.divide]
+
+  - name: torch.matmul
+    category: math
+    since: "1.0"
+
+  - name: torch.bmm
+    category: math
+    since: "1.0"
+
+  - name: torch.mm
+    category: math
+    since: "1.0"
+
+  - name: torch.mv
+    category: math
+    since: "1.0"
+
+  - name: torch.dot
+    category: math
+    since: "1.0"
+
+  - name: torch.abs
+    category: math
+    since: "1.0"
+
+  - name: torch.sqrt
+    category: math
+    since: "1.0"
+
+  - name: torch.exp
+    category: math
+    since: "1.0"
+
+  - name: torch.log
+    category: math
+    since: "1.0"
+
+  - name: torch.log2
+    category: math
+    since: "1.0"
+
+  - name: torch.log10
+    category: math
+    since: "1.0"
+
+  - name: torch.pow
+    category: math
+    since: "1.0"
+
+  - name: torch.sin
+    category: math
+    since: "1.0"
+
+  - name: torch.cos
+    category: math
+    since: "1.0"
+
+  - name: torch.tan
+    category: math
+    since: "1.0"
+
+  - name: torch.clamp
+    category: math
+    since: "1.0"
+    aliases: [torch.clip]
+
+  - name: torch.floor
+    category: math
+    since: "1.0"
+
+  - name: torch.ceil
+    category: math
+    since: "1.0"
+
+  - name: torch.round
+    category: math
+    since: "1.0"
+
+  - name: torch.max
+    category: math
+    since: "1.0"
+
+  - name: torch.min
+    category: math
+    since: "1.0"
+
+  - name: torch.sum
+    category: math
+    since: "1.0"
+
+  - name: torch.mean
+    category: math
+    since: "1.0"
+
+  - name: torch.std
+    category: math
+    since: "1.0"
+
+  - name: torch.var
+    category: math
+    since: "1.0"
+
+  - name: torch.cumsum
+    category: math
+    since: "1.0"
+
+  - name: torch.sigmoid
+    category: math
+    since: "1.0"
+
+  - name: torch.softmax
+    category: math
+    since: "1.0"
+
+  - name: torch.relu
+    category: math
+    since: "1.0"
+
+  - name: torch.norm
+    category: math
+    since: "1.0"
+
+  - name: torch.linalg.norm
+    category: math
+    since: "1.7"
+
+  - name: torch.linalg.svd
+    category: math
+    since: "1.8"
+
+  - name: torch.linalg.eig
+    category: math
+    since: "1.9"
+
+  - name: torch.linalg.det
+    category: math
+    since: "1.8"
+
+  - name: torch.linalg.inv
+    category: math
+    since: "1.8"
+
+  - name: torch.linalg.solve
+    category: math
+    since: "1.8"
+
+  # ============================
+  # 张量操作（tensor_ops）
+  # ============================
+  - name: torch.cat
+    category: tensor_ops
+    since: "1.0"
+
+  - name: torch.stack
+    category: tensor_ops
+    since: "1.0"
+
+  - name: torch.split
+    category: tensor_ops
+    since: "1.0"
+
+  - name: torch.chunk
+    category: tensor_ops
+    since: "1.0"
+
+  - name: torch.reshape
+    category: tensor_ops
+    since: "1.0"
+
+  - name: torch.flatten
+    category: tensor_ops
+    since: "1.0"
+
+  - name: torch.squeeze
+    category: tensor_ops
+    since: "1.0"
+
+  - name: torch.unsqueeze
+    category: tensor_ops
+    since: "1.0"
+
+  - name: torch.transpose
+    category: tensor_ops
+    since: "1.0"
+
+  - name: torch.permute
+    category: tensor_ops
+    since: "1.0"
+
+  - name: torch.gather
+    category: tensor_ops
+    since: "1.0"
+
+  - name: torch.scatter
+    category: tensor_ops
+    since: "1.0"
+
+  - name: torch.index_select
+    category: tensor_ops
+    since: "1.0"
+
+  - name: torch.where
+    category: tensor_ops
+    since: "1.0"
+
+  - name: torch.masked_select
+    category: tensor_ops
+    since: "1.0"
+
+  - name: torch.topk
+    category: tensor_ops
+    since: "1.0"
+
+  - name: torch.sort
+    category: tensor_ops
+    since: "1.0"
+
+  - name: torch.argsort
+    category: tensor_ops
+    since: "1.0"
+
+  - name: torch.unique
+    category: tensor_ops
+    since: "1.0"
+
+  - name: torch.zeros
+    category: tensor_ops
+    since: "1.0"
+
+  - name: torch.ones
+    category: tensor_ops
+    since: "1.0"
+
+  - name: torch.rand
+    category: tensor_ops
+    since: "1.0"
+
+  - name: torch.randn
+    category: tensor_ops
+    since: "1.0"
+
+  - name: torch.arange
+    category: tensor_ops
+    since: "1.0"
+
+  - name: torch.linspace
+    category: tensor_ops
+    since: "1.0"
+
+  - name: torch.eye
+    category: tensor_ops
+    since: "1.0"
+
+  - name: torch.full
+    category: tensor_ops
+    since: "1.0"
+
+  - name: torch.nn.Flatten
+    category: tensor_ops
+    since: "1.2"
+
+  - name: torch.nn.Unflatten
+    category: tensor_ops
+    since: "1.8"
+
+  # ============================
+  # 距离 / 相似度（distance）
+  # ============================
+  - name: torch.nn.CosineSimilarity
+    category: distance
+    since: "1.0"
+
+  - name: torch.nn.PairwiseDistance
+    category: distance
+    since: "1.0"

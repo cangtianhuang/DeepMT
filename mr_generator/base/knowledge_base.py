@@ -95,13 +95,13 @@ class KnowledgeBase:
                     eval(transform_code) if transform_code else lambda *args: args
                 )
 
-                def create_mr_func(transform_func, description, expected):
+                def create_mr_func(transform_func, description, oracle_expr):
                     def mr_func(inputs):
                         return MetamorphicRelation(
                             id=str(uuid.uuid4()),
                             description=description,
                             transform=transform_func,
-                            expected=expected,
+                            oracle_expr=oracle_expr,
                             tolerance=1e-6,
                             layer="operator",
                         )
@@ -111,7 +111,7 @@ class KnowledgeBase:
                 mr_func = create_mr_func(
                     transform_func,
                     mr_config.get("description", ""),
-                    mr_config.get("expected", "equal"),
+                    mr_config.get("oracle_expr", ""),
                 )
                 mrs.append(mr_func)
             except Exception as e:
@@ -142,13 +142,13 @@ class KnowledgeBase:
                     eval(transform_code) if transform_code else lambda *args: args
                 )
 
-                def create_mr_func(transform_func, description, expected):
+                def create_mr_func(transform_func, description, oracle_expr):
                     def mr_func(inputs):
                         return MetamorphicRelation(
                             id=str(uuid.uuid4()),
                             description=description,
                             transform=transform_func,
-                            expected=expected,
+                            oracle_expr=oracle_expr,
                             tolerance=1e-6,
                             layer="model",
                         )
@@ -158,7 +158,7 @@ class KnowledgeBase:
                 mr_func = create_mr_func(
                     transform_func,
                     mr_config.get("description", ""),
-                    mr_config.get("expected", "invariant"),
+                    mr_config.get("oracle_expr", ""),
                 )
                 mrs.append(mr_func)
             except Exception as e:
@@ -189,13 +189,13 @@ class KnowledgeBase:
                     eval(transform_code) if transform_code else lambda *args: args
                 )
 
-                def create_mr_func(transform_func, description, expected):
+                def create_mr_func(transform_func, description, oracle_expr):
                     def mr_func(inputs):
                         return MetamorphicRelation(
                             id=str(uuid.uuid4()),
                             description=description,
                             transform=transform_func,
-                            expected=expected,
+                            oracle_expr=oracle_expr,
                             tolerance=1e-6,
                             layer="application",
                         )
@@ -205,7 +205,7 @@ class KnowledgeBase:
                 mr_func = create_mr_func(
                     transform_func,
                     mr_config.get("description", ""),
-                    mr_config.get("expected", "invariant"),
+                    mr_config.get("oracle_expr", ""),
                 )
                 mrs.append(mr_func)
             except Exception as e:
