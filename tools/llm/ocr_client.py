@@ -37,11 +37,10 @@ class OCRClient:
         """初始化 OCR 客户端"""
         self.logger = get_logger(self.__class__.__name__)
         # 从配置加载器获取配置值
-        self.api_key = get_config_value("web_search.baidu_api_key", "")
-        self.enabled = get_config_value("web_search.ocr", False)
+        self.api_key = get_config_value("ocr.api_key", "")
+        self.enabled = get_config_value("ocr.enabled", False)
 
-        # 从 LLM 配置获取基础 URL
-        base_url = get_config_value("llm.url", "https://qianfan.baidubce.com/v2/")
+        base_url = get_config_value("ocr.url", "https://qianfan.baidubce.com/v2/")
         self.ocr_api_url = base_url.rstrip("/") + "/ocr/paddleocr"
 
         if not self.api_key:

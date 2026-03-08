@@ -1,27 +1,28 @@
 # DeepMT 配置文件示例
 # 复制此文件为 config.yaml 并填入您的配置
 
-# LLM配置
+# LLM配置（必需）
 llm:
   provider: "openai"  # openai, anthropic, local
-  api_key: ""  # 请在此处填入您的API密钥，或设置环境变量 OPENAI_API_KEY
-  model_base: "ernie-4.5-turbo-latest"  # 基础模型
-  model_max: "ernie-5.0-thinking-latest"  # 高级模型
-  url: "https://qianfan.baidubce.com/v2/"  # LLM API 基础URL（可选）
+  api_key: ""         # 请在此处填入您的API密钥，或设置环境变量 OPENAI_API_KEY
+  model_base: ""      # 基础模型 ID
+  model_max: ""       # 高级模型 ID（可选，留空则与 model_base 相同）
+  url: ""             # LLM API 基础URL（使用自定义端点时填写）
   temperature: 0.2
-
-# MR生成配置
-mr_generation:
-  sources:
-    - llm  # LLM猜想（主要来源）
-    - template  # 模板池（辅助来源）
-  use_precheck: true  # 快速筛选
-  use_sympy_proof: true  # SymPy验证
 
 # CrawlAgent 配置
 agent:
-  enabled: false              # 是否启用智能体获取算子文档（true 后 OperatorInfoFetcher 才生效）
   max_steps: null             # 全局最大步数上限（覆盖各任务 YAML 中的 max_steps；null 表示不覆盖）
   cache_ttl_days: null        # 全局缓存有效期（天；null 表示使用各任务默认值）
   cache_dir: "data/agent_cache"  # 缓存目录
 
+# OCR 配置
+ocr:
+  enabled: false
+  api_key: ""
+  url: ""
+
+# 日志配置
+logging:
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR
+  file: "data/logs"

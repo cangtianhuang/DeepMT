@@ -2,7 +2,6 @@
 
 from typing import Any, Dict, Optional
 
-from core.config_loader import get_config_value
 from core.framework import FrameworkType
 from core.logger import get_logger, log_structured
 
@@ -22,7 +21,6 @@ class OperatorInfoFetcher:
 
     def __init__(self) -> None:
         self.logger = get_logger(self.__class__.__name__)
-        self.enabled: bool = get_config_value("agent.enabled", False)
         self._runner = None  # 懒加载
 
     @property
@@ -52,16 +50,6 @@ class OperatorInfoFetcher:
             若未启用或出错则返回空值但保持结构
         """
         empty = {"name": operator_name, "doc": "", "source_urls": []}
-
-        if not self.enabled:
-            log_structured(
-                self.logger,
-                "FETCH",
-                "Agent disabled (agent.enabled=false), skipping doc fetch",
-                operator=operator_name,
-                level="DEBUG",
-            )
-            return empty
 
         log_structured(
             self.logger,
