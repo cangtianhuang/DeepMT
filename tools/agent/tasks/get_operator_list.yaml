@@ -28,22 +28,21 @@ output_schema:
     description: "实际获取到的版本号"
 
 entry_points:
-  pytorch: "https://docs.pytorch.org/docs/{version}/torch.html"
-  pytorch_stable: "https://docs.pytorch.org/docs/stable/torch.html"
-  pytorch_nn: "https://docs.pytorch.org/docs/stable/nn.html"
-  pytorch_nn_functional: "https://docs.pytorch.org/docs/stable/nn.functional.html"
+  pytorch_stable: "https://pytorch.org/docs/stable/torch.html"
+  pytorch_nn_functional: "https://pytorch.org/docs/stable/nn.functional.html"
+  pytorch_index: "https://pytorch.org/docs/stable/index.html"
   tensorflow: "https://www.tensorflow.org/api_docs/python/tf"
   paddlepaddle: "https://www.paddlepaddle.org.cn/documentation/docs/zh/api/index_cn.html"
 
 hints:
-  - "先从 entry_point 对应的文档索引页开始"
-  - "使用 extract_links 提取所有 API 链接，注意过滤掉非算子链接（如教程、示例页面）"
-  - "对于 PyTorch，主要关注 torch.*, torch.nn.*, torch.nn.functional.* 命名空间"
+  - "对于 PyTorch，始终使用 pytorch_stable 或 pytorch_nn_functional 这两个入口页面，不要自行构造版本化 URL"
+  - "使用 fetch_page 获取入口页面内容，然后用 extract_links 提取所有 API 链接"
+  - "对于 PyTorch，主要关注 torch.*, torch.nn.*, torch.nn.functional.* 命名空间的函数"
   - "对于 TensorFlow，主要关注 tf.*, tf.nn.*, tf.keras.layers.* 命名空间"
   - "对于 PaddlePaddle，主要关注 paddle.* 命名空间"
   - "算子数量可能很多（100-500个），不需要访问每个算子的详细页面，只需收集名称和 URL"
-  - "如果页面有多个分类（如 torch.nn 和 torch.nn.functional），可以分别访问并合并"
-  - "完成后调用 finish 工具，operators 列表应至少包含 20 个常见算子"
+  - "如果一个页面访问失败，立即尝试另一个入口页面，不要重试同一 URL"
+  - "完成后调用 finish 工具，operators 列表应至少包含 20 个常见算子，version 字段填写实际版本号"
 
 max_steps: 20
 cache_ttl_days: 7

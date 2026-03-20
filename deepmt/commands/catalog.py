@@ -292,10 +292,16 @@ def catalog_info(operator, as_json):
     default=False,
     help="试运行：仅打印将写入的内容，不修改 YAML",
 )
-def catalog_sync(framework, version, no_cache, dry_run):
+@click.option(
+    "--quiet", "-q",
+    is_flag=True,
+    default=False,
+    help="静默模式：不打印 Agent 每步执行过程",
+)
+def catalog_sync(framework, version, no_cache, dry_run, quiet):
     """通过 CrawlAgent 自动爬取并更新算子目录 YAML。
 
-    需要在 config.yaml 中设置 agent.enabled: true 且配置 LLM API Key。
+    需要配置 LLM API Key。
 
     \b
     示例:
@@ -304,18 +310,9 @@ def catalog_sync(framework, version, no_cache, dry_run):
       deepmt catalog sync --framework pytorch --no-cache   # 忽略缓存重新爬取
       deepmt catalog sync --framework pytorch --dry-run    # 试运行
     """
-    from core.config_loader import get_config_value
-
-    if not get_config_value("agent.enabled", False):
-        click.echo(click.style(
-            "错误：agent 未启用。请在 config.yaml 中设置 agent.enabled: true。",
-            fg="red",
-        ))
-        sys.exit(1)
-
     try:
         from tools.agent.task_runner import TaskRunner
-        runner = TaskRunner()
+        runner = TaskRunner(verbose=not quiet)
     except Exception as e:
         click.echo(click.style(f"错误：无法初始化 TaskRunner：{e}", fg="red"))
         sys.exit(1)

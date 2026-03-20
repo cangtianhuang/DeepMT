@@ -38,18 +38,20 @@ class TaskRunner:
         self,
         cache_dir: Optional[str] = None,
         agent: Optional[CrawlAgent] = None,
+        verbose: bool = False,
     ) -> None:
         self.logger = get_logger(self.__class__.__name__)
         cache_dir_cfg = cache_dir or get_config_value("agent.cache_dir", str(_DEFAULT_CACHE_DIR))
         self.cache_dir = Path(cache_dir_cfg)
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         self._agent: Optional[CrawlAgent] = agent
+        self.verbose = verbose
 
     @property
     def agent(self) -> CrawlAgent:
         """懒加载 CrawlAgent（首次使用时初始化，避免启动时加载 LLM）"""
         if self._agent is None:
-            self._agent = CrawlAgent()
+            self._agent = CrawlAgent(verbose=self.verbose)
         return self._agent
 
     # ---------------------------------------------------------------------- #
@@ -232,6 +234,8 @@ class TaskRunner:
                     f"Cache hit for task '{task_id}'",
                     inputs=inputs,
                 )
+                if self.verbose:
+                    print(f"[Cache] 命中缓存: {task_id} {inputs}", flush=True)
                 return cached
 
         # 执行任务

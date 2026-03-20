@@ -80,7 +80,7 @@ class CrawlAgent:
         from tools.agent.tool_registry import build_default_registry
 
         registry = build_default_registry()
-        agent = CrawlAgent(registry=registry)
+        agent = CrawlAgent(registry=registry, verbose=True)
 
         spec = TaskSpec.from_task_id("get_framework_version")
         result = agent.run(spec, inputs={"framework": "pytorch"})
@@ -91,17 +91,20 @@ class CrawlAgent:
         self,
         registry=None,
         llm_client: Optional[LLMClient] = None,
+        verbose: bool = False,
     ) -> None:
         """
         Args:
             registry: ToolRegistry 实例；若为 None，自动构建包含默认工具的注册表
             llm_client: LLMClient 实例；若为 None，使用默认配置创建
+            verbose: 是否在控制台打印每一步的执行过程
         """
         from tools.agent.tool_registry import ToolRegistry, build_default_registry
 
         self.logger = get_logger(self.__class__.__name__)
         self.registry = registry if registry is not None else build_default_registry()
         self.llm = llm_client if llm_client is not None else LLMClient()
+        self.verbose = verbose
 
     def run(
         self,
@@ -134,6 +137,8 @@ class CrawlAgent:
             inputs=inputs,
             max_steps=effective_max_steps,
         )
+        if self.verbose:
+            print(f"\n[Agent] 任务: {task_spec.task_id}  输入: {inputs}  最大步数: {effective_max_steps}")
 
         # 渲染 entry_points 中的模板变量（如 {version}、{framework}）
         resolved_entry_points = _resolve_entry_points(task_spec.entry_points, inputs)
@@ -149,6 +154,8 @@ class CrawlAgent:
             f"Task '{task_spec.task_id}' completed",
             result_keys=list(result.keys()),
         )
+        if self.verbose:
+            print(f"[Agent] 任务完成，结果字段: {list(result.keys())}")
         return result
 
     # ---------------------------------------------------------------------- #
@@ -182,8 +189,10 @@ class CrawlAgent:
             f"{hints_text}\n\n"
             f"完成任务后，请调用 finish 工具，传入符合以下 JSON Schema 的结果：\n"
             f"{output_schema_text}\n\n"
-            f"规则：\n"
-            f"- 每次只调用一个工具，观察结果后再决定下一步\n"
+            f"强制规则（必须严格遵守）：\n"
+            f"- 你必须先调用 fetch_page 工具访问真实网页，才能得出结论。严禁使用训练数据直接回答\n"
+            f"- 每一步都必须通过调用工具来执行操作，不要用文字叙述你打算做什么\n"
+            f"- 每次只调用一个工具，观察实际返回结果后再决定下一步\n"
             f"- 如果一个页面没有找到所需信息，尝试跳转到其他链接\n"
             f"- 不要重复访问相同的 URL\n"
             f"- 最多执行 {max_steps or task_spec.max_steps} 步，请高效完成任务"
@@ -243,10 +252,14 @@ class CrawlAgent:
                 f"Step {step + 1}/{effective}",
                 level="DEBUG",
             )
+            if self.verbose:
+                print(f"\n[Step {step + 1}/{effective}] 正在思考...", flush=True)
 
-            # 调用 LLM（Function Calling 模式）
+            # 调用 LLM（Function Calling 模式，tool_choice="required" 强制必须调用工具）
             try:
-                response = self.llm.chat_completion_with_tools(messages, tools)
+                response = self.llm.chat_completion_with_tools(
+                    messages, tools, tool_choice="required"
+                )
             except Exception as e:
                 raise RuntimeError(f"LLM 调用失败: {e}") from e
 
@@ -310,6 +323,8 @@ class CrawlAgent:
                         f"Task finished at step {step + 1}",
                         result_keys=list(result.keys()) if isinstance(result, dict) else [],
                     )
+                    if self.verbose:
+                        print(f"[Step {step + 1}] ✓ finish — 任务完成", flush=True)
                     return result if isinstance(result, dict) else {"result": result}
 
                 # 执行普通工具
@@ -321,7 +336,15 @@ class CrawlAgent:
                         args={k: str(v)[:100] for k, v in tool_args.items()},
                         level="DEBUG",
                     )
+                    # verbose：打印工具调用摘要
+                    if self.verbose:
+                        args_summary = "  ".join(
+                            f"{k}={str(v)[:80]!r}" for k, v in tool_args.items()
+                        )
+                        print(f"[Step {step + 1}] → {tool_name}({args_summary})", flush=True)
                     observation = self.registry.execute(tool_name, tool_args)
+                elif self.verbose:
+                    print(f"[Step {step + 1}] ⚠ 跳过重复 URL: {tool_args.get('url', '')}", flush=True)
 
                 log_structured(
                     self.logger,
@@ -329,6 +352,8 @@ class CrawlAgent:
                     f"Tool '{tool_name}' result ({len(observation)} chars)",
                     level="DEBUG",
                 )
+                if self.verbose:
+                    print(f"         ← {len(observation)} 字符", flush=True)
 
                 # 将工具结果加入消息历史
                 messages.append(

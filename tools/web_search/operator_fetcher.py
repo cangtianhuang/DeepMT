@@ -1,35 +1,21 @@
-"""算子信息获取器：通过 CrawlAgent 从网络获取算子文档"""
+"""算子信息获取器：自动从网络搜索获取算子的定义、代码、文档"""
 
 from typing import Any, Dict, Optional
 
+from core.config_loader import get_config_value
 from core.framework import FrameworkType
-from core.logger import get_logger, log_structured
+from core.logger import get_logger, log_error, log_structured
+from tools.web_search.search_tool import WebSearchTool
 
 
 class OperatorInfoFetcher:
-    """
-    算子信息获取器
-
-    使用 CrawlAgent（tools.agent.TaskRunner）获取算子文档。
-    需要在 config.yaml 中启用 agent：
-
-        agent:
-          enabled: true
-
-    若 agent 未启用或执行出错，返回空结果，不抛异常。
-    """
+    """算子信息获取器"""
 
     def __init__(self) -> None:
+        """初始化实例属性"""
         self.logger = get_logger(self.__class__.__name__)
-        self._runner = None  # 懒加载
-
-    @property
-    def runner(self):
-        """懒加载 TaskRunner，避免启动时初始化 LLM"""
-        if self._runner is None:
-            from tools.agent.task_runner import TaskRunner
-            self._runner = TaskRunner()
-        return self._runner
+        self.search_tool = WebSearchTool()
+        self.enabled = get_config_value("web_search.enabled", True)
 
     def fetch_operator_info(
         self,
@@ -38,58 +24,90 @@ class OperatorInfoFetcher:
         use_cache: bool = True,
     ) -> Dict[str, Any]:
         """
-        获取算子信息。
+        获取算子信息
 
         Args:
-            operator_name: 算子名称（如 "relu"、"torch.nn.ReLU"）
-            framework:     框架名称（pytorch / tensorflow / paddlepaddle）
-            use_cache:     是否使用缓存
+            operator_name: 算子名称（如 "relu", "ReLU", "torch.nn.ReLU"）
+            framework: 框架名称（默认pytorch，支持pytorch/tensorflow/paddlepaddle）
+            use_cache: 是否使用缓存（保留接口兼容性，暂未实现）
 
         Returns:
-            {"name": str, "doc": str, "source_urls": list}
-            若未启用或出错则返回空值但保持结构
+            算子信息字典，包含 name, doc, source_urls
         """
-        empty = {"name": operator_name, "doc": "", "source_urls": []}
+        if not self.enabled:
+            log_structured(self.logger, "WARN", "Web search is disabled in config", level="WARNING")
+            return {}
+
+        try:
+            search_results = self.search_tool.search_operator(
+                operator_name=operator_name,
+                framework=framework,
+                sources=get_config_value("web_search.sources"),
+            )
+        except ValueError as e:
+            log_error(self.logger, f"Search failed for '{operator_name}'", exception=e)
+            return {"name": operator_name, "doc": "", "source_urls": []}
+
+        if not search_results:
+            log_structured(self.logger, "WARN", f"No results found for '{operator_name}'", level="WARNING")
+            return {"name": operator_name, "doc": "", "source_urls": []}
+
+        docs_results = [r for r in search_results if r.source == "docs"]
+        source_results = docs_results if docs_results else search_results
+
+        # Debug: 打印每个搜索结果的详情
+        for idx, result in enumerate(search_results):
+            snippet_full = result.snippet.replace("\n", "\\n").replace("\r", "\\r")
+            log_structured(
+                self.logger,
+                "SEARCH",
+                f"Result {idx + 1}: {result.source} | score {result.relevance_score:.3f} | {result.title[:60]}...",
+                details=snippet_full,
+                level="DEBUG",
+            )
+
+        doc_parts = [r.snippet for r in source_results if r.snippet]
+        source_urls = [r.url for r in source_results if r.url]
+        doc = "\n\n".join(doc_parts)
+
+        operator_info = {
+            "name": operator_name,
+            "doc": doc,
+            "source_urls": source_urls,
+        }
 
         log_structured(
             self.logger,
-            "FETCH",
-            f"Fetching doc for '{operator_name}' via CrawlAgent",
-            framework=framework,
+            "SEARCH",
+            f"Found {len(source_urls)} sources | {len(doc)} chars",
+            level="DEBUG",
         )
 
-        try:
-            result = self.runner.run_task(
-                "get_operator_doc",
-                inputs={"operator_name": operator_name, "framework": framework},
-                use_cache=use_cache,
-            )
-            doc = result.get("doc", "")
-            source_url = result.get("source_url", "")
-            return {
-                "name": result.get("operator_name", operator_name),
-                "doc": doc,
-                "source_urls": [source_url] if source_url else [],
-            }
-        except Exception as e:
-            log_structured(
-                self.logger,
-                "FETCH",
-                f"CrawlAgent fetch failed for '{operator_name}': {e}",
-                level="WARNING",
-            )
-            return empty
+        # Debug: 打印重排后的结果分数和摘要
+        if source_results:
+            for idx, result in enumerate(source_results[:3]):  # 只显示前3个
+                snippet_full = result.snippet.replace("\n", "\\n").replace("\r", "\\r")
+                log_structured(
+                    self.logger,
+                    "SEARCH",
+                    f"Top result {idx + 1}: {result.source} | score {result.relevance_score:.3f} | {result.title[:60]}...",
+                    details=snippet_full,
+                    level="DEBUG",
+                )
+
+        return operator_info
 
     def get_operator_doc(
-        self,
-        operator_name: str,
-        framework: FrameworkType = "pytorch",
+        self, operator_name: str, framework: FrameworkType = "pytorch"
     ) -> Optional[str]:
         """
-        获取算子文档字符串。
+        获取算子文档
+
+        Args:
+            operator_name: 算子名称
+            framework: 框架名称（默认pytorch，支持pytorch/tensorflow/paddlepaddle）
 
         Returns:
-            文档字符串；若未启用或获取失败返回 None
+            算子文档字符串，如果未找到则返回 None
         """
-        doc = self.fetch_operator_info(operator_name, framework).get("doc", "")
-        return doc if doc else None
+        return self.fetch_operator_info(operator_name, framework).get("doc")

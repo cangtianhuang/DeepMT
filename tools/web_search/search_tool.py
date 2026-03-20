@@ -1,0 +1,297 @@
+"""网络搜索工具：从PyTorch文档、GitHub、网络搜索等获取算子信息"""
+
+from dataclasses import dataclass
+from typing import Any, Dict, List, Optional
+
+import requests
+
+from core.config_loader import get_config_value
+from core.framework import FrameworkType
+from core.logger import get_logger
+from tools.web_search.search_agent import SearchAgent
+
+
+@dataclass
+class SearchResult:
+    """搜索结果数据结构"""
+
+    title: str
+    url: str
+    snippet: str
+    source: str  # docs, github, web_search
+    relevance_score: float = 0.0
+
+
+class WebSearchTool:
+    """
+    网络搜索工具：从多个源搜索算子信息
+
+    支持：
+    - 框架官方文档（使用智能搜索，支持 PyTorch/TensorFlow/PaddlePaddle 等）
+    - GitHub 仓库
+    - 网络搜索（百度搜索 API）
+    """
+
+    def __init__(self) -> None:
+        """初始化实例属性"""
+        self.logger = get_logger(self.__class__.__name__)
+        self.max_results = get_config_value("web_search.max_results", 5)
+
+        self.framework_docs = {
+            "pytorch": {
+                "search_url": "https://docs.pytorch.org/docs/stable/search.html",
+                "docs_base": "https://docs.pytorch.org/docs/stable/",
+                "github_repo": "pytorch/pytorch",
+            },
+            "tensorflow": {
+                "search_url": "https://www.tensorflow.org/api_docs/python/tf",
+                "docs_base": "https://www.tensorflow.org/api_docs/python/",
+                "github_repo": "tensorflow/tensorflow",
+            },
+            "paddlepaddle": {
+                "search_url": "https://www.paddlepaddle.org.cn/documentation/docs/zh/api/index_cn.html",
+                "docs_base": "https://www.paddlepaddle.org.cn/documentation/docs/zh/api/",
+                "github_repo": "PaddlePaddle/Paddle",
+            },
+        }
+
+        self.github_base = "https://api.github.com/search/code"
+        self.baidu_search_url = "https://qianfan.baidubce.com/v2/ai_search/web_search"
+        self.baidu_api_key = get_config_value("web_search.baidu_api_key") or ""
+        self.github_token = get_config_value("web_search.github_token") or ""
+        self.custom_sites = get_config_value("web_search.custom_sites", [])
+        self.headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+        }
+
+        self.search_agent = SearchAgent()
+
+    def search_operator(
+        self,
+        operator_name: str,
+        framework: FrameworkType,
+        sources: Optional[Dict[str, bool]] = None,
+    ) -> List[SearchResult]:
+        """
+        搜索算子信息
+
+        Args:
+            operator_name: 算子名称（如 "relu", "ReLU"）
+            framework: 框架名称（默认pytorch，支持pytorch/tensorflow/paddlepaddle）
+            sources: 搜索源开关字典（如果为None则使用配置中的源）
+                    格式: {"docs": True, "github": True, "web_search": True}
+
+        Returns:
+            搜索结果列表
+        """
+        if framework not in self.framework_docs:
+            self.logger.warning(
+                f"Framework '{framework}' not in framework_docs. "
+                f"Supported: {list(self.framework_docs.keys())}"
+            )
+            return []
+
+        if sources is None:
+            sources = get_config_value(
+                "web_search.sources",
+                {
+                    "docs": True,
+                    "github": True,
+                    "web_search": True,
+                },
+            )
+
+        if not isinstance(sources, dict):
+            sources = {"docs": True, "github": True, "web_search": True}
+
+        all_results = []
+        normalized_name = self._normalize_operator_name(operator_name)
+
+        self.logger.debug(
+            f"Searching '{operator_name}' ({normalized_name}) in {framework} from {sources}"
+        )
+
+        # 按比例分配结果数量：docs:github:web=2:1:2
+        source_ratios = {"docs": 2, "github": 1, "web_search": 2}
+        total_ratio = sum(source_ratios[s] for s, enabled in sources.items() if enabled)
+        if total_ratio == 0:
+            self.logger.warning("⚠️  WARN | No search sources enabled")
+            return []
+
+        # 计算每个源的结果数量
+        source_results = {}
+        for source, enabled in sources.items():
+            if enabled:
+                ratio = source_ratios[source]
+                count = max(1, int(self.max_results * ratio / total_ratio))
+                if source == "docs":
+                    source_results[source] = self._search_docs(
+                        normalized_name, framework, max_results=count
+                    )
+                elif source == "github":
+                    source_results[source] = self._search_github(
+                        normalized_name, framework, max_results=count
+                    )
+                elif source == "web_search":
+                    source_results[source] = self._search_web(
+                        normalized_name, framework, max_results=count
+                    )
+
+        # 合并所有结果
+        for source, results in source_results.items():
+            all_results.extend(results)
+
+        # all_results.sort(key=lambda x: x.relevance_score, reverse=True)
+
+        self.logger.debug(f"Found {len(all_results)} total results")
+        return all_results
+
+    def _normalize_operator_name(self, name: str) -> str:
+        """规范化算子名称，如：torch.nn.ReLU -> relu, torch.nn.functional.relu -> relu"""
+        if not name:
+            return ""
+        name = name.lower()
+        # name = re.sub(r"^(torch|tf|paddle)\.", "", name)
+        if "." in name:
+            name = name.split(".")[-1]
+        # name = re.sub(r"_(layer|module|function)$", "", name)
+        # name = re.sub(r"(layer|module|function)$", "", name)
+        return name.strip()
+
+    def _search_docs(
+        self,
+        operator_name: str,
+        framework: FrameworkType,
+        max_results: int,
+    ) -> List[SearchResult]:
+        """搜索框架官方文档"""
+        search_url = self.framework_docs[framework]["search_url"]
+
+        try:
+            return self.search_agent.search_docs(
+                query=operator_name,
+                search_url=search_url,
+                framework=framework,
+                max_results=max_results,
+            )
+        except ValueError:
+            raise
+        except Exception as e:
+            self.logger.warning(f"{framework.capitalize()} docs search failed: {e}")
+            return []
+
+    def _search_github(
+        self,
+        operator_name: str,
+        framework: FrameworkType,
+        max_results: int,
+    ) -> List[SearchResult]:
+        """搜索GitHub仓库"""
+        if not self.github_token:
+            self.logger.warning(
+                "GitHub API token not configured. Set web_search.github_token in config.yaml"
+            )
+            return []
+
+        github_repo = self.framework_docs[framework]["github_repo"]
+        search_paths = {
+            "pytorch": "aten/src",
+            "tensorflow": "tensorflow/python",
+            "paddlepaddle": "paddle/fluid/operators",
+        }
+        search_path = search_paths.get(framework, "")
+
+        try:
+            query = (
+                f"{operator_name} repo:{github_repo} path:{search_path}"
+                if search_path
+                else f"{operator_name} repo:{github_repo}"
+            )
+            headers = self.headers.copy()
+            if self.github_token:
+                headers["Authorization"] = f"token {self.github_token}"
+            headers["Accept"] = "application/vnd.github.v3.text-match+json"
+
+            response = requests.get(
+                self.github_base,
+                params={"q": query, "per_page": max_results},
+                headers=headers,
+                timeout=10,
+            )
+            response.raise_for_status()
+
+            results = response.json().get("items", [])[:max_results]
+            search_results = []
+
+            for result in results:
+                if text_matches := result.get("text_matches", []):
+                    snippet = "\n---\n".join(
+                        match.get("fragment", "")
+                        for match in text_matches[:3]
+                        if match.get("fragment")
+                    )
+
+                    search_results.append(
+                        SearchResult(
+                            title=f"{result.get('name', '')} ({result.get('path', '')})",
+                            url=result.get("html_url", ""),
+                            snippet=snippet,
+                            source="github",
+                            relevance_score=0.5,
+                        )
+                    )
+
+            return search_results
+        except Exception as e:
+            self.logger.warning(f"GitHub search failed: {e}")
+            return []
+
+    def _search_web(
+        self,
+        operator_name: str,
+        framework: FrameworkType,
+        max_results: int,
+    ) -> List[SearchResult]:
+        """使用百度搜索API进行网络搜索"""
+        if not self.baidu_api_key:
+            self.logger.warning(
+                "Baidu search API key not configured. Set baidu_search.api_key in config.yaml"
+            )
+            return []
+
+        try:
+            query = f"{framework} {operator_name}"
+            request_body = {
+                "messages": [{"content": query, "role": "user"}],
+                "search_source": "baidu_search_v2",
+                "resource_type_filter": [{"type": "web", "top_k": max_results}],
+            }
+
+            if self.custom_sites:
+                request_body["search_filter"] = {"match": {"site": self.custom_sites}}
+
+            response = requests.post(
+                self.baidu_search_url,
+                headers={
+                    "Authorization": f"Bearer {self.baidu_api_key}",
+                    "Content-Type": "application/json",
+                },
+                json=request_body,
+                timeout=10,
+            )
+            response.raise_for_status()
+
+            results = response.json().get("references", [])[:max_results]
+            return [
+                SearchResult(
+                    title=result.get("title", ""),
+                    url=result.get("url", ""),
+                    snippet=result.get("content", ""),
+                    source="web_search",
+                    relevance_score=result.get("rerank_score", 0.5),
+                )
+                for result in results
+            ]
+        except Exception as e:
+            self.logger.warning(f"Web search failed: {e}")
+            return []
