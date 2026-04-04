@@ -4,8 +4,8 @@ import os
 import time
 import pytest
 
-from tools.web_search.search_agent import SearchAgent
-from tools.web_search.sphinx_search import SphinxSearchIndex, load_json_cache, save_json_cache
+from deepmt.tools.web_search.search_agent import SearchAgent
+from deepmt.tools.web_search.sphinx_search import SphinxSearchIndex, load_json_cache, save_json_cache
 
 
 # ---------------------------------------------------------------------------

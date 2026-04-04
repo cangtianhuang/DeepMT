@@ -5,8 +5,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from tools.web_search.search_agent import SearchAgent
-from tools.web_search.operator_fetcher import OperatorInfoFetcher
+from deepmt.tools.web_search.search_agent import SearchAgent
+from deepmt.tools.web_search.operator_fetcher import OperatorInfoFetcher
 
 
 @pytest.fixture(scope="module")

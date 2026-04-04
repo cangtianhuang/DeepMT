@@ -1,5 +1,0 @@
-"""算子文档获取模块（基于网络搜索）"""
-
-from tools.web_search.operator_fetcher import OperatorInfoFetcher
-
-__all__ = ["OperatorInfoFetcher"]

@@ -3,8 +3,8 @@
 import pytest
 import sympy as sp
 
-from mr_generator.operator.ast_parser import ASTParser
-from mr_generator.operator.sympy_translator import SympyTranslator
+from deepmt.mr_generator.operator.ast_parser import ASTParser
+from deepmt.mr_generator.operator.sympy_translator import SympyTranslator
 
 
 # ---------------------------------------------------------------------------

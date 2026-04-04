@@ -4,7 +4,7 @@ import pytest
 import torch
 import torch.nn.functional as F
 
-from core.oracle_evaluator import OracleEvaluator
+from deepmt.core.oracle_evaluator import OracleEvaluator
 
 
 def _bool(result) -> bool:

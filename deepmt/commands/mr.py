@@ -72,9 +72,9 @@ def mr_generate(operator, layer, framework, sources, precheck, sympy, auto_fetch
     click.echo(f"           precheck={precheck}  sympy={sympy}  auto_fetch={auto_fetch}  save={save}")
 
     try:
-        from ir.schema import OperatorIR
-        from mr_generator.operator.operator_mr import OperatorMRGenerator
-        from mr_generator.base.mr_repository import MRRepository
+        from deepmt.ir.schema import OperatorIR
+        from deepmt.mr_generator.operator.operator_mr import OperatorMRGenerator
+        from deepmt.mr_generator.base.mr_repository import MRRepository
 
         operator_ir = OperatorIR(name=operator, inputs=[])
         generator = OperatorMRGenerator()
@@ -139,8 +139,8 @@ def mr_verify(operator, ver, precheck, sympy, save):
     click.echo(f"[verify] 算子: {operator}  version={ver}  precheck={precheck}  sympy={sympy}")
 
     try:
-        from ir.schema import OperatorIR
-        from mr_generator.operator.operator_mr import OperatorMRGenerator
+        from deepmt.ir.schema import OperatorIR
+        from deepmt.mr_generator.operator.operator_mr import OperatorMRGenerator
 
         operator_ir = OperatorIR(name=operator, inputs=[])
         generator = OperatorMRGenerator()

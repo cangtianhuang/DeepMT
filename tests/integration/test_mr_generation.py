@@ -8,9 +8,9 @@ from unittest.mock import MagicMock
 import pytest
 import torch
 
-from ir.schema import OperatorIR, MetamorphicRelation
-from mr_generator.operator.operator_mr import OperatorMRGenerator
-from mr_generator.base.mr_repository import MRRepository
+from deepmt.ir.schema import OperatorIR, MetamorphicRelation
+from deepmt.mr_generator.operator.operator_mr import OperatorMRGenerator
+from deepmt.mr_generator.base.mr_repository import MRRepository
 
 
 def _mock_mr(mr_id="mr_1", oracle="orig == trans", category="idempotency",
@@ -215,15 +215,15 @@ class TestMRWorkflow:
 class TestModuleImports:
 
     def test_operator_mr_generator_importable(self):
-        from mr_generator.operator.operator_mr import OperatorMRGenerator
+        from deepmt.mr_generator.operator.operator_mr import OperatorMRGenerator
         assert OperatorMRGenerator is not None
 
     def test_operator_info_fetcher_importable(self):
-        from tools.web_search import OperatorInfoFetcher
+        from deepmt.tools.web_search import OperatorInfoFetcher
         assert OperatorInfoFetcher is not None
 
     def test_crawl_agent_importable(self):
-        from tools.agent import CrawlAgent, TaskRunner, TaskSpec
+        from deepmt.tools.agent import CrawlAgent, TaskRunner, TaskSpec
         assert CrawlAgent is not None
 
     def test_web_search_modules_exist(self):

@@ -72,7 +72,7 @@ def test_operator(operator, framework, inputs, generate, as_json):
     click.echo(f"[test] 算子: {operator}  框架: {framework}  inputs: {input_list}")
 
     try:
-        from api.deepmt import DeepMT
+        from deepmt.client import DeepMT
 
         client = DeepMT()
         result = client.test_operator(
@@ -120,7 +120,7 @@ def test_from_config(config_path, as_json):
     click.echo(f"[from-config] 配置文件: {config_path}")
 
     try:
-        from api.deepmt import DeepMT
+        from deepmt.client import DeepMT
 
         client = DeepMT()
         results = client.test_from_config(config_path)

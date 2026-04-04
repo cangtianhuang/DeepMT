@@ -22,6 +22,10 @@ ocr:
   api_key: ""
   url: ""
 
+# Web search cache
+web_search:
+  cache_dir: "data/web_search_cache"   # Cache directory for web search results
+
 # 日志配置
 logging:
   level: "INFO"  # DEBUG, INFO, WARNING, ERROR

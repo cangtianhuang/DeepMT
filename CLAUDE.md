@@ -38,68 +38,70 @@ source .venv/bin/activate && PYTHONPATH=/home/lhy/DeepMT python -m pytest tests/
 
 采用**微内核 + 插件化**架构。MR 生成与测试执行分离：先生成 MR 存入知识库（SQLite），再复用于多次测试。
 
-### MR 生成四阶段流水线（`mr_generator/operator/operator_mr.py`）
+### MR 生成四阶段流水线（`deepmt/mr_generator/operator/operator_mr.py`）
 
 1. **信息准备** — 提取算子代码 + CrawlAgent 获取文档
 2. **候选生成** — LLM 猜想 + 模板池匹配
 3. **快速筛选（Pre-check）** — 随机输入数值验证
 4. **形式化验证** — SymPy 符号证明
 
-### 核心数据结构（`ir/schema.py`）
+### 核心数据结构（`deepmt/ir/schema.py`）
 
 - `OperatorIR`：算子描述（名称、输入、输出、属性）
 - `MetamorphicRelation`：MR 对象，包含 `transform_code`（输入变换 lambda）、`oracle_expr`（输出关系表达式，使用变量 `orig`/`trans`/`x`）、`verified`、`category`
 
-### CrawlAgent（`tools/agent/`）
+### CrawlAgent（`deepmt/tools/agent/`）
 
 基于 ReAct 模式的爬取智能体，通过 `TaskRunner` 提供语义 API：
 
 - `TaskRunner.get_operator_doc(name, framework)` — 获取算子文档
 - `TaskRunner.sync_catalog(framework)` — 更新算子目录 YAML
-- 任务规格在 `tools/agent/tasks/*.yaml` 中声明（支持自定义 `entry_points`）
+- 任务规格在 `deepmt/tools/agent/tasks/*.yaml` 中声明（支持自定义 `entry_points`）
 - 文件系统缓存位于 `data/agent_cache/`（TTL 可配）
 
 ## 项目地图
 
 ```
 .
-├── deepmt/                 # CLI 入口（python -m deepmt）
-│   └── commands/           #   mr / test / repo / catalog / data / health
-├── api/                    # 用户 API（DeepMT 主入口）
-├── core/                   # 微内核框架
-│   ├── config_loader.py    #   配置加载
-│   ├── framework.py        #   FrameworkType 定义
-│   ├── ir_manager.py       #   IR 管理
-│   ├── logger.py           #   日志（get_logger / log_structured）
-│   ├── oracle_evaluator.py #   oracle_expr 运行时评估
-│   ├── plugins_manager.py  #   插件加载
-│   ├── results_manager.py  #   结果管理
-│   ├── scheduler.py        #   任务调度
-│   └── test_runner.py      #   测试执行（使用已生成的 MR）
-├── ir/                     # 统一中间表示
-│   ├── schema.py           #   IR 与 MR 数据结构
-│   └── converter.py        #   IR 转换器
-├── mr_generator/           # MR 生成引擎
-│   ├── operator/           #   算子层（核心）
-│   │   ├── operator_mr.py  #     主生成器（generate/verify 流水线）
-│   │   ├── operator_llm_mr_generator.py  # LLM 生成
-│   │   ├── mr_prechecker.py              # 数值预检
-│   │   ├── sympy_prover.py               # 符号证明
-│   │   ├── sympy_translator.py           # 代码→SymPy
-│   │   └── ast_parser.py                 # AST 解析
-│   ├── model/              #   模型层（开发中）
-│   ├── application/        #   应用层（开发中）
-│   ├── base/               #   知识库、模板池、MR 仓库
-│   └── config/             #   模板/知识库 YAML + 算子目录
-├── plugins/                # 框架适配器（目前仅 PyTorch 可用）
-├── analysis/               # 缺陷分类器
-├── tools/                  # 通用工具
-│   ├── llm/                #   LLM 客户端 / OCR
-│   ├── agent/              #   CrawlAgent（ReAct）+ TaskRunner + ToolRegistry
-│   └── web_search/         #   搜索、Sphinx 解析、算子文档获取
-├── monitoring/             # 健康检查与进度追踪
+├── deepmt/                 # 主包（CLI 入口 + 所有核心模块）
+│   ├── __init__.py         #   公共 API（导出 DeepMT, TestResult）
+│   ├── __main__.py         #   python -m deepmt 入口
+│   ├── cli.py              #   CLI 命令组
+│   ├── client.py           #   DeepMT / TestResult 高层 API
+│   ├── commands/           #   CLI 子命令实现（mr / test / repo / catalog / data / health）
+│   ├── core/               #   微内核框架（原 core/）
+│   │   ├── config_loader.py    #   配置加载
+│   │   ├── framework.py        #   FrameworkType 定义
+│   │   ├── ir_manager.py       #   IR 管理
+│   │   ├── logger.py           #   日志（get_logger / log_structured）
+│   │   ├── oracle_evaluator.py #   oracle_expr 运行时评估
+│   │   ├── plugins_manager.py  #   插件加载
+│   │   ├── results_manager.py  #   结果管理
+│   │   ├── scheduler.py        #   任务调度
+│   │   └── test_runner.py      #   测试执行（使用已生成的 MR）
+│   ├── ir/                 #   统一中间表示（原 ir/）
+│   │   ├── schema.py           #   IR 与 MR 数据结构
+│   │   └── converter.py        #   IR 转换器
+│   ├── mr_generator/       #   MR 生成引擎（原 mr_generator/）
+│   │   ├── operator/           #   算子层（核心）
+│   │   │   ├── operator_mr.py  #     主生成器（generate/verify 流水线）
+│   │   │   ├── operator_llm_mr_generator.py  # LLM 生成
+│   │   │   ├── mr_prechecker.py              # 数值预检
+│   │   │   ├── sympy_prover.py               # 符号证明
+│   │   │   ├── sympy_translator.py           # 代码→SymPy
+│   │   │   └── ast_parser.py                 # AST 解析
+│   │   ├── model/              #   模型层（开发中）
+│   │   ├── application/        #   应用层（开发中）
+│   │   ├── base/               #   知识库、模板池、MR 仓库
+│   │   └── config/             #   模板/知识库 YAML + 算子目录
+│   ├── plugins/            #   框架适配器（原 plugins/，目前仅 PyTorch 可用）
+│   ├── tools/              #   通用工具（原 tools/）
+│   │   ├── agent/          #     CrawlAgent（ReAct）+ TaskRunner + ToolRegistry
+│   │   ├── llm/            #     LLM 客户端 / OCR
+│   │   └── web_search/     #     搜索、Sphinx 解析、算子文档获取（缓存已迁移至 data/web_search_cache/）
+│   ├── analysis/           #   缺陷分类器（原 analysis/）
+│   └── monitoring/         #   健康检查与进度追踪（原 monitoring/）
 ├── tests/                  # 测试用例
-├── examples/               # 示例脚本
 ├── demo/                   # 快速演示
 ├── docs/                   # 开发文档
 ├── data/                   # 数据（日志、SQLite 数据库）

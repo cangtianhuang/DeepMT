@@ -2,13 +2,13 @@
 快速演示：算子层MR测试闭环
 """
 
-from ir.schema import OperatorIR
-from mr_generator.operator.operator_mr import OperatorMRGenerator
-from mr_generator.base.knowledge_base import KnowledgeBase
-from core.scheduler import TaskScheduler
-from core.ir_manager import IRManager
-from core.plugins_manager import PluginsManager
-from core.results_manager import ResultsManager
+from deepmt.ir.schema import OperatorIR
+from deepmt.mr_generator.operator.operator_mr import OperatorMRGenerator
+from deepmt.mr_generator.base.knowledge_base import KnowledgeBase
+from deepmt.core.scheduler import TaskScheduler
+from deepmt.core.ir_manager import IRManager
+from deepmt.core.plugins_manager import PluginsManager
+from deepmt.core.results_manager import ResultsManager
 
 
 def main():

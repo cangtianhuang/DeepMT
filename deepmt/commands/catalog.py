@@ -202,7 +202,7 @@ def catalog_info(operator, as_json):
 
     # 2. 知识库 MR 查询
     try:
-        from mr_generator.base.mr_repository import MRRepository
+        from deepmt.mr_generator.base.mr_repository import MRRepository
         repo = MRRepository()
         has_mr = repo.exists(operator)
         mr_stats = repo.get_statistics(operator) if has_mr else None
@@ -315,7 +315,7 @@ def catalog_sync(framework, version, no_cache, dry_run, quiet):
       deepmt catalog sync --framework pytorch --dry-run    # 试运行
     """
     try:
-        from tools.agent.task_runner import TaskRunner
+        from deepmt.tools.agent.task_runner import TaskRunner
         runner = TaskRunner(verbose=not quiet)
     except Exception as e:
         click.echo(click.style(f"错误：无法初始化 TaskRunner：{e}", fg="red"))
@@ -397,7 +397,7 @@ def catalog_latest_version(framework, all_versions, as_json):
       deepmt catalog latest-version --json
     """
     try:
-        from tools.web_search.search_agent import SearchAgent
+        from deepmt.tools.web_search.search_agent import SearchAgent
         agent = SearchAgent()
     except Exception as e:
         click.echo(click.style(f"错误：{e}", fg="red"), err=True)
@@ -456,7 +456,7 @@ def catalog_fetch_doc(operator, framework, url, max_chars):
       deepmt catalog fetch-doc relu --framework pytorch --max-chars 0
     """
     try:
-        from tools.web_search.search_agent import SearchAgent
+        from deepmt.tools.web_search.search_agent import SearchAgent
         agent = SearchAgent()
     except Exception as e:
         click.echo(click.style(f"错误：{e}", fg="red"), err=True)
@@ -524,7 +524,7 @@ def catalog_update_api_list(framework, version, no_cache, as_json, show_cache_pa
       deepmt catalog update-api-list --show-cache-path
     """
     try:
-        from tools.web_search.search_agent import SearchAgent, _FRAMEWORK_API_PAGES
+        from deepmt.tools.web_search.search_agent import SearchAgent, _FRAMEWORK_API_PAGES
         agent = SearchAgent()
     except Exception as e:
         click.echo(click.style(f"错误：{e}", fg="red"), err=True)
@@ -623,7 +623,7 @@ def catalog_check_updates(framework, version, no_cache, show_no_sig, as_json, sk
       deepmt catalog check-updates --json > diff.json
     """
     try:
-        from tools.web_search.api_list_fetcher import APIListFetcher
+        from deepmt.tools.web_search.api_list_fetcher import APIListFetcher
         fetcher = APIListFetcher()
     except Exception as e:
         click.echo(click.style(f"错误：{e}", fg="red"), err=True)
@@ -636,7 +636,7 @@ def catalog_check_updates(framework, version, no_cache, show_no_sig, as_json, sk
 
     # 同时加载排除列表中的命名空间，作为拉取时的跳过提示
     try:
-        from mr_generator.base.operator_catalog import OperatorCatalog
+        from deepmt.mr_generator.base.operator_catalog import OperatorCatalog
         cat = OperatorCatalog()
         exclude_cfg = cat.load_exclude_config(framework)
         # 合并用户指定的跳过和排除列表中的命名空间（用于加速拉取）
@@ -812,8 +812,8 @@ def catalog_import_from_docs(framework, version, replace, no_cache, dry_run, yes
       deepmt catalog import-from-docs --replace --yes
     """
     try:
-        from tools.web_search.api_list_fetcher import APIListFetcher
-        from mr_generator.base.operator_catalog import OperatorCatalog
+        from deepmt.tools.web_search.api_list_fetcher import APIListFetcher
+        from deepmt.mr_generator.base.operator_catalog import OperatorCatalog
         fetcher = APIListFetcher()
         cat = OperatorCatalog()
     except Exception as e:

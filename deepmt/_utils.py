@@ -15,11 +15,11 @@ def not_implemented_error(feature: str, hint: str = ""):
 
 def get_repo(db_path: str = "data/mr_knowledge_base.db"):
     """获取 MRRepository 实例（复用配置中的路径）。"""
-    from mr_generator.base.mr_repository import MRRepository
+    from deepmt.mr_generator.base.mr_repository import MRRepository
     return MRRepository(db_path=db_path)
 
 
 def get_results_manager(db_path: str = "data/defects.db"):
     """获取 ResultsManager 实例。"""
-    from core.results_manager import ResultsManager
+    from deepmt.core.results_manager import ResultsManager
     return ResultsManager(db_path=db_path)

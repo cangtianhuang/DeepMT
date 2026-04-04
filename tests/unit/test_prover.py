@@ -4,9 +4,9 @@ import uuid
 import pytest
 import sympy as sp
 
-from ir.schema import MetamorphicRelation
-from mr_generator.operator.sympy_prover import SymPyProver
-from mr_generator.operator.sympy_translator import SympyTranslator
+from deepmt.ir.schema import MetamorphicRelation
+from deepmt.mr_generator.operator.sympy_prover import SymPyProver
+from deepmt.mr_generator.operator.sympy_translator import SympyTranslator
 
 
 def make_mr(description, transform, oracle_expr):
