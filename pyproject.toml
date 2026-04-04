@@ -1,3 +1,7 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.backends.legacy:build"
+
 [project]
 name = "deepmt"
 version = "0.1.0"
@@ -14,3 +18,13 @@ dependencies = [
 web-search = [
     "pylatexenc>=2.10",
 ]
+
+[project.scripts]
+deepmt = "deepmt.cli:cli"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["deepmt*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

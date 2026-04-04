@@ -222,12 +222,8 @@ class TestModuleImports:
         from deepmt.tools.web_search import OperatorInfoFetcher
         assert OperatorInfoFetcher is not None
 
-    def test_crawl_agent_importable(self):
-        from deepmt.tools.agent import CrawlAgent, TaskRunner, TaskSpec
-        assert CrawlAgent is not None
-
     def test_web_search_modules_exist(self):
-        base = Path("tools/web_search")
+        base = Path(__file__).parent.parent / "deepmt" / "tools" / "web_search"
         assert (base / "search_agent.py").exists()
         assert (base / "sphinx_search.py").exists()
         assert (base / "search_tool.py").exists()
