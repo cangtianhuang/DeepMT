@@ -3,6 +3,7 @@ AST到SymPy解析器：解析Python AST并转换为SymPy表达式
 """
 
 import ast
+import textwrap
 from typing import Dict, List, Optional
 
 import sympy as sp
@@ -80,7 +81,7 @@ class ASTParser:
             SymPy表达式，如果解析失败则返回None
         """
         try:
-            tree = ast.parse(code)
+            tree = ast.parse(textwrap.dedent(code))
 
             # 查找函数定义
             func_node = None

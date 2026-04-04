@@ -15,13 +15,11 @@ from tools.llm.client import LLMClient
 class SympyTranslator:
     """代码到SymPy转换器"""
 
-    def __init__(self):
-
+    def __init__(self, use_llm: bool = True):
         self.logger = get_logger(self.__class__.__name__)
+        self._use_llm = use_llm
 
-        # 导入AST解析器
         from mr_generator.operator.ast_parser import ASTParser
-
         self.ast_parser = ASTParser()
         self.llm_client = LLMClient()
 
@@ -32,6 +30,7 @@ class SympyTranslator:
         doc: Optional[str] = None,
         signature: Optional[str] = None,
         use_proxy_path: bool = True,
+        use_llm: Optional[bool] = None,
     ) -> Optional[sp.Expr]:
         """
         将代码转换为SymPy表达式
@@ -67,8 +66,11 @@ class SympyTranslator:
             self.logger.warning("No code provided for translation")
             return None
 
+        # use_llm=None 表示使用构造时的默认值
+        _use_llm = self._use_llm if use_llm is None else use_llm
+
         # 2. 尝试代理路径：LLM → Python参考实现 → AST → SymPy
-        if use_proxy_path:
+        if _use_llm and use_proxy_path:
             self.logger.debug("Trying proxy path: LLM → Python reference → AST → SymPy")
             result = self._try_proxy_path(code, doc or "", signature)
             if result is not None:
@@ -76,11 +78,12 @@ class SympyTranslator:
             self.logger.debug("Proxy path failed, trying direct path")
 
         # 3. 尝试直接路径：LLM → SymPy表达式代码
-        self.logger.debug("Trying direct path: LLM → SymPy code")
-        result = self._try_direct_path(code, doc or "", signature)
-        if result is not None:
-            return result
-        self.logger.debug("Direct path failed, trying AST fallback")
+        if _use_llm:
+            self.logger.debug("Trying direct path: LLM → SymPy code")
+            result = self._try_direct_path(code, doc or "", signature)
+            if result is not None:
+                return result
+            self.logger.debug("Direct path failed, trying AST fallback")
 
         # 4. 回退到纯AST解析
         self.logger.debug("Falling back to AST parsing of original code")

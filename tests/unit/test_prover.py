@@ -6,6 +6,7 @@ import sympy as sp
 
 from ir.schema import MetamorphicRelation
 from mr_generator.operator.sympy_prover import SymPyProver
+from mr_generator.operator.sympy_translator import SympyTranslator
 
 
 def make_mr(description, transform, oracle_expr):
@@ -78,7 +79,7 @@ class TestVerifyOracleExpr:
 class TestProveMR:
 
     def setup_method(self):
-        self.prover = SymPyProver()
+        self.prover = SymPyProver(code_translator=SympyTranslator(use_llm=False))
 
     def test_add_commutative(self):
         mr = make_mr("Commutative: f(x,y)==f(y,x)", lambda x, y: (y, x), "orig == trans")

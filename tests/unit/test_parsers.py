@@ -67,7 +67,7 @@ class TestSympyTranslator:
 
     def test_from_code_add(self):
         code = "def add(x, y):\n    return x + y\n"
-        result = self.translator.translate(code=code, use_proxy_path=False)
+        result = self.translator.translate(code=code, use_proxy_path=False, use_llm=False)
         x0, x1 = sp.symbols("x0 x1")
         assert sp.simplify(result - (x0 + x1)) == 0
 
@@ -75,18 +75,18 @@ class TestSympyTranslator:
         def double(x):
             return x * 2
 
-        result = self.translator.translate(func=double, use_proxy_path=False)
+        result = self.translator.translate(func=double, use_proxy_path=False, use_llm=False)
         x0 = sp.Symbol("x0")
         assert sp.simplify(result - x0 * 2) == 0
 
     def test_relu_conditional(self):
         code = "def relu(x):\n    return x if x > 0 else 0\n"
-        result = self.translator.translate(code=code, use_proxy_path=False)
+        result = self.translator.translate(code=code, use_proxy_path=False, use_llm=False)
         assert isinstance(result, sp.Piecewise)
 
     def test_power_function(self):
         code = "def sq(x):\n    return x ** 2\n"
-        result = self.translator.translate(code=code, use_proxy_path=False)
+        result = self.translator.translate(code=code, use_proxy_path=False, use_llm=False)
         x0 = sp.Symbol("x0")
         assert sp.simplify(result - x0**2) == 0
 
@@ -96,5 +96,5 @@ class TestSympyTranslator:
 
     def test_constant_function(self):
         code = "def const(x):\n    return 42\n"
-        result = self.translator.translate(code=code, use_proxy_path=False)
+        result = self.translator.translate(code=code, use_proxy_path=False, use_llm=False)
         assert result == 42

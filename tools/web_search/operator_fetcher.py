@@ -36,7 +36,7 @@ class OperatorInfoFetcher:
         """
         if not self.enabled:
             log_structured(self.logger, "WARN", "Web search is disabled in config", level="WARNING")
-            return {}
+            return {"name": operator_name, "doc": "", "source_urls": []}
 
         try:
             search_results = self.search_tool.search_operator(
