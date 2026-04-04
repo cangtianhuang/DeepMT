@@ -200,17 +200,40 @@ class SearchAgent:
         return results
 
     def fetch_api_list(
-        self, url: str, use_cache: bool = True
+        self,
+        url: Optional[str] = None,
+        use_cache: bool = True,
+        framework: str = "pytorch",
+        version: str = "stable",
     ) -> List[Dict[str, str]]:
-        """从指定 URL 获取并解析 API 列表，支持文件缓存
+        """从指定 URL 获取并解析 API 模块列表，支持文件缓存
 
         Args:
-            url: 参考 API 列表页面的 URL
+            url:       参考 API 列表页面的 URL；若不提供则根据 framework/version 自动推导
             use_cache: 是否使用本地文件缓存（TTL 与 SphinxSearchIndex 共享）
+            framework: 框架名称（目前仅 "pytorch" 可用），url 未提供时使用
+            version:   文档版本，"stable"（默认）或具体版本如 "2.1"
+                       非 stable 尚未实现，会抛 NotImplementedError
 
         Returns:
-            API 条目列表，每项包含 'name' 和 'url'
+            API 条目列表，每项包含 'name' 和 'url'（模块级，非个体 API）
+
+        Note:
+            此方法返回的是模块级链接（如 torch.nn、torch.nn.functional）。
+            如需个体 API 列表，请使用 tools.web_search.api_list_fetcher.APIListFetcher。
         """
+        if version != "stable":
+            raise NotImplementedError(
+                f"Versioned API list (version='{version}') is not yet implemented. "
+                f"Currently only version='stable' is supported."
+            )
+        if url is None:
+            url = _FRAMEWORK_API_PAGES.get(framework)
+            if not url:
+                raise NotImplementedError(
+                    f"No API index page configured for framework '{framework}'. "
+                    f"Currently supported: {list(_FRAMEWORK_API_PAGES.keys())}"
+                )
         cache_path = CACHE_DIR / f"api_list_{hashlib.md5(url.encode()).hexdigest()[:16]}.json"
         if use_cache:
             cached = load_json_cache(cache_path)

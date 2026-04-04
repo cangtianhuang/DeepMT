@@ -1,5 +1,4 @@
 framework: pytorch
-last_updated: "2026-03-06"
 description: "PyTorch 常用算子目录（torch >= 1.0）"
 
 # 字段说明：
@@ -27,182 +26,10 @@ description: "PyTorch 常用算子目录（torch >= 1.0）"
 #   sparse           稀疏张量运算
 #   distance         距离 / 相似度度量
 
+
+last_updated: "2026-04-04"
+
 operators:
-  # ============================
-  # 激活函数（activation）
-  # ============================
-  - name: torch.nn.ReLU
-    category: activation
-    since: "1.0"
-    aliases: [torch.nn.functional.relu]
-
-  - name: torch.nn.LeakyReLU
-    category: activation
-    since: "1.0"
-    aliases: [torch.nn.functional.leaky_relu]
-
-  - name: torch.nn.PReLU
-    category: activation
-    since: "1.0"
-
-  - name: torch.nn.ELU
-    category: activation
-    since: "1.0"
-    aliases: [torch.nn.functional.elu]
-
-  - name: torch.nn.SELU
-    category: activation
-    since: "1.0"
-    aliases: [torch.nn.functional.selu]
-
-  - name: torch.nn.GELU
-    category: activation
-    since: "1.1"
-    aliases: [torch.nn.functional.gelu]
-
-  - name: torch.nn.Mish
-    category: activation
-    since: "1.9"
-    aliases: [torch.nn.functional.mish]
-
-  - name: torch.nn.SiLU
-    category: activation
-    since: "1.7"
-    aliases: [torch.nn.functional.silu]
-    note: "Swish 激活函数"
-
-  - name: torch.nn.Sigmoid
-    category: activation
-    since: "1.0"
-    aliases: [torch.sigmoid, torch.nn.functional.sigmoid]
-
-  - name: torch.nn.Tanh
-    category: activation
-    since: "1.0"
-    aliases: [torch.tanh, torch.nn.functional.tanh]
-
-  - name: torch.nn.Softmax
-    category: activation
-    since: "1.0"
-    aliases: [torch.nn.functional.softmax]
-
-  - name: torch.nn.LogSoftmax
-    category: activation
-    since: "1.0"
-    aliases: [torch.nn.functional.log_softmax]
-
-  - name: torch.nn.Hardswish
-    category: activation
-    since: "1.6"
-    aliases: [torch.nn.functional.hardswish]
-
-  - name: torch.nn.Hardsigmoid
-    category: activation
-    since: "1.6"
-    aliases: [torch.nn.functional.hardsigmoid]
-
-  - name: torch.nn.ReLU6
-    category: activation
-    since: "1.0"
-    aliases: [torch.nn.functional.relu6]
-
-  # ============================
-  # 归一化（normalization）
-  # ============================
-  - name: torch.nn.BatchNorm1d
-    category: normalization
-    since: "1.0"
-
-  - name: torch.nn.BatchNorm2d
-    category: normalization
-    since: "1.0"
-
-  - name: torch.nn.BatchNorm3d
-    category: normalization
-    since: "1.0"
-
-  - name: torch.nn.LayerNorm
-    category: normalization
-    since: "1.1"
-
-  - name: torch.nn.GroupNorm
-    category: normalization
-    since: "1.1"
-
-  - name: torch.nn.InstanceNorm1d
-    category: normalization
-    since: "1.0"
-
-  - name: torch.nn.InstanceNorm2d
-    category: normalization
-    since: "1.0"
-
-  - name: torch.nn.InstanceNorm3d
-    category: normalization
-    since: "1.0"
-
-  - name: torch.nn.SyncBatchNorm
-    category: normalization
-    since: "1.1"
-
-  - name: torch.nn.RMSNorm
-    category: normalization
-    since: "2.4"
-
-  # ============================
-  # 池化（pooling）
-  # ============================
-  - name: torch.nn.MaxPool1d
-    category: pooling
-    since: "1.0"
-
-  - name: torch.nn.MaxPool2d
-    category: pooling
-    since: "1.0"
-
-  - name: torch.nn.MaxPool3d
-    category: pooling
-    since: "1.0"
-
-  - name: torch.nn.AvgPool1d
-    category: pooling
-    since: "1.0"
-
-  - name: torch.nn.AvgPool2d
-    category: pooling
-    since: "1.0"
-
-  - name: torch.nn.AvgPool3d
-    category: pooling
-    since: "1.0"
-
-  - name: torch.nn.AdaptiveAvgPool1d
-    category: pooling
-    since: "1.0"
-
-  - name: torch.nn.AdaptiveAvgPool2d
-    category: pooling
-    since: "1.0"
-
-  - name: torch.nn.AdaptiveAvgPool3d
-    category: pooling
-    since: "1.0"
-
-  - name: torch.nn.AdaptiveMaxPool1d
-    category: pooling
-    since: "1.0"
-
-  - name: torch.nn.AdaptiveMaxPool2d
-    category: pooling
-    since: "1.0"
-
-  - name: torch.nn.AdaptiveMaxPool3d
-    category: pooling
-    since: "1.0"
-
-  # ============================
-  # 卷积（convolution）
-  # ============================
   - name: torch.nn.Conv1d
     category: convolution
     since: "1.0"
@@ -227,9 +54,24 @@ operators:
     category: convolution
     since: "1.0"
 
+  - name: torch.nn.LazyConv1d
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.LazyConv1d.html
+
   - name: torch.nn.LazyConv2d
     category: convolution
     since: "1.8"
+
+  - name: torch.nn.LazyConv3d
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.LazyConv3d.html
+
+  - name: torch.nn.LazyConvTranspose1d
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.LazyConvTranspose1d.html
+
+  - name: torch.nn.LazyConvTranspose2d
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.LazyConvTranspose2d.html
+
+  - name: torch.nn.LazyConvTranspose3d
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.LazyConvTranspose3d.html
 
   - name: torch.nn.Unfold
     category: convolution
@@ -239,25 +81,308 @@ operators:
     category: convolution
     since: "1.0"
 
-  # ============================
-  # 线性层（linear）
-  # ============================
-  - name: torch.nn.Linear
-    category: linear
-    since: "1.0"
-    aliases: [torch.nn.functional.linear]
-
-  - name: torch.nn.Bilinear
-    category: linear
+  - name: torch.nn.MaxPool1d
+    category: pooling
     since: "1.0"
 
-  - name: torch.nn.LazyLinear
-    category: linear
-    since: "1.8"
+  - name: torch.nn.MaxPool2d
+    category: pooling
+    since: "1.0"
 
-  # ============================
-  # 循环网络（recurrent）
-  # ============================
+  - name: torch.nn.MaxPool3d
+    category: pooling
+    since: "1.0"
+
+  - name: torch.nn.MaxUnpool1d
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.MaxUnpool1d.html
+
+  - name: torch.nn.MaxUnpool2d
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.MaxUnpool2d.html
+
+  - name: torch.nn.MaxUnpool3d
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.MaxUnpool3d.html
+
+  - name: torch.nn.AvgPool1d
+    category: pooling
+    since: "1.0"
+
+  - name: torch.nn.AvgPool2d
+    category: pooling
+    since: "1.0"
+
+  - name: torch.nn.AvgPool3d
+    category: pooling
+    since: "1.0"
+
+  - name: torch.nn.FractionalMaxPool2d
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.FractionalMaxPool2d.html
+
+  - name: torch.nn.FractionalMaxPool3d
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.FractionalMaxPool3d.html
+
+  - name: torch.nn.LPPool1d
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.LPPool1d.html
+
+  - name: torch.nn.LPPool2d
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.LPPool2d.html
+
+  - name: torch.nn.LPPool3d
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.LPPool3d.html
+
+  - name: torch.nn.AdaptiveMaxPool1d
+    category: pooling
+    since: "1.0"
+
+  - name: torch.nn.AdaptiveMaxPool2d
+    category: pooling
+    since: "1.0"
+
+  - name: torch.nn.AdaptiveMaxPool3d
+    category: pooling
+    since: "1.0"
+
+  - name: torch.nn.AdaptiveAvgPool1d
+    category: pooling
+    since: "1.0"
+
+  - name: torch.nn.AdaptiveAvgPool2d
+    category: pooling
+    since: "1.0"
+
+  - name: torch.nn.AdaptiveAvgPool3d
+    category: pooling
+    since: "1.0"
+
+  - name: torch.nn.ReflectionPad1d
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.ReflectionPad1d.html
+
+  - name: torch.nn.ReflectionPad2d
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.ReflectionPad2d.html
+
+  - name: torch.nn.ReflectionPad3d
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.ReflectionPad3d.html
+
+  - name: torch.nn.ReplicationPad1d
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.ReplicationPad1d.html
+
+  - name: torch.nn.ReplicationPad2d
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.ReplicationPad2d.html
+
+  - name: torch.nn.ReplicationPad3d
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.ReplicationPad3d.html
+
+  - name: torch.nn.ZeroPad1d
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.ZeroPad1d.html
+
+  - name: torch.nn.ZeroPad2d
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.ZeroPad2d.html
+
+  - name: torch.nn.ZeroPad3d
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.ZeroPad3d.html
+
+  - name: torch.nn.ConstantPad1d
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.ConstantPad1d.html
+
+  - name: torch.nn.ConstantPad2d
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.ConstantPad2d.html
+
+  - name: torch.nn.ConstantPad3d
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.ConstantPad3d.html
+
+  - name: torch.nn.CircularPad1d
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.CircularPad1d.html
+
+  - name: torch.nn.CircularPad2d
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.CircularPad2d.html
+
+  - name: torch.nn.CircularPad3d
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.CircularPad3d.html
+
+  - name: torch.nn.ELU
+    category: activation
+    since: "1.0"
+    aliases: [torch.nn.functional.elu]
+
+  - name: torch.nn.Hardshrink
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.Hardshrink.html
+
+  - name: torch.nn.Hardsigmoid
+    category: activation
+    since: "1.6"
+    aliases: [torch.nn.functional.hardsigmoid]
+
+  - name: torch.nn.Hardtanh
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.Hardtanh.html
+
+  - name: torch.nn.Hardswish
+    category: activation
+    since: "1.6"
+    aliases: [torch.nn.functional.hardswish]
+
+  - name: torch.nn.LeakyReLU
+    category: activation
+    since: "1.0"
+    aliases: [torch.nn.functional.leaky_relu]
+
+  - name: torch.nn.LogSigmoid
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.LogSigmoid.html
+
+  - name: torch.nn.MultiheadAttention
+    category: transformer
+    since: "1.1"
+
+  - name: torch.nn.PReLU
+    category: activation
+    since: "1.0"
+
+  - name: torch.nn.ReLU
+    category: activation
+    since: "1.0"
+    aliases: [torch.nn.functional.relu]
+
+  - name: torch.nn.ReLU6
+    category: activation
+    since: "1.0"
+    aliases: [torch.nn.functional.relu6]
+
+  - name: torch.nn.RReLU
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.RReLU.html
+
+  - name: torch.nn.SELU
+    category: activation
+    since: "1.0"
+    aliases: [torch.nn.functional.selu]
+
+  - name: torch.nn.CELU
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.CELU.html
+
+  - name: torch.nn.GELU
+    category: activation
+    since: "1.1"
+    aliases: [torch.nn.functional.gelu]
+
+  - name: torch.nn.Sigmoid
+    category: activation
+    since: "1.0"
+    aliases: [torch.sigmoid, torch.nn.functional.sigmoid]
+
+  - name: torch.nn.SiLU
+    category: activation
+    since: "1.7"
+    aliases: [torch.nn.functional.silu]
+    note: "Swish 激活函数"
+
+  - name: torch.nn.Mish
+    category: activation
+    since: "1.9"
+    aliases: [torch.nn.functional.mish]
+
+  - name: torch.nn.Softplus
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.Softplus.html
+
+  - name: torch.nn.Softshrink
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.Softshrink.html
+
+  - name: torch.nn.Softsign
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.Softsign.html
+
+  - name: torch.nn.Tanh
+    category: activation
+    since: "1.0"
+    aliases: [torch.tanh, torch.nn.functional.tanh]
+
+  - name: torch.nn.Tanhshrink
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.Tanhshrink.html
+
+  - name: torch.nn.Threshold
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.Threshold.html
+
+  - name: torch.nn.GLU
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.GLU.html
+
+  - name: torch.nn.Softmin
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.Softmin.html
+
+  - name: torch.nn.Softmax
+    category: activation
+    since: "1.0"
+    aliases: [torch.nn.functional.softmax]
+
+  - name: torch.nn.Softmax2d
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.Softmax2d.html
+
+  - name: torch.nn.LogSoftmax
+    category: activation
+    since: "1.0"
+    aliases: [torch.nn.functional.log_softmax]
+
+  - name: torch.nn.AdaptiveLogSoftmaxWithLoss
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.AdaptiveLogSoftmaxWithLoss.html
+
+  - name: torch.nn.BatchNorm1d
+    category: normalization
+    since: "1.0"
+
+  - name: torch.nn.BatchNorm2d
+    category: normalization
+    since: "1.0"
+
+  - name: torch.nn.BatchNorm3d
+    category: normalization
+    since: "1.0"
+
+  - name: torch.nn.LazyBatchNorm1d
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.LazyBatchNorm1d.html
+
+  - name: torch.nn.LazyBatchNorm2d
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.LazyBatchNorm2d.html
+
+  - name: torch.nn.LazyBatchNorm3d
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.LazyBatchNorm3d.html
+
+  - name: torch.nn.GroupNorm
+    category: normalization
+    since: "1.1"
+
+  - name: torch.nn.SyncBatchNorm
+    category: normalization
+    since: "1.1"
+
+  - name: torch.nn.InstanceNorm1d
+    category: normalization
+    since: "1.0"
+
+  - name: torch.nn.InstanceNorm2d
+    category: normalization
+    since: "1.0"
+
+  - name: torch.nn.InstanceNorm3d
+    category: normalization
+    since: "1.0"
+
+  - name: torch.nn.LazyInstanceNorm1d
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.LazyInstanceNorm1d.html
+
+  - name: torch.nn.LazyInstanceNorm2d
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.LazyInstanceNorm2d.html
+
+  - name: torch.nn.LazyInstanceNorm3d
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.LazyInstanceNorm3d.html
+
+  - name: torch.nn.LayerNorm
+    category: normalization
+    since: "1.1"
+
+  - name: torch.nn.LocalResponseNorm
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.LocalResponseNorm.html
+
+  - name: torch.nn.RMSNorm
+    category: normalization
+    since: "2.4"
+
+  - name: torch.nn.RNNBase
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.RNNBase.html
+
   - name: torch.nn.RNN
     category: recurrent
     since: "1.0"
@@ -282,9 +407,6 @@ operators:
     category: recurrent
     since: "1.0"
 
-  # ============================
-  # Transformer（transformer）
-  # ============================
   - name: torch.nn.Transformer
     category: transformer
     since: "1.1"
@@ -305,13 +427,22 @@ operators:
     category: transformer
     since: "1.1"
 
-  - name: torch.nn.MultiheadAttention
-    category: transformer
-    since: "1.1"
+  - name: torch.nn.Identity
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.Identity.html
 
-  # ============================
-  # Dropout（dropout）
-  # ============================
+  - name: torch.nn.Linear
+    category: linear
+    since: "1.0"
+    aliases: [torch.nn.functional.linear]
+
+  - name: torch.nn.Bilinear
+    category: linear
+    since: "1.0"
+
+  - name: torch.nn.LazyLinear
+    category: linear
+    since: "1.8"
+
   - name: torch.nn.Dropout
     category: dropout
     since: "1.0"
@@ -333,9 +464,9 @@ operators:
     category: dropout
     since: "1.0"
 
-  # ============================
-  # 嵌入层（embedding）
-  # ============================
+  - name: torch.nn.FeatureAlphaDropout
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.FeatureAlphaDropout.html
+
   - name: torch.nn.Embedding
     category: embedding
     since: "1.0"
@@ -344,9 +475,18 @@ operators:
     category: embedding
     since: "1.0"
 
-  # ============================
-  # 损失函数（loss）
-  # ============================
+  - name: torch.nn.CosineSimilarity
+    category: distance
+    since: "1.0"
+
+  - name: torch.nn.PairwiseDistance
+    category: distance
+    since: "1.0"
+
+  - name: torch.nn.L1Loss
+    category: loss
+    since: "1.0"
+
   - name: torch.nn.MSELoss
     category: loss
     since: "1.0"
@@ -355,7 +495,21 @@ operators:
     category: loss
     since: "1.0"
 
+  - name: torch.nn.CTCLoss
+    category: loss
+    since: "1.0"
+
   - name: torch.nn.NLLLoss
+    category: loss
+    since: "1.0"
+
+  - name: torch.nn.PoissonNLLLoss
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.PoissonNLLLoss.html
+
+  - name: torch.nn.GaussianNLLLoss
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.GaussianNLLLoss.html
+
+  - name: torch.nn.KLDivLoss
     category: loss
     since: "1.0"
 
@@ -367,217 +521,3353 @@ operators:
     category: loss
     since: "1.0"
 
-  - name: torch.nn.L1Loss
-    category: loss
-    since: "1.0"
+  - name: torch.nn.MarginRankingLoss
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.MarginRankingLoss.html
 
-  - name: torch.nn.SmoothL1Loss
-    category: loss
-    since: "1.0"
+  - name: torch.nn.HingeEmbeddingLoss
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.HingeEmbeddingLoss.html
+
+  - name: torch.nn.MultiLabelMarginLoss
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.MultiLabelMarginLoss.html
 
   - name: torch.nn.HuberLoss
     category: loss
     since: "1.9"
 
-  - name: torch.nn.KLDivLoss
+  - name: torch.nn.SmoothL1Loss
     category: loss
     since: "1.0"
+
+  - name: torch.nn.SoftMarginLoss
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.SoftMarginLoss.html
+
+  - name: torch.nn.MultiLabelSoftMarginLoss
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.MultiLabelSoftMarginLoss.html
 
   - name: torch.nn.CosineEmbeddingLoss
     category: loss
     since: "1.0"
 
+  - name: torch.nn.MultiMarginLoss
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.MultiMarginLoss.html
+
   - name: torch.nn.TripletMarginLoss
     category: loss
     since: "1.0"
 
-  - name: torch.nn.CTCLoss
-    category: loss
-    since: "1.0"
+  - name: torch.nn.TripletMarginWithDistanceLoss
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.TripletMarginWithDistanceLoss.html
 
-  # ============================
-  # 数学运算（math）
-  # ============================
-  - name: torch.add
-    category: math
-    since: "1.0"
+  - name: torch.nn.PixelShuffle
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.PixelShuffle.html
 
-  - name: torch.sub
-    category: math
-    since: "1.0"
-    aliases: [torch.subtract]
+  - name: torch.nn.PixelUnshuffle
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.PixelUnshuffle.html
 
-  - name: torch.mul
-    category: math
-    since: "1.0"
-    aliases: [torch.multiply]
+  - name: torch.nn.Upsample
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.Upsample.html
 
-  - name: torch.div
+  - name: torch.nn.UpsamplingNearest2d
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.UpsamplingNearest2d.html
+
+  - name: torch.nn.UpsamplingBilinear2d
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.UpsamplingBilinear2d.html
+
+  - name: torch.nn.ChannelShuffle
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.ChannelShuffle.html
+
+  - name: torch.nn.utils.rnn.pack_padded_sequence
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.utils.rnn.pack_padded_sequence.html
+
+  - name: torch.nn.utils.rnn.pad_packed_sequence
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.utils.rnn.pad_packed_sequence.html
+
+  - name: torch.nn.utils.rnn.pad_sequence
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.utils.rnn.pad_sequence.html
+
+  - name: torch.nn.utils.rnn.pack_sequence
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.utils.rnn.pack_sequence.html
+
+  - name: torch.nn.utils.rnn.unpack_sequence
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.utils.rnn.unpack_sequence.html
+
+  - name: torch.nn.utils.rnn.unpad_sequence
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.utils.rnn.unpad_sequence.html
+
+  - name: torch.nn.modules.flatten.Flatten
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.modules.flatten.Flatten.html
+
+  - name: torch.nn.modules.flatten.Unflatten
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.modules.flatten.Unflatten.html
+
+  - name: torch.linalg.norm
     category: math
-    since: "1.0"
-    aliases: [torch.divide]
+    since: "1.7"
+
+  - name: torch.linalg.vector_norm
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.linalg.vector_norm.html
+
+  - name: torch.linalg.matrix_norm
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.linalg.matrix_norm.html
+
+  - name: torch.linalg.diagonal
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.linalg.diagonal.html
+
+  - name: torch.diagonal
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.diagonal.html
+
+  - name: torch.linalg.det
+    category: math
+    since: "1.8"
+
+  - name: torch.linalg.slogdet
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.linalg.slogdet.html
+
+  - name: torch.linalg.cond
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.linalg.cond.html
+
+  - name: torch.linalg.matrix_rank
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.linalg.matrix_rank.html
+
+  - name: torch.linalg.cholesky
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.linalg.cholesky.html
+
+  - name: torch.linalg.qr
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.linalg.qr.html
+
+  - name: torch.linalg.lu
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.linalg.lu.html
+
+  - name: torch.linalg.lu_factor
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.linalg.lu_factor.html
+
+  - name: torch.linalg.eig
+    category: math
+    since: "1.9"
+
+  - name: torch.linalg.eigvals
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.linalg.eigvals.html
+
+  - name: torch.linalg.eigh
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.linalg.eigh.html
+
+  - name: torch.linalg.eigvalsh
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.linalg.eigvalsh.html
+
+  - name: torch.linalg.svd
+    category: math
+    since: "1.8"
+
+  - name: torch.linalg.svdvals
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.linalg.svdvals.html
+
+  - name: torch.linalg.solve
+    category: math
+    since: "1.8"
+
+  - name: torch.linalg.solve_triangular
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.linalg.solve_triangular.html
+
+  - name: torch.linalg.lu_solve
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.linalg.lu_solve.html
+
+  - name: torch.linalg.lstsq
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.linalg.lstsq.html
+
+  - name: torch.linalg.inv
+    category: math
+    since: "1.8"
+
+  - name: torch.linalg.pinv
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.linalg.pinv.html
+
+  - name: torch.linalg.matrix_exp
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.linalg.matrix_exp.html
+
+  - name: torch.linalg.matrix_power
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.linalg.matrix_power.html
+
+  - name: torch.linalg.cross
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.linalg.cross.html
+
+  - name: torch.linalg.matmul
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.linalg.matmul.html
 
   - name: torch.matmul
     category: math
     since: "1.0"
 
-  - name: torch.bmm
-    category: math
-    since: "1.0"
+  - name: torch.linalg.vecdot
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.linalg.vecdot.html
 
-  - name: torch.mm
-    category: math
-    since: "1.0"
+  - name: torch.linalg.multi_dot
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.linalg.multi_dot.html
 
-  - name: torch.mv
-    category: math
-    since: "1.0"
+  - name: torch.linalg.householder_product
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.linalg.householder_product.html
 
-  - name: torch.dot
-    category: math
-    since: "1.0"
+  - name: torch.linalg.tensorinv
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.linalg.tensorinv.html
+
+  - name: torch.tensordot
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.tensordot.html
+
+  - name: torch.linalg.tensorsolve
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.linalg.tensorsolve.html
+
+  - name: torch.linalg.vander
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.linalg.vander.html
+
+  - name: torch.linalg.cholesky_ex
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.linalg.cholesky_ex.html
+
+  - name: torch.linalg.inv_ex
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.linalg.inv_ex.html
+
+  - name: torch.linalg.solve_ex
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.linalg.solve_ex.html
+
+  - name: torch.linalg.lu_factor_ex
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.linalg.lu_factor_ex.html
+
+  - name: torch.linalg.ldl_factor
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.linalg.ldl_factor.html
+
+  - name: torch.linalg.ldl_factor_ex
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.linalg.ldl_factor_ex.html
+
+  - name: torch.linalg.ldl_solve
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.linalg.ldl_solve.html
+
+  - name: torch.fft.fft
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.fft.fft.html
+
+  - name: torch.fft.ifft
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.fft.ifft.html
+
+  - name: torch.fft.fft2
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.fft.fft2.html
+
+  - name: torch.fft.ifft2
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.fft.ifft2.html
+
+  - name: torch.fft.fftn
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.fft.fftn.html
+
+  - name: torch.fft.ifftn
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.fft.ifftn.html
+
+  - name: torch.fft.rfft
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.fft.rfft.html
+
+  - name: torch.fft.irfft
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.fft.irfft.html
+
+  - name: torch.fft.rfft2
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.fft.rfft2.html
+
+  - name: torch.fft.irfft2
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.fft.irfft2.html
+
+  - name: torch.fft.rfftn
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.fft.rfftn.html
+
+  - name: torch.fft.irfftn
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.fft.irfftn.html
+
+  - name: torch.fft.hfft
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.fft.hfft.html
+
+  - name: torch.fft.ihfft
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.fft.ihfft.html
+
+  - name: torch.fft.hfft2
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.fft.hfft2.html
+
+  - name: torch.fft.ihfft2
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.fft.ihfft2.html
+
+  - name: torch.fft.hfftn
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.fft.hfftn.html
+
+  - name: torch.fft.ihfftn
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.fft.ihfftn.html
+
+  - name: torch.fft.fftfreq
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.fft.fftfreq.html
+
+  - name: torch.fft.rfftfreq
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.fft.rfftfreq.html
+
+  - name: torch.fft.fftshift
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.fft.fftshift.html
+
+  - name: torch.fft.ifftshift
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.fft.ifftshift.html
+
+  - name: torch.tensor
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.tensor.html
+
+  - name: torch.Tensor.requires_grad_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.requires_grad_.html
+
+  - name: torch.Tensor.detach
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.detach.html
+
+  - name: torch.as_tensor
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.as_tensor.html
+
+  - name: torch.Tensor.item
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.item.html
+
+  - name: torch.Tensor.to
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.to.html
+
+  - name: torch.adjoint
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.adjoint.html
+
+  - name: torch.Tensor.new_tensor
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.new_tensor.html
+
+  - name: torch.Tensor.new_full
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.new_full.html
+
+  - name: torch.Tensor.new_empty
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.new_empty.html
+
+  - name: torch.Tensor.new_ones
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.new_ones.html
+
+  - name: torch.Tensor.new_zeros
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.new_zeros.html
+
+  - name: torch.Tensor.is_cuda
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.is_cuda.html
+
+  - name: torch.Tensor.is_quantized
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.is_quantized.html
+
+  - name: torch.Tensor.is_meta
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.is_meta.html
+
+  - name: torch.Tensor.device
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.device.html
+
+  - name: torch.Tensor.grad
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.grad.html
+
+  - name: torch.Tensor.ndim
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.ndim.html
+
+  - name: torch.Tensor.dim
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.dim.html
+
+  - name: torch.Tensor.real
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.real.html
+
+  - name: torch.Tensor.imag
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.imag.html
+
+  - name: torch.Tensor.nbytes
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.nbytes.html
+
+  - name: torch.Tensor.itemsize
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.itemsize.html
+
+  - name: torch.Tensor.element_size
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.element_size.html
+
+  - name: torch.Tensor.abs
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.abs.html
 
   - name: torch.abs
     category: math
     since: "1.0"
 
-  - name: torch.sqrt
+  - name: torch.Tensor.abs_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.abs_.html
+
+  - name: torch.Tensor.absolute
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.absolute.html
+
+  - name: torch.Tensor.absolute_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.absolute_.html
+
+  - name: torch.Tensor.acos
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.acos.html
+
+  - name: torch.acos
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.acos.html
+
+  - name: torch.Tensor.acos_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.acos_.html
+
+  - name: torch.Tensor.arccos
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.arccos.html
+
+  - name: torch.arccos
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.arccos.html
+
+  - name: torch.Tensor.arccos_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.arccos_.html
+
+  - name: torch.Tensor.add
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.add.html
+
+  - name: torch.Tensor.add_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.add_.html
+
+  - name: torch.Tensor.addbmm
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.addbmm.html
+
+  - name: torch.addbmm
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.addbmm.html
+
+  - name: torch.Tensor.addbmm_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.addbmm_.html
+
+  - name: torch.Tensor.addcdiv
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.addcdiv.html
+
+  - name: torch.addcdiv
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.addcdiv.html
+
+  - name: torch.Tensor.addcdiv_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.addcdiv_.html
+
+  - name: torch.Tensor.addcmul
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.addcmul.html
+
+  - name: torch.addcmul
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.addcmul.html
+
+  - name: torch.Tensor.addcmul_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.addcmul_.html
+
+  - name: torch.Tensor.addmm
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.addmm.html
+
+  - name: torch.addmm
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.addmm.html
+
+  - name: torch.Tensor.addmm_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.addmm_.html
+
+  - name: torch.Tensor.sspaddmm
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.sspaddmm.html
+
+  - name: torch.sspaddmm
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.sspaddmm.html
+
+  - name: torch.Tensor.addmv
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.addmv.html
+
+  - name: torch.addmv
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.addmv.html
+
+  - name: torch.Tensor.addmv_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.addmv_.html
+
+  - name: torch.Tensor.addr
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.addr.html
+
+  - name: torch.addr
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.addr.html
+
+  - name: torch.Tensor.addr_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.addr_.html
+
+  - name: torch.Tensor.adjoint
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.adjoint.html
+
+  - name: torch.Tensor.allclose
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.allclose.html
+
+  - name: torch.allclose
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.allclose.html
+
+  - name: torch.Tensor.amax
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.amax.html
+
+  - name: torch.amax
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.amax.html
+
+  - name: torch.Tensor.amin
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.amin.html
+
+  - name: torch.amin
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.amin.html
+
+  - name: torch.Tensor.aminmax
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.aminmax.html
+
+  - name: torch.aminmax
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.aminmax.html
+
+  - name: torch.Tensor.angle
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.angle.html
+
+  - name: torch.angle
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.angle.html
+
+  - name: torch.Tensor.apply_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.apply_.html
+
+  - name: torch.Tensor.argmax
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.argmax.html
+
+  - name: torch.argmax
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.argmax.html
+
+  - name: torch.Tensor.argmin
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.argmin.html
+
+  - name: torch.argmin
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.argmin.html
+
+  - name: torch.Tensor.argsort
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.argsort.html
+
+  - name: torch.argsort
+    category: tensor_ops
+    since: "1.0"
+
+  - name: torch.Tensor.argwhere
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.argwhere.html
+
+  - name: torch.argwhere
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.argwhere.html
+
+  - name: torch.Tensor.asin
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.asin.html
+
+  - name: torch.asin
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.asin.html
+
+  - name: torch.Tensor.asin_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.asin_.html
+
+  - name: torch.Tensor.arcsin
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.arcsin.html
+
+  - name: torch.arcsin
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.arcsin.html
+
+  - name: torch.Tensor.arcsin_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.arcsin_.html
+
+  - name: torch.Tensor.as_strided
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.as_strided.html
+
+  - name: torch.as_strided
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.as_strided.html
+
+  - name: torch.Tensor.atan
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.atan.html
+
+  - name: torch.atan
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.atan.html
+
+  - name: torch.Tensor.atan_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.atan_.html
+
+  - name: torch.Tensor.arctan
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.arctan.html
+
+  - name: torch.arctan
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.arctan.html
+
+  - name: torch.Tensor.arctan_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.arctan_.html
+
+  - name: torch.Tensor.atan2
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.atan2.html
+
+  - name: torch.atan2
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.atan2.html
+
+  - name: torch.Tensor.atan2_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.atan2_.html
+
+  - name: torch.Tensor.arctan2
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.arctan2.html
+
+  - name: torch.arctan2
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.arctan2.html
+
+  - name: torch.Tensor.arctan2_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.arctan2_.html
+
+  - name: torch.Tensor.all
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.all.html
+
+  - name: torch.all
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.all.html
+
+  - name: torch.Tensor.any
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.any.html
+
+  - name: torch.any
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.any.html
+
+  - name: torch.Tensor.backward
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.backward.html
+
+  - name: torch.Tensor.baddbmm
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.baddbmm.html
+
+  - name: torch.baddbmm
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.baddbmm.html
+
+  - name: torch.Tensor.baddbmm_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.baddbmm_.html
+
+  - name: torch.Tensor.bernoulli
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.bernoulli.html
+
+  - name: torch.Tensor.bernoulli_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.bernoulli_.html
+
+  - name: torch.Tensor.bfloat16
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.bfloat16.html
+
+  - name: torch.Tensor.bincount
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.bincount.html
+
+  - name: torch.bincount
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.bincount.html
+
+  - name: torch.Tensor.bitwise_not
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.bitwise_not.html
+
+  - name: torch.bitwise_not
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.bitwise_not.html
+
+  - name: torch.Tensor.bitwise_not_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.bitwise_not_.html
+
+  - name: torch.Tensor.bitwise_and
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.bitwise_and.html
+
+  - name: torch.bitwise_and
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.bitwise_and.html
+
+  - name: torch.Tensor.bitwise_and_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.bitwise_and_.html
+
+  - name: torch.Tensor.bitwise_or
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.bitwise_or.html
+
+  - name: torch.bitwise_or
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.bitwise_or.html
+
+  - name: torch.Tensor.bitwise_or_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.bitwise_or_.html
+
+  - name: torch.Tensor.bitwise_xor
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.bitwise_xor.html
+
+  - name: torch.bitwise_xor
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.bitwise_xor.html
+
+  - name: torch.Tensor.bitwise_xor_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.bitwise_xor_.html
+
+  - name: torch.Tensor.bitwise_left_shift
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.bitwise_left_shift.html
+
+  - name: torch.bitwise_left_shift
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.bitwise_left_shift.html
+
+  - name: torch.Tensor.bitwise_left_shift_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.bitwise_left_shift_.html
+
+  - name: torch.Tensor.bitwise_right_shift
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.bitwise_right_shift.html
+
+  - name: torch.bitwise_right_shift
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.bitwise_right_shift.html
+
+  - name: torch.Tensor.bitwise_right_shift_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.bitwise_right_shift_.html
+
+  - name: torch.Tensor.bmm
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.bmm.html
+
+  - name: torch.bmm
     category: math
     since: "1.0"
 
-  - name: torch.exp
+  - name: torch.Tensor.bool
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.bool.html
+
+  - name: torch.Tensor.byte
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.byte.html
+
+  - name: torch.Tensor.broadcast_to
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.broadcast_to.html
+
+  - name: torch.broadcast_to
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.broadcast_to.html
+
+  - name: torch.Tensor.cauchy_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.cauchy_.html
+
+  - name: torch.Tensor.ceil
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.ceil.html
+
+  - name: torch.ceil
     category: math
     since: "1.0"
 
-  - name: torch.log
-    category: math
+  - name: torch.Tensor.ceil_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.ceil_.html
+
+  - name: torch.Tensor.char
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.char.html
+
+  - name: torch.Tensor.cholesky
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.cholesky.html
+
+  - name: torch.cholesky
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.cholesky.html
+
+  - name: torch.Tensor.cholesky_inverse
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.cholesky_inverse.html
+
+  - name: torch.cholesky_inverse
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.cholesky_inverse.html
+
+  - name: torch.Tensor.cholesky_solve
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.cholesky_solve.html
+
+  - name: torch.cholesky_solve
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.cholesky_solve.html
+
+  - name: torch.Tensor.chunk
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.chunk.html
+
+  - name: torch.chunk
+    category: tensor_ops
     since: "1.0"
 
-  - name: torch.log2
-    category: math
-    since: "1.0"
-
-  - name: torch.log10
-    category: math
-    since: "1.0"
-
-  - name: torch.pow
-    category: math
-    since: "1.0"
-
-  - name: torch.sin
-    category: math
-    since: "1.0"
-
-  - name: torch.cos
-    category: math
-    since: "1.0"
-
-  - name: torch.tan
-    category: math
-    since: "1.0"
+  - name: torch.Tensor.clamp
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.clamp.html
 
   - name: torch.clamp
     category: math
     since: "1.0"
     aliases: [torch.clip]
 
-  - name: torch.floor
+  - name: torch.Tensor.clamp_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.clamp_.html
+
+  - name: torch.Tensor.clip
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.clip.html
+
+  - name: torch.Tensor.clip_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.clip_.html
+
+  - name: torch.Tensor.clone
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.clone.html
+
+  - name: torch.clone
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.clone.html
+
+  - name: torch.Tensor.contiguous
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.contiguous.html
+
+  - name: torch.Tensor.copy_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.copy_.html
+
+  - name: torch.Tensor.conj
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.conj.html
+
+  - name: torch.conj
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.conj.html
+
+  - name: torch.Tensor.conj_physical
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.conj_physical.html
+
+  - name: torch.conj_physical
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.conj_physical.html
+
+  - name: torch.Tensor.conj_physical_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.conj_physical_.html
+
+  - name: torch.Tensor.resolve_conj
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.resolve_conj.html
+
+  - name: torch.resolve_conj
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.resolve_conj.html
+
+  - name: torch.Tensor.resolve_neg
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.resolve_neg.html
+
+  - name: torch.resolve_neg
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.resolve_neg.html
+
+  - name: torch.Tensor.copysign
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.copysign.html
+
+  - name: torch.copysign
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.copysign.html
+
+  - name: torch.Tensor.copysign_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.copysign_.html
+
+  - name: torch.Tensor.cos
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.cos.html
+
+  - name: torch.cos
     category: math
     since: "1.0"
 
-  - name: torch.ceil
-    category: math
-    since: "1.0"
+  - name: torch.Tensor.cos_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.cos_.html
 
-  - name: torch.round
-    category: math
-    since: "1.0"
+  - name: torch.Tensor.cosh
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.cosh.html
 
-  - name: torch.max
-    category: math
-    since: "1.0"
+  - name: torch.cosh
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.cosh.html
 
-  - name: torch.min
-    category: math
-    since: "1.0"
+  - name: torch.Tensor.cosh_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.cosh_.html
 
-  - name: torch.sum
-    category: math
-    since: "1.0"
+  - name: torch.Tensor.corrcoef
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.corrcoef.html
 
-  - name: torch.mean
-    category: math
-    since: "1.0"
+  - name: torch.corrcoef
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.corrcoef.html
 
-  - name: torch.std
-    category: math
-    since: "1.0"
+  - name: torch.Tensor.count_nonzero
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.count_nonzero.html
 
-  - name: torch.var
-    category: math
-    since: "1.0"
+  - name: torch.count_nonzero
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.count_nonzero.html
+
+  - name: torch.Tensor.cov
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.cov.html
+
+  - name: torch.cov
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.cov.html
+
+  - name: torch.Tensor.acosh
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.acosh.html
+
+  - name: torch.acosh
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.acosh.html
+
+  - name: torch.Tensor.acosh_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.acosh_.html
+
+  - name: torch.Tensor.arccosh
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.arccosh.html
+
+  - name: torch.Tensor.arccosh_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.arccosh_.html
+
+  - name: torch.Tensor.cpu
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.cpu.html
+
+  - name: torch.Tensor.cross
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.cross.html
+
+  - name: torch.cross
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.cross.html
+
+  - name: torch.Tensor.cuda
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.cuda.html
+
+  - name: torch.Tensor.logcumsumexp
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.logcumsumexp.html
+
+  - name: torch.logcumsumexp
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.logcumsumexp.html
+
+  - name: torch.Tensor.cummax
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.cummax.html
+
+  - name: torch.cummax
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.cummax.html
+
+  - name: torch.Tensor.cummin
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.cummin.html
+
+  - name: torch.cummin
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.cummin.html
+
+  - name: torch.Tensor.cumprod
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.cumprod.html
+
+  - name: torch.cumprod
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.cumprod.html
+
+  - name: torch.Tensor.cumprod_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.cumprod_.html
+
+  - name: torch.Tensor.cumsum
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.cumsum.html
 
   - name: torch.cumsum
     category: math
     since: "1.0"
 
-  - name: torch.sigmoid
+  - name: torch.Tensor.cumsum_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.cumsum_.html
+
+  - name: torch.Tensor.chalf
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.chalf.html
+
+  - name: torch.Tensor.cfloat
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.cfloat.html
+
+  - name: torch.Tensor.cdouble
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.cdouble.html
+
+  - name: torch.Tensor.data_ptr
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.data_ptr.html
+
+  - name: torch.Tensor.deg2rad
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.deg2rad.html
+
+  - name: torch.deg2rad
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.deg2rad.html
+
+  - name: torch.Tensor.dequantize
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.dequantize.html
+
+  - name: torch.Tensor.det
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.det.html
+
+  - name: torch.det
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.det.html
+
+  - name: torch.Tensor.dense_dim
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.dense_dim.html
+
+  - name: torch.Tensor.detach_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.detach_.html
+
+  - name: torch.Tensor.diag
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.diag.html
+
+  - name: torch.diag
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.diag.html
+
+  - name: torch.Tensor.diag_embed
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.diag_embed.html
+
+  - name: torch.diag_embed
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.diag_embed.html
+
+  - name: torch.Tensor.diagflat
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.diagflat.html
+
+  - name: torch.diagflat
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.diagflat.html
+
+  - name: torch.Tensor.diagonal
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.diagonal.html
+
+  - name: torch.Tensor.diagonal_scatter
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.diagonal_scatter.html
+
+  - name: torch.diagonal_scatter
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.diagonal_scatter.html
+
+  - name: torch.Tensor.fill_diagonal_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.fill_diagonal_.html
+
+  - name: torch.Tensor.fmax
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.fmax.html
+
+  - name: torch.fmax
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.fmax.html
+
+  - name: torch.Tensor.fmin
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.fmin.html
+
+  - name: torch.fmin
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.fmin.html
+
+  - name: torch.Tensor.diff
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.diff.html
+
+  - name: torch.diff
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.diff.html
+
+  - name: torch.Tensor.digamma
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.digamma.html
+
+  - name: torch.digamma
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.digamma.html
+
+  - name: torch.Tensor.digamma_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.digamma_.html
+
+  - name: torch.Tensor.dim_order
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.dim_order.html
+
+  - name: torch.Tensor.dist
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.dist.html
+
+  - name: torch.dist
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.dist.html
+
+  - name: torch.Tensor.div
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.div.html
+
+  - name: torch.div
+    category: math
+    since: "1.0"
+    aliases: [torch.divide]
+
+  - name: torch.Tensor.div_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.div_.html
+
+  - name: torch.Tensor.divide
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.divide.html
+
+  - name: torch.divide
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.divide.html
+
+  - name: torch.Tensor.divide_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.divide_.html
+
+  - name: torch.Tensor.dot
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.dot.html
+
+  - name: torch.dot
     category: math
     since: "1.0"
 
-  - name: torch.softmax
+  - name: torch.Tensor.double
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.double.html
+
+  - name: torch.Tensor.dsplit
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.dsplit.html
+
+  - name: torch.dsplit
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.dsplit.html
+
+  - name: torch.Tensor.eq
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.eq.html
+
+  - name: torch.eq
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.eq.html
+
+  - name: torch.Tensor.eq_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.eq_.html
+
+  - name: torch.Tensor.equal
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.equal.html
+
+  - name: torch.equal
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.equal.html
+
+  - name: torch.Tensor.erf
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.erf.html
+
+  - name: torch.erf
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.erf.html
+
+  - name: torch.Tensor.erf_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.erf_.html
+
+  - name: torch.Tensor.erfc
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.erfc.html
+
+  - name: torch.erfc
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.erfc.html
+
+  - name: torch.Tensor.erfc_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.erfc_.html
+
+  - name: torch.Tensor.erfinv
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.erfinv.html
+
+  - name: torch.erfinv
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.erfinv.html
+
+  - name: torch.Tensor.erfinv_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.erfinv_.html
+
+  - name: torch.Tensor.exp
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.exp.html
+
+  - name: torch.exp
     category: math
     since: "1.0"
 
-  - name: torch.relu
+  - name: torch.Tensor.exp_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.exp_.html
+
+  - name: torch.Tensor.expm1
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.expm1.html
+
+  - name: torch.expm1
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.expm1.html
+
+  - name: torch.Tensor.expm1_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.expm1_.html
+
+  - name: torch.Tensor.expand
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.expand.html
+
+  - name: torch.Tensor.expand_as
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.expand_as.html
+
+  - name: torch.Tensor.exponential_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.exponential_.html
+
+  - name: torch.Tensor.fix
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.fix.html
+
+  - name: torch.fix
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.fix.html
+
+  - name: torch.Tensor.fix_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.fix_.html
+
+  - name: torch.Tensor.fill_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.fill_.html
+
+  - name: torch.Tensor.flatten
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.flatten.html
+
+  - name: torch.flatten
+    category: tensor_ops
+    since: "1.0"
+
+  - name: torch.Tensor.flip
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.flip.html
+
+  - name: torch.flip
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.flip.html
+
+  - name: torch.Tensor.fliplr
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.fliplr.html
+
+  - name: torch.fliplr
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.fliplr.html
+
+  - name: torch.Tensor.flipud
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.flipud.html
+
+  - name: torch.flipud
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.flipud.html
+
+  - name: torch.Tensor.float
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.float.html
+
+  - name: torch.Tensor.float_power
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.float_power.html
+
+  - name: torch.float_power
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.float_power.html
+
+  - name: torch.Tensor.float_power_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.float_power_.html
+
+  - name: torch.Tensor.floor
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.floor.html
+
+  - name: torch.floor
     category: math
     since: "1.0"
+
+  - name: torch.Tensor.floor_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.floor_.html
+
+  - name: torch.Tensor.floor_divide
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.floor_divide.html
+
+  - name: torch.floor_divide
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.floor_divide.html
+
+  - name: torch.Tensor.floor_divide_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.floor_divide_.html
+
+  - name: torch.Tensor.fmod
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.fmod.html
+
+  - name: torch.fmod
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.fmod.html
+
+  - name: torch.Tensor.fmod_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.fmod_.html
+
+  - name: torch.Tensor.frac
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.frac.html
+
+  - name: torch.frac
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.frac.html
+
+  - name: torch.Tensor.frac_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.frac_.html
+
+  - name: torch.Tensor.frexp
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.frexp.html
+
+  - name: torch.frexp
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.frexp.html
+
+  - name: torch.Tensor.gather
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.gather.html
+
+  - name: torch.gather
+    category: tensor_ops
+    since: "1.0"
+
+  - name: torch.Tensor.gcd
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.gcd.html
+
+  - name: torch.gcd
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.gcd.html
+
+  - name: torch.Tensor.gcd_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.gcd_.html
+
+  - name: torch.Tensor.ge
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.ge.html
+
+  - name: torch.ge
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.ge.html
+
+  - name: torch.Tensor.ge_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.ge_.html
+
+  - name: torch.Tensor.greater_equal
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.greater_equal.html
+
+  - name: torch.greater_equal
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.greater_equal.html
+
+  - name: torch.Tensor.greater_equal_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.greater_equal_.html
+
+  - name: torch.Tensor.geometric_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.geometric_.html
+
+  - name: torch.Tensor.geqrf
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.geqrf.html
+
+  - name: torch.geqrf
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.geqrf.html
+
+  - name: torch.Tensor.ger
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.ger.html
+
+  - name: torch.ger
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.ger.html
+
+  - name: torch.Tensor.get_device
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.get_device.html
+
+  - name: torch.Tensor.gt
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.gt.html
+
+  - name: torch.gt
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.gt.html
+
+  - name: torch.Tensor.gt_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.gt_.html
+
+  - name: torch.Tensor.greater
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.greater.html
+
+  - name: torch.greater
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.greater.html
+
+  - name: torch.Tensor.greater_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.greater_.html
+
+  - name: torch.Tensor.half
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.half.html
+
+  - name: torch.Tensor.hardshrink
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.hardshrink.html
+
+  - name: torch.nn.functional.hardshrink
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.hardshrink.html
+
+  - name: torch.Tensor.heaviside
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.heaviside.html
+
+  - name: torch.heaviside
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.heaviside.html
+
+  - name: torch.Tensor.histc
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.histc.html
+
+  - name: torch.histc
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.histc.html
+
+  - name: torch.Tensor.histogram
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.histogram.html
+
+  - name: torch.histogram
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.histogram.html
+
+  - name: torch.Tensor.hsplit
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.hsplit.html
+
+  - name: torch.hsplit
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.hsplit.html
+
+  - name: torch.Tensor.hypot
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.hypot.html
+
+  - name: torch.hypot
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.hypot.html
+
+  - name: torch.Tensor.hypot_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.hypot_.html
+
+  - name: torch.Tensor.i0
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.i0.html
+
+  - name: torch.i0
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.i0.html
+
+  - name: torch.Tensor.i0_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.i0_.html
+
+  - name: torch.Tensor.igamma
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.igamma.html
+
+  - name: torch.igamma
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.igamma.html
+
+  - name: torch.Tensor.igamma_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.igamma_.html
+
+  - name: torch.Tensor.igammac
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.igammac.html
+
+  - name: torch.igammac
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.igammac.html
+
+  - name: torch.Tensor.igammac_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.igammac_.html
+
+  - name: torch.Tensor.index_add_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.index_add_.html
+
+  - name: torch.Tensor.index_add
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.index_add.html
+
+  - name: torch.Tensor.index_copy_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.index_copy_.html
+
+  - name: torch.Tensor.index_copy
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.index_copy.html
+
+  - name: torch.Tensor.index_fill_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.index_fill_.html
+
+  - name: torch.Tensor.index_fill
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.index_fill.html
+
+  - name: torch.Tensor.index_put_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.index_put_.html
+
+  - name: torch.Tensor.index_put
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.index_put.html
+
+  - name: torch.Tensor.index_reduce_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.index_reduce_.html
+
+  - name: torch.Tensor.index_reduce
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.index_reduce.html
+
+  - name: torch.Tensor.index_select
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.index_select.html
+
+  - name: torch.index_select
+    category: tensor_ops
+    since: "1.0"
+
+  - name: torch.Tensor.indices
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.indices.html
+
+  - name: torch.Tensor.inner
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.inner.html
+
+  - name: torch.inner
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.inner.html
+
+  - name: torch.Tensor.int
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.int.html
+
+  - name: torch.Tensor.int_repr
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.int_repr.html
+
+  - name: torch.Tensor.inverse
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.inverse.html
+
+  - name: torch.inverse
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.inverse.html
+
+  - name: torch.Tensor.isclose
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.isclose.html
+
+  - name: torch.isclose
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.isclose.html
+
+  - name: torch.Tensor.isfinite
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.isfinite.html
+
+  - name: torch.isfinite
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.isfinite.html
+
+  - name: torch.Tensor.isinf
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.isinf.html
+
+  - name: torch.isinf
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.isinf.html
+
+  - name: torch.Tensor.isposinf
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.isposinf.html
+
+  - name: torch.isposinf
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.isposinf.html
+
+  - name: torch.Tensor.isneginf
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.isneginf.html
+
+  - name: torch.isneginf
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.isneginf.html
+
+  - name: torch.Tensor.isnan
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.isnan.html
+
+  - name: torch.isnan
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.isnan.html
+
+  - name: torch.Tensor.is_contiguous
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.is_contiguous.html
+
+  - name: torch.Tensor.is_complex
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.is_complex.html
+
+  - name: torch.Tensor.is_conj
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.is_conj.html
+
+  - name: torch.Tensor.is_floating_point
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.is_floating_point.html
+
+  - name: torch.Tensor.is_inference
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.is_inference.html
+
+  - name: torch.Tensor.is_leaf
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.is_leaf.html
+
+  - name: torch.Tensor.is_pinned
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.is_pinned.html
+
+  - name: torch.Tensor.is_set_to
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.is_set_to.html
+
+  - name: torch.Tensor.is_shared
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.is_shared.html
+
+  - name: torch.Tensor.is_signed
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.is_signed.html
+
+  - name: torch.Tensor.is_sparse
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.is_sparse.html
+
+  - name: torch.Tensor.istft
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.istft.html
+
+  - name: torch.istft
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.istft.html
+
+  - name: torch.Tensor.isreal
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.isreal.html
+
+  - name: torch.isreal
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.isreal.html
+
+  - name: torch.Tensor.kthvalue
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.kthvalue.html
+
+  - name: torch.kthvalue
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.kthvalue.html
+
+  - name: torch.Tensor.lcm
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.lcm.html
+
+  - name: torch.lcm
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.lcm.html
+
+  - name: torch.Tensor.lcm_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.lcm_.html
+
+  - name: torch.Tensor.ldexp
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.ldexp.html
+
+  - name: torch.ldexp
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.ldexp.html
+
+  - name: torch.Tensor.ldexp_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.ldexp_.html
+
+  - name: torch.Tensor.le
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.le.html
+
+  - name: torch.le
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.le.html
+
+  - name: torch.Tensor.le_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.le_.html
+
+  - name: torch.Tensor.less_equal
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.less_equal.html
+
+  - name: torch.less_equal
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.less_equal.html
+
+  - name: torch.Tensor.less_equal_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.less_equal_.html
+
+  - name: torch.Tensor.lerp
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.lerp.html
+
+  - name: torch.lerp
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.lerp.html
+
+  - name: torch.Tensor.lerp_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.lerp_.html
+
+  - name: torch.Tensor.lgamma
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.lgamma.html
+
+  - name: torch.lgamma
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.lgamma.html
+
+  - name: torch.Tensor.lgamma_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.lgamma_.html
+
+  - name: torch.Tensor.log
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.log.html
+
+  - name: torch.log
+    category: math
+    since: "1.0"
+
+  - name: torch.Tensor.log_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.log_.html
+
+  - name: torch.Tensor.logdet
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.logdet.html
+
+  - name: torch.logdet
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.logdet.html
+
+  - name: torch.Tensor.log10
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.log10.html
+
+  - name: torch.log10
+    category: math
+    since: "1.0"
+
+  - name: torch.Tensor.log10_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.log10_.html
+
+  - name: torch.Tensor.log1p
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.log1p.html
+
+  - name: torch.log1p
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.log1p.html
+
+  - name: torch.Tensor.log1p_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.log1p_.html
+
+  - name: torch.Tensor.log2
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.log2.html
+
+  - name: torch.log2
+    category: math
+    since: "1.0"
+
+  - name: torch.Tensor.log2_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.log2_.html
+
+  - name: torch.Tensor.log_normal_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.log_normal_.html
+
+  - name: torch.Tensor.logaddexp
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.logaddexp.html
+
+  - name: torch.logaddexp
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.logaddexp.html
+
+  - name: torch.Tensor.logaddexp2
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.logaddexp2.html
+
+  - name: torch.logaddexp2
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.logaddexp2.html
+
+  - name: torch.Tensor.logsumexp
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.logsumexp.html
+
+  - name: torch.logsumexp
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.logsumexp.html
+
+  - name: torch.Tensor.logical_and
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.logical_and.html
+
+  - name: torch.logical_and
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.logical_and.html
+
+  - name: torch.Tensor.logical_and_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.logical_and_.html
+
+  - name: torch.Tensor.logical_not
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.logical_not.html
+
+  - name: torch.logical_not
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.logical_not.html
+
+  - name: torch.Tensor.logical_not_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.logical_not_.html
+
+  - name: torch.Tensor.logical_or
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.logical_or.html
+
+  - name: torch.logical_or
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.logical_or.html
+
+  - name: torch.Tensor.logical_or_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.logical_or_.html
+
+  - name: torch.Tensor.logical_xor
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.logical_xor.html
+
+  - name: torch.logical_xor
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.logical_xor.html
+
+  - name: torch.Tensor.logical_xor_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.logical_xor_.html
+
+  - name: torch.Tensor.logit
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.logit.html
+
+  - name: torch.logit
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.logit.html
+
+  - name: torch.Tensor.logit_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.logit_.html
+
+  - name: torch.Tensor.long
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.long.html
+
+  - name: torch.Tensor.lt
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.lt.html
+
+  - name: torch.lt
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.lt.html
+
+  - name: torch.Tensor.lt_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.lt_.html
+
+  - name: torch.Tensor.less
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.less.html
+
+  - name: torch.Tensor.less_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.less_.html
+
+  - name: torch.Tensor.lu
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.lu.html
+
+  - name: torch.lu
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.lu.html
+
+  - name: torch.Tensor.lu_solve
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.lu_solve.html
+
+  - name: torch.lu_solve
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.lu_solve.html
+
+  - name: torch.Tensor.as_subclass
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.as_subclass.html
+
+  - name: torch.Tensor.map_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.map_.html
+
+  - name: torch.Tensor.masked_scatter_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.masked_scatter_.html
+
+  - name: torch.Tensor.masked_scatter
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.masked_scatter.html
+
+  - name: torch.Tensor.masked_fill_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.masked_fill_.html
+
+  - name: torch.Tensor.masked_fill
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.masked_fill.html
+
+  - name: torch.Tensor.masked_select
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.masked_select.html
+
+  - name: torch.masked_select
+    category: tensor_ops
+    since: "1.0"
+
+  - name: torch.Tensor.matmul
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.matmul.html
+
+  - name: torch.Tensor.matrix_power
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.matrix_power.html
+
+  - name: torch.Tensor.matrix_exp
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.matrix_exp.html
+
+  - name: torch.matrix_exp
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.matrix_exp.html
+
+  - name: torch.Tensor.max
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.max.html
+
+  - name: torch.max
+    category: math
+    since: "1.0"
+
+  - name: torch.Tensor.maximum
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.maximum.html
+
+  - name: torch.maximum
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.maximum.html
+
+  - name: torch.Tensor.mean
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.mean.html
+
+  - name: torch.mean
+    category: math
+    since: "1.0"
+
+  - name: torch.Tensor.module_load
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.module_load.html
+
+  - name: torch.Tensor.nanmean
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.nanmean.html
+
+  - name: torch.nanmean
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nanmean.html
+
+  - name: torch.Tensor.median
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.median.html
+
+  - name: torch.median
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.median.html
+
+  - name: torch.Tensor.nanmedian
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.nanmedian.html
+
+  - name: torch.nanmedian
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nanmedian.html
+
+  - name: torch.Tensor.min
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.min.html
+
+  - name: torch.min
+    category: math
+    since: "1.0"
+
+  - name: torch.Tensor.minimum
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.minimum.html
+
+  - name: torch.minimum
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.minimum.html
+
+  - name: torch.Tensor.mm
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.mm.html
+
+  - name: torch.mm
+    category: math
+    since: "1.0"
+
+  - name: torch.Tensor.smm
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.smm.html
+
+  - name: torch.smm
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.smm.html
+
+  - name: torch.Tensor.mode
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.mode.html
+
+  - name: torch.mode
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.mode.html
+
+  - name: torch.Tensor.movedim
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.movedim.html
+
+  - name: torch.movedim
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.movedim.html
+
+  - name: torch.Tensor.moveaxis
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.moveaxis.html
+
+  - name: torch.moveaxis
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.moveaxis.html
+
+  - name: torch.Tensor.msort
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.msort.html
+
+  - name: torch.msort
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.msort.html
+
+  - name: torch.Tensor.mul
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.mul.html
+
+  - name: torch.mul
+    category: math
+    since: "1.0"
+    aliases: [torch.multiply]
+
+  - name: torch.Tensor.mul_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.mul_.html
+
+  - name: torch.Tensor.multiply
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.multiply.html
+
+  - name: torch.multiply
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.multiply.html
+
+  - name: torch.Tensor.multiply_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.multiply_.html
+
+  - name: torch.Tensor.multinomial
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.multinomial.html
+
+  - name: torch.multinomial
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.multinomial.html
+
+  - name: torch.Tensor.mv
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.mv.html
+
+  - name: torch.mv
+    category: math
+    since: "1.0"
+
+  - name: torch.Tensor.mvlgamma
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.mvlgamma.html
+
+  - name: torch.mvlgamma
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.mvlgamma.html
+
+  - name: torch.Tensor.mvlgamma_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.mvlgamma_.html
+
+  - name: torch.Tensor.nansum
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.nansum.html
+
+  - name: torch.nansum
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nansum.html
+
+  - name: torch.Tensor.narrow
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.narrow.html
+
+  - name: torch.narrow
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.narrow.html
+
+  - name: torch.Tensor.narrow_copy
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.narrow_copy.html
+
+  - name: torch.narrow_copy
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.narrow_copy.html
+
+  - name: torch.Tensor.ndimension
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.ndimension.html
+
+  - name: torch.Tensor.nan_to_num
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.nan_to_num.html
+
+  - name: torch.nan_to_num
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nan_to_num.html
+
+  - name: torch.Tensor.nan_to_num_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.nan_to_num_.html
+
+  - name: torch.Tensor.ne
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.ne.html
+
+  - name: torch.ne
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.ne.html
+
+  - name: torch.Tensor.ne_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.ne_.html
+
+  - name: torch.Tensor.not_equal
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.not_equal.html
+
+  - name: torch.not_equal
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.not_equal.html
+
+  - name: torch.Tensor.not_equal_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.not_equal_.html
+
+  - name: torch.Tensor.neg
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.neg.html
+
+  - name: torch.neg
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.neg.html
+
+  - name: torch.Tensor.neg_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.neg_.html
+
+  - name: torch.Tensor.negative
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.negative.html
+
+  - name: torch.negative
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.negative.html
+
+  - name: torch.Tensor.negative_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.negative_.html
+
+  - name: torch.Tensor.nelement
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.nelement.html
+
+  - name: torch.Tensor.numel
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.numel.html
+
+  - name: torch.Tensor.nextafter
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.nextafter.html
+
+  - name: torch.nextafter
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nextafter.html
+
+  - name: torch.Tensor.nextafter_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.nextafter_.html
+
+  - name: torch.Tensor.nonzero
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.nonzero.html
+
+  - name: torch.nonzero
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nonzero.html
+
+  - name: torch.Tensor.norm
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.norm.html
 
   - name: torch.norm
     category: math
     since: "1.0"
 
-  - name: torch.linalg.norm
-    category: math
-    since: "1.7"
+  - name: torch.Tensor.normal_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.normal_.html
 
-  - name: torch.linalg.svd
+  - name: torch.std
     category: math
-    since: "1.8"
+    since: "1.0"
 
-  - name: torch.linalg.eig
+  - name: torch.numel
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.numel.html
+
+  - name: torch.Tensor.numpy
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.numpy.html
+
+  - name: torch.Tensor.orgqr
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.orgqr.html
+
+  - name: torch.orgqr
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.orgqr.html
+
+  - name: torch.Tensor.ormqr
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.ormqr.html
+
+  - name: torch.ormqr
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.ormqr.html
+
+  - name: torch.Tensor.outer
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.outer.html
+
+  - name: torch.outer
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.outer.html
+
+  - name: torch.Tensor.permute
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.permute.html
+
+  - name: torch.Tensor.pin_memory
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.pin_memory.html
+
+  - name: torch.Tensor.pinverse
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.pinverse.html
+
+  - name: torch.pinverse
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.pinverse.html
+
+  - name: torch.Tensor.polygamma
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.polygamma.html
+
+  - name: torch.polygamma
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.polygamma.html
+
+  - name: torch.Tensor.polygamma_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.polygamma_.html
+
+  - name: torch.Tensor.positive
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.positive.html
+
+  - name: torch.positive
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.positive.html
+
+  - name: torch.Tensor.pow
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.pow.html
+
+  - name: torch.pow
     category: math
-    since: "1.9"
+    since: "1.0"
 
-  - name: torch.linalg.det
+  - name: torch.Tensor.pow_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.pow_.html
+
+  - name: torch.Tensor.prod
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.prod.html
+
+  - name: torch.prod
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.prod.html
+
+  - name: torch.Tensor.put_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.put_.html
+
+  - name: torch.Tensor.qr
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.qr.html
+
+  - name: torch.qr
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.qr.html
+
+  - name: torch.Tensor.qscheme
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.qscheme.html
+
+  - name: torch.Tensor.quantile
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.quantile.html
+
+  - name: torch.quantile
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.quantile.html
+
+  - name: torch.Tensor.nanquantile
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.nanquantile.html
+
+  - name: torch.nanquantile
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nanquantile.html
+
+  - name: torch.Tensor.q_scale
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.q_scale.html
+
+  - name: torch.Tensor.q_zero_point
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.q_zero_point.html
+
+  - name: torch.Tensor.q_per_channel_scales
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.q_per_channel_scales.html
+
+  - name: torch.Tensor.q_per_channel_zero_points
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.q_per_channel_zero_points.html
+
+  - name: torch.Tensor.q_per_channel_axis
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.q_per_channel_axis.html
+
+  - name: torch.Tensor.rad2deg
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.rad2deg.html
+
+  - name: torch.rad2deg
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.rad2deg.html
+
+  - name: torch.Tensor.random_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.random_.html
+
+  - name: torch.Tensor.ravel
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.ravel.html
+
+  - name: torch.ravel
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.ravel.html
+
+  - name: torch.Tensor.reciprocal
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.reciprocal.html
+
+  - name: torch.reciprocal
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.reciprocal.html
+
+  - name: torch.Tensor.reciprocal_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.reciprocal_.html
+
+  - name: torch.Tensor.record_stream
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.record_stream.html
+
+  - name: torch.Tensor.register_hook
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.register_hook.html
+
+  - name: torch.Tensor.register_post_accumulate_grad_hook
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.register_post_accumulate_grad_hook.html
+
+  - name: torch.Tensor.remainder
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.remainder.html
+
+  - name: torch.remainder
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.remainder.html
+
+  - name: torch.Tensor.remainder_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.remainder_.html
+
+  - name: torch.Tensor.renorm
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.renorm.html
+
+  - name: torch.renorm
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.renorm.html
+
+  - name: torch.Tensor.renorm_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.renorm_.html
+
+  - name: torch.Tensor.repeat
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.repeat.html
+
+  - name: torch.Tensor.repeat_interleave
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.repeat_interleave.html
+
+  - name: torch.repeat_interleave
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.repeat_interleave.html
+
+  - name: torch.Tensor.requires_grad
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.requires_grad.html
+
+  - name: torch.Tensor.reshape
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.reshape.html
+
+  - name: torch.Tensor.reshape_as
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.reshape_as.html
+
+  - name: torch.Tensor.resize_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.resize_.html
+
+  - name: torch.Tensor.resize_as_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.resize_as_.html
+
+  - name: torch.Tensor.retain_grad
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.retain_grad.html
+
+  - name: torch.Tensor.retains_grad
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.retains_grad.html
+
+  - name: torch.Tensor.roll
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.roll.html
+
+  - name: torch.roll
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.roll.html
+
+  - name: torch.Tensor.rot90
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.rot90.html
+
+  - name: torch.rot90
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.rot90.html
+
+  - name: torch.Tensor.round
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.round.html
+
+  - name: torch.round
     category: math
-    since: "1.8"
+    since: "1.0"
 
-  - name: torch.linalg.inv
+  - name: torch.Tensor.round_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.round_.html
+
+  - name: torch.Tensor.rsqrt
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.rsqrt.html
+
+  - name: torch.rsqrt
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.rsqrt.html
+
+  - name: torch.Tensor.rsqrt_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.rsqrt_.html
+
+  - name: torch.Tensor.scatter
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.scatter.html
+
+  - name: torch.Tensor.scatter_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.scatter_.html
+
+  - name: torch.Tensor.scatter_add_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.scatter_add_.html
+
+  - name: torch.Tensor.scatter_add
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.scatter_add.html
+
+  - name: torch.Tensor.scatter_reduce_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.scatter_reduce_.html
+
+  - name: torch.Tensor.scatter_reduce
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.scatter_reduce.html
+
+  - name: torch.Tensor.select
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.select.html
+
+  - name: torch.select
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.select.html
+
+  - name: torch.Tensor.select_scatter
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.select_scatter.html
+
+  - name: torch.select_scatter
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.select_scatter.html
+
+  - name: torch.Tensor.set_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.set_.html
+
+  - name: torch.Tensor.share_memory_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.share_memory_.html
+
+  - name: torch.Tensor.short
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.short.html
+
+  - name: torch.Tensor.sigmoid
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.sigmoid.html
+
+  - name: torch.sigmoid
     category: math
-    since: "1.8"
+    since: "1.0"
 
-  - name: torch.linalg.solve
+  - name: torch.Tensor.sigmoid_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.sigmoid_.html
+
+  - name: torch.Tensor.sign
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.sign.html
+
+  - name: torch.sign
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.sign.html
+
+  - name: torch.Tensor.sign_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.sign_.html
+
+  - name: torch.Tensor.signbit
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.signbit.html
+
+  - name: torch.signbit
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.signbit.html
+
+  - name: torch.Tensor.sgn
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.sgn.html
+
+  - name: torch.sgn
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.sgn.html
+
+  - name: torch.Tensor.sgn_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.sgn_.html
+
+  - name: torch.Tensor.sin
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.sin.html
+
+  - name: torch.sin
     category: math
-    since: "1.8"
+    since: "1.0"
 
-  # ============================
-  # 张量操作（tensor_ops）
-  # ============================
-  - name: torch.cat
+  - name: torch.Tensor.sin_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.sin_.html
+
+  - name: torch.Tensor.sinc
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.sinc.html
+
+  - name: torch.sinc
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.sinc.html
+
+  - name: torch.Tensor.sinc_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.sinc_.html
+
+  - name: torch.Tensor.sinh
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.sinh.html
+
+  - name: torch.sinh
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.sinh.html
+
+  - name: torch.Tensor.sinh_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.sinh_.html
+
+  - name: torch.Tensor.asinh
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.asinh.html
+
+  - name: torch.asinh
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.asinh.html
+
+  - name: torch.Tensor.asinh_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.asinh_.html
+
+  - name: torch.Tensor.arcsinh
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.arcsinh.html
+
+  - name: torch.arcsinh
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.arcsinh.html
+
+  - name: torch.Tensor.arcsinh_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.arcsinh_.html
+
+  - name: torch.Tensor.shape
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.shape.html
+
+  - name: torch.Tensor.size
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.size.html
+
+  - name: torch.Tensor.slogdet
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.slogdet.html
+
+  - name: torch.slogdet
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.slogdet.html
+
+  - name: torch.Tensor.slice_scatter
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.slice_scatter.html
+
+  - name: torch.slice_scatter
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.slice_scatter.html
+
+  - name: torch.Tensor.softmax
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.softmax.html
+
+  - name: torch.nn.functional.softmax
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.softmax.html
+
+  - name: torch.Tensor.sort
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.sort.html
+
+  - name: torch.sort
     category: tensor_ops
     since: "1.0"
 
-  - name: torch.stack
-    category: tensor_ops
-    since: "1.0"
+  - name: torch.Tensor.split
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.split.html
 
   - name: torch.split
     category: tensor_ops
     since: "1.0"
 
-  - name: torch.chunk
+  - name: torch.Tensor.sparse_mask
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.sparse_mask.html
+
+  - name: torch.Tensor.sparse_dim
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.sparse_dim.html
+
+  - name: torch.Tensor.sqrt
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.sqrt.html
+
+  - name: torch.sqrt
+    category: math
+    since: "1.0"
+
+  - name: torch.Tensor.sqrt_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.sqrt_.html
+
+  - name: torch.Tensor.square
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.square.html
+
+  - name: torch.square
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.square.html
+
+  - name: torch.Tensor.square_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.square_.html
+
+  - name: torch.Tensor.squeeze
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.squeeze.html
+
+  - name: torch.squeeze
+    category: tensor_ops
+    since: "1.0"
+
+  - name: torch.Tensor.squeeze_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.squeeze_.html
+
+  - name: torch.Tensor.std
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.std.html
+
+  - name: torch.Tensor.stft
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.stft.html
+
+  - name: torch.stft
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.stft.html
+
+  - name: torch.Tensor.storage
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.storage.html
+
+  - name: torch.Tensor.untyped_storage
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.untyped_storage.html
+
+  - name: torch.Tensor.storage_offset
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.storage_offset.html
+
+  - name: torch.Tensor.storage_type
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.storage_type.html
+
+  - name: torch.Tensor.stride
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.stride.html
+
+  - name: torch.Tensor.sub
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.sub.html
+
+  - name: torch.sub
+    category: math
+    since: "1.0"
+    aliases: [torch.subtract]
+
+  - name: torch.Tensor.sub_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.sub_.html
+
+  - name: torch.Tensor.subtract
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.subtract.html
+
+  - name: torch.subtract
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.subtract.html
+
+  - name: torch.Tensor.subtract_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.subtract_.html
+
+  - name: torch.Tensor.sum
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.sum.html
+
+  - name: torch.sum
+    category: math
+    since: "1.0"
+
+  - name: torch.Tensor.sum_to_size
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.sum_to_size.html
+
+  - name: torch.Tensor.svd
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.svd.html
+
+  - name: torch.svd
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.svd.html
+
+  - name: torch.Tensor.swapaxes
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.swapaxes.html
+
+  - name: torch.swapaxes
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.swapaxes.html
+
+  - name: torch.Tensor.swapdims
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.swapdims.html
+
+  - name: torch.swapdims
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.swapdims.html
+
+  - name: torch.Tensor.t
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.t.html
+
+  - name: torch.t
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.t.html
+
+  - name: torch.Tensor.t_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.t_.html
+
+  - name: torch.Tensor.tensor_split
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.tensor_split.html
+
+  - name: torch.tensor_split
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.tensor_split.html
+
+  - name: torch.Tensor.tile
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.tile.html
+
+  - name: torch.tile
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.tile.html
+
+  - name: torch.Tensor.to_mkldnn
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.to_mkldnn.html
+
+  - name: torch.Tensor.take
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.take.html
+
+  - name: torch.take
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.take.html
+
+  - name: torch.Tensor.take_along_dim
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.take_along_dim.html
+
+  - name: torch.take_along_dim
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.take_along_dim.html
+
+  - name: torch.Tensor.tan
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.tan.html
+
+  - name: torch.tan
+    category: math
+    since: "1.0"
+
+  - name: torch.Tensor.tan_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.tan_.html
+
+  - name: torch.Tensor.tanh
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.tanh.html
+
+  - name: torch.tanh
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.tanh.html
+
+  - name: torch.Tensor.tanh_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.tanh_.html
+
+  - name: torch.Tensor.atanh
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.atanh.html
+
+  - name: torch.atanh
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.atanh.html
+
+  - name: torch.Tensor.atanh_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.atanh_.html
+
+  - name: torch.Tensor.arctanh
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.arctanh.html
+
+  - name: torch.arctanh
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.arctanh.html
+
+  - name: torch.Tensor.arctanh_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.arctanh_.html
+
+  - name: torch.Tensor.tolist
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.tolist.html
+
+  - name: torch.Tensor.topk
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.topk.html
+
+  - name: torch.topk
+    category: tensor_ops
+    since: "1.0"
+
+  - name: torch.Tensor.to_dense
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.to_dense.html
+
+  - name: torch.Tensor.to_sparse
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.to_sparse.html
+
+  - name: torch.Tensor.to_sparse_csr
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.to_sparse_csr.html
+
+  - name: torch.Tensor.to_sparse_csc
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.to_sparse_csc.html
+
+  - name: torch.Tensor.to_sparse_bsr
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.to_sparse_bsr.html
+
+  - name: torch.Tensor.to_sparse_bsc
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.to_sparse_bsc.html
+
+  - name: torch.Tensor.trace
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.trace.html
+
+  - name: torch.trace
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.trace.html
+
+  - name: torch.Tensor.transpose
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.transpose.html
+
+  - name: torch.transpose
+    category: tensor_ops
+    since: "1.0"
+
+  - name: torch.Tensor.transpose_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.transpose_.html
+
+  - name: torch.Tensor.triangular_solve
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.triangular_solve.html
+
+  - name: torch.triangular_solve
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.triangular_solve.html
+
+  - name: torch.Tensor.tril
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.tril.html
+
+  - name: torch.tril
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.tril.html
+
+  - name: torch.Tensor.tril_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.tril_.html
+
+  - name: torch.Tensor.triu
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.triu.html
+
+  - name: torch.triu
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.triu.html
+
+  - name: torch.Tensor.triu_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.triu_.html
+
+  - name: torch.Tensor.true_divide
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.true_divide.html
+
+  - name: torch.true_divide
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.true_divide.html
+
+  - name: torch.Tensor.true_divide_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.true_divide_.html
+
+  - name: torch.Tensor.trunc
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.trunc.html
+
+  - name: torch.trunc
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.trunc.html
+
+  - name: torch.Tensor.trunc_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.trunc_.html
+
+  - name: torch.Tensor.type
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.type.html
+
+  - name: torch.Tensor.type_as
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.type_as.html
+
+  - name: torch.Tensor.unbind
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.unbind.html
+
+  - name: torch.unbind
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.unbind.html
+
+  - name: torch.Tensor.unflatten
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.unflatten.html
+
+  - name: torch.unflatten
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.unflatten.html
+
+  - name: torch.Tensor.unfold
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.unfold.html
+
+  - name: torch.Tensor.uniform_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.uniform_.html
+
+  - name: torch.Tensor.unique
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.unique.html
+
+  - name: torch.Tensor.unique_consecutive
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.unique_consecutive.html
+
+  - name: torch.Tensor.unsqueeze
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.unsqueeze.html
+
+  - name: torch.unsqueeze
+    category: tensor_ops
+    since: "1.0"
+
+  - name: torch.Tensor.unsqueeze_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.unsqueeze_.html
+
+  - name: torch.Tensor.values
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.values.html
+
+  - name: torch.Tensor.var
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.var.html
+
+  - name: torch.var
+    category: math
+    since: "1.0"
+
+  - name: torch.Tensor.vdot
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.vdot.html
+
+  - name: torch.vdot
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.vdot.html
+
+  - name: torch.Tensor.view
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.view.html
+
+  - name: torch.Tensor.view_as
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.view_as.html
+
+  - name: torch.Tensor.vsplit
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.vsplit.html
+
+  - name: torch.vsplit
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.vsplit.html
+
+  - name: torch.Tensor.where
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.where.html
+
+  - name: torch.Tensor.xlogy
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.xlogy.html
+
+  - name: torch.xlogy
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.xlogy.html
+
+  - name: torch.Tensor.xlogy_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.xlogy_.html
+
+  - name: torch.Tensor.xpu
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.xpu.html
+
+  - name: torch.Tensor.zero_
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.zero_.html
+
+  - name: torch.rand
+    category: tensor_ops
+    since: "1.0"
+
+  - name: torch.rand_like
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.rand_like.html
+
+  - name: torch.randn
+    category: tensor_ops
+    since: "1.0"
+
+  - name: torch.randn_like
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.randn_like.html
+
+  - name: torch.randint
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.randint.html
+
+  - name: torch.randint_like
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.randint_like.html
+
+  - name: torch.randperm
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.randperm.html
+
+  - name: torch.empty
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.empty.html
+
+  - name: torch.sparse_coo_tensor
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.sparse_coo_tensor.html
+
+  - name: torch.sparse_csr_tensor
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.sparse_csr_tensor.html
+
+  - name: torch.sparse_csc_tensor
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.sparse_csc_tensor.html
+
+  - name: torch.sparse_bsr_tensor
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.sparse_bsr_tensor.html
+
+  - name: torch.sparse_bsc_tensor
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.sparse_bsc_tensor.html
+
+  - name: torch.asarray
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.asarray.html
+
+  - name: torch.from_file
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.from_file.html
+
+  - name: torch.from_numpy
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.from_numpy.html
+
+  - name: torch.from_dlpack
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.from_dlpack.html
+
+  - name: torch.frombuffer
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.frombuffer.html
+
+  - name: torch.zeros
+    category: tensor_ops
+    since: "1.0"
+
+  - name: torch.zeros_like
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.zeros_like.html
+
+  - name: torch.ones
+    category: tensor_ops
+    since: "1.0"
+
+  - name: torch.ones_like
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.ones_like.html
+
+  - name: torch.arange
+    category: tensor_ops
+    since: "1.0"
+
+  - name: torch.range
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.range.html
+
+  - name: torch.linspace
+    category: tensor_ops
+    since: "1.0"
+
+  - name: torch.logspace
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.logspace.html
+
+  - name: torch.eye
+    category: tensor_ops
+    since: "1.0"
+
+  - name: torch.empty_like
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.empty_like.html
+
+  - name: torch.empty_strided
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.empty_strided.html
+
+  - name: torch.full
+    category: tensor_ops
+    since: "1.0"
+
+  - name: torch.full_like
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.full_like.html
+
+  - name: torch.quantize_per_tensor
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.quantize_per_tensor.html
+
+  - name: torch.quantize_per_channel
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.quantize_per_channel.html
+
+  - name: torch.dequantize
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.dequantize.html
+
+  - name: torch.complex
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.complex.html
+
+  - name: torch.real
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.real.html
+
+  - name: torch.imag
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.imag.html
+
+  - name: torch.polar
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.polar.html
+
+  - name: torch.cat
+    category: tensor_ops
+    since: "1.0"
+
+  - name: torch.concat
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.concat.html
+
+  - name: torch.concatenate
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.concatenate.html
+
+  - name: torch.column_stack
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.column_stack.html
+
+  - name: torch.dstack
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.dstack.html
+
+  - name: torch.hstack
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.hstack.html
+
+  - name: torch.index_add
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.index_add.html
+
+  - name: torch.index_copy
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.index_copy.html
+
+  - name: torch.index_reduce
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.index_reduce.html
+
+  - name: torch.permute
     category: tensor_ops
     since: "1.0"
 
@@ -585,109 +3875,252 @@ operators:
     category: tensor_ops
     since: "1.0"
 
-  - name: torch.flatten
-    category: tensor_ops
-    since: "1.0"
+  - name: torch.row_stack
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.row_stack.html
 
-  - name: torch.squeeze
-    category: tensor_ops
-    since: "1.0"
-
-  - name: torch.unsqueeze
-    category: tensor_ops
-    since: "1.0"
-
-  - name: torch.transpose
-    category: tensor_ops
-    since: "1.0"
-
-  - name: torch.permute
-    category: tensor_ops
-    since: "1.0"
-
-  - name: torch.gather
-    category: tensor_ops
-    since: "1.0"
+  - name: torch.vstack
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.vstack.html
 
   - name: torch.scatter
     category: tensor_ops
     since: "1.0"
 
-  - name: torch.index_select
+  - name: torch.scatter_add
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.scatter_add.html
+
+  - name: torch.scatter_reduce
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.scatter_reduce.html
+
+  - name: torch.segment_reduce
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.segment_reduce.html
+
+  - name: torch.stack
     category: tensor_ops
     since: "1.0"
+
+  - name: torch.unravel_index
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.unravel_index.html
 
   - name: torch.where
     category: tensor_ops
     since: "1.0"
 
-  - name: torch.masked_select
-    category: tensor_ops
+  - name: torch.bernoulli
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.bernoulli.html
+
+  - name: torch.normal
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.normal.html
+
+  - name: torch.poisson
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.poisson.html
+
+  - name: torch.absolute
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.absolute.html
+
+  - name: torch.arccosh
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.arccosh.html
+
+  - name: torch.add
+    category: math
     since: "1.0"
 
-  - name: torch.topk
-    category: tensor_ops
+  - name: torch.clip
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.clip.html
+
+  - name: torch.exp2
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.exp2.html
+
+  - name: torch.fake_quantize_per_channel_affine
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.fake_quantize_per_channel_affine.html
+
+  - name: torch.fake_quantize_per_tensor_affine
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.fake_quantize_per_tensor_affine.html
+
+  - name: torch.gradient
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.gradient.html
+
+  - name: torch.quantized_batch_norm
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.quantized_batch_norm.html
+
+  - name: torch.quantized_max_pool1d
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.quantized_max_pool1d.html
+
+  - name: torch.quantized_max_pool2d
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.quantized_max_pool2d.html
+
+  - name: torch.softmax
+    category: math
     since: "1.0"
 
-  - name: torch.sort
-    category: tensor_ops
-    since: "1.0"
-
-  - name: torch.argsort
-    category: tensor_ops
-    since: "1.0"
+  - name: torch.std_mean
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.std_mean.html
 
   - name: torch.unique
     category: tensor_ops
     since: "1.0"
 
-  - name: torch.zeros
-    category: tensor_ops
-    since: "1.0"
+  - name: torch.unique_consecutive
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.unique_consecutive.html
 
-  - name: torch.ones
-    category: tensor_ops
-    since: "1.0"
+  - name: torch.var_mean
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.var_mean.html
 
-  - name: torch.rand
-    category: tensor_ops
-    since: "1.0"
+  - name: torch.hash_tensor
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.hash_tensor.html
 
-  - name: torch.randn
-    category: tensor_ops
-    since: "1.0"
+  - name: torch.isin
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.isin.html
 
-  - name: torch.arange
-    category: tensor_ops
-    since: "1.0"
+  - name: torch.less
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.less.html
 
-  - name: torch.linspace
-    category: tensor_ops
-    since: "1.0"
+  - name: torch.bartlett_window
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.bartlett_window.html
 
-  - name: torch.eye
-    category: tensor_ops
-    since: "1.0"
+  - name: torch.blackman_window
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.blackman_window.html
 
-  - name: torch.full
-    category: tensor_ops
-    since: "1.0"
+  - name: torch.hamming_window
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.hamming_window.html
 
-  - name: torch.nn.Flatten
-    category: tensor_ops
-    since: "1.2"
+  - name: torch.hann_window
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.hann_window.html
 
-  - name: torch.nn.Unflatten
-    category: tensor_ops
-    since: "1.8"
+  - name: torch.kaiser_window
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.kaiser_window.html
 
-  # ============================
-  # 距离 / 相似度（distance）
-  # ============================
-  - name: torch.nn.CosineSimilarity
-    category: distance
-    since: "1.0"
+  - name: torch.atleast_1d
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.atleast_1d.html
 
-  - name: torch.nn.PairwiseDistance
-    category: distance
-    since: "1.0"
+  - name: torch.atleast_2d
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.atleast_2d.html
+
+  - name: torch.atleast_3d
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.atleast_3d.html
+
+  - name: torch.block_diag
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.block_diag.html
+
+  - name: torch.broadcast_tensors
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.broadcast_tensors.html
+
+  - name: torch.broadcast_shapes
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.broadcast_shapes.html
+
+  - name: torch.bucketize
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.bucketize.html
+
+  - name: torch.cartesian_prod
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.cartesian_prod.html
+
+  - name: torch.cdist
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.cdist.html
+
+  - name: torch.combinations
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.combinations.html
+
+  - name: torch.einsum
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.einsum.html
+
+  - name: torch.kron
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.kron.html
+
+  - name: torch.histogramdd
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.histogramdd.html
+
+  - name: torch.meshgrid
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.meshgrid.html
+
+  - name: torch.searchsorted
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.searchsorted.html
+
+  - name: torch.tril_indices
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.tril_indices.html
+
+  - name: torch.triu_indices
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.triu_indices.html
+
+  - name: torch.vander
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.vander.html
+
+  - name: torch.view_as_real
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.view_as_real.html
+
+  - name: torch.view_as_complex
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.view_as_complex.html
+
+  - name: torch.chain_matmul
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.chain_matmul.html
+
+  - name: torch.lu_unpack
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.lu_unpack.html
+
+  - name: torch.matrix_power
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.matrix_power.html
+
+  - name: torch.svd_lowrank
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.svd_lowrank.html
+
+  - name: torch.pca_lowrank
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.pca_lowrank.html
+
+  - name: torch.lobpcg
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.lobpcg.html
+
+  - name: torch.trapz
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.trapz.html
+
+  - name: torch.trapezoid
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.trapezoid.html
+
+  - name: torch.cumulative_trapezoid
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.cumulative_trapezoid.html
+
+  - name: torch.result_type
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.result_type.html
+
+  - name: torch.can_cast
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.can_cast.html
+
+  - name: torch.promote_types
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.promote_types.html
+
+  - name: torch.signal.windows.bartlett
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.signal.windows.bartlett.html
+
+  - name: torch.signal.windows.blackman
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.signal.windows.blackman.html
+
+  - name: torch.signal.windows.cosine
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.signal.windows.cosine.html
+
+  - name: torch.signal.windows.exponential
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.signal.windows.exponential.html
+
+  - name: torch.signal.windows.gaussian
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.signal.windows.gaussian.html
+
+  - name: torch.signal.windows.general_cosine
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.signal.windows.general_cosine.html
+
+  - name: torch.signal.windows.general_hamming
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.signal.windows.general_hamming.html
+
+  - name: torch.signal.windows.hamming
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.signal.windows.hamming.html
+
+  - name: torch.signal.windows.hann
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.signal.windows.hann.html
+
+  - name: torch.signal.windows.kaiser
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.signal.windows.kaiser.html
+
+  - name: torch.signal.windows.nuttall
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.signal.windows.nuttall.html
+
+  - name: torch.nn.functional.unfold
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.unfold.html
+
+  - name: torch.nn.functional.scaled_dot_product_attention
+    doc_url: https://pytorch.org/docs/stable/generated/torch.nn.functional.scaled_dot_product_attention.html
+

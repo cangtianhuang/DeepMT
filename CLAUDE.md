@@ -27,7 +27,7 @@ source .venv/bin/activate && PYTHONPATH=/home/lhy/DeepMT python -m pytest tests/
 
 | 文件                              | 内容                  |
 | --------------------------------- | --------------------- |
-| `docs/development_status.md`      | 开发状态与进度        |
+| `docs/status.md`                  | 开发状态与进度        |
 | `docs/agent_crawler_plan.md`      | CrawlAgent 设计与进度 |
 | `docs/environment_variables.md`   | 环境变量说明          |
 | `docs/operator_catalog_design.md` | 算子目录设计          |

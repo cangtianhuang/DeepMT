@@ -1,0 +1,219 @@
+# PyTorch API 排除列表
+#
+# 用途：在运行 `deepmt catalog check-updates` 时，以下 API 不会出现在
+#       "新增 API（尚未归类）" 报告中，因为它们属于已知的非算子 API。
+#
+# 字段说明：
+#   excluded_namespaces  命名空间前缀匹配（"torch.cuda" 排除所有以 "torch.cuda." 开头的 API）
+#   excluded_prefixes    任意前缀匹配（无需 "." 分隔，用于 _foreach_ 等下划线命名）
+#   excluded_exact       精确名称匹配（排除特定 API）
+#
+# 如何维护：
+#   - 运行 `deepmt catalog check-updates` 后，将确认不需要测试的新 API 添加到此处
+#   - 使用注释说明排除原因
+
+excluded_namespaces:
+  # ── 设备管理 ────────────────────────────────────────────────────────────────
+  - torch.cuda            # CUDA 设备管理（非算子）
+  - torch.cpu             # CPU 设备管理
+  - torch.mps             # Apple Silicon 设备
+  - torch.xpu             # Intel XPU
+  - torch.mtia            # Meta Training Inference Accelerator
+  - torch.accelerator     # 通用加速器接口
+  - torch.backends        # 硬件后端配置（cuDNN、MKL 等）
+
+  # ── 分布式 ─────────────────────────────────────────────────────────────────
+  - torch.distributed     # 分布式训练（DDP、FSDP、RPC 等）
+  - torch.nn.parallel     # DataParallel / DistributedDataParallel
+
+  # ── 编译与导出 ──────────────────────────────────────────────────────────────
+  - torch.jit             # TorchScript
+  - torch.fx              # 图变换（FX）
+  - torch.compiler        # torch.compile 相关
+  - torch.export          # 模型导出
+
+  # ── 工具与基础设施 ─────────────────────────────────────────────────────────
+  - torch.utils           # 各类工具（data、checkpoint、mobile_optimizer 等）
+  - torch.hub             # 模型 Hub（下载预训练模型）
+  - torch.profiler        # 性能分析
+  - torch.testing         # 测试工具（assert_close 等）
+  - torch.monitor         # 监控
+  - torch.futures         # 异步 Future
+  - torch.library         # 自定义算子注册
+
+  # ── 打包与导出 ──────────────────────────────────────────────────────────────
+  - torch.package         # 模型打包
+  - torch.onnx            # ONNX 导出
+
+  # ── 协议与内省 ──────────────────────────────────────────────────────────────
+  - torch.overrides       # __torch_function__ 协议
+  - torch.autograd        # 自动求导引擎（Function/Variable/Engine 等）
+  - torch.amp             # 自动混合精度控制
+
+  # ── 配置与元信息 ────────────────────────────────────────────────────────────
+  - torch.__config__
+  - torch.__future__
+  - torch._logging
+  - torch._C              # C++ 内部接口
+
+  # ── 其他非算子模块 ──────────────────────────────────────────────────────────
+  - torch.nativert        # native runtime
+  - torch.quasirandom     # 拟随机数生成器（SobolEngine 等，非算子）
+
+  # ── nn 基础设施命名空间 ─────────────────────────────────────────────────────
+  - torch.nn.parameter              # Buffer/Parameter 管理类
+  - torch.nn.modules.module         # 模块钩子注册函数
+  - torch.nn.modules.lazy           # LazyModuleMixin 等懒加载基础设施
+  - torch.nn.utils.prune            # 剪枝基础设施
+  - torch.nn.utils.parametrize      # 参数化基础设施（register_parametrization 等）
+  - torch.nn.utils.parametrizations # 参数化包装器（orthogonal/weight_norm/spectral_norm）
+  - torch.nn.utils.stateless        # functional_call（无状态调用）
+  - torch.nn.attention              # 注意力后端管理（非算子，控制 flash-attn 实现）
+
+
+excluded_prefixes:
+  # ── 内部批量逐元素 API（torch._foreach_abs_ 等，共 ~60 个）───────────────────
+  # 这些是 PyTorch 内部优化用的批量接口，不作为独立算子测试
+  - torch._foreach_
+
+  # ── 编译器符号工具（torch.sym_float / torch.sym_int 等）────────────────────
+  - torch.sym_
+
+
+excluded_exact:
+  # ── nn 容器类（架构基础设施，非算子）──────────────────────────────────────────
+  - torch.nn.Module
+  - torch.nn.Sequential
+  - torch.nn.ModuleList
+  - torch.nn.ModuleDict
+  - torch.nn.ParameterList
+  - torch.nn.ParameterDict
+  - torch.nn.DataParallel
+  - torch.nn.factory_kwargs
+
+  # ── nn 训练工具（梯度裁剪、权重融合、初始化辅助等）──────────────────────────
+  - torch.nn.utils.clip_grad_norm_
+  - torch.nn.utils.clip_grad_norm
+  - torch.nn.utils.clip_grad_value_
+  - torch.nn.utils.get_total_norm
+  - torch.nn.utils.clip_grads_with_norm_
+  - torch.nn.utils.parameters_to_vector
+  - torch.nn.utils.vector_to_parameters
+  - torch.nn.utils.fuse_conv_bn_eval
+  - torch.nn.utils.fuse_conv_bn_weights
+  - torch.nn.utils.fuse_linear_bn_eval
+  - torch.nn.utils.fuse_linear_bn_weights
+  - torch.nn.utils.convert_conv2d_weight_memory_format
+  - torch.nn.utils.convert_conv3d_weight_memory_format
+  - torch.nn.utils.weight_norm          # 模块级包装器，非张量算子
+  - torch.nn.utils.remove_weight_norm
+  - torch.nn.utils.spectral_norm        # 模块级包装器，非张量算子
+  - torch.nn.utils.remove_spectral_norm
+  - torch.nn.utils.skip_init
+
+  # ── nn.utils.rnn 基础设施（非张量变换）────────────────────────────────────
+  - torch.nn.utils.rnn.PackedSequence   # 数据容器类，非算子
+  - torch.nn.utils.rnn.invert_permutation  # 工具函数
+
+  # ── 类型/存储相关（非运算类 API）──────────────────────────────────────────────
+  - torch.Size
+  - torch.Storage
+  - torch.UntypedStorage
+  - torch.FloatStorage
+  - torch.DoubleStorage
+  - torch.HalfStorage
+  - torch.IntStorage
+  - torch.LongStorage
+  - torch.ShortStorage
+  - torch.ByteStorage
+  - torch.BoolStorage
+  - torch.ComplexFloatStorage
+  - torch.ComplexDoubleStorage
+  - torch.CharStorage
+
+  # ── dtype 常量（不是算子）──────────────────────────────────────────────────
+  - torch.float32
+  - torch.float64
+  - torch.float16
+  - torch.bfloat16
+  - torch.int32
+  - torch.int64
+  - torch.int16
+  - torch.int8
+  - torch.uint8
+  - torch.bool
+  - torch.complex64
+  - torch.complex128
+
+  # ── device / layout / memory_format 常量 ──────────────────────────────────
+  - torch.device
+  - torch.layout
+  - torch.memory_format
+  - torch.strided
+  - torch.sparse_coo
+  - torch.sparse_csr
+
+  # ── 随机数生成器（管理接口，非算子本身）────────────────────────────────────
+  - torch.Generator
+  - torch.seed
+  - torch.manual_seed
+  - torch.initial_seed
+  - torch.get_rng_state
+  - torch.set_rng_state
+
+  # ── IO（非算子）────────────────────────────────────────────────────────────
+  - torch.save
+  - torch.load
+
+  # ── 设备流与事件 ────────────────────────────────────────────────────────────
+  - torch.Stream
+  - torch.Event
+
+  # ── 线程管理 ────────────────────────────────────────────────────────────────
+  - torch.get_num_threads
+  - torch.set_num_threads
+  - torch.get_num_interop_threads
+  - torch.set_num_interop_threads
+
+  # ── 全局配置与状态管理 ─────────────────────────────────────────────────────
+  - torch.set_default_dtype
+  - torch.get_default_dtype
+  - torch.set_default_device
+  - torch.get_default_device
+  - torch.set_default_tensor_type      # 已废弃
+  - torch.set_printoptions
+  - torch.set_flush_denormal
+  - torch.compiled_with_cxx11_abi
+  - torch.use_deterministic_algorithms
+  - torch.are_deterministic_algorithms_enabled
+  - torch.is_deterministic_algorithms_warn_only_enabled
+  - torch.set_deterministic_debug_mode
+  - torch.get_deterministic_debug_mode
+  - torch.set_float32_matmul_precision
+  - torch.get_float32_matmul_precision
+  - torch.set_warn_always
+  - torch.is_warn_always_enabled
+  - torch.get_device_module
+
+  # ── 类型检查工具（返回 bool，不产生新张量）────────────────────────────────
+  - torch.is_tensor
+  - torch.is_storage
+  - torch.is_complex
+  - torch.is_conj
+  - torch.is_floating_point
+  - torch.is_nonzero
+
+  # ── 梯度上下文管理器 ────────────────────────────────────────────────────────
+  - torch.no_grad
+  - torch.enable_grad
+  - torch.is_grad_enabled
+  - torch.is_inference_mode_enabled
+
+  # ── 编译器 / 控制流 ────────────────────────────────────────────────────────
+  - torch.compile
+  - torch.cond
+  - torch._assert
+  - torch.vmap               # 函数变换，非算子本体
+
+  # ── 内部符号工具（sym_ 前缀已由 excluded_prefixes 覆盖，此处备用）──────────
+  # （sym_ 前缀已在 excluded_prefixes 处理）
