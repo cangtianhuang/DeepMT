@@ -3,8 +3,10 @@
 """
 
 import asyncio
+import hashlib
 import json
 import re
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 from urllib.parse import urljoin, urlparse
 
@@ -13,10 +15,27 @@ import requests
 from bs4 import BeautifulSoup
 
 from core.config_loader import get_config_value
-from core.logger import get_logger, log_structured
+from core.logger import get_logger
 from tools.llm.client import LLMClient
 from tools.llm.ocr_client import OCRClient
-from tools.web_search.sphinx_search import SphinxSearchIndex
+from tools.web_search.sphinx_search import CACHE_DIR, SphinxSearchIndex, load_json_cache, save_json_cache
+
+_HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+
+_PYPI_URLS: Dict[str, str] = {
+    "pytorch": "https://pypi.org/pypi/torch/json",
+    "tensorflow": "https://pypi.org/pypi/tensorflow/json",
+    "paddlepaddle": "https://pypi.org/pypi/paddlepaddle/json",
+}
+
+_FRAMEWORK_API_PAGES: Dict[str, str] = {
+    "pytorch": "https://docs.pytorch.org/docs/stable/pytorch-api.html",
+}
+
+
+def _find_article_container(soup: BeautifulSoup) -> Any:
+    """从 BeautifulSoup 对象中找到文章容器（#pytorch-article → main → article）"""
+    return soup.find(id="pytorch-article") or soup.find("main") or soup.find("article")
 
 if TYPE_CHECKING:
     from tools.web_search.search_tool import SearchResult
@@ -29,9 +48,21 @@ class SearchAgent:
 
     def __init__(self):
         self.logger = get_logger(self.__class__.__name__)
-        self.llm_client = LLMClient()
-        self.ocr_client = OCRClient()
+        self._llm_client: Optional[LLMClient] = None
+        self._ocr_client: Optional[OCRClient] = None
         self._sphinx_indexes: Dict[str, SphinxSearchIndex] = {}
+
+    @property
+    def llm_client(self) -> LLMClient:
+        if self._llm_client is None:
+            self._llm_client = LLMClient()
+        return self._llm_client
+
+    @property
+    def ocr_client(self) -> OCRClient:
+        if self._ocr_client is None:
+            self._ocr_client = OCRClient()
+        return self._ocr_client
 
     def search_docs(
         self,
@@ -102,6 +133,155 @@ class SearchAgent:
             for item in ranked_results[:max_results]
         ]
 
+    def parse_operator_doc(self, html: str) -> str:
+        """从 HTML 字符串中提取算子文档正文
+
+        Args:
+            html: 算子文档页面的 HTML 字符串
+
+        Returns:
+            清洗后的文档文本
+        """
+        soup = BeautifulSoup(html, "html.parser")
+        container = _find_article_container(soup)
+        text = (
+            container.get_text(separator="\n", strip=True)
+            if container
+            else soup.get_text(separator="\n", strip=True)
+        )
+        return self._clean_document(text)
+
+    def fetch_operator_doc_by_url(self, url: str) -> Optional[str]:
+        """从指定 URL 获取并解析算子文档
+
+        Args:
+            url: 算子文档页面的 URL
+
+        Returns:
+            清洗后的文档文本，获取失败时返回 None
+        """
+        try:
+            response = requests.get(url, headers=_HEADERS, timeout=30)
+            response.raise_for_status()
+            return self.parse_operator_doc(response.text)
+        except Exception as e:
+            self.logger.warning(f"Failed to fetch operator doc from {url}: {e}")
+            return None
+
+    def parse_api_list(
+        self, html: str, base_url: str = ""
+    ) -> List[Dict[str, str]]:
+        """从 PyTorch 参考 API 页面的 HTML 中提取 API 模块/函数列表
+
+        Args:
+            html: 参考 API 页面的 HTML 字符串
+            base_url: 用于解析相对链接的基础 URL
+
+        Returns:
+            API 条目列表，每项包含 'name' 和 'url'
+        """
+        soup = BeautifulSoup(html, "html.parser")
+        article = soup.find(id="pytorch-article") or soup.find("main") or soup.body
+
+        results: List[Dict[str, str]] = []
+        if not article:
+            return results
+
+        for a_tag in article.find_all("a", class_="reference"):
+            href = str(a_tag.get("href") or "")
+            if not href:
+                continue
+            name = a_tag.get_text(strip=True)
+            if not name:
+                continue
+            resolved = href if href.startswith("http") else urljoin(base_url, href)
+            results.append({"name": name, "url": resolved})
+
+        return results
+
+    def fetch_api_list(
+        self, url: str, use_cache: bool = True
+    ) -> List[Dict[str, str]]:
+        """从指定 URL 获取并解析 API 列表，支持文件缓存
+
+        Args:
+            url: 参考 API 列表页面的 URL
+            use_cache: 是否使用本地文件缓存（TTL 与 SphinxSearchIndex 共享）
+
+        Returns:
+            API 条目列表，每项包含 'name' 和 'url'
+        """
+        cache_path = CACHE_DIR / f"api_list_{hashlib.md5(url.encode()).hexdigest()[:16]}.json"
+        if use_cache:
+            cached = load_json_cache(cache_path)
+            if cached is not None:
+                return cached
+        try:
+            response = requests.get(url, headers=_HEADERS, timeout=30)
+            response.raise_for_status()
+            result = self.parse_api_list(response.text, base_url=url)
+            save_json_cache(cache_path, result, indent=2)
+            self.logger.debug(f"API list cached: {cache_path}")
+            return result
+        except Exception as e:
+            self.logger.warning(f"Failed to fetch API list from {url}: {e}")
+            return []
+
+    def _api_list_cache_path(self, url: str) -> Path:
+        return CACHE_DIR / f"api_list_{hashlib.md5(url.encode()).hexdigest()[:16]}.json"
+
+    def fetch_framework_versions(self, framework: str) -> List[Dict[str, str]]:
+        """从 PyPI 获取框架版本列表（不需要 LLM，纯 HTTP）
+
+        Args:
+            framework: 框架名称（pytorch / tensorflow / paddlepaddle）
+
+        Returns:
+            版本列表，每项包含 'version' 和 'upload_time'，按版本降序排列
+        """
+        pypi_url = _PYPI_URLS.get(framework)
+        if not pypi_url:
+            self.logger.warning(f"No PyPI URL configured for framework: {framework}")
+            return []
+        try:
+            response = requests.get(pypi_url, headers=_HEADERS, timeout=15)
+            response.raise_for_status()
+            data = response.json()
+            releases = data.get("releases", {})
+            versions = []
+            for ver, files in releases.items():
+                if not files:
+                    continue
+                upload_time = files[0].get("upload_time", "")
+                versions.append({"version": ver, "upload_time": upload_time})
+            # 按版本号降序（字典序足够过滤明显旧版本，精确排序通过 upload_time）
+            versions.sort(key=lambda x: x["upload_time"], reverse=True)
+            return versions
+        except Exception as e:
+            self.logger.warning(f"Failed to fetch versions for {framework}: {e}")
+            return []
+
+    def get_latest_stable_version(self, framework: str) -> Optional[str]:
+        """从 PyPI 获取框架最新稳定版本号（不需要 LLM）
+
+        Args:
+            framework: 框架名称
+
+        Returns:
+            版本字符串如 "2.6.0"，失败时返回 None
+        """
+        pypi_url = _PYPI_URLS.get(framework)
+        if not pypi_url:
+            return None
+        try:
+            response = requests.get(pypi_url, headers=_HEADERS, timeout=15)
+            response.raise_for_status()
+            data = response.json()
+            return str(data["info"]["version"])
+        except Exception as e:
+            self.logger.warning(f"Failed to get latest version for {framework}: {e}")
+            return None
+
     def _deduplicate_results(
         self, results: List[Dict[str, Any]]
     ) -> List[Dict[str, Any]]:
@@ -167,11 +347,8 @@ Return JSON format only:
             if "pytorch" in search_url:
                 return self._search_with_sphinx_index(search_url, query, max_results)
 
-            headers = {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-            }
             response = requests.get(
-                f"{search_url}?q={query}", headers=headers, timeout=10
+                f"{search_url}?q={query}", headers=_HEADERS, timeout=10
             )
             response.raise_for_status()
             return self._parse_search_results(response.text, max_results)
@@ -355,9 +532,7 @@ Return JSON only:
         """异步并发获取多个URL的内容"""
         async with aiohttp.ClientSession(
             timeout=aiohttp.ClientTimeout(total=10),
-            headers={
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-            },
+            headers=_HEADERS,
         ) as session:
             tasks = [
                 self._fetch_content_async(session, url) for url, _ in urls_to_fetch
@@ -384,20 +559,13 @@ Return JSON only:
                 response.raise_for_status()
                 html = await response.text()
                 soup = BeautifulSoup(html, "html.parser")
-
-                # 尝试查找 pytorch-article
-                article_container = (
-                    soup.find(id="pytorch-article")
-                    or soup.find("main")
-                    or soup.find("article")
-                )
+                article_container = _find_article_container(soup)
                 text_content = (
                     article_container.get_text(separator="\n", strip=True)
                     if article_container
                     else soup.get_text(separator="\n", strip=True)
                 )
 
-                # 传递文章容器
                 if ocr_content := self._extract_content_with_ocr(
                     soup, url, article_container
                 ):

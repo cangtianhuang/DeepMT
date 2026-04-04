@@ -17,6 +17,31 @@ CACHE_DIR = Path(__file__).parent / ".cache"
 CACHE_EXPIRY_SECONDS = 24 * 60 * 60  # 1 day
 
 
+# ---------------------------------------------------------------------------
+# 共用 JSON 文件缓存工具（供本模块及 search_agent.py 使用）
+# ---------------------------------------------------------------------------
+
+def load_json_cache(path: Path, ttl: float = CACHE_EXPIRY_SECONDS) -> Optional[Any]:
+    """从文件加载 JSON 缓存，若不存在或已过期返回 None"""
+    if not path.exists() or time.time() - path.stat().st_mtime > ttl:
+        return None
+    try:
+        with path.open("r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return None
+
+
+def save_json_cache(path: Path, data: Any, indent: Optional[int] = None) -> None:
+    """将数据写入 JSON 文件缓存（失败时静默忽略）"""
+    try:
+        CACHE_DIR.mkdir(parents=True, exist_ok=True)
+        with path.open("w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=indent)
+    except Exception:
+        pass
+
+
 class SphinxSearchIndex:
     """Sphinx 文档搜索索引解析器"""
 
@@ -39,57 +64,30 @@ class SphinxSearchIndex:
         self._titleterms: Dict[str, List[int]] = {}
         self._sorted_terms: List[str] = []
         self._sorted_titleterms: List[str] = []
-        self._reversed_terms: List[Tuple[str, str]] = (
-            []
-        )  # (reversed_term, original_term)
+        self._reversed_terms: List[Tuple[str, str]] = []
         self._reversed_titleterms: List[Tuple[str, str]] = []
 
     def _get_cache_path(self) -> Path:
-        """获取缓存文件路径"""
         url_hash = hashlib.md5(self.index_url.encode()).hexdigest()[:16]
         return CACHE_DIR / f"{url_hash}.json"
 
     def _load_from_cache(self) -> Optional[Dict[str, Any]]:
-        """从缓存加载索引数据"""
-        cache_path = self._get_cache_path()
-        if not cache_path.exists():
-            return None
-
-        # 检查缓存是否过期
-        mtime = cache_path.stat().st_mtime
-        if time.time() - mtime > CACHE_EXPIRY_SECONDS:
-            self.logger.debug(f"Sphinx search index cache expired: {cache_path}")
-            return None
-
-        try:
-            with open(cache_path, "r", encoding="utf-8") as f:
-                data = json.load(f)
-            self.logger.debug(f"Sphinx search index loaded from cache: {cache_path}")
-            return data
-        except Exception as e:
-            self.logger.debug(f"Sphinx search index failed to load from cache: {e}")
-            return None
+        data = load_json_cache(self._get_cache_path())
+        if data is not None:
+            self.logger.debug(f"Sphinx search index loaded from cache: {self._get_cache_path()}")
+        return data
 
     def _save_to_cache(self, data: Dict[str, Any]) -> None:
-        """保存索引数据到缓存"""
-        cache_path = self._get_cache_path()
-        try:
-            CACHE_DIR.mkdir(parents=True, exist_ok=True)
-            with open(cache_path, "w", encoding="utf-8") as f:
-                json.dump(data, f)
-            self.logger.debug(f"Sphinx search index saved to cache: {cache_path}")
-        except Exception as e:
-            self.logger.debug(f"Sphinx search index failed to save to cache: {e}")
+        save_json_cache(self._get_cache_path(), data)
+        self.logger.debug(f"Sphinx search index saved to cache: {self._get_cache_path()}")
 
     def _load_index(self) -> bool:
         """下载并解析搜索索引（支持缓存）"""
         if self._index is not None:
             return True
 
-        # 1. 尝试从缓存加载
         index_data = self._load_from_cache()
 
-        # 2. 缓存不存在或过期，从网络下载
         if index_data is None:
             try:
                 headers = {
@@ -103,14 +101,12 @@ class SphinxSearchIndex:
                     text = text[len("Search.setIndex(") : -1]
 
                 index_data = json.loads(text)
-                # 保存到缓存
                 self._save_to_cache(index_data)
 
             except Exception as e:
                 self.logger.warning(f"Sphinx search index failed to load: {e}")
                 return False
 
-        # 3. 解析索引数据
         self._index = index_data
         self._docnames = index_data.get("docnames", [])
         self._titles = dict(enumerate(index_data.get("titles", [])))
@@ -118,11 +114,8 @@ class SphinxSearchIndex:
         self._terms = index_data.get("terms", {})
         self._titleterms = index_data.get("titleterms", {})
 
-        # 预排序词项列表，用于 O(log n) 前缀匹配
         self._sorted_terms = sorted(self._terms.keys())
         self._sorted_titleterms = sorted(self._titleterms.keys())
-
-        # 反向排序词项列表，用于后缀匹配
         self._reversed_terms = sorted((t[::-1], t) for t in self._terms.keys())
         self._reversed_titleterms = sorted(
             (t[::-1], t) for t in self._titleterms.keys()
@@ -135,7 +128,6 @@ class SphinxSearchIndex:
         return True
 
     def _normalize_doc_ids(self, value: Any) -> List[int]:
-        """标准化文档 ID 列表"""
         if isinstance(value, int):
             return [value]
         if isinstance(value, list):
@@ -148,18 +140,14 @@ class SphinxSearchIndex:
         """使用二分查找找到所有前缀匹配的词项"""
         if not prefix:
             return []
-        # 找到第一个 >= prefix 的位置
         left = bisect_left(sorted_keys, prefix)
-        # 找到第一个 >= prefix+1 的位置（即不再以 prefix 开头）
         right_bound = prefix[:-1] + chr(ord(prefix[-1]) + 1)
         right = bisect_left(sorted_keys, right_bound)
-
-        results = []
-        for i in range(left, right):
-            key = sorted_keys[i]
-            if key != prefix:  # 排除精确匹配
-                results.append((key, term_dict[key]))
-        return results
+        return [
+            (sorted_keys[i], term_dict[sorted_keys[i]])
+            for i in range(left, right)
+            if sorted_keys[i] != prefix
+        ]
 
     def _find_suffix_matches(
         self,
@@ -170,18 +158,15 @@ class SphinxSearchIndex:
         """使用二分查找找到所有后缀匹配的词项"""
         if not suffix:
             return []
-        # 将后缀反转，在反向排序列表中进行前缀匹配
         reversed_suffix = suffix[::-1]
         left = bisect_left(reversed_keys, (reversed_suffix, ""))
         right_bound = reversed_suffix[:-1] + chr(ord(reversed_suffix[-1]) + 1)
         right = bisect_left(reversed_keys, (right_bound, ""))
-
-        results = []
-        for i in range(left, right):
-            reversed_term, original_term = reversed_keys[i]
-            if original_term != suffix:  # 排除精确匹配
-                results.append((original_term, term_dict[original_term]))
-        return results
+        return [
+            (reversed_keys[i][1], term_dict[reversed_keys[i][1]])
+            for i in range(left, right)
+            if reversed_keys[i][1] != suffix
+        ]
 
     def search(self, query: str, max_results: int = 10) -> List[Dict[str, Any]]:
         """搜索文档
@@ -193,14 +178,13 @@ class SphinxSearchIndex:
         if not self._load_index():
             return []
 
-        # 查询已经是处理过的单个算子名，直接使用
         term = query.lower().strip()
         if not term:
             return []
 
         doc_scores: Dict[int, float] = {}
 
-        # 1. 精确匹配（权重最高）
+        # 精确匹配（权重最高）
         if term in self._titleterms:
             for doc_id in self._normalize_doc_ids(self._titleterms[term]):
                 doc_scores[doc_id] = doc_scores.get(doc_id, 0) + 10
@@ -208,42 +192,30 @@ class SphinxSearchIndex:
             for doc_id in self._normalize_doc_ids(self._terms[term]):
                 doc_scores[doc_id] = doc_scores.get(doc_id, 0) + 1
 
-        # 2. 前缀匹配（如 relu -> relu6, relus）
-        for _, doc_ids in self._find_prefix_matches(
-            term, self._sorted_titleterms, self._titleterms
-        ):
+        # 前缀匹配（如 relu -> relu6）
+        for _, doc_ids in self._find_prefix_matches(term, self._sorted_titleterms, self._titleterms):
             for doc_id in self._normalize_doc_ids(doc_ids):
                 doc_scores[doc_id] = doc_scores.get(doc_id, 0) + 5
-        for _, doc_ids in self._find_prefix_matches(
-            term, self._sorted_terms, self._terms
-        ):
+        for _, doc_ids in self._find_prefix_matches(term, self._sorted_terms, self._terms):
             for doc_id in self._normalize_doc_ids(doc_ids):
                 doc_scores[doc_id] = doc_scores.get(doc_id, 0) + 0.5
 
-        # 3. 后缀匹配（如 relu -> leaky_relu, prelu）
-        for _, doc_ids in self._find_suffix_matches(
-            term, self._reversed_titleterms, self._titleterms
-        ):
+        # 后缀匹配（如 relu -> leaky_relu）
+        for _, doc_ids in self._find_suffix_matches(term, self._reversed_titleterms, self._titleterms):
             for doc_id in self._normalize_doc_ids(doc_ids):
                 doc_scores[doc_id] = doc_scores.get(doc_id, 0) + 3
-        for _, doc_ids in self._find_suffix_matches(
-            term, self._reversed_terms, self._terms
-        ):
+        for _, doc_ids in self._find_suffix_matches(term, self._reversed_terms, self._terms):
             for doc_id in self._normalize_doc_ids(doc_ids):
                 doc_scores[doc_id] = doc_scores.get(doc_id, 0) + 0.3
 
-        sorted_docs = sorted(doc_scores.items(), key=lambda x: x[1], reverse=True)
-
         results = []
-        for doc_id, score in sorted_docs:
-            # 如果评分低于阈值，跳过
+        for doc_id, score in sorted(doc_scores.items(), key=lambda x: x[1], reverse=True):
             normalized_score = min(score / 10.0, 1.0)
             if normalized_score < self.threshold:
                 continue
 
             title = self._titles.get(doc_id, "")
             filename = self._filenames.get(doc_id, "")
-
             if filename:
                 if filename.endswith(".rst"):
                     filename = filename[:-4] + ".html"
@@ -253,15 +225,7 @@ class SphinxSearchIndex:
             else:
                 url = self.base_url
 
-            results.append(
-                {
-                    "title": title,
-                    "url": url,
-                    "relevance_score": normalized_score,
-                    "snippet": "",
-                }
-            )
-
+            results.append({"title": title, "url": url, "relevance_score": normalized_score, "snippet": ""})
             if len(results) >= max_results:
                 break
 

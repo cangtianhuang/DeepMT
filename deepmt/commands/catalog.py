@@ -2,10 +2,13 @@
 deepmt catalog — 算子目录管理子命令组
 
 命令:
-    list    列出指定框架的算子（支持按分类筛选）
-    search  跨框架模糊搜索算子
-    info    查询某算子的跨框架分布及知识库 MR 数量
-    sync    通过 CrawlAgent 自动更新算子目录
+    list             列出指定框架的算子（支持按分类筛选）
+    search           跨框架模糊搜索算子
+    info             查询某算子的跨框架分布及知识库 MR 数量
+    sync             通过 CrawlAgent 自动更新算子目录
+    latest-version   快速获取框架最新稳定版本号（无需 LLM）
+    fetch-doc        获取并打印算子文档正文
+    update-api-list  从官方文档页面更新 API 模块列表缓存
 """
 
 import json
@@ -323,7 +326,7 @@ def catalog_sync(framework, version, no_cache, dry_run, quiet):
 
     total_added = 0
     total_updated = 0
-    errors = []
+    errors: List = []
 
     for fw in frameworks_to_sync:
         click.echo(f"\n正在同步 {click.style(fw, bold=True)}（version={version}）…")
@@ -368,3 +371,187 @@ def catalog_sync(framework, version, no_cache, dry_run, quiet):
             fg="yellow",
         ))
         sys.exit(1)
+
+
+# ── latest-version ─────────────────────────────────────────────────────────────
+
+@catalog.command("latest-version")
+@click.option(
+    "--framework", "-f",
+    default="pytorch",
+    type=click.Choice(_ALL_FRAMEWORKS, case_sensitive=False),
+    show_default=True,
+    help="目标框架",
+)
+@click.option("--all-versions", is_flag=True, default=False, help="列出所有历史版本（按发布时间降序，最多显示 20 条）")
+@click.option("--json", "as_json", is_flag=True, default=False, help="以 JSON 格式输出")
+def catalog_latest_version(framework, all_versions, as_json):
+    """从 PyPI 快速获取框架最新稳定版本号（无需 LLM，纯 HTTP）。
+
+    \b
+    示例:
+      deepmt catalog latest-version
+      deepmt catalog latest-version --framework tensorflow
+      deepmt catalog latest-version --all-versions
+      deepmt catalog latest-version --json
+    """
+    try:
+        from tools.web_search.search_agent import SearchAgent
+        agent = SearchAgent()
+    except Exception as e:
+        click.echo(click.style(f"错误：{e}", fg="red"), err=True)
+        sys.exit(1)
+
+    if all_versions:
+        click.echo(f"正在获取 {framework} 历史版本列表…", err=True)
+        versions = agent.fetch_framework_versions(framework)
+        if not versions:
+            click.echo(click.style("获取失败，请检查网络连接。", fg="red"))
+            sys.exit(1)
+        if as_json:
+            click.echo(json.dumps(versions[:20], ensure_ascii=False, indent=2))
+        else:
+            click.echo(f"\n{framework} 版本列表（最新 {min(len(versions), 20)} 条）:\n")
+            for v in versions[:20]:
+                click.echo(f"  {v['version']:<16}  {v['upload_time'][:10]}")
+        return
+
+    version = agent.get_latest_stable_version(framework)
+    if not version:
+        click.echo(click.style("获取失败，请检查网络连接。", fg="red"))
+        sys.exit(1)
+
+    if as_json:
+        click.echo(json.dumps({"framework": framework, "version": version}, ensure_ascii=False))
+    else:
+        click.echo(f"{framework} 最新稳定版本: {click.style(version, bold=True, fg='green')}")
+
+
+# ── fetch-doc ──────────────────────────────────────────────────────────────────
+
+@catalog.command("fetch-doc")
+@click.argument("operator")
+@click.option(
+    "--framework", "-f",
+    default="pytorch",
+    type=click.Choice(_ALL_FRAMEWORKS, case_sensitive=False),
+    show_default=True,
+    help="目标框架",
+)
+@click.option(
+    "--url", "-u",
+    default=None,
+    metavar="URL",
+    help="直接指定文档页面 URL（会跳过搜索步骤）",
+)
+@click.option("--max-chars", default=3000, show_default=True, help="最多显示字符数（0 = 不限）")
+def catalog_fetch_doc(operator, framework, url, max_chars):
+    """从官方文档网页获取并打印算子文档正文（无需 LLM）。
+
+    \b
+    示例:
+      deepmt catalog fetch-doc torch.matmul
+      deepmt catalog fetch-doc torch.matmul --url https://docs.pytorch.org/docs/stable/generated/torch.matmul.html
+      deepmt catalog fetch-doc relu --framework pytorch --max-chars 0
+    """
+    try:
+        from tools.web_search.search_agent import SearchAgent
+        agent = SearchAgent()
+    except Exception as e:
+        click.echo(click.style(f"错误：{e}", fg="red"), err=True)
+        sys.exit(1)
+
+    # 若未指定 URL，使用框架文档的标准 URL 格式推导
+    if url is None:
+        if framework == "pytorch":
+            # torch.matmul -> generated/torch.matmul.html
+            url = f"https://docs.pytorch.org/docs/stable/generated/{operator}.html"
+        else:
+            click.echo(click.style(
+                f"框架 '{framework}' 需要通过 --url 指定文档链接。", fg="yellow"
+            ))
+            sys.exit(1)
+
+    click.echo(f"正在获取文档: {url}", err=True)
+    doc = agent.fetch_operator_doc_by_url(url)
+
+    if not doc:
+        click.echo(click.style("获取失败，请检查 URL 或网络连接。", fg="red"))
+        sys.exit(1)
+
+    if max_chars and len(doc) > max_chars:
+        click.echo(doc[:max_chars])
+        click.echo(click.style(f"\n… （截断，共 {len(doc)} 字符，使用 --max-chars 0 查看全部）", fg="yellow"))
+    else:
+        click.echo(doc)
+
+
+# ── update-api-list ────────────────────────────────────────────────────────────
+
+@catalog.command("update-api-list")
+@click.option(
+    "--framework", "-f",
+    default="pytorch",
+    type=click.Choice(["pytorch"], case_sensitive=False),
+    show_default=True,
+    help="目标框架（当前支持 pytorch）",
+)
+@click.option("--no-cache", is_flag=True, default=False, help="忽略本地缓存，强制重新拉取")
+@click.option("--json", "as_json", is_flag=True, default=False, help="以 JSON 格式输出 API 列表")
+@click.option("--show-cache-path", is_flag=True, default=False, help="显示缓存文件路径")
+def catalog_update_api_list(framework, no_cache, as_json, show_cache_path):
+    """从官方文档获取 API 模块列表并缓存到本地（无需 LLM）。
+
+    从 pytorch-api.html 等页面解析所有 API 模块条目（名称 + 链接），
+    保存至 tools/web_search/.cache/ 目录，后续查询直接命中缓存。
+
+    \b
+    示例:
+      deepmt catalog update-api-list
+      deepmt catalog update-api-list --no-cache
+      deepmt catalog update-api-list --json
+      deepmt catalog update-api-list --show-cache-path
+    """
+    from tools.web_search.search_agent import _FRAMEWORK_API_PAGES
+    api_url = _FRAMEWORK_API_PAGES.get(framework)
+    if not api_url:
+        click.echo(click.style(f"框架 '{framework}' 暂不支持 API 列表更新。", fg="yellow"))
+        sys.exit(1)
+
+    try:
+        from tools.web_search.search_agent import SearchAgent
+        agent = SearchAgent()
+    except Exception as e:
+        click.echo(click.style(f"错误：{e}", fg="red"), err=True)
+        sys.exit(1)
+
+    use_cache = not no_cache
+
+    if show_cache_path:
+        cache_path = agent._api_list_cache_path(api_url)
+        click.echo(str(cache_path))
+        exists = cache_path.exists()
+        status = click.style("已缓存", fg="green") if exists else click.style("未缓存", fg="yellow")
+        click.echo(f"状态: {status}")
+        return
+
+    action = "使用缓存或" if use_cache else "强制"
+    click.echo(f"正在{action}拉取 {framework} API 列表: {api_url}", err=True)
+
+    entries = agent.fetch_api_list(api_url, use_cache=use_cache)
+
+    if not entries:
+        click.echo(click.style("获取失败，请检查网络连接。", fg="red"))
+        sys.exit(1)
+
+    if as_json:
+        click.echo(json.dumps(entries, ensure_ascii=False, indent=2))
+        return
+
+    click.echo(f"\n{framework} API 列表  共 {len(entries)} 条\n")
+    for entry in entries:
+        click.echo(f"  {entry['name']:<45}  {entry['url']}")
+
+    # 显示缓存路径
+    cache_path = agent._api_list_cache_path(api_url)
+    click.echo(click.style(f"\n已缓存至: {cache_path}", fg="green"))

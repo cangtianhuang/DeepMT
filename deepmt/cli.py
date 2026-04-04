@@ -49,13 +49,16 @@ def cli():
 
     \b
     快速开始:
-      deepmt catalog list --framework pytorch       # 列出 PyTorch 所有算子
-      deepmt catalog search relu                    # 跨框架搜索 relu
-      deepmt catalog info relu                      # 查询 relu 的框架分布和 MR 数量
-      deepmt catalog sync --framework pytorch       # Agent 自动更新 PyTorch 算子目录
-      deepmt mr generate relu --save                # 为 relu 生成并保存 MR
-      deepmt test operator relu                     # 运行蜕变测试
-      deepmt data clean-logs --keep-days 7          # 清理 7 天前的日志
+      deepmt catalog list --framework pytorch                          # 列出 PyTorch 所有算子
+      deepmt catalog search relu                                       # 跨框架搜索 relu
+      deepmt catalog info relu                                         # 查询 relu 的框架分布和 MR 数量
+      deepmt catalog latest-version --framework pytorch                # 查询 PyTorch 最新版本
+      deepmt catalog fetch-doc torch.matmul                            # 获取 torch.matmul 文档
+      deepmt catalog update-api-list --framework pytorch               # 更新 PyTorch API 模块列表
+      deepmt catalog sync --framework pytorch                          # Agent 自动更新算子目录
+      deepmt mr generate relu --save                                   # 为 relu 生成并保存 MR
+      deepmt test operator relu                                        # 运行蜕变测试
+      deepmt data clean-logs --keep-days 7                             # 清理 7 天前的日志
     """
 
 
