@@ -158,7 +158,7 @@ mr_generation:
 
 ## 六、开发状态
 
-详见 `docs/development_status.md`。
+详见 `docs/status.md`。
 
 | 层次     | 状态         |
 |--------|------------|
@@ -175,7 +175,7 @@ mr_generation:
 
 | 文件 | 内容 |
 |------|------|
-| `docs/development_status.md` | 开发状态与下一步 |
+| `docs/status.md` | 开发状态与下一步 |
 | `docs/agent_crawler_plan.md` | CrawlAgent 设计 |
 | `docs/environment_variables.md` | 环境变量说明 |
 | `docs/operator_mr_technical.md` | 算子 MR 技术细节 |

@@ -1399,6 +1399,6 @@ proven_mrs = self.sympy_prover.prove_mrs(
 ## 10. 参考资源
 
 - **设计文档**：`docs/design.md`
-- **开发状态**：`docs/development_status.md`
+- **开发状态**：`docs/status.md`
 - **示例代码**：`examples/test_relu_mr.py`
 - **API文档**：`api/deepmt.py`
