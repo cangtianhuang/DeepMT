@@ -6,7 +6,7 @@ import time
 from typing import Any, Dict, List, Optional
 
 from deepmt.core.config_loader import get_config_value
-from deepmt.core.logger import get_logger, log_structured
+from deepmt.core.logger import logger
 
 
 class LLMClient:
@@ -21,12 +21,9 @@ class LLMClient:
         api_key: Optional[str] = None,
         model: Optional[str] = None,
     ):
-        """创建或获取LLM客户端实例"""
         config_key = cls._generate_config_key(provider, api_key, model)
-
         if config_key in cls._instances:
             return cls._instances[config_key]
-
         instance = super().__new__(cls)
         cls._instances[config_key] = instance
         return instance
@@ -37,13 +34,10 @@ class LLMClient:
         api_key: Optional[str] = None,
         model: Optional[str] = None,
     ):
-        """初始化LLM客户端"""
         config_key = self._generate_config_key(provider, api_key, model)
-
         if config_key in LLMClient._initialized_keys:
             return
 
-        self.logger = get_logger(self.__class__.__name__)
         self.provider = provider
         self._config_key = config_key
         self.api_key = (
@@ -66,86 +60,39 @@ class LLMClient:
         LLMClient._initialized_keys.add(config_key)
 
     @classmethod
-    def _generate_config_key(
-        cls,
-        provider: str,
-        api_key: Optional[str],
-        model: Optional[str],
-    ) -> str:
-        """根据配置参数生成唯一的配置key"""
+    def _generate_config_key(cls, provider: str, api_key: Optional[str], model: Optional[str]) -> str:
         config_str = f"{provider}|{api_key or ''}|{model or ''}"
         return hashlib.md5(config_str.encode("utf-8")).hexdigest()
 
     def _init_client(self):
-        """初始化提供商特定的客户端"""
         if self.provider == "openai":
             try:
                 import openai
-
                 if self.base_url:
-                    self.client = openai.OpenAI(
-                        api_key=self.api_key, base_url=self.base_url
-                    )
+                    self.client = openai.OpenAI(api_key=self.api_key, base_url=self.base_url)
                 else:
                     self.client = openai.OpenAI(api_key=self.api_key)
             except ImportError:
-                raise ImportError(
-                    "openai package not installed. Install with: pip install openai"
-                )
+                raise ImportError("openai package not installed. Install with: pip install openai")
         elif self.provider == "anthropic":
             try:
                 import anthropic
-
                 self.client = anthropic.Anthropic(api_key=self.api_key)
             except ImportError:
-                raise ImportError(
-                    "anthropic package not installed. Install with: pip install anthropic"
-                )
+                raise ImportError("anthropic package not installed. Install with: pip install anthropic")
         else:
             raise ValueError(f"Unsupported LLM provider: {self.provider}")
 
-    def chat_completion(
-        self, messages: List[Dict[str, Any]], use_model_max: bool = False
-    ) -> str:
-        """
-        发送聊天完成请求
-
-        Args:
-            messages: 消息列表，格式：[{"role": "user", "content": "..."}]
-            use_model_max: 是否使用高级模型（model_max）而非基础模型（model_base
-
-        Returns:
-            响应内容字符串
-        """
-        # 根据任务类型选择模型
+    def chat_completion(self, messages: List[Dict[str, Any]], use_model_max: bool = False) -> str:
         model = self.model_max if use_model_max else self.model_base
-
-        # Log request summary
         total_chars = sum(len(msg.get("content", "")) for msg in messages)
-        messages_full = "\\n".join(
-            [
-                f"{msg['role']}: {msg['content'].replace('\n', '\\n').replace('\r', '\\r')}"
-                for msg in messages
-            ]
-        )
-        log_structured(
-            self.logger,
-            "LLM",
-            f"Calling {model} ...",
-            message_count=len(messages),
-            total_chars=total_chars,
-            details=messages_full,
-            level="DEBUG",
-            max_detail_width=len(messages_full),
-        )
-        log_structured(self.logger, "LLM", f"Calling {model} ...")
+        logger.debug(f"🤖 [LLM] Calling {model} | messages={len(messages)} chars={total_chars}")
+        logger.info(f"🤖 [LLM] Calling {model} ...")
         start_time = time.time()
 
         if self.provider == "openai":
             response = self.client.chat.completions.create(  # type: ignore
-                model=model,
-                messages=messages,  # type: ignore
-                temperature=self.temperature,
+                model=model, messages=messages, temperature=self.temperature  # type: ignore
             )
             content = response.choices[0].message.content.strip()  # type: ignore
             usage = response.usage
@@ -170,30 +117,14 @@ class LLMClient:
         else:
             raise ValueError(f"Unsupported provider: {self.provider}")
 
-        # Log response
-        content_full = content.replace("\n", "\\n").replace("\r", "\\r")
         if usage:
-            log_structured(
-                self.logger,
-                "LLM",
-                f"Response from {model}",
-                prompt_tokens=usage.prompt_tokens,  # type: ignore
-                completion_tokens=usage.completion_tokens,  # type: ignore
-                total_tokens=usage.total_tokens,  # type: ignore
-                duration=f"{duration:.1f}s",
-                details=content_full,
-                level="DEBUG",
-                max_detail_width=len(content_full),
+            logger.debug(
+                f"🤖 [LLM] Response from {model} | "
+                f"prompt={usage.prompt_tokens} completion={usage.completion_tokens} "  # type: ignore
+                f"total={usage.total_tokens} duration={duration:.1f}s"  # type: ignore
             )
         else:
-            log_structured(
-                self.logger,
-                "LLM",
-                f"Response from {model} (no usage info)",
-                duration=f"{duration:.1f}s",
-                details=content_full,
-                level="DEBUG",
-            )
+            logger.debug(f"🤖 [LLM] Response from {model} | duration={duration:.1f}s")
         return content
 
     def chat_completion_with_tools(
@@ -203,23 +134,6 @@ class LLMClient:
         tool_choice: str = "auto",
         use_model_max: bool = False,
     ) -> Dict[str, Any]:
-        """
-        发送带工具定义的聊天请求（Function Calling）。
-
-        Args:
-            messages: 消息列表
-            tools: OpenAI 格式的工具定义列表
-            tool_choice: "auto" | "none" | {"type": "function", "function": {"name": ...}}
-            use_model_max: 是否使用高级模型
-
-        Returns:
-            {
-                "content": str or None,       # 文本回复（无工具调用时）
-                "tool_calls": [               # 工具调用列表（有调用时）
-                    {"id": str, "name": str, "arguments": dict}
-                ] or None
-            }
-        """
         if self.provider != "openai":
             raise NotImplementedError(
                 f"chat_completion_with_tools 目前仅支持 openai 兼容接口，当前 provider: {self.provider}"
@@ -227,15 +141,8 @@ class LLMClient:
 
         model = self.model_max if use_model_max else self.model_base
         total_chars = sum(len(msg.get("content", "") or "") for msg in messages)
-        log_structured(
-            self.logger,
-            "LLM",
-            f"Calling {model} with {len(tools)} tools ...",
-            message_count=len(messages),
-            total_chars=total_chars,
-            level="DEBUG",
-        )
-        log_structured(self.logger, "LLM", f"Calling {model} with tools ...")
+        logger.debug(f"🤖 [LLM] Calling {model} with {len(tools)} tools | chars={total_chars}")
+        logger.info(f"🤖 [LLM] Calling {model} with tools ...")
         start_time = time.time()
 
         response = self.client.chat.completions.create(  # type: ignore
@@ -249,37 +156,21 @@ class LLMClient:
         duration = time.time() - start_time
         choice = response.choices[0]
         message = choice.message
-
         result: Dict[str, Any] = {"content": None, "tool_calls": None}
 
         if message.tool_calls:
             import json as _json
-
             parsed_calls = []
             for tc in message.tool_calls:
                 try:
                     args = _json.loads(tc.function.arguments)
                 except Exception:
                     args = {"_raw": tc.function.arguments}
-                parsed_calls.append(
-                    {"id": tc.id, "name": tc.function.name, "arguments": args}
-                )
+                parsed_calls.append({"id": tc.id, "name": tc.function.name, "arguments": args})
             result["tool_calls"] = parsed_calls
-            log_structured(
-                self.logger,
-                "LLM",
-                f"Tool calls: {[c['name'] for c in parsed_calls]}",
-                duration=f"{duration:.1f}s",
-                level="DEBUG",
-            )
+            logger.debug(f"🤖 [LLM] Tool calls: {[c['name'] for c in parsed_calls]} | duration={duration:.1f}s")
         else:
             result["content"] = (message.content or "").strip()
-            log_structured(
-                self.logger,
-                "LLM",
-                f"Text response ({len(result['content'])} chars)",
-                duration=f"{duration:.1f}s",
-                level="DEBUG",
-            )
+            logger.debug(f"🤖 [LLM] Text response | chars={len(result['content'])} duration={duration:.1f}s")
 
         return result

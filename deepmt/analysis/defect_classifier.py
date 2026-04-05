@@ -6,14 +6,14 @@ import numpy as np
 from typing import Any, Tuple, Dict
 
 from deepmt.ir.schema import MetamorphicRelation
-from deepmt.core.logger import get_logger, log_error
+from deepmt.core.logger import logger
 
 
 class DefectClassifier:
     """缺陷分类器：检测和分类MR违反情况"""
 
     def __init__(self):
-        self.logger = get_logger(self.__class__.__name__)
+        pass
 
     def compare(
         self,
@@ -53,7 +53,7 @@ class DefectClassifier:
             return is_match, defect_info
 
         except Exception as e:
-            log_error(self.logger, "Error in compare", exception=e)
+            logger.opt(exception=e).error("❌ Error in compare")
             return False, {
                 "type": "EXCEPTION",
                 "details": f"Comparison failed: {str(e)}",

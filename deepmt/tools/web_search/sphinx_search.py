@@ -10,7 +10,7 @@ from urllib.parse import urljoin
 
 import requests
 
-from deepmt.core.logger import get_logger
+from deepmt.core.logger import logger
 
 # 缓存目录和过期时间（秒）
 CACHE_DIR = Path("data/web_search_cache")
@@ -54,7 +54,6 @@ class SphinxSearchIndex:
         """
         self.base_url = base_url.rstrip("/") + "/"
         self.index_url = urljoin(self.base_url, "searchindex.js")
-        self.logger = get_logger(self.__class__.__name__)
         self.threshold = threshold
         self._index: Optional[Dict[str, Any]] = None
         self._docnames: List[str] = []
@@ -74,12 +73,12 @@ class SphinxSearchIndex:
     def _load_from_cache(self) -> Optional[Dict[str, Any]]:
         data = load_json_cache(self._get_cache_path())
         if data is not None:
-            self.logger.debug(f"Sphinx search index loaded from cache: {self._get_cache_path()}")
+            logger.debug(f"Sphinx search index loaded from cache: {self._get_cache_path()}")
         return data
 
     def _save_to_cache(self, data: Dict[str, Any]) -> None:
         save_json_cache(self._get_cache_path(), data)
-        self.logger.debug(f"Sphinx search index saved to cache: {self._get_cache_path()}")
+        logger.debug(f"Sphinx search index saved to cache: {self._get_cache_path()}")
 
     def _load_index(self) -> bool:
         """下载并解析搜索索引（支持缓存）"""
@@ -104,7 +103,7 @@ class SphinxSearchIndex:
                 self._save_to_cache(index_data)
 
             except Exception as e:
-                self.logger.warning(f"Sphinx search index failed to load: {e}")
+                logger.warning(f"Sphinx search index failed to load: {e}")
                 return False
 
         self._index = index_data
@@ -121,7 +120,7 @@ class SphinxSearchIndex:
             (t[::-1], t) for t in self._titleterms.keys()
         )
 
-        self.logger.debug(
+        logger.debug(
             f"Sphinx search index loaded {len(self._docnames)} docs, "
             f"{len(self._terms)} terms"
         )

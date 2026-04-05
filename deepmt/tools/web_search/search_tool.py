@@ -7,7 +7,7 @@ import requests
 
 from deepmt.core.config_loader import get_config_value
 from deepmt.core.framework import FrameworkType
-from deepmt.core.logger import get_logger
+from deepmt.core.logger import logger
 from deepmt.tools.web_search.search_agent import SearchAgent
 
 
@@ -34,7 +34,6 @@ class WebSearchTool:
 
     def __init__(self) -> None:
         """初始化实例属性"""
-        self.logger = get_logger(self.__class__.__name__)
         self.max_results = get_config_value("web_search.max_results", 5)
 
         self.framework_docs = {
@@ -85,7 +84,7 @@ class WebSearchTool:
             搜索结果列表
         """
         if framework not in self.framework_docs:
-            self.logger.warning(
+            logger.warning(
                 f"Framework '{framework}' not in framework_docs. "
                 f"Supported: {list(self.framework_docs.keys())}"
             )
@@ -107,7 +106,7 @@ class WebSearchTool:
         all_results = []
         normalized_name = self._normalize_operator_name(operator_name)
 
-        self.logger.debug(
+        logger.debug(
             f"Searching '{operator_name}' ({normalized_name}) in {framework} from {sources}"
         )
 
@@ -115,7 +114,7 @@ class WebSearchTool:
         source_ratios = {"docs": 2, "github": 1, "web_search": 2}
         total_ratio = sum(source_ratios[s] for s, enabled in sources.items() if enabled)
         if total_ratio == 0:
-            self.logger.warning("⚠️  WARN | No search sources enabled")
+            logger.warning("⚠️  WARN | No search sources enabled")
             return []
 
         # 计算每个源的结果数量
@@ -143,7 +142,7 @@ class WebSearchTool:
 
         # all_results.sort(key=lambda x: x.relevance_score, reverse=True)
 
-        self.logger.debug(f"Found {len(all_results)} total results")
+        logger.debug(f"Found {len(all_results)} total results")
         return all_results
 
     def _normalize_operator_name(self, name: str) -> str:
@@ -177,7 +176,7 @@ class WebSearchTool:
         except ValueError:
             raise
         except Exception as e:
-            self.logger.warning(f"{framework.capitalize()} docs search failed: {e}")
+            logger.warning(f"{framework.capitalize()} docs search failed: {e}")
             return []
 
     def _search_github(
@@ -188,7 +187,7 @@ class WebSearchTool:
     ) -> List[SearchResult]:
         """搜索GitHub仓库"""
         if not self.github_token:
-            self.logger.warning(
+            logger.warning(
                 "GitHub API token not configured. Set web_search.github_token in config.yaml"
             )
             return []
@@ -243,7 +242,7 @@ class WebSearchTool:
 
             return search_results
         except Exception as e:
-            self.logger.warning(f"GitHub search failed: {e}")
+            logger.warning(f"GitHub search failed: {e}")
             return []
 
     def _search_web(
@@ -254,7 +253,7 @@ class WebSearchTool:
     ) -> List[SearchResult]:
         """使用百度搜索API进行网络搜索"""
         if not self.baidu_api_key:
-            self.logger.warning(
+            logger.warning(
                 "Baidu search API key not configured. Set baidu_search.api_key in config.yaml"
             )
             return []
@@ -293,5 +292,5 @@ class WebSearchTool:
                 for result in results
             ]
         except Exception as e:
-            self.logger.warning(f"Web search failed: {e}")
+            logger.warning(f"Web search failed: {e}")
             return []

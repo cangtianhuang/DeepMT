@@ -6,7 +6,7 @@
 from typing import Any, List, Tuple
 
 from deepmt.core.framework import FrameworkType
-from deepmt.core.logger import get_logger
+from deepmt.core.logger import logger
 from deepmt.core.plugins_manager import PluginsManager
 from deepmt.core.results_manager import ResultsManager
 from deepmt.ir.schema import ApplicationIR, MetamorphicRelation, ModelIR, OperatorIR
@@ -33,7 +33,6 @@ class TestRunner:
         """
         self.plugins_manager = plugins_manager
         self.results_manager = results_manager
-        self.logger = get_logger(self.__class__.__name__)
 
     def run_with_mrs(
         self,
@@ -49,11 +48,11 @@ class TestRunner:
             mrs: 预生成的MR列表
             target_framework: 目标框架名称（"pytorch", "tensorflow", "paddlepaddle"）
         """
-        self.logger.info(
+        logger.info(
             f"Running tests for {type(ir_object).__name__}: {ir_object.name if hasattr(ir_object, 'name') else 'unknown'}"
         )
-        self.logger.info(f"Target framework: {target_framework}")
-        self.logger.info(f"Using {len(mrs)} pre-generated MRs")
+        logger.info(f"Target framework: {target_framework}")
+        logger.info(f"Using {len(mrs)} pre-generated MRs")
 
         try:
             # 验证IR对象
@@ -64,13 +63,13 @@ class TestRunner:
             try:
                 plugin = self.plugins_manager.get_plugin(target_framework)
             except KeyError as e:
-                self.logger.error(f"Plugin not found: {e}")
+                logger.error(f"Plugin not found: {e}")
                 return
 
             # 执行每个MR
             results = []
             for i, mr in enumerate(mrs):
-                self.logger.info(f"Executing MR {i+1}/{len(mrs)}: {mr.description}")
+                logger.info(f"Executing MR {i+1}/{len(mrs)}: {mr.description}")
 
                 try:
                     # 将IR和MR转换为框架代码
@@ -81,21 +80,21 @@ class TestRunner:
 
                     # 存储结果
                     results.append((mr, output))
-                    self.logger.debug(f"MR {i+1} executed successfully")
+                    logger.debug(f"MR {i+1} executed successfully")
 
                 except Exception as e:
-                    self.logger.error(f"Error executing MR {i+1}: {e}")
+                    logger.error(f"Error executing MR {i+1}: {e}")
                     # 继续执行其他MR
                     continue
 
             # 比对和存储结果
             if results:
-                self.logger.info("Comparing and storing results...")
+                logger.info("Comparing and storing results...")
                 self.results_manager.compare_and_store(ir_object, results)
-                self.logger.info("Test execution completed successfully")
+                logger.info("Test execution completed successfully")
             else:
-                self.logger.warning("No results to store")
+                logger.warning("No results to store")
 
         except Exception as e:
-            self.logger.error(f"Test execution failed: {e}")
+            logger.error(f"Test execution failed: {e}")
             raise

@@ -9,7 +9,7 @@ from typing import Any, Optional, Union
 import yaml
 
 from deepmt.core.framework import FrameworkType
-from deepmt.core.logger import get_logger
+from deepmt.core.logger import logger
 from deepmt.ir.schema import ApplicationIR, ModelIR, OperatorIR
 
 
@@ -17,7 +17,6 @@ class IRManager:
     """统一中间表示管理器"""
 
     def __init__(self):
-        self.logger = get_logger(self.__class__.__name__)
         self.ir_types = {
             "OperatorIR": OperatorIR,
             "ModelIR": ModelIR,
@@ -38,7 +37,7 @@ class IRManager:
         if not path.exists():
             raise FileNotFoundError(f"IR file not found: {path}")
 
-        self.logger.info(f"Loading IR from {path}")
+        logger.info(f"Loading IR from {path}")
 
         # 读取文件
         with open(path, "r", encoding="utf-8") as f:
@@ -57,12 +56,12 @@ class IRManager:
 
         try:
             ir_object = ir_class(**ir_data)
-            self.logger.info(
+            logger.info(
                 f"Successfully loaded {ir_type}: {ir_object.name if hasattr(ir_object, 'name') else 'unknown'}"
             )
             return ir_object
         except Exception as e:
-            self.logger.error(f"Failed to create IR object: {e}")
+            logger.error(f"Failed to create IR object: {e}")
             raise
 
     def save_ir(self, ir_object: Any, path: Union[str, Path], format: str = "json"):
@@ -77,7 +76,7 @@ class IRManager:
         path = Path(path)
         path.parent.mkdir(parents=True, exist_ok=True)
 
-        self.logger.info(f"Saving IR to {path}")
+        logger.info(f"Saving IR to {path}")
 
         # 获取IR类型
         ir_type = type(ir_object).__name__
@@ -95,7 +94,7 @@ class IRManager:
             else:
                 json.dump(data, f, indent=2, ensure_ascii=False)
 
-        self.logger.info(f"Successfully saved {ir_type} to {path}")
+        logger.info(f"Successfully saved {ir_type} to {path}")
 
     def create_ir_from_framework(
         self, model_code: str, framework: FrameworkType = "pytorch"
@@ -113,7 +112,7 @@ class IRManager:
         Raises:
             NotImplementedError: 功能尚未完全实现
         """
-        self.logger.warning(
+        logger.warning(
             f"create_ir_from_framework is not fully implemented for {framework}"
         )
         # TODO: 实现框架代码解析逻辑
@@ -131,13 +130,13 @@ class IRManager:
             是否有效
         """
         if not isinstance(ir_object, (OperatorIR, ModelIR, ApplicationIR)):
-            self.logger.error(f"Invalid IR type: {type(ir_object)}")
+            logger.error(f"Invalid IR type: {type(ir_object)}")
             return False
 
         # 基本验证
         if hasattr(ir_object, "name") and not ir_object.name:
-            self.logger.error("IR object missing name")
+            logger.error("IR object missing name")
             return False
 
-        self.logger.debug(f"IR validation passed: {type(ir_object).__name__}")
+        logger.debug(f"IR validation passed: {type(ir_object).__name__}")
         return True

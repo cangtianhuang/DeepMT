@@ -1,5 +1,9 @@
 """Web工具集成测试：OperatorInfoFetcher、文档获取、版本查询"""
 
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
 import json
 from unittest.mock import MagicMock, patch
 

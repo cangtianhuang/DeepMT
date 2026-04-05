@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Optional, Union
 
 from deepmt.core.framework import FrameworkType
 from deepmt.core.ir_manager import IRManager
-from deepmt.core.logger import get_logger
+from deepmt.core.logger import logger
 from deepmt.core.plugins_manager import PluginsManager
 from deepmt.core.results_manager import ResultsManager
 from deepmt.core.scheduler import TaskScheduler
@@ -91,8 +91,7 @@ class DeepMT:
             db_path: 数据库路径
             log_level: 日志级别
         """
-        self.logger = get_logger()
-        self.logger.info("Initializing DeepMT client")
+        logger.info("Initializing DeepMT client")
 
         # 初始化核心组件
         self.ir_manager = IRManager()
@@ -137,7 +136,7 @@ class DeepMT:
 
         start_time = time.time()
 
-        self.logger.info(f"Testing operator: {name} on {framework}")
+        logger.info(f"Testing operator: {name} on {framework}")
 
         try:
             # 1. 自动创建IR（用户不需要知道IR的存在）
@@ -148,12 +147,12 @@ class DeepMT:
             # 2. 尝试从知识库加载MR，如果没有则生成
             mrs = None
             if self.mr_repository.exists(operator_ir.name):
-                self.logger.info(
+                logger.info(
                     f"Loading MRs from knowledge base for {operator_ir.name}"
                 )
                 mrs = self.mr_repository.load(operator_ir.name)
             else:
-                self.logger.info(f"Generating MRs for {operator_ir.name}")
+                logger.info(f"Generating MRs for {operator_ir.name}")
                 if self._mr_generator is None:
                     kb = KnowledgeBase()
                     self._mr_generator = OperatorMRGenerator(kb)
@@ -195,7 +194,7 @@ class DeepMT:
             return result
 
         except Exception as e:
-            self.logger.error(f"Error testing operator: {e}")
+            logger.error(f"Error testing operator: {e}")
             raise
 
     def test_operators(
@@ -265,7 +264,7 @@ class DeepMT:
                 )
                 results.append(result)
             else:
-                self.logger.warning(f"Unsupported test type: {test_type}")
+                logger.warning(f"Unsupported test type: {test_type}")
 
         return results
 

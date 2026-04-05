@@ -15,7 +15,7 @@ from urllib.parse import urljoin
 import requests
 from bs4 import BeautifulSoup
 
-from deepmt.core.logger import get_logger
+from deepmt.core.logger import logger
 from deepmt.tools.web_search.sphinx_search import CACHE_DIR, load_json_cache, save_json_cache
 
 _HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
@@ -48,7 +48,6 @@ class APIListFetcher:
     """从官方文档 HTML 提取框架 API 个体条目（类/函数级别）"""
 
     def __init__(self):
-        self.logger = get_logger(self.__class__.__name__)
 
     # ── 主入口 ────────────────────────────────────────────────────────────────
 
@@ -83,22 +82,22 @@ class APIListFetcher:
         if use_cache:
             cached = load_json_cache(cache_path)
             if cached is not None:
-                self.logger.debug(f"[{framework}] Loaded {len(cached)} APIs from cache")
+                logger.debug(f"[{framework}] Loaded {len(cached)} APIs from cache")
                 return cached
 
         # 1. 获取模块页面列表
         module_list = self.fetch_module_list(framework, version)
-        self.logger.info(f"[{framework}] Found {len(module_list)} module pages")
+        logger.info(f"[{framework}] Found {len(module_list)} module pages")
 
         # 2. 过滤掉不需要的命名空间
         if skip_namespaces:
             filtered = []
             for m in module_list:
                 if any(m["name"].startswith(ns) for ns in skip_namespaces):
-                    self.logger.debug(f"  Skipping namespace: {m['name']}")
+                    logger.debug(f"  Skipping namespace: {m['name']}")
                 else:
                     filtered.append(m)
-            self.logger.info(
+            logger.info(
                 f"[{framework}] After namespace filter: {len(filtered)} pages to fetch"
             )
         else:
@@ -115,7 +114,7 @@ class APIListFetcher:
                 seen.add(api["name"])
                 deduped.append(api)
 
-        self.logger.info(f"[{framework}] Total unique APIs: {len(deduped)}")
+        logger.info(f"[{framework}] Total unique APIs: {len(deduped)}")
         save_json_cache(cache_path, deduped, indent=2)
         return deduped
 
@@ -133,7 +132,7 @@ class APIListFetcher:
             resp.raise_for_status()
             return self._parse_module_index(resp.text, base_url=index_url)
         except Exception as e:
-            self.logger.warning(f"Failed to fetch module list for {framework}: {e}")
+            logger.warning(f"Failed to fetch module list for {framework}: {e}")
             return []
 
     def fetch_module_page_apis(self, url: str, use_cache: bool = True) -> List[Dict]:
@@ -155,7 +154,7 @@ class APIListFetcher:
             save_json_cache(cache_path, apis)
             return apis
         except Exception as e:
-            self.logger.debug(f"Failed to fetch module page {url}: {e}")
+            logger.debug(f"Failed to fetch module page {url}: {e}")
             return []
 
     # ── HTML 解析 ──────────────────────────────────────────────────────────────
@@ -319,9 +318,9 @@ class APIListFetcher:
                 try:
                     apis = future.result()
                     all_apis.extend(apis)
-                    self.logger.debug(f"  {module['name']}: {len(apis)} APIs")
+                    logger.debug(f"  {module['name']}: {len(apis)} APIs")
                 except Exception as e:
-                    self.logger.warning(f"  {module['name']}: error - {e}")
+                    logger.warning(f"  {module['name']}: error - {e}")
 
         return all_apis
 

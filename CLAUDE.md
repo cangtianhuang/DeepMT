@@ -11,7 +11,7 @@ DeepMT（Deep Metamorphic Testing）是面向深度学习框架（PyTorch、Tens
 项目使用 `uv` 管理虚拟环境：
 
 ```bash
-source .venv/bin/activate && PYTHONPATH=/home/lhy/DeepMT python -m pytest tests/
+source .venv/bin/activate && PYTHONPATH=$(pwd) python -m pytest tests/
 ```
 
 配置文件查找顺序：`DEEPMT_CONFIG_PATH` → 当前目录 `config.yaml` → 项目根 `config.yaml` → `~/.config/deepmt/config.yaml`

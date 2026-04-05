@@ -1,5 +1,9 @@
 """SymPy证明引擎单元测试"""
 
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
 import uuid
 import pytest
 import sympy as sp

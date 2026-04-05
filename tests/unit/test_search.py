@@ -1,5 +1,9 @@
 """搜索工具单元测试：HTML解析 + Sphinx本地搜索"""
 
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
 import os
 import time
 import pytest

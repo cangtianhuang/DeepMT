@@ -12,7 +12,7 @@ from typing import Callable, Dict, List, Optional
 
 import yaml
 
-from deepmt.core.logger import get_logger, log_structured
+from deepmt.core.logger import logger
 from deepmt.ir.schema import MetamorphicRelation
 
 
@@ -39,7 +39,6 @@ class MRTemplatePool:
         Args:
             config_path: 配置文件路径（如果为None，则使用默认路径）
         """
-        self.logger = get_logger(self.__class__.__name__)
         self.templates: Dict[str, MRTemplate] = {}
         self.operator_mr_mapping: Dict[str, List[str]] = {}
 
@@ -88,17 +87,17 @@ class MRTemplatePool:
 
                     self.templates[template_name] = template
                 except Exception as e:
-                    self.logger.warning(f"Failed to load template {template_name}: {e}")
+                    logger.warning(f"Failed to load template {template_name}: {e}")
 
-            self.logger.debug(
+            logger.debug(
                 f"Loaded {len(self.templates)} MR templates from {self.config_path}"
             )
 
         except FileNotFoundError:
-            self.logger.error(f"MR templates config file not found: {self.config_path}")
+            logger.error(f"MR templates config file not found: {self.config_path}")
             raise
         except Exception as e:
-            self.logger.error(f"Failed to load MR templates config: {e}")
+            logger.error(f"Failed to load MR templates config: {e}")
             raise
 
     def _infer_num_inputs(self, operator_func: Optional[Callable]) -> int:
@@ -111,7 +110,7 @@ class MRTemplatePool:
             num_inputs = len(sig.parameters)
             return num_inputs
         except Exception as e:
-            self.logger.warning(
+            logger.warning(
                 f"Failed to infer num_inputs from operator_func: {e}, using default: 2"
             )
             return 2
@@ -164,7 +163,7 @@ class MRTemplatePool:
                 ):
                     applicable.append(identity_template)
 
-        self.logger.debug(
+        logger.debug(
             f"Found {len(applicable)} applicable templates for {operator_name} "
             f"(inputs: {num_inputs})"
         )
@@ -187,7 +186,7 @@ class MRTemplatePool:
             try:
                 return template.transform_func(*args)
             except Exception as e:
-                self.logger.warning(f"Transform function error: {e}")
+                logger.warning(f"Transform function error: {e}")
                 return args
 
         # 生成 transform_code
@@ -237,15 +236,10 @@ class MRTemplatePool:
                 mr = self.create_mr_from_template(template)
                 candidates.append(mr)
             except Exception as e:
-                self.logger.warning(
+                logger.warning(
                     f"Failed to create MR from template {template.name}: {e}"
                 )
 
-        log_structured(
-            self.logger,
-            "GEN",
-            f"Generated {len(candidates)} MR candidates from templates "
-            f"for operator {operator_name}",
-        )
+        logger.info(f"⚡ [GEN] Generated {len(candidates)} MR candidates from templates for operator {operator_name}")
 
         return candidates

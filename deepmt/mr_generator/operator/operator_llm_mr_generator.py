@@ -10,7 +10,7 @@ import traceback
 import uuid
 from typing import Any, Callable, Dict, List, Optional
 
-from deepmt.core.logger import get_logger, log_error, log_structured
+from deepmt.core.logger import logger
 from deepmt.ir.schema import MetamorphicRelation
 from deepmt.tools.llm.client import LLMClient
 
@@ -20,7 +20,6 @@ class OperatorLLMMRGenerator:
 
     def __init__(self):
         """初始化算子层LLM MR生成器"""
-        self.logger = get_logger(self.__class__.__name__)
         self.llm_client = LLMClient()
 
     def _build_user_prompt(
@@ -96,9 +95,9 @@ class OperatorLLMMRGenerator:
             try:
                 sig = inspect.signature(operator_func)
                 operator_signature = str(sig)
-                self.logger.debug(f"Auto-extracted signature: {operator_signature}")
+                logger.debug(f"Auto-extracted signature: {operator_signature}")
             except Exception as e:
-                self.logger.debug(f"Failed to extract signature from function: {e}")
+                logger.debug(f"Failed to extract signature from function: {e}")
 
         # User prompt
         user_prompt = self._build_user_prompt(
@@ -221,61 +220,43 @@ Generate the response for the user's operator. Start with **Analysis**, then pro
 
             # 转换为MR对象
             if not isinstance(data, dict) or "mrs" not in data:
-                log_error(
-                    self.logger,
-                    f"Invalid JSON structure from LLM",
-                    exception=TypeError(
-                        f"Expected dict with 'mrs' key, got {type(data)}"
-                    ),
-                )
+                logger.opt(exception=TypeError(f"Expected dict with 'mrs' key, got {type(data)}")).error("❌ Invalid JSON structure from LLM")
                 if isinstance(data, dict):
-                    self.logger.debug(f"Available keys: {list(data.keys())}")
+                    logger.debug(f"Available keys: {list(data.keys())}")
                 return []
 
             mrs = []
             mr_list = data.get("mrs", [])
             if not isinstance(mr_list, list):
-                log_error(
-                    self.logger,
-                    f"Invalid 'mrs' field type",
-                    exception=TypeError(f"Expected list, got {type(mr_list)}"),
-                )
+                logger.opt(exception=TypeError(f"Expected list, got {type(mr_list)}")).error("❌ Invalid 'mrs' field type")
                 return []
 
             for idx, mr_data in enumerate(mr_list[:top_k]):
                 try:
                     if not isinstance(mr_data, dict):
-                        self.logger.warning(f"MR entry {idx} is not a dict, skipping")
+                        logger.warning(f"MR entry {idx} is not a dict, skipping")
                         continue
 
                     mr = self._parse_mr_response(mr_data)
                     if mr:
                         mrs.append(mr)
-                        self.logger.debug(
+                        logger.debug(
                             f"Successfully parsed MR {idx+1}: {mr.description[:50]}..."
                         )
                     else:
-                        self.logger.warning(
+                        logger.warning(
                             f"Failed to parse MR {idx+1}: returned None"
                         )
                 except Exception as e:
-                    self.logger.warning(f"Failed to parse MR {idx+1}: {e}")
-                    self.logger.debug(traceback.format_exc())
+                    logger.warning(f"Failed to parse MR {idx+1}: {e}")
+                    logger.debug(traceback.format_exc())
                     continue
 
-            log_structured(
-                self.logger,
-                "GEN",
-                f"Parsed {len(mr_list)} MR entries from LLM response",
-            )
+            logger.info("⚡ [GEN] " + f"Parsed {len(mr_list)} MR entries from LLM response")
             return mrs
 
         except Exception as e:
-            log_error(
-                self.logger,
-                f"LLM MR generation failed for '{operator_name}'",
-                exception=e,
-            )
+            logger.opt(exception=e).error("❌ " + f"LLM MR generation failed for '{operator_name}'")
             return []
 
     def _parse_mr_response(
@@ -286,7 +267,7 @@ Generate the response for the user's operator. Start with **Analysis**, then pro
             # 1. 解析基本字段
             description = mr_data.get("description", "")
             if not description:
-                self.logger.warning("MR data missing 'description' field")
+                logger.warning("MR data missing 'description' field")
                 return None
 
             category = mr_data.get("category", "general")
@@ -299,14 +280,14 @@ Generate the response for the user's operator. Start with **Analysis**, then pro
                 transform_code, code_type="transform", test_input={"input": 1.0}
             )
             if transform is None:
-                self.logger.warning(
+                logger.warning(
                     f"Failed to parse transform_code for: {description}"
                 )
                 return None
 
             # 3. 验证 oracle_expr
             if not oracle_expr:
-                self.logger.warning(f"MR missing 'oracle_expr': {description}")
+                logger.warning(f"MR missing 'oracle_expr': {description}")
                 return None
 
             # 4. 创建 MetamorphicRelation 对象
@@ -324,8 +305,8 @@ Generate the response for the user's operator. Start with **Analysis**, then pro
             )
 
         except Exception as e:
-            self.logger.warning(f"Failed to parse MR data: {e}")
-            self.logger.debug(traceback.format_exc())
+            logger.warning(f"Failed to parse MR data: {e}")
+            logger.debug(traceback.format_exc())
             return None
 
     def _parse_lambda_code(
@@ -353,7 +334,7 @@ Generate the response for the user's operator. Start with **Analysis**, then pro
 
         # 检查是否为 lambda 表达式
         if not code.startswith("lambda"):
-            self.logger.warning(
+            logger.warning(
                 f"{code_type}_code doesn't start with 'lambda': {code[:50]}"
             )
             return None
@@ -366,7 +347,7 @@ Generate the response for the user's operator. Start with **Analysis**, then pro
 
             # 验证是否可调用
             if not callable(func):
-                self.logger.warning(f"{code_type} is not callable: {type(func)}")
+                logger.warning(f"{code_type} is not callable: {type(func)}")
                 return None
 
             # 简单测试（可选）
@@ -374,16 +355,16 @@ Generate the response for the user's operator. Start with **Analysis**, then pro
                 try:
                     result = func(test_input)
                     if code_type == "transform" and not isinstance(result, dict):
-                        self.logger.warning(
+                        logger.warning(
                             f"Transform returned {type(result)}, expected dict"
                         )
                 except Exception as e:
-                    self.logger.debug(f"{code_type} test failed (may be OK): {e}")
+                    logger.debug(f"{code_type} test failed (may be OK): {e}")
 
             return func
 
         except Exception as e:
-            self.logger.warning(
+            logger.warning(
                 f"Failed to eval {code_type}_code '{code[:50]}...': {e}"
             )
             return None

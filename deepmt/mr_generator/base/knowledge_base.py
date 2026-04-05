@@ -9,7 +9,7 @@ from typing import Any, Callable, Dict, List, Optional
 
 import yaml
 
-from deepmt.core.logger import get_logger
+from deepmt.core.logger import logger
 from deepmt.ir.schema import MetamorphicRelation
 
 
@@ -30,7 +30,6 @@ class KnowledgeBase:
         Args:
             config_path: 配置文件路径（如果为None，则使用默认路径）
         """
-        self.logger = get_logger(self.__class__.__name__)
         self.operator_knowledge: Dict[str, List[Dict[str, Any]]] = {}
         self.model_knowledge: Dict[str, List[Dict[str, Any]]] = {}
         self.application_knowledge: Dict[str, List[Dict[str, Any]]] = {}
@@ -59,7 +58,7 @@ class KnowledgeBase:
             # 加载应用层知识
             self.application_knowledge = config.get("application", {}) or {}
 
-            self.logger.info(
+            logger.info(
                 f"Loaded knowledge base from {self.config_path}: "
                 f"{len(self.operator_knowledge)} operators, "
                 f"{len(self.model_knowledge)} models, "
@@ -67,12 +66,12 @@ class KnowledgeBase:
             )
 
         except FileNotFoundError:
-            self.logger.warning(
+            logger.warning(
                 f"Knowledge base config file not found: {self.config_path}"
             )
             # 使用空知识库，不抛出异常
         except Exception as e:
-            self.logger.error(f"Failed to load knowledge base config: {e}")
+            logger.error(f"Failed to load knowledge base config: {e}")
             # 使用空知识库，不抛出异常
 
     def get_mrs_for_operator(self, operator_name: str) -> List[Callable]:
@@ -115,10 +114,10 @@ class KnowledgeBase:
                 )
                 mrs.append(mr_func)
             except Exception as e:
-                self.logger.warning(f"Failed to create MR function from config: {e}")
+                logger.warning(f"Failed to create MR function from config: {e}")
 
         if not mrs:
-            self.logger.debug(f"No MRs found for operator: {operator_name}")
+            logger.debug(f"No MRs found for operator: {operator_name}")
 
         return mrs
 
@@ -162,10 +161,10 @@ class KnowledgeBase:
                 )
                 mrs.append(mr_func)
             except Exception as e:
-                self.logger.warning(f"Failed to create MR function from config: {e}")
+                logger.warning(f"Failed to create MR function from config: {e}")
 
         if not mrs:
-            self.logger.debug(f"No MRs found for model: {model_name}")
+            logger.debug(f"No MRs found for model: {model_name}")
 
         return mrs
 
@@ -209,10 +208,10 @@ class KnowledgeBase:
                 )
                 mrs.append(mr_func)
             except Exception as e:
-                self.logger.warning(f"Failed to create MR function from config: {e}")
+                logger.warning(f"Failed to create MR function from config: {e}")
 
         if not mrs:
-            self.logger.debug(f"No MRs found for application: {application_name}")
+            logger.debug(f"No MRs found for application: {application_name}")
 
         return mrs
 
@@ -227,7 +226,7 @@ class KnowledgeBase:
         if operator_name not in self.operator_knowledge:
             self.operator_knowledge[operator_name] = []
         self.operator_knowledge[operator_name].append(mr_config)
-        self.logger.debug(f"Added knowledge for operator: {operator_name}")
+        logger.debug(f"Added knowledge for operator: {operator_name}")
 
     def add_model_knowledge(self, model_name: str, mr_config: Dict[str, Any]):
         """
@@ -240,7 +239,7 @@ class KnowledgeBase:
         if model_name not in self.model_knowledge:
             self.model_knowledge[model_name] = []
         self.model_knowledge[model_name].append(mr_config)
-        self.logger.debug(f"Added knowledge for model: {model_name}")
+        logger.debug(f"Added knowledge for model: {model_name}")
 
     def add_application_knowledge(
         self, application_name: str, mr_config: Dict[str, Any]
@@ -255,4 +254,4 @@ class KnowledgeBase:
         if application_name not in self.application_knowledge:
             self.application_knowledge[application_name] = []
         self.application_knowledge[application_name].append(mr_config)
-        self.logger.debug(f"Added knowledge for application: {application_name}")
+        logger.debug(f"Added knowledge for application: {application_name}")

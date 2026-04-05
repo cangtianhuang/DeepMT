@@ -6,7 +6,7 @@
 
 from typing import Any, Callable, Optional
 
-from deepmt.core.logger import get_logger
+from deepmt.core.logger import logger
 from deepmt.core.oracle_evaluator import OracleEvaluator
 
 
@@ -20,10 +20,9 @@ class FrameworkAdapter:
         Args:
             framework: 框架名称（pytorch, tensorflow, paddle）
         """
-        self.logger = get_logger(self.__class__.__name__)
         self.framework = framework
         self.oracle_evaluator = OracleEvaluator()
-        self.logger.debug(f"FrameworkAdapter initialized for {framework}")
+        logger.debug(f"FrameworkAdapter initialized for {framework}")
 
     def bind_transform_code(
         self,
@@ -61,7 +60,7 @@ class FrameworkAdapter:
             func = eval(transform_code, {"__builtins__": {}}, safe_dict)
 
             if not callable(func):
-                self.logger.warning(
+                logger.warning(
                     f"transform_code is not callable after binding: {type(func)}"
                 )
                 return None
@@ -69,8 +68,8 @@ class FrameworkAdapter:
             return func
 
         except Exception as e:
-            self.logger.error(f"Failed to bind transform_code: {e}")
-            self.logger.debug(f"Transform code: {transform_code}")
+            logger.error(f"Failed to bind transform_code: {e}")
+            logger.debug(f"Transform code: {transform_code}")
             return None
 
     def bind_oracle_expr(
@@ -114,8 +113,8 @@ class FrameworkAdapter:
             )
 
         except Exception as e:
-            self.logger.error(f"Failed to bind oracle_expr: {e}")
-            self.logger.debug(f"Oracle expression: {oracle_expr}")
+            logger.error(f"Failed to bind oracle_expr: {e}")
+            logger.debug(f"Oracle expression: {oracle_expr}")
             raise
 
     def _preprocess_oracle_expr(self, oracle_expr: str) -> str:

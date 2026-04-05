@@ -15,7 +15,7 @@ import requests
 from bs4 import BeautifulSoup
 
 from deepmt.core.config_loader import get_config_value
-from deepmt.core.logger import get_logger
+from deepmt.core.logger import logger
 from deepmt.tools.llm.client import LLMClient
 from deepmt.tools.llm.ocr_client import OCRClient
 from deepmt.tools.web_search.sphinx_search import CACHE_DIR, SphinxSearchIndex, load_json_cache, save_json_cache
@@ -47,7 +47,6 @@ class SearchAgent:
     """
 
     def __init__(self):
-        self.logger = get_logger(self.__class__.__name__)
         self._llm_client: Optional[LLMClient] = None
         self._ocr_client: Optional[OCRClient] = None
         self._sphinx_indexes: Dict[str, SphinxSearchIndex] = {}
@@ -89,14 +88,14 @@ class SearchAgent:
         from deepmt.tools.web_search.search_tool import SearchResult
 
         # 获取原始文档
-        self.logger.debug(f"Executing search for '{query}'...")
+        logger.debug(f"Executing search for '{query}'...")
         raw_results = self._execute_search(search_url, query, max_results * 2)
         unique_results = self._deduplicate_results(raw_results)
-        self.logger.debug(f"Found {len(unique_results)} raw results")
+        logger.debug(f"Found {len(unique_results)} raw results")
 
         if not unique_results:
             if corrected_query := self._detect_and_correct_input_error(query):
-                self.logger.debug(f"No results, try '{corrected_query}' instead?")
+                logger.debug(f"No results, try '{corrected_query}' instead?")
                 raise ValueError(
                     f"搜索 '{query}' 未找到结果。"
                     f"您是否想搜索 '{corrected_query}'？如果是，请使用 '{corrected_query}' 重新搜索。"
@@ -104,19 +103,19 @@ class SearchAgent:
             raise ValueError(f"搜索 '{query}' 未找到结果。请检查算子名称是否正确。")
 
         # 获取文档内容
-        self.logger.debug(f"Fetching {len(unique_results)} result contents...")
+        logger.debug(f"Fetching {len(unique_results)} result contents...")
         urls_to_fetch: List[tuple[str, Dict[str, Any]]] = [
             (item["url"], item) for item in unique_results if item.get("url")
         ]
 
         results = asyncio.run(self._fetch_contents_async(urls_to_fetch))
-        self.logger.debug(f"Fetched {len(results)} result contents")
+        logger.debug(f"Fetched {len(results)} result contents")
 
         for result in results:
             result["content"] = self._clean_document(result["content"])
 
         # 根据内容进行重排和过滤
-        self.logger.debug(f"Reranking {len(results)} results...")
+        logger.debug(f"Reranking {len(results)} results...")
         ranked_results = self._rerank_and_filter(query, results)
 
         # 构建结果
@@ -165,7 +164,7 @@ class SearchAgent:
             response.raise_for_status()
             return self.parse_operator_doc(response.text)
         except Exception as e:
-            self.logger.warning(f"Failed to fetch operator doc from {url}: {e}")
+            logger.warning(f"Failed to fetch operator doc from {url}: {e}")
             return None
 
     def parse_api_list(
@@ -244,10 +243,10 @@ class SearchAgent:
             response.raise_for_status()
             result = self.parse_api_list(response.text, base_url=url)
             save_json_cache(cache_path, result, indent=2)
-            self.logger.debug(f"API list cached: {cache_path}")
+            logger.debug(f"API list cached: {cache_path}")
             return result
         except Exception as e:
-            self.logger.warning(f"Failed to fetch API list from {url}: {e}")
+            logger.warning(f"Failed to fetch API list from {url}: {e}")
             return []
 
     def _api_list_cache_path(self, url: str) -> Path:
@@ -264,7 +263,7 @@ class SearchAgent:
         """
         pypi_url = _PYPI_URLS.get(framework)
         if not pypi_url:
-            self.logger.warning(f"No PyPI URL configured for framework: {framework}")
+            logger.warning(f"No PyPI URL configured for framework: {framework}")
             return []
         try:
             response = requests.get(pypi_url, headers=_HEADERS, timeout=15)
@@ -281,7 +280,7 @@ class SearchAgent:
             versions.sort(key=lambda x: x["upload_time"], reverse=True)
             return versions
         except Exception as e:
-            self.logger.warning(f"Failed to fetch versions for {framework}: {e}")
+            logger.warning(f"Failed to fetch versions for {framework}: {e}")
             return []
 
     def get_latest_stable_version(self, framework: str) -> Optional[str]:
@@ -302,7 +301,7 @@ class SearchAgent:
             data = response.json()
             return str(data["info"]["version"])
         except Exception as e:
-            self.logger.warning(f"Failed to get latest version for {framework}: {e}")
+            logger.warning(f"Failed to get latest version for {framework}: {e}")
             return None
 
     def _deduplicate_results(
@@ -359,7 +358,7 @@ Return JSON format only:
             return None
 
         except Exception as e:
-            self.logger.warning(f"Failed to detect input error: {e}")
+            logger.warning(f"Failed to detect input error: {e}")
             return None
 
     def _execute_search(
@@ -376,7 +375,7 @@ Return JSON format only:
             response.raise_for_status()
             return self._parse_search_results(response.text, max_results)
         except Exception as e:
-            self.logger.warning(f"Search execution failed: {e}")
+            logger.warning(f"Search execution failed: {e}")
             return []
 
     def _search_with_sphinx_index(
@@ -401,7 +400,7 @@ Return JSON format only:
             return self._sphinx_indexes[base_url].search(query, max_results)
 
         except Exception as e:
-            self.logger.warning(f"Sphinx search index failed: {e}")
+            logger.warning(f"Sphinx search index failed: {e}")
             return []
 
     def _parse_search_results(
@@ -449,7 +448,7 @@ Return JSON format only:
             return results
 
         except Exception as e:
-            self.logger.warning(f"Failed to parse search results: {e}")
+            logger.warning(f"Failed to parse search results: {e}")
             return []
 
     def _rerank_and_filter(
@@ -544,7 +543,7 @@ Return JSON only:
             return ranked_results
 
         except Exception as e:
-            self.logger.warning(
+            logger.warning(
                 f"⚠️  WARN | LLM reranking failed: {e}, using original order"
             )
             return results
@@ -565,7 +564,7 @@ Return JSON only:
             results = []
             for (url, item), content in zip(urls_to_fetch, contents):
                 if isinstance(content, Exception):
-                    self.logger.warning(
+                    logger.warning(
                         f"Failed to fetch content from {url}: {str(content)}"
                     )
                 elif content:
@@ -597,7 +596,7 @@ Return JSON only:
                 return text_content
 
         except Exception as e:
-            self.logger.warning(f"Failed to fetch content from {url}: {e}")
+            logger.warning(f"Failed to fetch content from {url}: {e}")
             return None
 
     def _extract_content_with_ocr(
@@ -695,7 +694,7 @@ Return JSON only:
             return "\n".join(ocr_results) if ocr_results else None
 
         except Exception as e:
-            self.logger.warning(f"OCR extraction failed: {e}")
+            logger.warning(f"OCR extraction failed: {e}")
             return None
 
     def _clean_document(self, doc: str, clean_latex: bool = False) -> str:
@@ -716,6 +715,6 @@ Return JSON only:
         """使用 pylatexenc 清洗 LaTeX 公式，转换为可读的纯文本"""
         from pylatexenc.latex2text import LatexNodes2Text
 
-        self.logger.debug("Using pylatexenc for LaTeX cleaning")
+        logger.debug("Using pylatexenc for LaTeX cleaning")
         text = LatexNodes2Text().latex_to_text(doc)
         return re.sub(r"\n\s*\n", "\n\n", text)

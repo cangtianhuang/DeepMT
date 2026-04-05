@@ -8,7 +8,7 @@ from typing import Dict, List, Optional
 
 import sympy as sp
 
-from deepmt.core.logger import get_logger
+from deepmt.core.logger import logger
 
 
 class ASTParser:
@@ -18,7 +18,6 @@ class ASTParser:
     """
 
     def __init__(self):
-        self.logger = get_logger(self.__class__.__name__)
 
         # AST二元操作符到SymPy操作的映射
         self.binop_mapping = {
@@ -91,7 +90,7 @@ class ASTParser:
                     break
 
             if func_node is None:
-                self.logger.warning("No function definition found in code")
+                logger.warning("No function definition found in code")
                 return None
 
             # 获取参数名列表
@@ -114,10 +113,10 @@ class ASTParser:
             return self._parse_function_body(func_node.body, symbols, param_to_symbol)
 
         except SyntaxError as e:
-            self.logger.warning(f"Syntax error in code: {e}")
+            logger.warning(f"Syntax error in code: {e}")
             return None
         except Exception as e:
-            self.logger.warning(f"AST parsing error: {e}")
+            logger.warning(f"AST parsing error: {e}")
             return None
 
     def _parse_function_body(
@@ -136,7 +135,7 @@ class ASTParser:
             if isinstance(stmt, ast.Return) and stmt.value is not None:
                 return self._parse_expr(stmt.value, symbols, param_to_symbol)
 
-        self.logger.warning("No return statement found in function body")
+        logger.warning("No return statement found in function body")
         return None
 
     def _parse_expr(
@@ -230,7 +229,7 @@ class ASTParser:
             return self._parse_expr(node.value, symbols, param_to_symbol)
 
         # 未支持的节点类型
-        self.logger.warning(f"Unsupported AST node type: {type(node).__name__}")
+        logger.warning(f"Unsupported AST node type: {type(node).__name__}")
         raise ValueError(f"Unsupported AST node type: {type(node).__name__}")
 
     def _parse_call(
@@ -256,7 +255,7 @@ class ASTParser:
             return sympy_func(*args)
 
         # 未知函数，创建符号函数
-        self.logger.debug(f"Unknown function '{func_name}', creating symbolic function")
+        logger.debug(f"Unknown function '{func_name}', creating symbolic function")
         return sp.Function(func_name)(*args)
 
     def _parse_method_call(
@@ -284,7 +283,7 @@ class ASTParser:
                 if sympy_func:
                     return sympy_func(*args)
                 # 未知模块函数，退化为符号函数
-                self.logger.debug(f"Unknown function '{method}', creating symbolic function")
+                logger.debug(f"Unknown function '{method}', creating symbolic function")
                 return sp.Function(method)(*args)
 
         # 对象是参数变量，解析为方法调用
@@ -328,7 +327,7 @@ class ASTParser:
         else:
             # 未知方法：将 obj 作为第一个位置参数
             all_args = [obj] + args
-            self.logger.debug(f"Unknown method '{method}', creating symbolic function")
+            logger.debug(f"Unknown method '{method}', creating symbolic function")
             return sp.Function(method)(*all_args)
 
     def _get_func_name(self, node: ast.AST) -> str:

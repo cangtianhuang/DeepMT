@@ -9,7 +9,7 @@ from urllib.parse import urlparse
 import requests
 
 from deepmt.core.config_loader import get_config_value
-from deepmt.core.logger import get_logger, log_structured
+from deepmt.core.logger import logger
 
 # OCR API 支持的图片格式
 SUPPORTED_IMAGE_FORMATS: Set[str] = {"pdf", "jpeg", "jpg", "png", "tiff", "tif", "bmp"}
@@ -35,7 +35,6 @@ class OCRClient:
 
     def __init__(self) -> None:
         """初始化 OCR 客户端"""
-        self.logger = get_logger(self.__class__.__name__)
         # 从配置加载器获取配置值
         self.api_key = get_config_value("ocr.api_key", "")
         self.enabled = get_config_value("ocr.enabled", False)
@@ -44,7 +43,7 @@ class OCRClient:
         self.ocr_api_url = base_url.rstrip("/") + "/ocr/paddleocr"
 
         if not self.api_key:
-            self.logger.warning(
+            logger.warning(
                 "Baidu API key not found. OCR functionality will be disabled."
             )
             self.enabled = False
@@ -124,23 +123,15 @@ class OCRClient:
         if not self.enabled:
             return None
 
-        log_structured(
-            self.logger,
-            "OCR",
-            f"OCR API called for image {image_url}...",
-        )
+        logger.info("📷 [OCR] " + f"OCR API called for image {image_url}...")
         if result := self._call_ocr_api(
             image_url=image_url,
             prompt_label="formula" if not use_layout_detection else None,
             use_layout_detection=use_layout_detection,
         ):
-            log_structured(
-                self.logger,
-                "OCR",
-                f"OCR API responsed for image {image_url}: {result[:100]}",
-            )
+            logger.info("📷 [OCR] " + f"OCR API responsed for image {image_url}: {result[:100]}")
             return result
-        self.logger.warning(f"OCR API failed for {image_url}")
+        logger.warning(f"OCR API failed for {image_url}")
         return None
 
     def recognize_text(
@@ -159,24 +150,16 @@ class OCRClient:
         if not self.enabled:
             return None
 
-        log_structured(
-            self.logger,
-            "OCR",
-            f"OCR API called for image {image_url}...",
-        )
+        logger.info("📷 [OCR] " + f"OCR API called for image {image_url}...")
         if result := self._call_ocr_api(
             image_url=image_url,
             prompt_label="ocr" if not use_layout_detection else None,
             use_layout_detection=use_layout_detection,
         ):
-            log_structured(
-                self.logger,
-                "OCR",
-                f"OCR API responsed for image {image_url}: {result[:100]}",
-            )
+            logger.info("📷 [OCR] " + f"OCR API responsed for image {image_url}: {result[:100]}")
             return result
 
-        self.logger.warning(f"OCR API failed for {image_url}")
+        logger.warning(f"OCR API failed for {image_url}")
         return None
 
     def _call_ocr_api(
@@ -197,12 +180,12 @@ class OCRClient:
             识别结果文本，如果失败则返回None
         """
         if not self.api_key:
-            self.logger.warning("Baidu API key not configured")
+            logger.warning("Baidu API key not configured")
             return None
 
         # 检查图片格式是否支持
         if not self._is_supported_format(image_url):
-            self.logger.debug(f"Skipping unsupported image format: {image_url}")
+            logger.debug(f"Skipping unsupported image format: {image_url}")
             return None
 
         try:
@@ -263,5 +246,5 @@ class OCRClient:
             return None
 
         except Exception as e:
-            self.logger.warning(f"OCR API call failed: {e}")
+            logger.warning(f"OCR API call failed: {e}")
             return None

@@ -8,7 +8,7 @@ from typing import Callable, List, Optional, Tuple
 
 import sympy as sp
 
-from deepmt.core.logger import get_logger, log_structured
+from deepmt.core.logger import logger
 from deepmt.ir.schema import MetamorphicRelation
 from deepmt.mr_generator.operator.sympy_translator import SympyTranslator
 
@@ -80,7 +80,6 @@ class SymPyProver:
         Args:
             code_translator: 代码转换器（如果为None则创建默认实例）
         """
-        self.logger = get_logger(self.__class__.__name__)
         self.code_translator = code_translator or SympyTranslator()
 
     # ------------------------------------------------------------------
@@ -115,7 +114,7 @@ class SymPyProver:
             signature=signature,
         )
         if sympy_expr is None:
-            self.logger.warning("Failed to convert code to SymPy expression")
+            logger.warning("Failed to convert code to SymPy expression")
         return sympy_expr
 
     # ------------------------------------------------------------------
@@ -209,7 +208,7 @@ class SymPyProver:
                 return False, f"Unsupported oracle_expr format: {oracle_expr}"
 
         except Exception as e:
-            self.logger.debug(f"Error verifying oracle_expr '{oracle_expr}': {e}")
+            logger.debug(f"Error verifying oracle_expr '{oracle_expr}': {e}")
             return False, f"Error verifying oracle_expr '{oracle_expr}': {e}"
 
     def _check_equality(
@@ -331,7 +330,7 @@ class SymPyProver:
         except (TypeError, AttributeError, KeyError):
             pass  # 可能是字典式 transform，继续尝试
         except Exception as e:
-            self.logger.debug(f"Position-based transform failed: {e}")
+            logger.debug(f"Position-based transform failed: {e}")
 
         # --- 路径 2：字典式 transform（LLM生成，需 mock torch）---
         transform_code = getattr(mr, "transform_code", "") or ""
@@ -365,7 +364,7 @@ class SymPyProver:
                     return (new_input,)
 
             except Exception as e:
-                self.logger.debug(f"Dict-based transform fallback failed: {e}")
+                logger.debug(f"Dict-based transform fallback failed: {e}")
 
         return None
 
@@ -408,7 +407,7 @@ class SymPyProver:
             transformed_symbols = self._apply_transform_symbolically(mr, symbols)
             if transformed_symbols is None:
                 error_msg = f"Cannot apply transform symbolically for MR: {mr.description}"
-                self.logger.debug(error_msg)
+                logger.debug(error_msg)
                 return False, error_msg
 
             if not isinstance(transformed_symbols, (tuple, list)):
@@ -434,16 +433,16 @@ class SymPyProver:
             )
 
             if is_proven:
-                self.logger.debug(f"MR proven: {mr.description}")
+                logger.debug(f"MR proven: {mr.description}")
             else:
-                self.logger.debug(
+                logger.debug(
                     f"MR proof failed: {mr.description}. Reason: {error_msg}"
                 )
             return is_proven, error_msg
 
         except Exception as e:
             error_msg = f"SymPy proof error: {str(e)}"
-            self.logger.debug(f"SymPy proof exception: {error_msg}")
+            logger.debug(f"SymPy proof exception: {error_msg}")
             return False, error_msg
 
     def prove_mr(
@@ -486,7 +485,7 @@ class SymPyProver:
                         else "Cannot convert operator to SymPy expression"
                     )
                     if operator_name:
-                        self.logger.warning(error_msg)
+                        logger.warning(error_msg)
                     return False, error_msg
 
             if num_inputs is None:
@@ -502,7 +501,7 @@ class SymPyProver:
 
         except Exception as e:
             error_msg = f"SymPy proof error: {str(e)}"
-            self.logger.debug(f"SymPy proof exception: {error_msg}")
+            logger.debug(f"SymPy proof exception: {error_msg}")
             return False, error_msg
 
     # ------------------------------------------------------------------
@@ -540,10 +539,10 @@ class SymPyProver:
             return []
 
         proven_mrs = []
-        log_structured(self.logger, "GEN", f"Proving {len(mrs)} MRs using SymPy...")
+        logger.info("⚡ [GEN] " + f"Proving {len(mrs)} MRs using SymPy...")
 
         if sympy_expr is None:
-            self.logger.debug(
+            logger.debug(
                 "Converting code to SymPy expression (once for all MRs)..."
             )
             sympy_expr = self.code_to_sympy(
@@ -553,13 +552,13 @@ class SymPyProver:
                 num_inputs=num_inputs,
             )
             if sympy_expr is None:
-                self.logger.warning(
+                logger.warning(
                     f"Cannot convert operator '{operator_name or 'unknown'}' to SymPy. "
                     f"All {len(mrs)} MRs will fail proof."
                 )
                 return []
         else:
-            self.logger.debug(
+            logger.debug(
                 "Using provided SymPy expression (reusing from previous stage)"
             )
 
@@ -577,15 +576,11 @@ class SymPyProver:
 
             if is_proven:
                 proven_mrs.append(mr)
-                self.logger.debug(f"MR {i+1} proven: {mr.description}")
+                logger.debug(f"MR {i+1} proven: {mr.description}")
             else:
-                self.logger.debug(
+                logger.debug(
                     f"MR {i+1} proof failed: {mr.description}. Reason: {error_msg}"
                 )
 
-        log_structured(
-            self.logger,
-            "GEN",
-            f"SymPy proof completed: {len(proven_mrs)}/{len(mrs)} MRs proven",
-        )
+        logger.info(f"⚡ [GEN] SymPy proof completed: {len(proven_mrs)}/{len(mrs)} MRs proven")
         return proven_mrs

@@ -10,7 +10,7 @@ MR快速筛选器：使用 TestRunner 进行少量快速测试
 from typing import Any, Callable, Dict, List
 
 from deepmt.core.framework import FrameworkType
-from deepmt.core.logger import get_logger, log_structured
+from deepmt.core.logger import logger
 from deepmt.core.oracle_evaluator import OracleEvaluator
 from deepmt.core.plugins_manager import PluginsManager
 from deepmt.core.results_manager import ResultsManager
@@ -34,7 +34,6 @@ class MRPreChecker:
 
     def __init__(self):
         """初始化快速筛选器"""
-        self.logger = get_logger(self.__class__.__name__)
         self.oracle_evaluator = OracleEvaluator()
 
         self.plugins_manager = PluginsManager()
@@ -103,7 +102,7 @@ class MRPreChecker:
                 except Exception as e:
                     failed_count += 1
                     error_messages.append(f"Test case {i+1}: transform error: {str(e)}")
-                    self.logger.debug(f"Transform error: {e}")
+                    logger.debug(f"Transform error: {e}")
                     continue
 
                 # 4. 执行变换后的输入
@@ -126,7 +125,7 @@ class MRPreChecker:
                 # 执行错误也算作失败
                 failed_count += 1
                 error_messages.append(f"Test case {i+1}: execution error: {str(e)}")
-                self.logger.debug(f"Execution error: {e}")
+                logger.debug(f"Execution error: {e}")
 
         # 计算通过率
         total_count = passed_count + failed_count
@@ -173,11 +172,7 @@ class MRPreChecker:
 
         filtered = []
 
-        log_structured(
-            self.logger,
-            "CHECK",
-            f"Pre-checking {len(mr_candidates)} MR candidates...",
-        )
+        logger.info(f"✅ [CHECK] Pre-checking {len(mr_candidates)} MR candidates...")
 
         for i, mr in enumerate(mr_candidates):
             is_valid, error_msg = self.check_mr(
@@ -186,18 +181,14 @@ class MRPreChecker:
 
             if is_valid:
                 filtered.append(mr)
-                self.logger.debug(f"MR {i+1} passed pre-check: {mr.description}")
+                logger.debug(f"MR {i+1} passed pre-check: {mr.description}")
             else:
-                self.logger.debug(
+                logger.debug(
                     f"MR {i+1} failed pre-check: {mr.description}. "
                     f"Reason: {error_msg}"
                 )
 
-        log_structured(
-            self.logger,
-            "CHECK",
-            f"Pre-check completed: {len(filtered)}/{len(mr_candidates)} MRs passed",
-        )
+        logger.info(f"✅ [CHECK] Pre-check completed: {len(filtered)}/{len(mr_candidates)} MRs passed")
 
         return filtered
 

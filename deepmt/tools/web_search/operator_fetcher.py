@@ -4,7 +4,7 @@ from typing import Any, Dict, Optional
 
 from deepmt.core.config_loader import get_config_value
 from deepmt.core.framework import FrameworkType
-from deepmt.core.logger import get_logger, log_error, log_structured
+from deepmt.core.logger import logger
 from deepmt.tools.web_search.search_tool import WebSearchTool
 
 
@@ -13,7 +13,6 @@ class OperatorInfoFetcher:
 
     def __init__(self) -> None:
         """初始化实例属性"""
-        self.logger = get_logger(self.__class__.__name__)
         self.search_tool = WebSearchTool()
         self.enabled = get_config_value("web_search.enabled", True)
 
@@ -35,7 +34,7 @@ class OperatorInfoFetcher:
             算子信息字典，包含 name, doc, source_urls
         """
         if not self.enabled:
-            log_structured(self.logger, "WARN", "Web search is disabled in config", level="WARNING")
+            logger.warning("⚠️ [WARN] Web search is disabled in config")
             return {"name": operator_name, "doc": "", "source_urls": []}
 
         try:
@@ -45,11 +44,11 @@ class OperatorInfoFetcher:
                 sources=get_config_value("web_search.sources"),
             )
         except ValueError as e:
-            log_error(self.logger, f"Search failed for '{operator_name}'", exception=e)
+            logger.opt(exception=e).error("❌ " + f"Search failed for '{operator_name}'")
             return {"name": operator_name, "doc": "", "source_urls": []}
 
         if not search_results:
-            log_structured(self.logger, "WARN", f"No results found for '{operator_name}'", level="WARNING")
+            logger.warning("⚠️ [WARN] " + f"No results found for '{operator_name}'")
             return {"name": operator_name, "doc": "", "source_urls": []}
 
         docs_results = [r for r in search_results if r.source == "docs"]
@@ -65,12 +64,7 @@ class OperatorInfoFetcher:
             "source_urls": source_urls,
         }
 
-        log_structured(
-            self.logger,
-            "SEARCH",
-            f"Found {len(source_urls)} sources | {len(doc)} chars",
-            level="DEBUG",
-        )
+        logger.debug(f"🔍 [SEARCH] Found {len(source_urls)} sources | {len(doc)} chars")
 
         return operator_info
 

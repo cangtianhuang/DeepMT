@@ -8,7 +8,7 @@ from typing import Callable, Optional
 
 import sympy as sp
 
-from deepmt.core.logger import get_logger
+from deepmt.core.logger import logger
 from deepmt.tools.llm.client import LLMClient
 
 
@@ -16,7 +16,6 @@ class SympyTranslator:
     """代码到SymPy转换器"""
 
     def __init__(self, use_llm: bool = True):
-        self.logger = get_logger(self.__class__.__name__)
         self._use_llm = use_llm
 
         from deepmt.mr_generator.operator.ast_parser import ASTParser
@@ -63,7 +62,7 @@ class SympyTranslator:
             signature = signature or ""
 
         if code is None:
-            self.logger.warning("No code provided for translation")
+            logger.warning("No code provided for translation")
             return None
 
         # use_llm=None 表示使用构造时的默认值
@@ -71,22 +70,22 @@ class SympyTranslator:
 
         # 2. 尝试代理路径：LLM → Python参考实现 → AST → SymPy
         if _use_llm and use_proxy_path:
-            self.logger.debug("Trying proxy path: LLM → Python reference → AST → SymPy")
+            logger.debug("Trying proxy path: LLM → Python reference → AST → SymPy")
             result = self._try_proxy_path(code, doc or "", signature)
             if result is not None:
                 return result
-            self.logger.debug("Proxy path failed, trying direct path")
+            logger.debug("Proxy path failed, trying direct path")
 
         # 3. 尝试直接路径：LLM → SymPy表达式代码
         if _use_llm:
-            self.logger.debug("Trying direct path: LLM → SymPy code")
+            logger.debug("Trying direct path: LLM → SymPy code")
             result = self._try_direct_path(code, doc or "", signature)
             if result is not None:
                 return result
-            self.logger.debug("Direct path failed, trying AST fallback")
+            logger.debug("Direct path failed, trying AST fallback")
 
         # 4. 回退到纯AST解析
-        self.logger.debug("Falling back to AST parsing of original code")
+        logger.debug("Falling back to AST parsing of original code")
         return self.ast_parser.parse_to_sympy(code)
 
     def _try_proxy_path(self, code: str, doc: str, signature: str) -> Optional[sp.Expr]:
@@ -98,10 +97,10 @@ class SympyTranslator:
             if python_ref:
                 result = self.ast_parser.parse_to_sympy(python_ref)
                 if result is not None:
-                    self.logger.debug("Successfully converted via proxy path")
+                    logger.debug("Successfully converted via proxy path")
                     return result
         except Exception as e:
-            self.logger.debug(f"Proxy path error: {e}")
+            logger.debug(f"Proxy path error: {e}")
         return None
 
     def _try_direct_path(
@@ -115,10 +114,10 @@ class SympyTranslator:
             if sympy_code:
                 result = self._execute_sympy_code(sympy_code)
                 if result is not None:
-                    self.logger.debug("Successfully converted via direct path")
+                    logger.debug("Successfully converted via direct path")
                     return result
         except Exception as e:
-            self.logger.debug(f"Direct path error: {e}")
+            logger.debug(f"Direct path error: {e}")
         return None
 
     def _llm_to_python_reference(
@@ -164,7 +163,7 @@ def reference_impl(x0, x1, ...):
             content = self.llm_client.chat_completion(messages)
             return self._extract_code_block(content)
         except Exception as e:
-            self.logger.debug(f"LLM to Python reference error: {e}")
+            logger.debug(f"LLM to Python reference error: {e}")
             return None
 
     def _llm_to_sympy_code(self, code: str, doc: str, signature: str) -> Optional[str]:
@@ -208,7 +207,7 @@ result = <SymPy表达式>
             content = self.llm_client.chat_completion(messages)
             return self._extract_code_block(content)
         except Exception as e:
-            self.logger.debug(f"LLM to SymPy code error: {e}")
+            logger.debug(f"LLM to SymPy code error: {e}")
             return None
 
     def _extract_code_block(self, content: str) -> Optional[str]:
@@ -230,7 +229,7 @@ result = <SymPy表达式>
                 return exec_globals["result"]
             return None
         except Exception as e:
-            self.logger.debug(f"Error executing SymPy code: {e}")
+            logger.debug(f"Error executing SymPy code: {e}")
             return None
 
 

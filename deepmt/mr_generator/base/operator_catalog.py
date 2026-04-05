@@ -14,7 +14,7 @@ from typing import Any, Dict, List, Optional, Set
 import yaml
 
 from deepmt.core.framework import FRAMEWORK_ALIASES, SUPPORTED_FRAMEWORKS
-from deepmt.core.logger import get_logger
+from deepmt.core.logger import logger
 
 
 def _parse_version(version_str: str) -> tuple:
@@ -138,7 +138,6 @@ class OperatorCatalog:
         Args:
             catalog_dir: 自定义 YAML 目录路径；为 None 时使用默认路径。
         """
-        self.logger = get_logger(self.__class__.__name__)
         self._catalog_dir = Path(catalog_dir) if catalog_dir else self._CATALOG_DIR
 
         # framework -> List[OperatorEntry]
@@ -154,13 +153,13 @@ class OperatorCatalog:
             path = self._catalog_dir / f"{filename}.yaml"
             entries = self._load_yaml(framework, path)
             self._entries[framework] = entries
-            self.logger.debug(
+            logger.debug(
                 f"Loaded {len(entries)} operators for '{framework}' from {path}"
             )
 
     def _load_yaml(self, framework: str, path: Path) -> List[OperatorEntry]:
         if not path.exists():
-            self.logger.warning(
+            logger.warning(
                 f"Operator catalog file not found for '{framework}': {path}"
             )
             return []
@@ -170,7 +169,7 @@ class OperatorCatalog:
             raw_list = data.get("operators", []) or []
             return [OperatorEntry(item) for item in raw_list if "name" in item]
         except Exception as e:
-            self.logger.error(
+            logger.error(
                 f"Failed to load operator catalog for '{framework}': {e}"
             )
             return []
@@ -335,7 +334,7 @@ class OperatorCatalog:
         """从磁盘重新加载所有 YAML 文件（用于开发期热更新）"""
         self._entries.clear()
         self._load_all()
-        self.logger.info("Operator catalog reloaded.")
+        logger.info("Operator catalog reloaded.")
 
     def get_doc_url(self, framework: str, operator_name: str) -> str:
         """
@@ -381,7 +380,7 @@ class OperatorCatalog:
                 "excluded_exact": set(data.get("excluded_exact", [])),
             }
         except Exception as e:
-            self.logger.warning(f"Failed to load exclude config for '{fw}': {e}")
+            logger.warning(f"Failed to load exclude config for '{fw}': {e}")
             return {"excluded_namespaces": [], "excluded_prefixes": [], "excluded_exact": set()}
 
     def is_excluded(self, name: str, exclude_config: Dict[str, Any]) -> bool:

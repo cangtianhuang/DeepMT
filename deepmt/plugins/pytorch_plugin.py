@@ -6,7 +6,7 @@ from typing import Any, Callable
 
 import torch
 
-from deepmt.core.logger import get_logger
+from deepmt.core.logger import logger
 from deepmt.ir.schema import MetamorphicRelation, OperatorIR
 
 
@@ -14,7 +14,6 @@ class PyTorchPlugin:
     """PyTorch框架适配插件"""
 
     def __init__(self):
-        self.logger = get_logger(self.__class__.__name__)
         # 算子名称到PyTorch函数的映射
         self.operator_map = {
             "Add": torch.add,
@@ -69,7 +68,7 @@ class PyTorchPlugin:
                 return orig_output, mr_output
 
             except Exception as e:
-                self.logger.error(f"Error in run function: {e}")
+                logger.error(f"Error in run function: {e}")
                 raise
 
         return run
@@ -108,5 +107,5 @@ class PyTorchPlugin:
         try:
             return run_func()
         except Exception as e:
-            self.logger.error(f"Error executing function: {e}")
+            logger.error(f"Error executing function: {e}")
             raise

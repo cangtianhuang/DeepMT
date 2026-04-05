@@ -7,14 +7,11 @@ Oracle 表达式评估器：框架无关的 MR 验证表达式解析
 import re
 from typing import Any, Callable, Dict, Tuple
 
-from deepmt.core.logger import get_logger
+from deepmt.core.logger import logger
 
 
 class OracleEvaluator:
     """Oracle 表达式评估器：将数学表达式转换为可执行代码"""
-
-    def __init__(self):
-        self.logger = get_logger(self.__class__.__name__)
 
     def compile_expression(
         self,
@@ -44,7 +41,7 @@ class OracleEvaluator:
             return self._compile_code(code, framework)
 
         except Exception as e:
-            self.logger.error(f"Failed to compile oracle expression '{expr}': {e}")
+            logger.error(f"Failed to compile oracle expression '{expr}': {e}")
             raise
 
     def _normalize_expression(self, expr: str) -> str:
@@ -337,5 +334,5 @@ def oracle(orig, trans, x=None, tolerance=1e-6):
             return oracle_func(orig, trans, x, tolerance)
 
         except Exception as e:
-            self.logger.error(f"Failed to evaluate expression '{expr}': {e}")
+            logger.error(f"Failed to evaluate expression '{expr}': {e}")
             raise

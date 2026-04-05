@@ -10,7 +10,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from deepmt.core.logger import get_logger, log_structured
+from deepmt.core.logger import logger
 from deepmt.ir.schema import MetamorphicRelation
 
 
@@ -32,7 +32,6 @@ class MRRepository:
         """
         self.db_path = Path(db_path)
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
-        self.logger = get_logger(self.__class__.__name__)
         self._init_database()
 
     def _init_database(self):
@@ -115,9 +114,7 @@ class MRRepository:
 
         conn.commit()
         conn.close()
-        log_structured(
-            self.logger, "REPO", f"MR knowledge base initialized at: {self.db_path}"
-        )
+        logger.info("📦 [REPO] " + f"MR knowledge base initialized at: {self.db_path}")
 
     def save(
         self, operator_name: str, mrs: List[MetamorphicRelation], version: int = 1
@@ -171,16 +168,12 @@ class MRRepository:
                 saved_count += 1
 
             except Exception as e:
-                self.logger.error(f"Error saving MR {mr.id}: {e}")
+                logger.error(f"Error saving MR {mr.id}: {e}")
 
         conn.commit()
         conn.close()
 
-        log_structured(
-            self.logger,
-            "REPO",
-            f"Saved {saved_count} MRs for operator: {operator_name}",
-        )
+        logger.info("📦 [REPO] " + f"Saved {saved_count} MRs for operator: {operator_name}")
         return saved_count
 
     def load(
@@ -233,13 +226,9 @@ class MRRepository:
                     mr.verified = bool(verified)
                 mrs.append(mr)
             except Exception as e:
-                self.logger.error(f"Error loading MR: {e}")
+                logger.error(f"Error loading MR: {e}")
 
-        log_structured(
-            self.logger,
-            "REPO",
-            f"Loaded {len(mrs)} MRs for operator: {operator_name} (version {version})",
-        )
+        logger.info("📦 [REPO] " + f"Loaded {len(mrs)} MRs for operator: {operator_name} (version {version})")
         return mrs
 
     def exists(self, operator_name: str, version: Optional[int] = None) -> bool:
@@ -483,16 +472,12 @@ class MRRepository:
                 saved_count += 1
 
             except Exception as e:
-                self.logger.error(f"Error saving MR {mr.id} with validation: {e}")
+                logger.error(f"Error saving MR {mr.id} with validation: {e}")
 
         conn.commit()
         conn.close()
 
-        log_structured(
-            self.logger,
-            "REPO",
-            f"Saved {saved_count} MRs for '{operator_name}' | version: {version}",
-        )
+        logger.info("📦 [REPO] " + f"Saved {saved_count} MRs for '{operator_name}' | version: {version}")
         return saved_count
 
     def update_validation_status(
@@ -580,15 +565,11 @@ class MRRepository:
             )
 
             conn.commit()
-            log_structured(
-                self.logger,
-                "REPO",
-                f"Updated validation status for MR '{mr_id}' | {validation_type} = {result}",
-            )
+            logger.info("📦 [REPO] " + f"Updated validation status for MR '{mr_id}' | {validation_type} = {result}")
             return True
 
         except Exception as e:
-            self.logger.error(f"Error updating validation status for MR {mr_id}: {e}")
+            logger.error(f"Error updating validation status for MR {mr_id}: {e}")
             conn.rollback()
             return False
         finally:
@@ -636,7 +617,7 @@ class MRRepository:
             return records
 
         except Exception as e:
-            self.logger.error(f"Error getting validation history for MR {mr_id}: {e}")
+            logger.error(f"Error getting validation history for MR {mr_id}: {e}")
             return []
         finally:
             conn.close()
@@ -718,17 +699,13 @@ class MRRepository:
                     mrs.append(mr)
 
                 except Exception as e:
-                    self.logger.error(f"Error loading MR with validation status: {e}")
+                    logger.error(f"Error loading MR with validation status: {e}")
 
-            log_structured(
-                self.logger,
-                "REPO",
-                f"Loaded {len(mrs)} MRs for '{operator_name}' | version: {version}",
-            )
+            logger.info("📦 [REPO] " + f"Loaded {len(mrs)} MRs for '{operator_name}' | version: {version}")
             return mrs
 
         except Exception as e:
-            self.logger.error(f"Error getting MRs with validation status: {e}")
+            logger.error(f"Error getting MRs with validation status: {e}")
             return []
         finally:
             conn.close()
@@ -844,7 +821,7 @@ class MRRepository:
             return stats
 
         except Exception as e:
-            self.logger.error(f"Error getting statistics: {e}")
+            logger.error(f"Error getting statistics: {e}")
             return stats
         finally:
             conn.close()
@@ -884,7 +861,7 @@ class MRRepository:
             return result[0] if result else None
 
         except Exception as e:
-            self.logger.error(f"Error getting record ID for MR {mr_id}: {e}")
+            logger.error(f"Error getting record ID for MR {mr_id}: {e}")
             return None
         finally:
             conn.close()

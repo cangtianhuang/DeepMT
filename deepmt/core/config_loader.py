@@ -1,13 +1,12 @@
 """配置加载器：统一的配置文件管理，遵循 XDG Base Directory 规范"""
 
-import logging
 import os
 from pathlib import Path
 from typing import Any, Dict, Iterator, Optional
 
 import yaml
 
-from deepmt.core.logger import get_logger, log_structured
+from deepmt.core.logger import logger
 
 
 class ConfigLoader:
@@ -26,7 +25,6 @@ class ConfigLoader:
 
     def __init__(self) -> None:
         """初始化实例属性"""
-        self.logger = get_logger(self.__class__.__name__)
         self._config: Dict[str, Any] = {}
         self._config_path: Optional[Path] = None
         self._config_mtime: float = 0
@@ -35,7 +33,6 @@ class ConfigLoader:
 
     def _candidate_paths(self, config_name: str = "config.yaml") -> Iterator[Path]:
         """生成候选配置文件路径（按优先级）"""
-        # 1. 环境变量指定的路径
         if env_path := os.getenv("DEEPMT_CONFIG_PATH"):
             path = Path(env_path).expanduser().resolve()
             if path.is_file():
@@ -45,18 +42,15 @@ class ConfigLoader:
                 if candidate.exists():
                     yield candidate
 
-        # 2. 当前工作目录
         cwd_path = Path.cwd() / config_name
         if cwd_path.exists():
             yield cwd_path
 
-        # 3. 项目根目录
         if project_root := self._find_project_root():
             project_path = project_root / config_name
             if project_path.exists():
                 yield project_path
 
-        # 4. XDG 配置目录
         xdg_config = os.getenv("XDG_CONFIG_HOME", str(Path.home() / ".config"))
         xdg_path = Path(xdg_config) / "deepmt" / config_name
         if xdg_path.exists():
@@ -84,10 +78,10 @@ class ConfigLoader:
         """查找配置文件"""
         for path in self._candidate_paths(config_name):
             if path.is_file():
-                self.logger.debug(f"Found config file: {path}")
+                logger.debug(f"Found config file: {path}")
                 return path
 
-        self.logger.warning(f"Config file '{config_name}' not found")
+        logger.warning(f"Config file '{config_name}' not found")
         return None
 
     def load(
@@ -96,21 +90,10 @@ class ConfigLoader:
         config_name: str = "config.yaml",
         force_reload: bool = False,
     ):
-        """
-        加载配置文件
-
-        Args:
-            config_path: 明确指定的配置文件路径（可选）
-            config_name: 配置文件名（当 config_path 为 None 时使用）
-            force_reload: 是否强制重新加载（忽略缓存）
-
-        Returns:
-            配置字典，加载失败返回空字典
-        """
         if config_path:
             path = Path(config_path).expanduser().resolve()
             if not path.is_file():
-                self.logger.warning(f"Config file not found: {path}")
+                logger.warning(f"Config file not found: {path}")
         else:
             if not (path := self.find_config_file(config_name)):
                 return
@@ -125,25 +108,18 @@ class ConfigLoader:
             self._config = config_data
             self._config_path = path
             self._config_mtime = path.stat().st_mtime
-
-            log_structured(
-                self.logger,
-                "INIT",
-                f"Loaded config from: {path}",
-            )
+            logger.info(f"🚀 [INIT] Loaded config from: {path}")
         except (OSError, FileNotFoundError) as e:
-            self.logger.error(f"Failed to access config file {path}: {e}")
+            logger.error(f"Failed to access config file {path}: {e}")
         except Exception as e:
-            self.logger.error(f"Failed to load config from {path}: {e}")
+            logger.error(f"Failed to load config from {path}: {e}")
 
     def _is_cache_valid(self, path: Path) -> bool:
         """检查配置缓存是否有效"""
         if not self._config or self._config_path != path:
             return False
-
         if not path.exists():
             return False
-
         try:
             return path.stat().st_mtime == self._config_mtime
         except (OSError, FileNotFoundError):
