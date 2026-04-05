@@ -172,10 +172,6 @@ class ASTParser:
             else:
                 return sp.Symbol(str(value))
 
-        # 常量（Python < 3.8）
-        elif isinstance(node, ast.Num):
-            return sp.Integer(node.n) if isinstance(node.n, int) else sp.Float(node.n)
-
         # 二元操作
         elif isinstance(node, ast.BinOp):
             op_func = self.binop_mapping.get(type(node.op))

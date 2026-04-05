@@ -227,7 +227,7 @@ class TestModuleImports:
         assert OperatorInfoFetcher is not None
 
     def test_web_search_modules_exist(self):
-        base = Path(__file__).parent.parent / "deepmt" / "tools" / "web_search"
+        base = Path(__file__).parent.parent.parent / "deepmt" / "tools" / "web_search"
         assert (base / "search_agent.py").exists()
         assert (base / "sphinx_search.py").exists()
         assert (base / "search_tool.py").exists()
@@ -242,3 +242,7 @@ class TestModuleImports:
         gen.info_fetcher = mock_fetcher
         result = gen.fetch_operator_info("relu", framework="pytorch")
         assert result["doc"] == "ReLU docs"
+
+
+if __name__ == "__main__":
+    pytest.main([__file__, "-v"])

@@ -219,3 +219,7 @@ class TestJsonCache:
         path = tmp_path / "corrupt.json"
         path.write_text("not valid json")
         assert load_json_cache(path) is None
+
+
+if __name__ == "__main__":
+    pytest.main([__file__, "-v"])

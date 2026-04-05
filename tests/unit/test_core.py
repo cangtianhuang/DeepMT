@@ -75,3 +75,7 @@ class TestOracleEvaluator:
     def test_compile_returns_callable(self, evaluator):
         fn = evaluator.compile_expression("orig == trans", framework="pytorch", tolerance=1e-6)
         assert callable(fn)
+
+
+if __name__ == "__main__":
+    pytest.main([__file__, "-v"])

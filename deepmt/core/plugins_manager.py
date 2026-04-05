@@ -14,8 +14,12 @@ from deepmt.plugins.framework_adapter import FrameworkAdapter
 class PluginsManager:
     """插件管理器：负责加载和管理框架适配插件"""
 
-    def __init__(self, plugins_dir: str = "plugins"):
-        self.plugins_dir = Path(plugins_dir)
+    def __init__(self, plugins_dir: str = None):
+        if plugins_dir is None:
+            # Default to deepmt/plugins relative to this file's package root
+            self.plugins_dir = Path(__file__).resolve().parent.parent / "plugins"
+        else:
+            self.plugins_dir = Path(plugins_dir)
         self.plugins: Dict[str, Any] = {}
         self.framework_adapters: Dict[str, FrameworkAdapter] = {}
 
@@ -31,7 +35,7 @@ class PluginsManager:
 
         for plugin_file in plugin_files:
             try:
-                module_name = f"plugins.{plugin_file.stem}"
+                module_name = f"deepmt.plugins.{plugin_file.stem}"
                 module = importlib.import_module(module_name)
 
                 for name, obj in inspect.getmembers(module, inspect.isclass):

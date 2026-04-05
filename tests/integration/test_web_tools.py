@@ -192,3 +192,7 @@ class TestVersionFetching:
 
     def test_fetch_versions_unknown_framework(self, agent):
         assert agent.fetch_framework_versions("unknown_xyz") == []
+
+
+if __name__ == "__main__":
+    pytest.main([__file__, "-v"])

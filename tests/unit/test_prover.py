@@ -105,3 +105,7 @@ class TestProveMR:
         mr = make_mr("Identity: f(x)==f(x)", lambda x: (x,), "orig == trans")
         proven, _ = self.prover.prove_mr(mr=mr, operator_code="def sq(x):\n    return x*x\n", num_inputs=1)
         assert proven is True
+
+
+if __name__ == "__main__":
+    pytest.main([__file__, "-v"])

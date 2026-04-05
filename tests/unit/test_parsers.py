@@ -102,3 +102,7 @@ class TestSympyTranslator:
         code = "def const(x):\n    return 42\n"
         result = self.translator.translate(code=code, use_proxy_path=False, use_llm=False)
         assert result == 42
+
+
+if __name__ == "__main__":
+    pytest.main([__file__, "-v"])
