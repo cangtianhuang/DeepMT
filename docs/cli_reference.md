@@ -25,13 +25,28 @@ PYTHONPATH=/home/lhy/DeepMT python -m deepmt <command> [options]
 | `mr` | MR 生成与管理（算子层） | ✅ 已实现 |
 | `test` | 测试执行 | ✅ 已实现（仅 pytorch） |
 | `repo` | MR 知识库管理 | ✅ 已实现 |
-| `catalog` | 算子目录浏览与跨框架查询 | ✅ 已实现 |
+| `catalog` | 算子目录浏览、跨框架查询、批量导入 | ✅ 已实现 |
 | `data` | 数据目录管理（日志清理等） | ✅ 已实现 |
 | `health` | 系统健康检查与进度 | ✅ 已实现 |
 
 ---
 
 ## `deepmt catalog` — 算子目录浏览与查询
+
+子命令总览：
+
+| 子命令 | 说明 |
+|--------|------|
+| `list` | 列出框架算子，支持按分类/关键字筛选 |
+| `search` | 跨所有框架模糊搜索算子 |
+| `info` | 查询算子的跨框架分布及知识库 MR 数量 |
+| `latest-version` | 从 PyPI 获取框架最新/历史版本 |
+| `fetch-doc` | 获取算子官方文档正文 |
+| `update-api` | 从官方文档更新 API 模块列表缓存 |
+| `check-updates` | 对比官方文档 API 与本地目录，报告差异 |
+| `import-api` | 批量导入官方文档 API 到算子目录（支持清空重建）|
+
+---
 
 ### `deepmt catalog list`
 
@@ -120,6 +135,172 @@ deepmt catalog info conv2d --json
   知识库 MR 情况:
     ✓ 已有 MR   versions=[1]  total=3  verified=2
 ```
+
+---
+
+### `deepmt catalog latest-version`
+
+从 PyPI 快速获取框架最新稳定版本号（无需 LLM，纯 HTTP）。
+
+```
+deepmt catalog latest-version [OPTIONS]
+```
+
+| 选项 | 默认值 | 说明 |
+|------|--------|------|
+| `--framework, -f` | `pytorch` | 目标框架 |
+| `--all-versions` | `False` | 列出所有历史版本（降序，最多 20 条）|
+| `--json` | `False` | 以 JSON 格式输出 |
+
+**示例：**
+
+```bash
+deepmt catalog latest-version
+deepmt catalog latest-version --framework tensorflow
+deepmt catalog latest-version --all-versions
+deepmt catalog latest-version --json
+```
+
+---
+
+### `deepmt catalog fetch-doc <operator>`
+
+从官方文档网页获取并打印算子文档正文（无需 LLM）。
+
+```
+deepmt catalog fetch-doc <OPERATOR> [OPTIONS]
+```
+
+| 选项 | 默认值 | 说明 |
+|------|--------|------|
+| `--framework, -f` | `pytorch` | 目标框架 |
+| `--url, -u` | 自动推导 | 直接指定文档页面 URL |
+| `--max-chars` | `3000` | 最多显示字符数（0 = 不限）|
+
+**示例：**
+
+```bash
+deepmt catalog fetch-doc torch.matmul
+deepmt catalog fetch-doc relu --framework pytorch --max-chars 0
+deepmt catalog fetch-doc torch.matmul --url https://docs.pytorch.org/docs/stable/generated/torch.matmul.html
+```
+
+---
+
+### `deepmt catalog update-api`
+
+从官方文档获取 API 模块列表并缓存到本地（无需 LLM）。
+
+> 获取的是**模块级**列表（如 `torch.nn`），非个体 API。获取个体 API 并与目录对比，请使用 `check-updates`。
+
+```
+deepmt catalog update-api [OPTIONS]
+```
+
+| 选项 | 默认值 | 说明 |
+|------|--------|------|
+| `--framework, -f` | `pytorch` | 目标框架（当前支持 `pytorch`）|
+| `--version, -v` | `stable` | 文档版本（`stable` 或如 `2.1`）|
+| `--no-cache` | `False` | 忽略本地缓存，强制重新拉取 |
+| `--json` | `False` | 以 JSON 格式输出 API 列表 |
+| `--show-cache-path` | `False` | 显示缓存文件路径及状态 |
+
+**示例：**
+
+```bash
+deepmt catalog update-api
+deepmt catalog update-api --no-cache
+deepmt catalog update-api --json
+deepmt catalog update-api --show-cache-path
+```
+
+---
+
+### `deepmt catalog check-updates`
+
+对比官方文档 API 与本地算子目录（`pytorch.yaml`），报告新增/变更的 API。
+
+输出三类差异：
+1. 目录中的算子，文档中签名已变更
+2. 文档中存在，但目录和排除列表均未收录的新 API
+3. 目录中的算子，在文档中未找到（可能已改名或删除）
+
+> 首次运行会拉取所有相关模块页面（约 10-30 个，约 1-2 分钟）；之后 24 小时内命中缓存（毫秒级）。
+
+```
+deepmt catalog check-updates [OPTIONS]
+```
+
+| 选项 | 默认值 | 说明 |
+|------|--------|------|
+| `--framework, -f` | `pytorch` | 目标框架（当前支持 `pytorch`）|
+| `--version, -v` | `stable` | 文档版本 |
+| `--no-cache` | `False` | 忽略缓存，强制重新拉取 |
+| `--show-no-sig` | `False` | 显示目录中尚未记录签名的算子 |
+| `--skip-namespaces` | 无 | 跳过指定命名空间（逗号分隔，如 `torch.distributed,torch.cuda`）|
+| `--json` | `False` | 以 JSON 格式输出完整 diff 结果 |
+
+**示例：**
+
+```bash
+deepmt catalog check-updates
+deepmt catalog check-updates --no-cache
+deepmt catalog check-updates --show-no-sig
+deepmt catalog check-updates --skip-namespaces torch.distributions,torch.sparse
+deepmt catalog check-updates --json > diff.json
+```
+
+---
+
+### `deepmt catalog import-api`
+
+从官方文档批量导入 API 到算子目录 YAML（无需 LLM）。
+
+有两种模式：
+
+| 模式 | 命令 | 说明 |
+|------|------|------|
+| 合并模式（默认）| `import-api` | 仅添加目录中不存在的新 API，保留已有条目的分类/版本等元数据 |
+| 替换模式 | `import-api --replace` | **清空现有目录**，以文档 API 列表完全重建（元数据将丢失）|
+
+```
+deepmt catalog import-api [OPTIONS]
+```
+
+| 选项 | 默认值 | 说明 |
+|------|--------|------|
+| `--framework, -f` | `pytorch` | 目标框架（当前支持 `pytorch`）|
+| `--version, -v` | `stable` | 文档版本 |
+| `--replace` | `False` | 清空现有目录，完全替换为文档中的 API 列表 |
+| `--no-cache` | `False` | 忽略缓存，强制重新拉取 |
+| `--dry-run` | `False` | 试运行：仅显示将写入的内容，不修改文件 |
+| `--yes, -y` | `False` | 跳过确认提示直接执行 |
+
+**示例：**
+
+```bash
+# 合并模式：仅添加新 API
+deepmt catalog import-api
+
+# 替换模式：清空后全量导入（先预览再执行）
+deepmt catalog import-api --replace --dry-run
+deepmt catalog import-api --replace --yes
+
+# 跳过确认，强制拉取
+deepmt catalog import-api --replace --no-cache --yes
+```
+
+> **如何清空现有 PyTorch 算子列表并重新更新？**
+>
+> ```bash
+> # 第 1 步（可选）：先预览会写入什么
+> deepmt catalog import-api --replace --dry-run
+>
+> # 第 2 步：执行清空 + 重建
+> deepmt catalog import-api --replace --yes
+> ```
+>
+> `--replace` 会清空 `mr_generator/config/operator_catalog/pytorch.yaml` 中的所有现有条目，用从官方文档抓取的最新 API 列表（经排除列表过滤后）完全替换。原有的 `category`、`since` 等元数据将丢失，需要重新手动标注。
 
 ---
 

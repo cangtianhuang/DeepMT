@@ -44,7 +44,8 @@
 | `deepmt catalog list/search/info/sync` | 算子目录管理 |
 | `deepmt catalog latest-version` | 从 PyPI 获取框架最新/历史版本 |
 | `deepmt catalog fetch-doc` | 获取算子文档（PyTorch 支持自动 URL） |
-| `deepmt catalog update-api-list` | 从官网拉取 PyTorch API 列表并缓存 |
+| `deepmt catalog update-api` | 从官网拉取 PyTorch API 列表并缓存 |
+| `deepmt catalog import-api` | 从官方文档批量导入 API 到算子目录（支持清空重建）|
 | `deepmt test operator` | 单算子蜕变测试 |
 | `deepmt health` | 健康检查 |
 

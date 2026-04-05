@@ -96,10 +96,23 @@ source .venv/bin/activate && PYTHONPATH=$(pwd) python -m pytest tests/
 └── pyproject.toml          # 项目元数据
 ```
 
-## 关键设计约定
+## 开发规范（强制）
 
-- **`FrameworkType`**：`Literal["pytorch", "tensorflow", "paddlepaddle"]`
-- **`oracle_expr`**：使用变量 `orig`、`trans`、`x`；空字符串默认为等值检查
-- **`transform_code`**：kwargs 风格 lambda，如 `lambda k: {**k, 'input': 2 * k['input']}`
-- **MR 类别**：linearity、monotonicity、idempotency、composition、invariance、symmetry、boundary
-- **OperatorCatalog**：`doc_url` 字段可选，用于存储算子文档 URL
+每次完成功能开发后，必须同步更新以下内容：
+
+1. **文档同步**
+   - 修改了开发进度、模块状态、架构设计 → 更新 `docs/status.md`
+   - 新增或修改了 CLI 命令（含命令名、选项、行为）→ 更新 `docs/cli_reference.md`
+
+2. **依赖同步**
+   - 新增了 `import` 的第三方包 → 同时更新 `pyproject.toml`（`dependencies`）和 `requirements.txt`，两者保持一致
+
+3. **测试覆盖**
+   - 任何新功能必须在 `tests/` 下新增最小测试代码（不要求覆盖完全，只验证功能打通）
+   - 测试文件放在对应层级：`tests/unit/` 或 `tests/integration/`
+   - 单元测试不得依赖 LLM API 或网络（通过 `use_llm=False` / mock 隔离）
+
+4. **框架参数化（拓展性）**
+   - 凡涉及框架相关逻辑，框架名称必须以 `FrameworkType` 参数传入，**不得写死**（包括字符串字面量 `"pytorch"`）
+   - PyTorch 先行实现，其他框架入口处抛出 `NotImplementedError`，保留接口占位
+   - 参考现有模式：`_SUPPORTED_FRAMEWORKS = {"pytorch"}` + 显式的 `not_implemented_error` 提示

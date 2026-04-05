@@ -380,9 +380,9 @@ def catalog_fetch_doc(operator, framework, url, max_chars):
         click.echo(doc)
 
 
-# ── update-api-list ────────────────────────────────────────────────────────────
+# ── update-api ─────────────────────────────────────────────────────────────────
 
-@catalog.command("update-api-list")
+@catalog.command("update-api")
 @click.option(
     "--framework", "-f",
     default="pytorch",
@@ -649,9 +649,9 @@ def catalog_check_updates(framework, version, no_cache, show_no_sig, as_json, sk
     click.echo("")
 
 
-# ── import-from-docs ───────────────────────────────────────────────────────────
+# ── import-api ─────────────────────────────────────────────────────────────────
 
-@catalog.command("import-from-docs")
+@catalog.command("import-api")
 @click.option(
     "--framework", "-f",
     default="pytorch",
@@ -811,7 +811,7 @@ def catalog_import_from_docs(framework, version, replace, no_cache, dry_run, yes
     from pathlib import Path as _Path
     from datetime import datetime as _dt
 
-    catalog_dir = _Path(__file__).parent.parent.parent / "mr_generator" / "config" / "operator_catalog"
+    catalog_dir = _Path(__file__).parent.parent / "mr_generator" / "config" / "operator_catalog"
     yaml_path = catalog_dir / f"{framework}.yaml"
 
     # 读取现有文件头（注释行 + 非 operators 的字段行）

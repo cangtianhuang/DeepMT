@@ -47,10 +47,6 @@ _FETCH_WORKERS = 8
 class APIListFetcher:
     """从官方文档 HTML 提取框架 API 个体条目（类/函数级别）"""
 
-    def __init__(self):
-
-    # ── 主入口 ────────────────────────────────────────────────────────────────
-
     def fetch_all_apis(
         self,
         framework: str,
