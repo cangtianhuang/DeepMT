@@ -42,3767 +42,650 @@ description: "PyTorch 常用算子目录（torch >= 1.0）"
 
 
 
+
+
 last_updated: "2026-04-06"
 
 operators:
   - name: torch.nn.Conv1d
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.Conv1d.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.Conv2d
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.Conv2d.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.Conv3d
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.Conv3d.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.ConvTranspose1d
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.ConvTranspose1d.html
-    signature: "((input, output_size=None))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.ConvTranspose2d
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.ConvTranspose2d.html
-    signature: "((input, output_size=None))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.ConvTranspose3d
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.ConvTranspose3d.html
-    signature: "((input, output_size=None))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.LazyConv1d
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.LazyConv1d.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.LazyConv2d
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.LazyConv2d.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.LazyConv3d
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.LazyConv3d.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.LazyConvTranspose1d
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.LazyConvTranspose1d.html
-    signature: "((input, output_size=None))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.LazyConvTranspose2d
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.LazyConvTranspose2d.html
-    signature: "((input, output_size=None))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.LazyConvTranspose3d
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.LazyConvTranspose3d.html
-    signature: "((input, output_size=None))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.Unfold
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.Unfold.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.Fold
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.Fold.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.MaxPool1d
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.MaxPool1d.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.MaxPool2d
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.MaxPool2d.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.MaxPool3d
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.MaxPool3d.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.MaxUnpool1d
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.MaxUnpool1d.html
-    signature: "((input, indices, output_size=None))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: indices
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.MaxUnpool2d
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.MaxUnpool2d.html
-    signature: "((input, indices, output_size=None))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: indices
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.MaxUnpool3d
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.MaxUnpool3d.html
-    signature: "((input, indices, output_size=None))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: indices
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.AvgPool1d
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.AvgPool1d.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.AvgPool2d
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.AvgPool2d.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.AvgPool3d
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.AvgPool3d.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.FractionalMaxPool2d
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.FractionalMaxPool2d.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.FractionalMaxPool3d
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.FractionalMaxPool3d.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.LPPool1d
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.LPPool1d.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.LPPool2d
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.LPPool2d.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.LPPool3d
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.LPPool3d.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.AdaptiveMaxPool1d
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.AdaptiveMaxPool1d.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.AdaptiveMaxPool2d
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.AdaptiveMaxPool2d.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.AdaptiveMaxPool3d
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.AdaptiveMaxPool3d.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.AdaptiveAvgPool1d
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.AdaptiveAvgPool1d.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.AdaptiveAvgPool2d
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.AdaptiveAvgPool2d.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.AdaptiveAvgPool3d
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.AdaptiveAvgPool3d.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.ReflectionPad1d
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.ReflectionPad1d.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.ReflectionPad2d
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.ReflectionPad2d.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.ReflectionPad3d
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.ReflectionPad3d.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.ReplicationPad1d
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.ReplicationPad1d.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.ReplicationPad2d
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.ReplicationPad2d.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.ReplicationPad3d
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.ReplicationPad3d.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.ZeroPad1d
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.ZeroPad1d.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.ZeroPad2d
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.ZeroPad2d.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.ZeroPad3d
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.ZeroPad3d.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.ConstantPad1d
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.ConstantPad1d.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.ConstantPad2d
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.ConstantPad2d.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.ConstantPad3d
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.ConstantPad3d.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.CircularPad1d
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.CircularPad1d.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.CircularPad2d
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.CircularPad2d.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.CircularPad3d
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.CircularPad3d.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.ELU
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.ELU.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.Hardshrink
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.Hardshrink.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.Hardsigmoid
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.Hardsigmoid.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.Hardtanh
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.Hardtanh.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.Hardswish
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.Hardswish.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.LeakyReLU
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.LeakyReLU.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.LogSigmoid
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.LogSigmoid.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.MultiheadAttention
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.MultiheadAttention.html
-    signature: "((query, key, value, key_padding_mask=None, need_weights=True, attn_mask=None, average_attn_weights=True, is_causal=False))"
-    input_specs:
-      - name: query
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: key
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: value
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: key_padding_mask
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: false
-      - name: attn_mask
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: false
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.PReLU
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.PReLU.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.ReLU
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.ReLU.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.ReLU6
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.ReLU6.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.RReLU
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.RReLU.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.SELU
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.SELU.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.CELU
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.CELU.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.GELU
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.GELU.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.Sigmoid
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.Sigmoid.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.SiLU
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.SiLU.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.Mish
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.Mish.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.Softplus
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.Softplus.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.Softshrink
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.Softshrink.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.Softsign
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.Softsign.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.Tanh
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.Tanh.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.Tanhshrink
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.Tanhshrink.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.Threshold
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.Threshold.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.GLU
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.GLU.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.Softmin
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.Softmin.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.Softmax
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.Softmax.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.Softmax2d
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.Softmax2d.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.LogSoftmax
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.LogSoftmax.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.AdaptiveLogSoftmaxWithLoss
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.AdaptiveLogSoftmaxWithLoss.html
-    signature: "((input_, target_))"
-    input_specs:
-      - name: input_
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: target_
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.BatchNorm1d
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.BatchNorm1d.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.BatchNorm2d
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.BatchNorm2d.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.BatchNorm3d
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.BatchNorm3d.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.LazyBatchNorm1d
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.LazyBatchNorm1d.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.LazyBatchNorm2d
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.LazyBatchNorm2d.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.LazyBatchNorm3d
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.LazyBatchNorm3d.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.GroupNorm
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.GroupNorm.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.SyncBatchNorm
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.SyncBatchNorm.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.InstanceNorm1d
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.InstanceNorm1d.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.InstanceNorm2d
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.InstanceNorm2d.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.InstanceNorm3d
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.InstanceNorm3d.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.LazyInstanceNorm1d
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.LazyInstanceNorm1d.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.LazyInstanceNorm2d
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.LazyInstanceNorm2d.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.LazyInstanceNorm3d
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.LazyInstanceNorm3d.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.LayerNorm
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.LayerNorm.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.LocalResponseNorm
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.LocalResponseNorm.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.RMSNorm
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.RMSNorm.html
-    signature: "((x))"
-    input_specs:
-      - name: x
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.RNNBase
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.RNNBase.html
-    signature: "((*input))"
 
   - name: torch.nn.RNN
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.RNN.html
-    signature: "((input, hx=None))"
-    input_specs:
-      - name: input
-        dtype: []  # ⚠ 待确认
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.LSTM
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.LSTM.html
-    signature: "((input, hx=None))"
-    input_specs:
-      - name: input
-        dtype: []  # ⚠ 待确认
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.GRU
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.GRU.html
-    signature: "((input, hx=None))"
-    input_specs:
-      - name: input
-        dtype: []  # ⚠ 待确认
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.RNNCell
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.RNNCell.html
-    signature: "((input, hx=None))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: hx
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: false
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.LSTMCell
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.LSTMCell.html
-    signature: "((input, hx=None))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: hx
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: false
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.GRUCell
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.GRUCell.html
-    signature: "((input, hx=None))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: hx
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: false
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.Transformer
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.Transformer.html
-    signature: "((src, tgt, src_mask=None, tgt_mask=None, memory_mask=None, src_key_padding_mask=None, tgt_key_padding_mask=None, memory_key_padding_mask=None, src_is_causal=None, tgt_is_causal=None, memory_is_causal=False))"
-    input_specs:
-      - name: src
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: tgt
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: src_mask
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: false
-      - name: tgt_mask
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: false
-      - name: memory_mask
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: false
-      - name: src_key_padding_mask
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: false
-      - name: tgt_key_padding_mask
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: false
-      - name: memory_key_padding_mask
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: false
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.TransformerEncoder
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.TransformerEncoder.html
-    signature: "((src, mask=None, src_key_padding_mask=None, is_causal=None))"
-    input_specs:
-      - name: src
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: mask
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: false
-      - name: src_key_padding_mask
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: false
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.TransformerDecoder
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.TransformerDecoder.html
-    signature: "((tgt, memory, tgt_mask=None, memory_mask=None, tgt_key_padding_mask=None, memory_key_padding_mask=None, tgt_is_causal=None, memory_is_causal=False))"
-    input_specs:
-      - name: tgt
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: memory
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: tgt_mask
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: false
-      - name: memory_mask
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: false
-      - name: tgt_key_padding_mask
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: false
-      - name: memory_key_padding_mask
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: false
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.TransformerEncoderLayer
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.TransformerEncoderLayer.html
-    signature: "((src, src_mask=None, src_key_padding_mask=None, is_causal=False))"
-    input_specs:
-      - name: src
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: src_mask
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: false
-      - name: src_key_padding_mask
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: false
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.TransformerDecoderLayer
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.TransformerDecoderLayer.html
-    signature: "((tgt, memory, tgt_mask=None, memory_mask=None, tgt_key_padding_mask=None, memory_key_padding_mask=None, tgt_is_causal=False, memory_is_causal=False))"
-    input_specs:
-      - name: tgt
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: memory
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: tgt_mask
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: false
-      - name: memory_mask
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: false
-      - name: tgt_key_padding_mask
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: false
-      - name: memory_key_padding_mask
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: false
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.Identity
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.Identity.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.Linear
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.Linear.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.Bilinear
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.Bilinear.html
-    signature: "((input1, input2))"
-    input_specs:
-      - name: input1
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: input2
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.LazyLinear
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.LazyLinear.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.Dropout
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.Dropout.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.Dropout1d
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.Dropout1d.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.Dropout2d
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.Dropout2d.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.Dropout3d
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.Dropout3d.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.AlphaDropout
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.AlphaDropout.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.FeatureAlphaDropout
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.FeatureAlphaDropout.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.Embedding
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.Embedding.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.EmbeddingBag
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.EmbeddingBag.html
-    signature: "((input, offsets=None, per_sample_weights=None))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: offsets
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: false
-      - name: per_sample_weights
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: false
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.CosineSimilarity
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.CosineSimilarity.html
-    signature: "((x1, x2))"
-    input_specs:
-      - name: x1
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: x2
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.PairwiseDistance
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.PairwiseDistance.html
-    signature: "((x1, x2))"
-    input_specs:
-      - name: x1
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: x2
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.L1Loss
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.L1Loss.html
-    signature: "((input, target))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: target
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.MSELoss
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.MSELoss.html
-    signature: "((input, target))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: target
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.CrossEntropyLoss
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.CrossEntropyLoss.html
-    signature: "((input, target))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: target
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.CTCLoss
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.CTCLoss.html
-    signature: "((log_probs, targets, input_lengths, target_lengths))"
-    input_specs:
-      - name: log_probs
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: targets
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: input_lengths
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: target_lengths
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.NLLLoss
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.NLLLoss.html
-    signature: "((input, target))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: target
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.PoissonNLLLoss
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.PoissonNLLLoss.html
-    signature: "((log_input, target))"
-    input_specs:
-      - name: log_input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: target
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.GaussianNLLLoss
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.GaussianNLLLoss.html
-    signature: "((input, target, var))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: target
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: var
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.KLDivLoss
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.KLDivLoss.html
-    signature: "((input, target))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: target
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.BCELoss
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.BCELoss.html
-    signature: "((input, target))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: target
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.BCEWithLogitsLoss
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.BCEWithLogitsLoss.html
-    signature: "((input, target))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: target
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.MarginRankingLoss
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.MarginRankingLoss.html
-    signature: "((input1, input2, target))"
-    input_specs:
-      - name: input1
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: input2
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: target
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.HingeEmbeddingLoss
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.HingeEmbeddingLoss.html
-    signature: "((input, target))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: target
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.MultiLabelMarginLoss
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.MultiLabelMarginLoss.html
-    signature: "((input, target))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: target
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.HuberLoss
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.HuberLoss.html
-    signature: "((input, target))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: target
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.SmoothL1Loss
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.SmoothL1Loss.html
-    signature: "((input, target))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: target
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.SoftMarginLoss
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.SoftMarginLoss.html
-    signature: "((input, target))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: target
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.MultiLabelSoftMarginLoss
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.MultiLabelSoftMarginLoss.html
-    signature: "((input, target))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: target
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.CosineEmbeddingLoss
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.CosineEmbeddingLoss.html
-    signature: "((input1, input2, target))"
-    input_specs:
-      - name: input1
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: input2
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: target
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.MultiMarginLoss
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.MultiMarginLoss.html
-    signature: "((input, target))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: target
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.TripletMarginLoss
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.TripletMarginLoss.html
-    signature: "((anchor, positive, negative))"
-    input_specs:
-      - name: anchor
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: positive
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: negative
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.TripletMarginWithDistanceLoss
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.TripletMarginWithDistanceLoss.html
-    signature: "((anchor, positive, negative))"
-    input_specs:
-      - name: anchor
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: positive
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: negative
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.PixelShuffle
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.PixelShuffle.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.PixelUnshuffle
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.PixelUnshuffle.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.Upsample
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.Upsample.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.UpsamplingNearest2d
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.UpsamplingNearest2d.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.UpsamplingBilinear2d
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.UpsamplingBilinear2d.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.ChannelShuffle
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.ChannelShuffle.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.utils.rnn.pack_padded_sequence
     api_type: function
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.utils.rnn.pack_padded_sequence.html
-    signature: "(input, lengths, batch_first=False, enforce_sorted=True)"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: lengths
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.utils.rnn.pad_packed_sequence
     api_type: function
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.utils.rnn.pad_packed_sequence.html
-    signature: "(sequence, batch_first=False, padding_value=0.0, total_length=None)"
 
   - name: torch.nn.utils.rnn.pad_sequence
     api_type: function
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.utils.rnn.pad_sequence.html
-    signature: "(sequences, batch_first=False, padding_value=0.0, padding_side='right')"
-    input_specs:
-      - name: sequences
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.utils.rnn.pack_sequence
     api_type: function
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.utils.rnn.pack_sequence.html
-    signature: "(sequences, enforce_sorted=True)"
-    input_specs:
-      - name: sequences
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.utils.rnn.unpack_sequence
     api_type: function
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.utils.rnn.unpack_sequence.html
-    signature: "(packed_sequences)"
 
   - name: torch.nn.utils.rnn.unpad_sequence
     api_type: function
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.utils.rnn.unpad_sequence.html
-    signature: "(padded_sequences, lengths, batch_first=False)"
-    input_specs:
-      - name: padded_sequences
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: lengths
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.modules.flatten.Flatten
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.modules.flatten.Flatten.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nn.modules.flatten.Unflatten
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.modules.flatten.Unflatten.html
-    signature: "((input))"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
-  - name: torch.nn.functional.conv1d
+  - name: torch.func.vmap
     api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.conv1d.html
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.func.vmap.html
 
-  - name: torch.nn.functional.conv2d
+  - name: torch.func.grad
     api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.conv2d.html
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.func.grad.html
 
-  - name: torch.nn.functional.conv3d
+  - name: torch.func.vjp
     api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.conv3d.html
-
-  - name: torch.nn.functional.conv_transpose1d
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.conv_transpose1d.html
-
-  - name: torch.nn.functional.conv_transpose2d
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.conv_transpose2d.html
-
-  - name: torch.nn.functional.conv_transpose3d
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.conv_transpose3d.html
-
-  - name: torch.nn.functional.unfold
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.unfold.html
-    signature: "(input, kernel_size, dilation=1, padding=0, stride=1)"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
-
-  - name: torch.nn.functional.fold
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.fold.html
-    signature: "(input, output_size, kernel_size, dilation=1, padding=0, stride=1)"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
-
-  - name: torch.nn.functional.avg_pool1d
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.avg_pool1d.html
-
-  - name: torch.nn.functional.avg_pool2d
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.avg_pool2d.html
-
-  - name: torch.nn.functional.avg_pool3d
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.avg_pool3d.html
-
-  - name: torch.nn.functional.max_pool1d
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.max_pool1d.html
-    signature: "(*args, **kwargs)"
-
-  - name: torch.nn.functional.max_pool2d
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.max_pool2d.html
-    signature: "(*args, **kwargs)"
-
-  - name: torch.nn.functional.max_pool3d
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.max_pool3d.html
-    signature: "(*args, **kwargs)"
-
-  - name: torch.nn.functional.max_unpool1d
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.max_unpool1d.html
-    signature: "(input, indices, kernel_size, stride=None, padding=0, output_size=None)"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: indices
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
-
-  - name: torch.nn.functional.max_unpool2d
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.max_unpool2d.html
-    signature: "(input, indices, kernel_size, stride=None, padding=0, output_size=None)"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: indices
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
-
-  - name: torch.nn.functional.max_unpool3d
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.max_unpool3d.html
-    signature: "(input, indices, kernel_size, stride=None, padding=0, output_size=None)"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: indices
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
-
-  - name: torch.nn.functional.lp_pool1d
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.lp_pool1d.html
-    signature: "(input, norm_type, kernel_size, stride=None, ceil_mode=False)"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
-
-  - name: torch.nn.functional.lp_pool2d
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.lp_pool2d.html
-    signature: "(input, norm_type, kernel_size, stride=None, ceil_mode=False)"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
-
-  - name: torch.nn.functional.lp_pool3d
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.lp_pool3d.html
-    signature: "(input, norm_type, kernel_size, stride=None, ceil_mode=False)"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
-
-  - name: torch.nn.functional.adaptive_max_pool1d
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.adaptive_max_pool1d.html
-    signature: "(*args, **kwargs)"
-
-  - name: torch.nn.functional.adaptive_max_pool2d
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.adaptive_max_pool2d.html
-    signature: "(*args, **kwargs)"
-
-  - name: torch.nn.functional.adaptive_max_pool3d
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.adaptive_max_pool3d.html
-    signature: "(*args, **kwargs)"
-
-  - name: torch.nn.functional.adaptive_avg_pool1d
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.adaptive_avg_pool1d.html
-
-  - name: torch.nn.functional.adaptive_avg_pool2d
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.adaptive_avg_pool2d.html
-    signature: "(input, output_size)"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
-
-  - name: torch.nn.functional.adaptive_avg_pool3d
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.adaptive_avg_pool3d.html
-    signature: "(input, output_size)"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
-
-  - name: torch.nn.functional.fractional_max_pool2d
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.fractional_max_pool2d.html
-    signature: "(*args, **kwargs)"
-
-  - name: torch.nn.functional.fractional_max_pool3d
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.fractional_max_pool3d.html
-    signature: "(*args, **kwargs)"
-
-  - name: torch.nn.functional.scaled_dot_product_attention
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.scaled_dot_product_attention.html
-
-  - name: torch.nn.functional.threshold
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.threshold.html
-    signature: "(input, threshold, value, inplace=False)"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
-
-  - name: torch.nn.functional.threshold_
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.threshold_.html
-
-  - name: torch.nn.functional.relu
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.relu.html
-    signature: "(input, inplace=False)"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
-
-  - name: torch.nn.functional.relu_
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.relu_.html
-
-  - name: torch.nn.functional.hardtanh
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.hardtanh.html
-    signature: "(input, min_val=-1.0, max_val=1.0, inplace=False)"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
-
-  - name: torch.nn.functional.hardtanh_
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.hardtanh_.html
-
-  - name: torch.nn.functional.hardswish
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.hardswish.html
-    signature: "(input, inplace=False)"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
-
-  - name: torch.nn.functional.relu6
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.relu6.html
-    signature: "(input, inplace=False)"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
-
-  - name: torch.nn.functional.elu
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.elu.html
-    signature: "(input, alpha=1.0, inplace=False)"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
-
-  - name: torch.nn.functional.elu_
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.elu_.html
-
-  - name: torch.nn.functional.selu
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.selu.html
-    signature: "(input, inplace=False)"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
-
-  - name: torch.nn.functional.celu
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.celu.html
-    signature: "(input, alpha=1.0, inplace=False)"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
-
-  - name: torch.nn.functional.leaky_relu
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.leaky_relu.html
-    signature: "(input, negative_slope=0.01, inplace=False)"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
-
-  - name: torch.nn.functional.leaky_relu_
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.leaky_relu_.html
-
-  - name: torch.nn.functional.prelu
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.prelu.html
-
-  - name: torch.nn.functional.rrelu
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.rrelu.html
-    signature: "(input, lower=0.125, upper=0.3333333333333333, training=False, inplace=False)"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
-
-  - name: torch.nn.functional.rrelu_
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.rrelu_.html
-
-  - name: torch.nn.functional.glu
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.glu.html
-    signature: "(input, dim=-1)"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
-
-  - name: torch.nn.functional.gelu
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.gelu.html
-
-  - name: torch.nn.functional.logsigmoid
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.logsigmoid.html
-
-  - name: torch.nn.functional.hardshrink
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.hardshrink.html
-
-  - name: torch.nn.functional.tanhshrink
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.tanhshrink.html
-    signature: "(input)"
-    input_specs:
-      - name: input
-        dtype: []  # ⚠ 待确认
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
-
-  - name: torch.nn.functional.softsign
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.softsign.html
-    signature: "(input)"
-    input_specs:
-      - name: input
-        dtype: []  # ⚠ 待确认
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
-
-  - name: torch.nn.functional.softplus
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.softplus.html
-
-  - name: torch.nn.functional.softmin
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.softmin.html
-    signature: "(input, dim=None, _stacklevel=3, dtype=None)"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
-
-  - name: torch.nn.functional.softmax
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.softmax.html
-    signature: "(input, dim=None, _stacklevel=3, dtype=None)"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
-
-  - name: torch.nn.functional.softshrink
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.softshrink.html
-
-  - name: torch.nn.functional.gumbel_softmax
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.gumbel_softmax.html
-    signature: "(logits, tau=1, hard=False, eps=1e-10, dim=-1)"
-    input_specs:
-      - name: logits
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
-
-  - name: torch.nn.functional.log_softmax
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.log_softmax.html
-    signature: "(input, dim=None, _stacklevel=3, dtype=None)"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
-
-  - name: torch.nn.functional.tanh
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.tanh.html
-    signature: "(input)"
-    input_specs:
-      - name: input
-        dtype: []  # ⚠ 待确认
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
-
-  - name: torch.nn.functional.sigmoid
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.sigmoid.html
-    signature: "(input)"
-    input_specs:
-      - name: input
-        dtype: []  # ⚠ 待确认
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
-
-  - name: torch.nn.functional.hardsigmoid
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.hardsigmoid.html
-    signature: "(input, inplace=False)"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
-
-  - name: torch.nn.functional.silu
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.silu.html
-    signature: "(input, inplace=False)"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
-
-  - name: torch.nn.functional.mish
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.mish.html
-    signature: "(input, inplace=False)"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
-
-  - name: torch.nn.functional.batch_norm
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.batch_norm.html
-    signature: "(input, running_mean, running_var, weight=None, bias=None, training=False, momentum=0.1, eps=1e-05)"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: running_mean
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: false
-      - name: running_var
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: false
-      - name: weight
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: false
-      - name: bias
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: false
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
-
-  - name: torch.nn.functional.group_norm
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.group_norm.html
-    signature: "(input, num_groups, weight=None, bias=None, eps=1e-05)"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: weight
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: false
-      - name: bias
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: false
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
-
-  - name: torch.nn.functional.instance_norm
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.instance_norm.html
-    signature: "(input, running_mean=None, running_var=None, weight=None, bias=None, use_input_stats=True, momentum=0.1, eps=1e-05)"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: running_mean
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: false
-      - name: running_var
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: false
-      - name: weight
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: false
-      - name: bias
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: false
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
-
-  - name: torch.nn.functional.layer_norm
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.layer_norm.html
-    signature: "(input, normalized_shape, weight=None, bias=None, eps=1e-05)"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: weight
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: false
-      - name: bias
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: false
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
-
-  - name: torch.nn.functional.local_response_norm
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.local_response_norm.html
-    signature: "(input, size, alpha=0.0001, beta=0.75, k=1.0)"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
-
-  - name: torch.nn.functional.rms_norm
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.rms_norm.html
-    signature: "(input, normalized_shape, weight=None, eps=None)"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: weight
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: false
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
-
-  - name: torch.nn.functional.normalize
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.normalize.html
-    signature: "(input, p=2.0, dim=1, eps=1e-12, out=None)"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: out
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: false
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
-
-  - name: torch.nn.functional.linear
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.linear.html
-
-  - name: torch.nn.functional.bilinear
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.bilinear.html
-
-  - name: torch.nn.functional.dropout
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.dropout.html
-    signature: "(input, p=0.5, training=True, inplace=False)"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
-
-  - name: torch.nn.functional.alpha_dropout
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.alpha_dropout.html
-    signature: "(input, p=0.5, training=False, inplace=False)"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
-
-  - name: torch.nn.functional.feature_alpha_dropout
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.feature_alpha_dropout.html
-    signature: "(input, p=0.5, training=False, inplace=False)"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
-
-  - name: torch.nn.functional.dropout1d
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.dropout1d.html
-    signature: "(input, p=0.5, training=True, inplace=False)"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
-
-  - name: torch.nn.functional.dropout2d
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.dropout2d.html
-    signature: "(input, p=0.5, training=True, inplace=False)"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
-
-  - name: torch.nn.functional.dropout3d
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.dropout3d.html
-    signature: "(input, p=0.5, training=True, inplace=False)"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
-
-  - name: torch.nn.functional.embedding
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.embedding.html
-    signature: "(input, weight, padding_idx=None, max_norm=None, norm_type=2.0, scale_grad_by_freq=False, sparse=False)"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: weight
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
-
-  - name: torch.nn.functional.embedding_bag
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.embedding_bag.html
-    signature: "(input, weight, offsets=None, max_norm=None, norm_type=2, scale_grad_by_freq=False, mode='mean', sparse=False, per_sample_weights=None, include_last_offset=False, padding_idx=None)"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: weight
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: offsets
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: false
-      - name: per_sample_weights
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: false
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
-
-  - name: torch.nn.functional.one_hot
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.one_hot.html
-
-  - name: torch.nn.functional.pairwise_distance
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.pairwise_distance.html
-
-  - name: torch.nn.functional.cosine_similarity
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.cosine_similarity.html
-
-  - name: torch.nn.functional.pdist
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.pdist.html
-
-  - name: torch.nn.functional.binary_cross_entropy
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.binary_cross_entropy.html
-    signature: "(input, target, weight=None, size_average=None, reduce=None, reduction='mean')"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: target
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: weight
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: false
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
-
-  - name: torch.nn.functional.binary_cross_entropy_with_logits
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.binary_cross_entropy_with_logits.html
-    signature: "(input, target, weight=None, size_average=None, reduce=None, reduction='mean', pos_weight=None)"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: target
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: weight
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: false
-      - name: pos_weight
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: false
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
-
-  - name: torch.nn.functional.poisson_nll_loss
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.poisson_nll_loss.html
-    signature: "(input, target, log_input=True, full=False, size_average=None, eps=1e-08, reduce=None, reduction='mean')"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: target
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
-
-  - name: torch.nn.functional.cosine_embedding_loss
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.cosine_embedding_loss.html
-    signature: "(input1, input2, target, margin=0, size_average=None, reduce=None, reduction='mean')"
-    input_specs:
-      - name: input1
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: input2
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: target
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
-
-  - name: torch.nn.functional.cross_entropy
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.cross_entropy.html
-    signature: "(input, target, weight=None, size_average=None, ignore_index=-100, reduce=None, reduction='mean', label_smoothing=0.0)"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: target
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: weight
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: false
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
-
-  - name: torch.nn.functional.ctc_loss
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.ctc_loss.html
-    signature: "(log_probs, targets, input_lengths, target_lengths, blank=0, reduction='mean', zero_infinity=False)"
-    input_specs:
-      - name: log_probs
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: targets
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: input_lengths
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: target_lengths
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
-
-  - name: torch.nn.functional.gaussian_nll_loss
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.gaussian_nll_loss.html
-    signature: "(input, target, var, full=False, eps=1e-06, reduction='mean')"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: target
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: var
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
-
-  - name: torch.nn.functional.hinge_embedding_loss
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.hinge_embedding_loss.html
-    signature: "(input, target, margin=1.0, size_average=None, reduce=None, reduction='mean')"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: target
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
-
-  - name: torch.nn.functional.kl_div
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.kl_div.html
-    signature: "(input, target, size_average=None, reduce=None, reduction='mean', log_target=False)"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: target
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
-
-  - name: torch.nn.functional.l1_loss
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.l1_loss.html
-    signature: "(input, target, size_average=None, reduce=None, reduction='mean', weight=None)"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: target
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: weight
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: false
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
-
-  - name: torch.nn.functional.mse_loss
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.mse_loss.html
-    signature: "(input, target, size_average=None, reduce=None, reduction='mean', weight=None)"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: target
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: weight
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: false
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
-
-  - name: torch.nn.functional.margin_ranking_loss
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.margin_ranking_loss.html
-    signature: "(input1, input2, target, margin=0, size_average=None, reduce=None, reduction='mean')"
-    input_specs:
-      - name: input1
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: input2
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: target
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
-
-  - name: torch.nn.functional.multilabel_margin_loss
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.multilabel_margin_loss.html
-    signature: "(input, target, size_average=None, reduce=None, reduction='mean')"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: target
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
-
-  - name: torch.nn.functional.multilabel_soft_margin_loss
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.multilabel_soft_margin_loss.html
-    signature: "(input, target, weight=None, size_average=None, reduce=None, reduction='mean')"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: target
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: weight
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: false
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
-
-  - name: torch.nn.functional.multi_margin_loss
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.multi_margin_loss.html
-    signature: "(input, target, p=1, margin=1.0, weight=None, size_average=None, reduce=None, reduction='mean')"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: target
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: weight
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: false
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
-
-  - name: torch.nn.functional.nll_loss
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.nll_loss.html
-    signature: "(input, target, weight=None, size_average=None, ignore_index=-100, reduce=None, reduction='mean')"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: target
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: weight
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: false
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
-
-  - name: torch.nn.functional.huber_loss
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.huber_loss.html
-    signature: "(input, target, reduction='mean', delta=1.0, weight=None)"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: target
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: weight
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: false
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
-
-  - name: torch.nn.functional.smooth_l1_loss
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.smooth_l1_loss.html
-    signature: "(input, target, size_average=None, reduce=None, reduction='mean', beta=1.0)"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: target
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
-
-  - name: torch.nn.functional.soft_margin_loss
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.soft_margin_loss.html
-    signature: "(input, target, size_average=None, reduce=None, reduction='mean')"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: target
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
-
-  - name: torch.nn.functional.triplet_margin_loss
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.triplet_margin_loss.html
-    signature: "(anchor, positive, negative, margin=1.0, p=2, eps=1e-06, swap=False, size_average=None, reduce=None, reduction='mean')"
-    input_specs:
-      - name: anchor
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: positive
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: negative
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
-
-  - name: torch.nn.functional.triplet_margin_with_distance_loss
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.triplet_margin_with_distance_loss.html
-    signature: "(anchor, positive, negative, distance_function=None, margin=1.0, swap=False, reduction='mean')"
-    input_specs:
-      - name: anchor
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: positive
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: negative
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: distance_function
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: false
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
-
-  - name: torch.nn.functional.pixel_shuffle
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.pixel_shuffle.html
-
-  - name: torch.nn.functional.pixel_unshuffle
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.pixel_unshuffle.html
-
-  - name: torch.nn.functional.pad
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.pad.html
-    signature: "(input, pad, mode='constant', value=None)"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
-
-  - name: torch.nn.functional.interpolate
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.interpolate.html
-    signature: "(input, size=None, scale_factor=None, mode='nearest', align_corners=None, recompute_scale_factor=None, antialias=False)"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
-
-  - name: torch.nn.functional.upsample
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.upsample.html
-    signature: "(input, size=None, scale_factor=None, mode='nearest', align_corners=None)"
-    input_specs:
-      - name: input
-        dtype: []  # ⚠ 待确认
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
-
-  - name: torch.nn.functional.upsample_nearest
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.upsample_nearest.html
-    signature: "(input, size=None, scale_factor=None)"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
-
-  - name: torch.nn.functional.upsample_bilinear
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.upsample_bilinear.html
-    signature: "(input, size=None, scale_factor=None)"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
-
-  - name: torch.nn.functional.grid_sample
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.grid_sample.html
-    signature: "(input, grid, mode='bilinear', padding_mode='zeros', align_corners=None)"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: grid
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
-
-  - name: torch.nn.functional.affine_grid
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.affine_grid.html
-    signature: "(theta, size, align_corners=None)"
-    input_specs:
-      - name: theta
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
-
-  - name: torch.nn.functional.ScalingType
-    api_type: class
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.ScalingType.html
-
-  - name: torch.nn.functional.SwizzleType
-    api_type: class
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.SwizzleType.html
-
-  - name: torch.nn.functional.grouped_mm
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.grouped_mm.html
-    signature: "(mat_a, mat_b, offs=None, bias=None, out_dtype=None)"
-    input_specs:
-      - name: mat_a
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: mat_b
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: offs
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: false
-      - name: bias
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: false
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
-
-  - name: torch.nn.functional.scaled_mm
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.scaled_mm.html
-    signature: "(mat_a, mat_b, scale_a, scale_recipe_a, scale_b, scale_recipe_b, swizzle_a=None, swizzle_b=None, bias=None, output_dtype=torch.bfloat16, contraction_dim=(), use_fast_accum=False)"
-    input_specs:
-      - name: mat_a
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: mat_b
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: scale_a
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: scale_b
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: bias
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: false
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
-
-  - name: torch.nn.functional.scaled_grouped_mm
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.scaled_grouped_mm.html
-    signature: "(mat_a, mat_b, scale_a, scale_recipe_a, scale_b, scale_recipe_b, swizzle_a=None, swizzle_b=None, bias=None, offs=None, output_dtype=torch.bfloat16, contraction_dim=(), use_fast_accum=False)"
-    input_specs:
-      - name: mat_a
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: mat_b
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: scale_a
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: scale_b
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: bias
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: false
-      - name: offs
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: false
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
-
-  - name: torch.fft.fft
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.fft.fft.html
-
-  - name: torch.fft.ifft
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.fft.ifft.html
-
-  - name: torch.fft.fft2
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.fft.fft2.html
-
-  - name: torch.fft.ifft2
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.fft.ifft2.html
-
-  - name: torch.fft.fftn
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.fft.fftn.html
-
-  - name: torch.fft.ifftn
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.fft.ifftn.html
-
-  - name: torch.fft.rfft
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.fft.rfft.html
-
-  - name: torch.fft.irfft
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.fft.irfft.html
-
-  - name: torch.fft.rfft2
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.fft.rfft2.html
-
-  - name: torch.fft.irfft2
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.fft.irfft2.html
-
-  - name: torch.fft.rfftn
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.fft.rfftn.html
-
-  - name: torch.fft.irfftn
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.fft.irfftn.html
-
-  - name: torch.fft.hfft
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.fft.hfft.html
-
-  - name: torch.fft.ihfft
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.fft.ihfft.html
-
-  - name: torch.fft.hfft2
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.fft.hfft2.html
-
-  - name: torch.fft.ihfft2
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.fft.ihfft2.html
-
-  - name: torch.fft.hfftn
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.fft.hfftn.html
-
-  - name: torch.fft.ihfftn
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.fft.ihfftn.html
-
-  - name: torch.fft.fftfreq
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.fft.fftfreq.html
-
-  - name: torch.fft.rfftfreq
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.fft.rfftfreq.html
-
-  - name: torch.fft.fftshift
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.fft.fftshift.html
-
-  - name: torch.fft.ifftshift
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.fft.ifftshift.html
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.func.vjp.html
 
   - name: torch.linalg.norm
     api_type: function
@@ -3943,14 +826,6 @@ operators:
   - name: torch.tensordot
     api_type: function
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.tensordot.html
-    signature: "(a, b, dims=2, out=None)"
-    input_specs:
-      - name: out
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: false
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.linalg.tensorsolve
     api_type: function
@@ -4071,7 +946,6 @@ operators:
   - name: torch.from_dlpack
     api_type: function
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.from_dlpack.html
-    signature: "(ext_tensor, device=None, copy=None)"
 
   - name: torch.frombuffer
     api_type: function
@@ -4336,14 +1210,6 @@ operators:
   - name: torch.split
     api_type: function
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.split.html
-    signature: "(tensor, split_size_or_sections, dim=0)"
-    input_specs:
-      - name: tensor
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.squeeze
     api_type: function
@@ -4392,14 +1258,6 @@ operators:
   - name: torch.unravel_index
     api_type: function
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.unravel_index.html
-    signature: "(indices, shape)"
-    input_specs:
-      - name: indices
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.unsqueeze
     api_type: function
@@ -4853,6 +1711,10 @@ operators:
     api_type: function
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.softmax.html
 
+  - name: torch.nn.functional.softmax
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.softmax.html
+
   - name: torch.sqrt
     api_type: function
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.sqrt.html
@@ -4944,14 +1806,6 @@ operators:
   - name: torch.norm
     api_type: function
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.norm.html
-    signature: "(input, p='fro', dim=None, keepdim=False, out=None, dtype=None)"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.nansum
     api_type: function
@@ -4984,12 +1838,10 @@ operators:
   - name: torch.unique
     api_type: function
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.unique.html
-    signature: "(*args, **kwargs)"
 
   - name: torch.unique_consecutive
     api_type: function
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.unique_consecutive.html
-    signature: "(*args, **kwargs)"
 
   - name: torch.var
     api_type: function
@@ -5130,19 +1982,6 @@ operators:
   - name: torch.stft
     api_type: function
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.stft.html
-    signature: "(input, n_fft, hop_length=None, win_length=None, window=None, center=True, pad_mode='reflect', normalized=False, onesided=None, return_complex=None, align_to_window=None)"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: window
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: false
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.istft
     api_type: function
@@ -5171,17 +2010,14 @@ operators:
   - name: torch.atleast_1d
     api_type: function
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.atleast_1d.html
-    signature: "(*tensors)"
 
   - name: torch.atleast_2d
     api_type: function
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.atleast_2d.html
-    signature: "(*tensors)"
 
   - name: torch.atleast_3d
     api_type: function
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.atleast_3d.html
-    signature: "(*tensors)"
 
   - name: torch.bincount
     api_type: function
@@ -5190,12 +2026,10 @@ operators:
   - name: torch.block_diag
     api_type: function
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.block_diag.html
-    signature: "(*tensors)"
 
   - name: torch.broadcast_tensors
     api_type: function
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.broadcast_tensors.html
-    signature: "(*tensors)"
 
   - name: torch.broadcast_to
     api_type: function
@@ -5204,7 +2038,6 @@ operators:
   - name: torch.broadcast_shapes
     api_type: function
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.broadcast_shapes.html
-    signature: "(*shapes)"
 
   - name: torch.bucketize
     api_type: function
@@ -5213,12 +2046,10 @@ operators:
   - name: torch.cartesian_prod
     api_type: function
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.cartesian_prod.html
-    signature: "(*tensors)"
 
   - name: torch.cdist
     api_type: function
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.cdist.html
-    signature: "(x1, x2, p=2.0, compute_mode='use_mm_for_euclid_dist_if_necessary')"
 
   - name: torch.clone
     api_type: function
@@ -5275,7 +2106,6 @@ operators:
   - name: torch.einsum
     api_type: function
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.einsum.html
-    signature: "(*args)"
 
   - name: torch.flatten
     api_type: function
@@ -5320,7 +2150,6 @@ operators:
   - name: torch.meshgrid
     api_type: function
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.meshgrid.html
-    signature: "(*tensors, indexing=None)"
 
   - name: torch.lcm
     api_type: function
@@ -5421,7 +2250,6 @@ operators:
   - name: torch.chain_matmul
     api_type: function
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.chain_matmul.html
-    signature: "(*matrices, out=None)"
 
   - name: torch.cholesky
     api_type: function
@@ -5474,7 +2302,6 @@ operators:
   - name: torch.lu
     api_type: function
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.lu.html
-    signature: "(*args, **kwargs)"
 
   - name: torch.lu_solve
     api_type: function
@@ -5523,58 +2350,14 @@ operators:
   - name: torch.svd_lowrank
     api_type: function
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.svd_lowrank.html
-    signature: "(A, q=6, niter=2, M=None)"
-    input_specs:
-      - name: A
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: M
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: false
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.pca_lowrank
     api_type: function
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.pca_lowrank.html
-    signature: "(A, q=None, center=True, niter=2)"
-    input_specs:
-      - name: A
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.lobpcg
     api_type: function
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.lobpcg.html
-    signature: "(A, k=None, B=None, X=None, n=None, iK=None, niter=None, tol=None, largest=None, method=None, tracker=None, ortho_iparams=None, ortho_fparams=None, ortho_bparams=None)"
-    input_specs:
-      - name: A
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-      - name: B
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: false
-      - name: X
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: false
-      - name: iK
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: false
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.trapz
     api_type: function
@@ -5607,21 +2390,6 @@ operators:
   - name: torch.promote_types
     api_type: function
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.promote_types.html
-
-  - name: torch.func.vmap
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.func.vmap.html
-    signature: "(func, in_dims=0, out_dims=0, randomness='error', chunk_size=None)"
-
-  - name: torch.func.grad
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.func.grad.html
-    signature: "(func, argnums=0, has_aux=False)"
-
-  - name: torch.func.vjp
-    api_type: function
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.func.vjp.html
-    signature: "(func, *primals, has_aux=False)"
 
   - name: torch.Tensor.requires_grad_
     api_type: function
@@ -5838,14 +2606,6 @@ operators:
   - name: torch.Tensor.argmin
     api_type: function
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.argmin.html
-    signature: "(input, dim=None, keepdim=False)"
-    input_specs:
-      - name: input
-        dtype: any
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.Tensor.argsort
     api_type: function
@@ -6486,6 +3246,10 @@ operators:
   - name: torch.Tensor.hardshrink
     api_type: function
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.Tensor.hardshrink.html
+
+  - name: torch.nn.functional.hardshrink
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.hardshrink.html
 
   - name: torch.Tensor.heaviside
     api_type: function
@@ -7690,57 +4454,46 @@ operators:
   - name: torch.signal.windows.bartlett
     api_type: function
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.signal.windows.bartlett.html
-    signature: "(M, sym=True, dtype=None, layout=torch.strided, device=None, requires_grad=False)"
 
   - name: torch.signal.windows.blackman
     api_type: function
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.signal.windows.blackman.html
-    signature: "(M, sym=True, dtype=None, layout=torch.strided, device=None, requires_grad=False)"
 
   - name: torch.signal.windows.cosine
     api_type: function
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.signal.windows.cosine.html
-    signature: "(M, sym=True, dtype=None, layout=torch.strided, device=None, requires_grad=False)"
 
   - name: torch.signal.windows.exponential
     api_type: function
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.signal.windows.exponential.html
-    signature: "(M, center=None, tau=1.0, sym=True, dtype=None, layout=torch.strided, device=None, requires_grad=False)"
 
   - name: torch.signal.windows.gaussian
     api_type: function
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.signal.windows.gaussian.html
-    signature: "(M, std=1.0, sym=True, dtype=None, layout=torch.strided, device=None, requires_grad=False)"
 
   - name: torch.signal.windows.general_cosine
     api_type: function
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.signal.windows.general_cosine.html
-    signature: "(M, a, sym=True, dtype=None, layout=torch.strided, device=None, requires_grad=False)"
 
   - name: torch.signal.windows.general_hamming
     api_type: function
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.signal.windows.general_hamming.html
-    signature: "(M, alpha=0.54, sym=True, dtype=None, layout=torch.strided, device=None, requires_grad=False)"
 
   - name: torch.signal.windows.hamming
     api_type: function
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.signal.windows.hamming.html
-    signature: "(M, sym=True, dtype=None, layout=torch.strided, device=None, requires_grad=False)"
 
   - name: torch.signal.windows.hann
     api_type: function
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.signal.windows.hann.html
-    signature: "(M, sym=True, dtype=None, layout=torch.strided, device=None, requires_grad=False)"
 
   - name: torch.signal.windows.kaiser
     api_type: function
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.signal.windows.kaiser.html
-    signature: "(M, beta=12.0, sym=True, dtype=None, layout=torch.strided, device=None, requires_grad=False)"
 
   - name: torch.signal.windows.nuttall
     api_type: function
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.signal.windows.nuttall.html
-    signature: "(M, sym=True, dtype=None, layout=torch.strided, device=None, requires_grad=False)"
 
   - name: torch.optim.Optimizer.step
     api_type: function
@@ -7913,11 +4666,18 @@ operators:
   - name: torch.optim.swa_utils.AveragedModel
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.optim.swa_utils.AveragedModel.html
-    signature: "((*args, **kwargs))"
 
   - name: torch.optim.swa_utils.SWALR
     api_type: class
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.optim.swa_utils.SWALR.html
+
+  - name: torch.nn.functional.unfold
+    api_type: function
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.unfold.html
+
+  - name: torch.nn.functional.scaled_dot_product_attention
+    api_type: function
+    doc_url: https://pytorch.org/docs/stable/generated/torch.nn.functional.scaled_dot_product_attention.html
 
   - name: torch.sparse.check_sparse_tensor_invariants
     api_type: function
@@ -7990,14 +4750,6 @@ operators:
   - name: torch.sparse.sum
     api_type: function
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.sparse.sum.html
-    signature: "(input, dim=None, dtype=None)"
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]
-        shape: any
-        value_range: null
-        required: true
-    input_specs_auto: true  # ⚠ 自动生成，需人工确认后删除或设为 false
 
   - name: torch.sparse.sampled_addmm
     api_type: function
@@ -8014,5 +4766,4 @@ operators:
   - name: torch.sparse.as_sparse_gradcheck
     api_type: function
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.sparse.as_sparse_gradcheck.html
-    signature: "(gradcheck)"
 

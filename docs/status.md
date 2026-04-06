@@ -171,26 +171,31 @@ operators:
 
 ### Phase B：MR 生成层完善
 
-#### B1 — repo delete 命令（小任务，快速完成）
+#### B1 — repo delete 命令 ✅ 已完成
 
-```
-deepmt repo delete <operator> [--id MR_ID] [--version V] [--all] [--yes]
-```
-
-- 删除单条 MR（by ID）、指定版本全部 MR、算子全部 MR
-- 加 `--yes` 跳过确认提示，否则交互确认
-- 补充 `MRRepository.delete(operator, version=None, mr_id=None)` 方法
+已完成：
+- `MRRepository.delete(operator, version=None, mr_id=None) -> int`：按 ID / 版本 / 算子全量删除
+- `deepmt repo delete <operator> [--id MR_ID] [--version V] [--all] [--yes]` CLI 命令
+- `--yes` 跳过交互确认，默认需确认
+- 14 个单元测试（`tests/unit/test_repo.py`）
 
 文件：`deepmt/commands/repo.py`、`mr_generator/base/mr_repository.py`
 
-#### B2 — MetamorphicRelation 增加 applicable_frameworks 字段
+#### B2 — MetamorphicRelation 增加 applicable_frameworks 字段 ✅ 已完成
 
-- `ir/schema.py`：`applicable_frameworks: Optional[List[str]] = None`
-- `MRRepository`：增加按 framework 筛选的查询接口
-- `deepmt repo list --framework pytorch` 过滤支持
-- MR 生成时自动记录生成所用框架
+已完成：
+- `ir/schema.py`：`applicable_frameworks: Optional[List[str]] = None`（None = 通用）
+- `MRRepository._serialize_mr` / `_deserialize_mr`：序列化支持
+- DB 迁移：`_init_database` 自动 `ALTER TABLE` 添加 `applicable_frameworks` 列（旧库兼容）
+- `save()` / `save_with_validation()`：新增 `framework` 参数，自动填充 `applicable_frameworks`
+- `load(framework=None)` / `get_mr_with_validation_status(framework=None)`：按框架过滤
+- `list_operators_by_framework(framework)`：列出包含指定框架 MR 的算子
+- `deepmt repo list --framework pytorch`：按框架过滤算子列表
+- `deepmt repo info <op> --framework pytorch`：按框架过滤 MR 展示
+- `deepmt mr generate` 保存时自动传入 `framework`
+- 14 个单元测试覆盖序列化、过滤、通用 MR 不被排除等场景
 
-文件：`ir/schema.py`、`mr_generator/base/mr_repository.py`、`deepmt/commands/repo.py`
+文件：`ir/schema.py`、`mr_generator/base/mr_repository.py`、`deepmt/commands/repo.py`、`deepmt/commands/mr.py`
 
 #### B3 — 批量 MR 生成命令
 
@@ -326,4 +331,4 @@ A1 是最重要的前置任务：`input_specs` 格式一旦确定，C1、C2、C3
 
 ---
 
-*最后更新：2026-04-06（A2/A3 完成）*
+*最后更新：2026-04-06（B1/B2 完成）*

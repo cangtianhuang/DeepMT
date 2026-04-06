@@ -107,7 +107,7 @@ def mr_generate(operator, layer, framework, sources, precheck, sympy, auto_fetch
 
         if save and mrs:
             repo = get_repo()
-            count = repo.save(operator, mrs, version=ver)
+            count = repo.save(operator, mrs, version=ver, framework=framework)
             click.echo(click.style(f"\n已保存 {count} 个 MR 至知识库（version={ver}）", fg="cyan"))
 
     except Exception as e:

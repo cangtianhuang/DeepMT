@@ -112,12 +112,24 @@ class MRRepository:
         """
         )
 
+        # 迁移：添加 applicable_frameworks 列（旧库兼容）
+        cursor.execute("PRAGMA table_info(mr_knowledge_base)")
+        existing_cols = {row[1] for row in cursor.fetchall()}
+        if "applicable_frameworks" not in existing_cols:
+            cursor.execute(
+                "ALTER TABLE mr_knowledge_base ADD COLUMN applicable_frameworks TEXT"
+            )
+
         conn.commit()
         conn.close()
         logger.info("📦 [REPO] " + f"MR knowledge base initialized at: {self.db_path}")
 
     def save(
-        self, operator_name: str, mrs: List[MetamorphicRelation], version: int = 1
+        self,
+        operator_name: str,
+        mrs: List[MetamorphicRelation],
+        version: int = 1,
+        framework: Optional[str] = None,
     ) -> int:
         """
         保存MR列表到知识库
@@ -141,15 +153,23 @@ class MRRepository:
 
         for mr in mrs:
             try:
-                mr_data = self._serialize_mr(mr)
+                # 若调用方传入了 framework，设置到 MR 的 applicable_frameworks
+                if framework and not mr.applicable_frameworks:
+                    mr.applicable_frameworks = [framework]
 
+                mr_data = self._serialize_mr(mr)
                 record_id = str(uuid.uuid4())
+                af_json = (
+                    json.dumps(mr.applicable_frameworks)
+                    if mr.applicable_frameworks is not None
+                    else None
+                )
 
                 cursor.execute(
                     """
                     INSERT INTO mr_knowledge_base
-                    (id, operator_name, mr_id, mr_description, mr_type, mr_data, version, created_at, updated_at, verified)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    (id, operator_name, mr_id, mr_description, mr_type, mr_data, version, created_at, updated_at, verified, applicable_frameworks)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                     (
                         record_id,
@@ -162,6 +182,7 @@ class MRRepository:
                         timestamp,
                         timestamp,
                         mr.verified,
+                        af_json,
                     ),
                 )
 
@@ -177,7 +198,10 @@ class MRRepository:
         return saved_count
 
     def load(
-        self, operator_name: str, version: Optional[int] = None
+        self,
+        operator_name: str,
+        version: Optional[int] = None,
+        framework: Optional[str] = None,
     ) -> List[MetamorphicRelation]:
         """
         从知识库加载MR列表
@@ -207,7 +231,7 @@ class MRRepository:
         # 加载MR
         cursor.execute(
             """
-            SELECT mr_data, mr_id, mr_description, mr_type, verified
+            SELECT mr_data, mr_id, mr_description, mr_type, verified, applicable_frameworks
             FROM mr_knowledge_base
             WHERE operator_name = ? AND version = ?
         """,
@@ -220,10 +244,16 @@ class MRRepository:
         mrs = []
         for row in rows:
             try:
-                mr_data_str, mr_id, description, mr_type, verified = row
+                mr_data_str, mr_id, description, mr_type, verified, af_json = row
                 mr = self._deserialize_mr(mr_data_str, mr_id, description, mr_type)
                 if verified is not None:
                     mr.verified = bool(verified)
+                if af_json:
+                    mr.applicable_frameworks = json.loads(af_json)
+                # framework 过滤：None=通用 MR 不过滤，否则仅保留匹配的
+                if framework and mr.applicable_frameworks is not None:
+                    if framework not in mr.applicable_frameworks:
+                        continue
                 mrs.append(mr)
             except Exception as e:
                 logger.error(f"Error loading MR: {e}")
@@ -315,6 +345,7 @@ class MRRepository:
             "analysis": mr.analysis,
             "layer": mr.layer,
             "verified": mr.verified,
+            "applicable_frameworks": mr.applicable_frameworks,
             "transform_type": "lambda",
         }
         return json.dumps(data)
@@ -338,6 +369,7 @@ class MRRepository:
             analysis=data.get("analysis", ""),
             layer=data.get("layer", "operator"),
             verified=data.get("verified", False),
+            applicable_frameworks=data.get("applicable_frameworks"),
         )
 
     def _rebuild_transform(self, expected: str, description: str):
@@ -361,6 +393,7 @@ class MRRepository:
         mrs: List[MetamorphicRelation],
         validation_records: List[Dict],
         version: int = 1,
+        framework: Optional[str] = None,
     ) -> int:
         """
         保存MR及其验证记录
@@ -399,8 +432,11 @@ class MRRepository:
 
         for mr in mrs:
             try:
-                mr_data = self._serialize_mr(mr)
+                # 若调用方传入了 framework，设置到 MR 的 applicable_frameworks
+                if framework and not mr.applicable_frameworks:
+                    mr.applicable_frameworks = [framework]
 
+                mr_data = self._serialize_mr(mr)
                 record_id = str(uuid.uuid4())
 
                 # 从验证记录中汇总验证状态
@@ -425,11 +461,17 @@ class MRRepository:
                         ):
                             last_validated_at = v["validated_at"]
 
+                af_json = (
+                    json.dumps(mr.applicable_frameworks)
+                    if mr.applicable_frameworks is not None
+                    else None
+                )
+
                 cursor.execute(
                     """
                     INSERT INTO mr_knowledge_base
-                    (id, operator_name, mr_id, mr_description, mr_type, mr_data, version, created_at, updated_at, verified, precheck_passed, sympy_proven, last_validated_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    (id, operator_name, mr_id, mr_description, mr_type, mr_data, version, created_at, updated_at, verified, precheck_passed, sympy_proven, last_validated_at, applicable_frameworks)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                     (
                         record_id,
@@ -445,6 +487,7 @@ class MRRepository:
                         precheck_passed,
                         sympy_proven,
                         last_validated_at,
+                        af_json,
                     ),
                 )
 
@@ -627,6 +670,7 @@ class MRRepository:
         operator_name: str,
         version: Optional[int] = None,
         verified_only: bool = False,
+        framework: Optional[str] = None,
     ) -> List[MetamorphicRelation]:
         """
         获取MR及其验证状态
@@ -657,7 +701,7 @@ class MRRepository:
 
             # 构建查询
             query = """
-                SELECT mr_data, mr_id, mr_description, mr_type, verified, precheck_passed, sympy_proven, last_validated_at
+                SELECT mr_data, mr_id, mr_description, mr_type, verified, precheck_passed, sympy_proven, last_validated_at, applicable_frameworks
                 FROM mr_knowledge_base
                 WHERE operator_name = ? AND version = ?
             """
@@ -679,12 +723,20 @@ class MRRepository:
                         precheck_passed,
                         sympy_proven,
                         last_validated_at,
+                        af_json,
                     ) = row
                     mr = self._deserialize_mr(mr_data_str, mr_id, description, expected)
 
                     mr.verified = (
                         bool(verified) if verified is not None else mr.verified
                     )
+                    if af_json:
+                        mr.applicable_frameworks = json.loads(af_json)
+
+                    # framework 过滤：None=通用 MR 不过滤，否则仅保留匹配的
+                    if framework and mr.applicable_frameworks is not None:
+                        if framework not in mr.applicable_frameworks:
+                            continue
 
                     validation_info = {
                         "precheck_passed": precheck_passed,
@@ -865,3 +917,78 @@ class MRRepository:
             return None
         finally:
             conn.close()
+
+    def delete(
+        self,
+        operator_name: str,
+        version: Optional[int] = None,
+        mr_id: Optional[str] = None,
+    ) -> int:
+        """
+        删除 MR 记录
+
+        Args:
+            operator_name: 算子名称
+            version:  仅删除该版本的 MR（None = 所有版本）
+            mr_id:    仅删除该 MR ID（优先级最高，同时限定 operator/version）
+
+        Returns:
+            删除的行数
+        """
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+
+        try:
+            if mr_id is not None:
+                # 删除单条 MR
+                query = "DELETE FROM mr_knowledge_base WHERE operator_name = ? AND mr_id = ?"
+                params: List[Any] = [operator_name, mr_id]
+                if version is not None:
+                    query += " AND version = ?"
+                    params.append(version)
+            elif version is not None:
+                # 删除指定版本的全部 MR
+                query = "DELETE FROM mr_knowledge_base WHERE operator_name = ? AND version = ?"
+                params = [operator_name, version]
+            else:
+                # 删除算子的全部 MR
+                query = "DELETE FROM mr_knowledge_base WHERE operator_name = ?"
+                params = [operator_name]
+
+            cursor.execute(query, params)
+            deleted = cursor.rowcount
+            conn.commit()
+            logger.info(
+                "📦 [REPO] "
+                + f"Deleted {deleted} MRs for '{operator_name}'"
+                + (f" version={version}" if version else "")
+                + (f" mr_id={mr_id}" if mr_id else "")
+            )
+            return deleted
+
+        except Exception as e:
+            logger.error(f"Error deleting MRs for {operator_name}: {e}")
+            conn.rollback()
+            return 0
+        finally:
+            conn.close()
+
+    def list_operators_by_framework(self, framework: str) -> List[str]:
+        """列出包含指定框架 MR 的算子名称（applicable_frameworks 包含该框架，或为 NULL）"""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+
+        # applicable_frameworks 为 NULL 表示通用 MR，也纳入结果
+        cursor.execute(
+            """
+            SELECT DISTINCT operator_name FROM mr_knowledge_base
+            WHERE applicable_frameworks IS NULL
+               OR applicable_frameworks LIKE ?
+            ORDER BY operator_name
+        """,
+            (f'%"{framework}"%',),
+        )
+
+        operators = [row[0] for row in cursor.fetchall()]
+        conn.close()
+        return operators

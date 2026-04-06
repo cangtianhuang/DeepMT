@@ -874,20 +874,19 @@ def catalog_enrich(operator, framework, llm, dry_run):
 )
 @click.option("--no-cache", is_flag=True, default=False, help="忽略缓存，强制重新拉取文档")
 @click.option("--dry-run", is_flag=True, default=False, help="试运行：显示将要写入的内容，不实际修改文件")
-@click.option("--yes", "-y", is_flag=True, default=False, help="跳过确认提示直接执行")
 @click.option(
     "--enrich",
     is_flag=True,
     default=False,
-    help="自动丰富缺失 input_specs 的条目（inspect + HTML + LLM，标记 input_specs_auto: true）",
+    help="自动丰富缺失 input_specs 的条目（inspect + HTML，标记 input_specs_auto: true）",
 )
 @click.option(
     "--enrich-llm/--no-enrich-llm",
-    default=True,
+    default=False,
     show_default=True,
-    help="--enrich 时是否启用 LLM 提取约束条件（需配置 LLM API）",
+    help="--enrich 时是否启用 LLM 提取约束条件（需配置 LLM API，默认不启用）",
 )
-def catalog_import_from_docs(framework, version, replace, no_cache, dry_run, yes, enrich, enrich_llm):
+def catalog_import_from_docs(framework, version, replace, no_cache, dry_run, enrich, enrich_llm):
     """从官方文档批量导入 API 到算子目录。
 
     拉取官方文档中所有 API 条目，经排除列表过滤后，写入算子目录 YAML。
@@ -902,25 +901,27 @@ def catalog_import_from_docs(framework, version, replace, no_cache, dry_run, yes
       - since:    空（待手动标注）
       - api_type: 从命名约定推断（首字母大写 = class，否则 function）
 
-    使用 --enrich 额外填充 input_specs（三层策略）：
+    使用 --enrich 额外填充 input_specs（两层策略，默认不调用 LLM）：
       1. inspect 模块（离线）：参数名、类型注解
       2. HTML 解析（需网络）：从文档页补充 dtype
+      加 --enrich-llm 后额外启用：
       3. LLM 提取（需 LLM API）：约束条件 value_range、shape 等
       生成的 input_specs 会标记 input_specs_auto: true，提示需人工确认。
+      启用 LLM 时会在启动前声明总调用次数，并在每 8 个算子后请求确认。
 
     \b
     示例：
       # 合并模式（仅添加新 API）
       deepmt catalog import-api
 
-      # 替换模式（清空后全量导入）
+      # 替换模式（清空后全量导入，原 signature/input_specs 会被清除）
       deepmt catalog import-api --replace
 
-      # 导入并自动丰富 input_specs
+      # 导入并自动丰富 input_specs（仅 inspect + HTML，不调用 LLM）
       deepmt catalog import-api --enrich
 
-      # 丰富但不使用 LLM（仅 inspect + HTML）
-      deepmt catalog import-api --enrich --no-enrich-llm
+      # 丰富并启用 LLM（每批 8 次后确认）
+      deepmt catalog import-api --enrich --enrich-llm
 
       # 试运行
       deepmt catalog import-api --replace --dry-run
@@ -977,12 +978,12 @@ def catalog_import_from_docs(framework, version, replace, no_cache, dry_run, yes
         existing_aliases.update(e.aliases)
 
     if replace:
-        # ── 替换模式：全量重建 ──
+        # ── 替换模式：全量重建（完全清空，包括 signature/input_specs 等已有字段）──
         to_import = kept
         new_count = len(to_import)
         preserved_count = 0
         click.echo(
-            f"替换模式：将清空 {len(existing_entries)} 个现有条目，导入 {new_count} 个新条目",
+            f"替换模式：将清空 {len(existing_entries)} 个现有条目（含 signature/input_specs 等字段），导入 {new_count} 个新条目",
             err=True,
         )
     else:
@@ -1022,11 +1023,10 @@ def catalog_import_from_docs(framework, version, replace, no_cache, dry_run, yes
         return
 
     # 确认
-    if not yes:
-        action_desc = "清空目录并全量导入" if replace else "添加新 API"
-        if not click.confirm(f"\n确认{action_desc}？"):
-            click.echo("已取消。")
-            return
+    action_desc = "清空目录并全量导入" if replace else "添加新 API"
+    if not click.confirm(f"\n确认{action_desc}？"):
+        click.echo("已取消。")
+        return
 
     # ── 执行写入 ──
     from pathlib import Path as _Path
@@ -1050,18 +1050,14 @@ def catalog_import_from_docs(framework, version, replace, no_cache, dry_run, yes
 
     # 构造最终条目列表（统一为 dict 格式）
     if replace:
-        existing_by_name = {e.name: e for e in existing_entries}
+        # 完全清空重建：只保留从文档获取的基础字段，丢弃原有 signature/input_specs 等
         final_dicts: List[dict] = []
         for api in to_import:
-            name_key = api["name"]
-            if name_key in existing_by_name:
-                final_dicts.append(existing_by_name[name_key].to_dict())
-            else:
-                final_dicts.append({
-                    "name": name_key,
-                    "api_type": api.get("type", ""),
-                    "doc_url": api.get("url", ""),
-                })
+            final_dicts.append({
+                "name": api["name"],
+                "api_type": api.get("type", ""),
+                "doc_url": api.get("url", ""),
+            })
     else:
         final_dicts = [e.to_dict() for e in existing_entries]
         for api in to_import:
@@ -1073,6 +1069,9 @@ def catalog_import_from_docs(framework, version, replace, no_cache, dry_run, yes
 
     # ── 可选：丰富 input_specs ────────────────────────────────────────────────
     if enrich and not dry_run:
+        import math as _math
+        from concurrent.futures import ThreadPoolExecutor, as_completed as _as_completed
+        import threading as _threading
         from deepmt.mr_generator.base.operator_enricher import OperatorEnricher
 
         llm_client = None
@@ -1086,18 +1085,23 @@ def catalog_import_from_docs(framework, version, replace, no_cache, dry_run, yes
                     err=True,
                 )
 
-        from concurrent.futures import ThreadPoolExecutor, as_completed as _as_completed
-        import threading as _threading
-
         enricher = OperatorEnricher()
         need_enrich = [d for d in final_dicts if not d.get("input_specs")]
-        click.echo(
-            f"\n正在丰富 {len(need_enrich)} 个缺少 input_specs 的条目"
-            f"（inspect + HTML{'+ LLM' if llm_client else '，跳过 LLM'}，8 线程并发）...",
-            err=True,
-        )
+        total = len(need_enrich)
+        _BATCH = 8
+        batch_count = _math.ceil(total / _BATCH) if total else 0
+        llm_calls = total if llm_client else 0
 
-        completed = [0]
+        click.echo(f"\n即将丰富 {total} 个缺少 input_specs 的条目")
+        click.echo(f"  策略: inspect + HTML{'+ LLM' if llm_client else '（不使用 LLM）'}")
+        click.echo(f"  LLM 调用总次数: {llm_calls}  |  批次大小: {_BATCH}  |  共 {batch_count} 批")
+        if llm_client:
+            if not click.confirm("\n确认启动（含 LLM 调用）？"):
+                click.echo("已跳过丰富。")
+                llm_client = None
+                enrich_llm = False
+                click.echo(click.style("提示：使用 --enrich（不加 --enrich-llm）可在不调用 LLM 的情况下丰富。", fg="cyan"))
+
         lock = _threading.Lock()
 
         def _enrich_one(d: dict) -> None:
@@ -1112,34 +1116,39 @@ def catalog_import_from_docs(framework, version, replace, no_cache, dry_run, yes
                 )
                 d.update(updates)
             except Exception as e:
-                logger.debug(f"[import-api] enrich failed for {d['name']}: {e}")
+                click.echo(click.style(f"  [warn] 丰富失败 {d['name']}: {e}", fg="yellow"), err=True)
             with lock:
-                completed[0] += 1
-                if completed[0] % 50 == 0 or completed[0] == len(need_enrich):
-                    click.echo(
-                        f"  进度: {completed[0]}/{len(need_enrich)}",
-                        err=True,
-                    )
-
-        with ThreadPoolExecutor(max_workers=8) as executor:
-            futures = [executor.submit(_enrich_one, d) for d in need_enrich]
-            for _ in _as_completed(futures):
                 pass
 
+        for batch_idx in range(0, total, _BATCH):
+            batch = need_enrich[batch_idx:batch_idx + _BATCH]
+            batch_no = batch_idx // _BATCH + 1
+            batch_end = min(batch_idx + _BATCH, total)
+
+            if batch_idx > 0:
+                click.echo(f"\n已完成 {batch_idx}/{total}，准备第 {batch_no}/{batch_count} 批（{batch_idx+1}–{batch_end}）")
+                if not click.confirm(f"继续处理下一批（{len(batch)} 个）？"):
+                    click.echo("已停止丰富，将写入当前进度。")
+                    break
+
+            click.echo(f"\n[批次 {batch_no}/{batch_count}] 处理 {batch_idx+1}–{batch_end}/{total}...", err=True)
+
+            with ThreadPoolExecutor(max_workers=_BATCH) as executor:
+                futures = [executor.submit(_enrich_one, d) for d in batch]
+                for _ in _as_completed(futures):
+                    pass
+
+            click.echo(f"  批次 {batch_no} 完成（{len(batch)} 个）", err=True)
+
         enriched_count = sum(1 for d in final_dicts if d.get("input_specs_auto"))
-        click.echo(
-            click.style(f"  ✓ 自动生成 input_specs：{enriched_count} 个（已标记 input_specs_auto: true）", fg="cyan"),
-            err=True,
-        )
-        pending = sum(1 for d in final_dicts if d.get("input_specs_auto"))
-        if pending:
+        click.echo(click.style(f"\n✓ 自动生成 input_specs：{enriched_count} 个（已标记 input_specs_auto: true）", fg="cyan"))
+        if enriched_count:
             click.echo(
                 click.style(
-                    f"  ⚠  {pending} 个条目的 input_specs 需人工核查"
+                    f"⚠  {enriched_count} 个条目的 input_specs 需人工核查"
                     f"（运行 'deepmt catalog info <operator>' 查看详情）",
                     fg="yellow",
                 ),
-                err=True,
             )
 
     # 写入 YAML

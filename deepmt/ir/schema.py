@@ -75,3 +75,4 @@ class MetamorphicRelation:
     analysis: str = ""  # 分析说明
     layer: str = "operator"  # MR所属层次
     verified: bool = False  # 是否已通过验证
+    applicable_frameworks: Optional[List[str]] = None  # 适用框架列表（None = 通用）

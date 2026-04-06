@@ -277,17 +277,16 @@ deepmt catalog import-api [OPTIONS]
 |------|--------|------|
 | `--framework, -f` | `pytorch` | 目标框架（当前支持 `pytorch`）|
 | `--version, -v` | `stable` | 文档版本 |
-| `--replace` | `False` | 清空现有目录，完全替换为文档中的 API 列表 |
+| `--replace` | `False` | 清空现有目录（含 signature/input_specs），完全替换为文档中的 API 列表 |
 | `--no-cache` | `False` | 忽略缓存，强制重新拉取 |
 | `--dry-run` | `False` | 试运行：仅显示将写入的内容，不修改文件 |
-| `--yes, -y` | `False` | 跳过确认提示直接执行 |
-| `--enrich` | `False` | 自动丰富缺少 `input_specs` 的条目（inspect + HTML + 可选 LLM）|
-| `--enrich-llm / --no-enrich-llm` | `True` | `--enrich` 时是否启用 LLM 提取约束（需配置 LLM API）|
+| `--enrich` | `False` | 自动丰富缺少 `input_specs` 的条目（inspect + HTML，默认不调用 LLM）|
+| `--enrich-llm / --no-enrich-llm` | `False` | `--enrich` 时是否额外启用 LLM 提取约束（需配置 LLM API）|
 
 丰富策略（`--enrich`）：
 1. **inspect（离线）**：参数名、类型注解、签名
 2. **HTML 解析（需网络）**：从文档页补充 dtype
-3. **LLM（可选）**：提取 value_range、shape 等语义约束
+3. **LLM（显式开启）**：加 `--enrich-llm` 后提取 value_range、shape 等语义约束；启动时声明总调用次数，每批 8 个算子后请求确认。
 
 生成的 `input_specs` 会自动标记 `input_specs_auto: true`，提示需人工核查。`dtype` 有三种值：`[]`（未知）/ `any`（无约束）/ `[float32, ...]`（明确类型）。
 
@@ -297,24 +296,21 @@ deepmt catalog import-api [OPTIONS]
 # 合并模式：仅添加新 API
 deepmt catalog import-api
 
-# 替换模式：清空后全量导入（先预览再执行）
+# 替换模式：清空后全量导入（先预览再执行，原 signature/input_specs 会被清除）
 deepmt catalog import-api --replace --dry-run
-deepmt catalog import-api --replace --yes
+deepmt catalog import-api --replace
 
-# 跳过确认，强制拉取
-deepmt catalog import-api --replace --no-cache --yes
+# 导入并自动丰富 input_specs（仅 inspect + HTML，不调用 LLM）
+deepmt catalog import-api --enrich
 
-# 导入并自动丰富 input_specs（仅 inspect + HTML，不使用 LLM）
-deepmt catalog import-api --enrich --no-enrich-llm --yes
-
-# 导入并丰富，启用 LLM（需配置 config.yaml 中的 llm.api_key）
-deepmt catalog import-api --enrich --yes
+# 导入并丰富，启用 LLM（每批 8 次后确认，需配置 config.yaml 中的 llm.api_key）
+deepmt catalog import-api --enrich --enrich-llm
 ```
 
 > **如何对全部算子批量丰富 input_specs（无 LLM）？**
 >
 > ```bash
-> deepmt catalog import-api --enrich --no-enrich-llm --yes
+> deepmt catalog import-api --enrich
 > ```
 >
 > 约 1 分钟完成（8 线程并发，已有 input_specs 的条目自动跳过）。
@@ -326,10 +322,10 @@ deepmt catalog import-api --enrich --yes
 > deepmt catalog import-api --replace --dry-run
 >
 > # 第 2 步：执行清空 + 重建
-> deepmt catalog import-api --replace --yes
+> deepmt catalog import-api --replace
 > ```
 >
-> `--replace` 会清空 `mr_generator/config/operator_catalog/pytorch.yaml` 中的所有现有条目，用从官方文档抓取的最新 API 列表（经排除列表过滤后）完全替换。原有的 `category`、`since` 等元数据将丢失，需要重新手动标注。
+> `--replace` 会清空 `mr_generator/config/operator_catalog/pytorch.yaml` 中所有现有条目（包括 `signature`、`input_specs` 等字段），用从官方文档抓取的最新 API 列表（经排除列表过滤后）完全替换。原有的 `category`、`since` 等元数据将丢失，需要重新手动标注。
 
 ---
 
@@ -665,12 +661,14 @@ deepmt repo list [OPTIONS]
 
 | 选项 | 默认值 | 说明 |
 |------|--------|------|
+| `--framework` | — | 按框架过滤（如 `pytorch`），仅显示含该框架 MR 的算子 |
 | `--json` | `False` | 以 JSON 格式输出 |
 
 **示例：**
 
 ```bash
 deepmt repo list
+deepmt repo list --framework pytorch
 deepmt repo list --json
 ```
 
@@ -708,6 +706,7 @@ deepmt repo info <OPERATOR> [OPTIONS]
 | 选项 | 默认值 | 说明 |
 |------|--------|------|
 | `--version` | 所有版本 | 仅查看指定版本 |
+| `--framework` | — | 按框架过滤 MR（如 `pytorch`） |
 | `--json` | `False` | 以 JSON 格式输出 |
 
 **示例：**
@@ -715,7 +714,34 @@ deepmt repo info <OPERATOR> [OPTIONS]
 ```bash
 deepmt repo info relu
 deepmt repo info relu --version 1
+deepmt repo info relu --framework pytorch
 deepmt repo info relu --json
+```
+
+---
+
+### `deepmt repo delete <operator>`
+
+删除知识库中的 MR 记录。
+
+```
+deepmt repo delete <OPERATOR> [OPTIONS]
+```
+
+| 选项 | 默认值 | 说明 |
+|------|--------|------|
+| `--id` | — | 只删除该 MR ID（优先级最高） |
+| `--version` | — | 只删除该版本的全部 MR |
+| `--all` | `False` | 删除算子的全部 MR（所有版本） |
+| `--yes` / `-y` | `False` | 跳过交互确认提示 |
+
+**示例：**
+
+```bash
+deepmt repo delete relu --id <MR_ID>       # 删除单条 MR
+deepmt repo delete relu --version 1        # 删除版本 1 的全部 MR
+deepmt repo delete relu --all              # 删除算子所有 MR（交互确认）
+deepmt repo delete relu --all --yes        # 跳过确认直接删除
 ```
 
 ---
@@ -769,7 +795,6 @@ deepmt health all
 | `deepmt mr generate <op> --layer application` | 应用层 MR 生成尚未开始 |
 | `deepmt test operator <op> --framework tensorflow` | TensorFlow 插件未实现 |
 | `deepmt test operator <op> --framework paddlepaddle` | PaddlePaddle 插件未实现 |
-| `deepmt mr delete <op>` | 删除接口未实现，临时方案：直接编辑 SQLite |
 
 ## 日志管理
 
