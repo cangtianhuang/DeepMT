@@ -54,6 +54,18 @@ class OperatorEntry:
         self.doc_url: str = data.get("doc_url", "")
         # 参数签名快照（可选）
         self.signature: str = data.get("signature", "")
+        # API 类型：class | function
+        self.api_type: str = data.get("api_type", "")
+        # 用于测试的可导入完整路径（如 torch.nn.functional.relu）
+        self.api_path: str = data.get("api_path", "")
+        # 调用风格：function | module | method
+        self.api_style: str = data.get("api_style", "")
+        # 对应的 nn.Module 类路径（仅元数据）
+        self.module_class: str = data.get("module_class", "")
+        # 输入参数规范列表
+        self.input_specs: List[Dict[str, Any]] = data.get("input_specs") or []
+        # True = 自动生成待确认，False/None = 已人工确认
+        self.input_specs_auto: bool = bool(data.get("input_specs_auto", False))
 
     def is_available_in(self, version: str) -> bool:
         """
@@ -81,18 +93,30 @@ class OperatorEntry:
             "category": self.category,
             "since": self.since,
         }
+        if self.api_type:
+            d["api_type"] = self.api_type
+        if self.api_path:
+            d["api_path"] = self.api_path
+        if self.api_style:
+            d["api_style"] = self.api_style
+        if self.module_class:
+            d["module_class"] = self.module_class
         if self.deprecated:
             d["deprecated"] = self.deprecated
         if self.removed:
             d["removed"] = self.removed
         if self.aliases:
             d["aliases"] = self.aliases
-        if self.note:
-            d["note"] = self.note
         if self.doc_url:
             d["doc_url"] = self.doc_url
         if self.signature:
             d["signature"] = self.signature
+        if self.input_specs:
+            d["input_specs"] = self.input_specs
+        if self.input_specs_auto:
+            d["input_specs_auto"] = self.input_specs_auto
+        if self.note:
+            d["note"] = self.note
         return d
 
     def __repr__(self) -> str:

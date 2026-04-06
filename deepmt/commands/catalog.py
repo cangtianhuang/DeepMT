@@ -19,7 +19,7 @@ from typing import Dict, List, Optional
 import click
 import yaml
 
-_CATALOG_DIR = Path(__file__).parent.parent.parent / "mr_generator" / "config" / "operator_catalog"
+_CATALOG_DIR = Path(__file__).parent.parent / "mr_generator" / "config" / "operator_catalog"
 _ALL_FRAMEWORKS = ["pytorch", "tensorflow", "paddlepaddle"]
 
 
@@ -38,6 +38,65 @@ def _get_operators(framework: str) -> List[Dict]:
     if catalog is None:
         return []
     return catalog.get("operators", [])
+
+
+def _write_entry_yaml(f, d: dict) -> None:
+    """将单个算子条目写入 YAML 文件（手写格式，保持可读性）"""
+    import io
+
+    f.write(f"  - name: {d['name']}\n")
+    if d.get("api_type"):
+        f.write(f"    api_type: {d['api_type']}\n")
+    if d.get("api_path"):
+        f.write(f"    api_path: {d['api_path']}\n")
+    if d.get("api_style"):
+        f.write(f"    api_style: {d['api_style']}\n")
+    if d.get("module_class"):
+        f.write(f"    module_class: {d['module_class']}\n")
+    if d.get("category"):
+        f.write(f"    category: {d['category']}\n")
+    since = d.get("since", "")
+    if since and str(since) not in ("0.0", "0"):
+        f.write(f'    since: "{since}"\n')
+    if d.get("deprecated"):
+        f.write(f'    deprecated: "{d["deprecated"]}"\n')
+    if d.get("removed"):
+        f.write(f'    removed: "{d["removed"]}"\n')
+    if d.get("aliases"):
+        aliases_str = "[" + ", ".join(d["aliases"]) + "]"
+        f.write(f"    aliases: {aliases_str}\n")
+    if d.get("doc_url"):
+        f.write(f"    doc_url: {d['doc_url']}\n")
+    if d.get("signature"):
+        f.write(f'    signature: "{d["signature"]}"\n')
+    if d.get("input_specs"):
+        f.write("    input_specs:\n")
+        for spec in d["input_specs"]:
+            f.write(f"      - name: {spec['name']}\n")
+            dtypes = spec.get("dtype")
+            if dtypes == "any":
+                f.write("        dtype: any\n")
+            elif dtypes:
+                dtype_str = "[" + ", ".join(dtypes) + "]"
+                f.write(f"        dtype: {dtype_str}\n")
+            else:
+                f.write("        dtype: []  # ⚠ 待确认\n")
+            shape = spec.get("shape", "any")
+            f.write(f"        shape: {shape}\n")
+            vr = spec.get("value_range")
+            if vr is None:
+                f.write("        value_range: null\n")
+            else:
+                lo = "null" if vr[0] is None else vr[0]
+                hi = "null" if len(vr) < 2 or vr[1] is None else vr[1]
+                f.write(f"        value_range: [{lo}, {hi}]\n")
+            required = spec.get("required", True)
+            f.write(f"        required: {'true' if required else 'false'}\n")
+    if d.get("input_specs_auto"):
+        f.write("    input_specs_auto: true  # ⚠ 自动生成\n")
+    if d.get("note"):
+        f.write(f'    note: "{d["note"]}"\n')
+    f.write("\n")
 
 
 def _match(op: Dict, keyword: str) -> bool:
@@ -250,6 +309,27 @@ def catalog_info(operator, as_json):
                 f"    {click.style('✓', fg='green')} {fw:<16} {entry['name']}  "
                 f"[{cat}]  since={since}{alias_str}"
             )
+            # input_specs 状态
+            specs = entry.get("input_specs") or []
+            specs_auto = entry.get("input_specs_auto", False)
+            if specs and specs_auto:
+                click.echo(
+                    click.style(
+                        f"      ⚠  input_specs 为自动生成（{len(specs)} 个参数），需人工核查"
+                        f"\n         确认后在 YAML 中删除或将 input_specs_auto 设为 false",
+                        fg="yellow",
+                    )
+                )
+            elif specs:
+                click.echo(f"      input_specs: {len(specs)} 个参数已确认")
+            else:
+                click.echo(
+                    click.style(
+                        "      input_specs: 未填写  "
+                        "（运行 'deepmt catalog import-api --enrich' 自动生成）",
+                        fg="bright_black",
+                    )
+                )
         else:
             click.echo(f"    {click.style('✗', fg='red')} {fw:<16} 未找到")
     if not any_found:
@@ -342,6 +422,11 @@ def catalog_latest_version(framework, all_versions, as_json):
 def catalog_fetch_doc(operator, framework, url, max_chars):
     """从官方文档网页获取并打印算子文档正文（无需 LLM）。
 
+    URL 解析优先级（由高到低）：
+      1. --url 显式指定
+      2. 算子目录 YAML 中的 doc_url 字段
+      3. build_doc_url() 按框架模板自动构造
+
     \b
     示例:
       deepmt catalog fetch-doc torch.matmul
@@ -349,25 +434,37 @@ def catalog_fetch_doc(operator, framework, url, max_chars):
       deepmt catalog fetch-doc relu --framework pytorch --max-chars 0
     """
     try:
-        from deepmt.tools.web_search.search_agent import SearchAgent
+        from deepmt.tools.web_search.search_agent import SearchAgent, build_doc_url
+        from deepmt.mr_generator.base.operator_catalog import OperatorCatalog
         agent = SearchAgent()
+        cat = OperatorCatalog()
     except Exception as e:
         click.echo(click.style(f"错误：{e}", fg="red"), err=True)
         sys.exit(1)
 
-    # 若未指定 URL，使用框架文档的标准 URL 格式推导
-    if url is None:
-        if framework == "pytorch":
-            # torch.matmul -> generated/torch.matmul.html
-            url = f"https://docs.pytorch.org/docs/stable/generated/{operator}.html"
+    url_source = ""
+    if url is not None:
+        url_source = "--url 参数"
+    else:
+        # 优先从 YAML 目录读取 doc_url
+        yaml_url = cat.get_doc_url(framework, operator)
+        if yaml_url:
+            url = yaml_url
+            url_source = "算子目录 YAML"
         else:
-            click.echo(click.style(
-                f"框架 '{framework}' 需要通过 --url 指定文档链接。", fg="yellow"
-            ))
-            sys.exit(1)
+            # 回退：按框架模板构造
+            url = build_doc_url(framework, operator)
+            if url:
+                url_source = "框架 URL 模板"
+            else:
+                click.echo(click.style(
+                    f"框架 '{framework}' 未配置文档 URL 模板，请通过 --url 指定。",
+                    fg="yellow",
+                ))
+                sys.exit(1)
 
-    click.echo(f"正在获取文档: {url}", err=True)
-    doc = agent.fetch_operator_doc_by_url(url)
+    click.echo(f"正在获取文档（来源：{url_source}）: {url}", err=True)
+    doc = agent.fetch_operator_doc_by_url(url, framework=framework)
 
     if not doc:
         click.echo(click.style("获取失败，请检查 URL 或网络连接。", fg="red"))
@@ -649,6 +746,109 @@ def catalog_check_updates(framework, version, no_cache, show_no_sig, as_json, sk
     click.echo("")
 
 
+# ── enrich ─────────────────────────────────────────────────────────────────────
+
+@catalog.command("enrich")
+@click.argument("operator")
+@click.option(
+    "--framework", "-f",
+    default="pytorch",
+    type=click.Choice(_ALL_FRAMEWORKS, case_sensitive=False),
+    show_default=True,
+    help="目标框架",
+)
+@click.option(
+    "--llm/--no-llm",
+    default=False,
+    show_default=True,
+    help="是否启用 LLM 提取约束条件（需配置 LLM API）",
+)
+@click.option("--dry-run", is_flag=True, default=False, help="仅打印丰富结果，不写入 YAML")
+def catalog_enrich(operator, framework, llm, dry_run):
+    """对单个算子执行 input_specs 丰富（inspect + HTML + 可选 LLM）。
+
+    \b
+    示例:
+      deepmt catalog enrich torch.Tensor.argmin
+      deepmt catalog enrich torch.nn.functional.relu --dry-run
+      deepmt catalog enrich torch.matmul --llm
+    """
+    from deepmt.mr_generator.base.operator_enricher import OperatorEnricher
+    import json as _json
+
+    # 查找该算子条目
+    yaml_path = _CATALOG_DIR / f"{framework}.yaml"
+    if not yaml_path.exists():
+        click.echo(click.style(f"框架 '{framework}' 的算子目录不存在。", fg="red"))
+        sys.exit(1)
+
+    with yaml_path.open("r", encoding="utf-8") as f:
+        catalog_data = yaml.safe_load(f)
+
+    ops: List[Dict] = catalog_data.get("operators", [])
+    entry_idx = next((i for i, op in enumerate(ops) if op.get("name") == operator), None)
+    if entry_idx is None:
+        click.echo(click.style(f"在 {framework} 目录中未找到算子 '{operator}'。", fg="red"))
+        sys.exit(1)
+
+    entry = ops[entry_idx]
+
+    llm_client = None
+    if llm:
+        try:
+            from deepmt.tools.llm.client import LLMClient
+            llm_client = LLMClient()
+        except Exception as e:
+            click.echo(click.style(f"[warn] 无法初始化 LLM 客户端，跳过 LLM 步骤：{e}", fg="yellow"), err=True)
+
+    enricher = OperatorEnricher()
+    click.echo(f"正在丰富 {operator}...", err=True)
+    updates = enricher.enrich(
+        name=entry.get("name", operator),
+        api_type=entry.get("api_type", ""),
+        doc_url=entry.get("doc_url", ""),
+        framework=framework,
+        use_llm=llm,
+        llm_client=llm_client,
+    )
+
+    if not updates:
+        click.echo(click.style("未能提取到任何信息（非 Tensor 参数算子或名称无法 import）。", fg="yellow"))
+        return
+
+    click.echo(_json.dumps(updates, ensure_ascii=False, indent=2))
+
+    if dry_run:
+        click.echo(click.style("\n[dry-run] 未写入文件。", fg="yellow"))
+        return
+
+    # 写回 YAML（就地更新该条目）
+    entry.update(updates)
+
+    from pathlib import Path as _Path
+    from datetime import datetime as _dt
+
+    header_lines: List[str] = []
+    with yaml_path.open("r", encoding="utf-8") as f:
+        for line in f:
+            if line.startswith("operators:"):
+                break
+            if line.startswith("last_updated:"):
+                continue
+            header_lines.append(line.rstrip())
+
+    today = _dt.now().strftime("%Y-%m-%d")
+    with yaml_path.open("w", encoding="utf-8") as f:
+        for line in header_lines:
+            f.write(line + "\n")
+        f.write(f'last_updated: "{today}"\n\n')
+        f.write("operators:\n")
+        for op in ops:
+            _write_entry_yaml(f, op)
+
+    click.echo(click.style(f"\n✓ 已更新 {operator} 到 {yaml_path}", fg="green"))
+
+
 # ── import-api ─────────────────────────────────────────────────────────────────
 
 @catalog.command("import-api")
@@ -675,8 +875,20 @@ def catalog_check_updates(framework, version, no_cache, show_no_sig, as_json, sk
 @click.option("--no-cache", is_flag=True, default=False, help="忽略缓存，强制重新拉取文档")
 @click.option("--dry-run", is_flag=True, default=False, help="试运行：显示将要写入的内容，不实际修改文件")
 @click.option("--yes", "-y", is_flag=True, default=False, help="跳过确认提示直接执行")
-def catalog_import_from_docs(framework, version, replace, no_cache, dry_run, yes):
-    """从官方文档批量导入 API 到算子目录（无需 LLM）。
+@click.option(
+    "--enrich",
+    is_flag=True,
+    default=False,
+    help="自动丰富缺失 input_specs 的条目（inspect + HTML + LLM，标记 input_specs_auto: true）",
+)
+@click.option(
+    "--enrich-llm/--no-enrich-llm",
+    default=True,
+    show_default=True,
+    help="--enrich 时是否启用 LLM 提取约束条件（需配置 LLM API）",
+)
+def catalog_import_from_docs(framework, version, replace, no_cache, dry_run, yes, enrich, enrich_llm):
+    """从官方文档批量导入 API 到算子目录。
 
     拉取官方文档中所有 API 条目，经排除列表过滤后，写入算子目录 YAML。
 
@@ -685,24 +897,33 @@ def catalog_import_from_docs(framework, version, replace, no_cache, dry_run, yes
       默认（合并模式）：仅添加目录中不存在的新 API，保留已有条目的分类/版本等元数据
       --replace 模式 ：清空现有目录，以文档 API 列表完全重建（元数据将丢失）
 
-    导入的条目：
+    导入的条目（基础字段）：
       - category: 空（待手动标注）
       - since:    空（待手动标注）
-      - type:     从命名约定推断（首字母大写 = class，否则 function）
+      - api_type: 从命名约定推断（首字母大写 = class，否则 function）
+
+    使用 --enrich 额外填充 input_specs（三层策略）：
+      1. inspect 模块（离线）：参数名、类型注解
+      2. HTML 解析（需网络）：从文档页补充 dtype
+      3. LLM 提取（需 LLM API）：约束条件 value_range、shape 等
+      生成的 input_specs 会标记 input_specs_auto: true，提示需人工确认。
 
     \b
     示例：
       # 合并模式（仅添加新 API）
-      deepmt catalog import-from-docs
+      deepmt catalog import-api
 
       # 替换模式（清空后全量导入）
-      deepmt catalog import-from-docs --replace
+      deepmt catalog import-api --replace
 
-      # 试运行：查看将导入什么，不写文件
-      deepmt catalog import-from-docs --replace --dry-run
+      # 导入并自动丰富 input_specs
+      deepmt catalog import-api --enrich
 
-      # 跳过确认
-      deepmt catalog import-from-docs --replace --yes
+      # 丰富但不使用 LLM（仅 inspect + HTML）
+      deepmt catalog import-api --enrich --no-enrich-llm
+
+      # 试运行
+      deepmt catalog import-api --replace --dry-run
     """
     try:
         from deepmt.tools.web_search.api_list_fetcher import APIListFetcher
@@ -780,7 +1001,8 @@ def catalog_import_from_docs(framework, version, replace, no_cache, dry_run, yes
 
     if new_count == 0 and not replace:
         click.echo(click.style("无新增 API，目录已是最新。", fg="green"))
-        return
+        if not enrich:
+            return
 
     # 显示样本
     click.echo(f"\n将导入以下 API（共 {new_count} 个，前 20 条）：")
@@ -807,7 +1029,6 @@ def catalog_import_from_docs(framework, version, replace, no_cache, dry_run, yes
             return
 
     # ── 执行写入 ──
-    import yaml as _yaml
     from pathlib import Path as _Path
     from datetime import datetime as _dt
 
@@ -827,31 +1048,99 @@ def catalog_import_from_docs(framework, version, replace, no_cache, dry_run, yes
 
     today = _dt.now().strftime("%Y-%m-%d")
 
-    # 构造最终条目列表
+    # 构造最终条目列表（统一为 dict 格式）
     if replace:
-        # 全量替换：用 fetched 列表重建，但保留原有条目的元数据（如果名称匹配）
         existing_by_name = {e.name: e for e in existing_entries}
-        final_entries = []
+        final_dicts: List[dict] = []
         for api in to_import:
-            name = api["name"]
-            if name in existing_by_name:
-                # 保留已有元数据
-                final_entries.append(existing_by_name[name])
+            name_key = api["name"]
+            if name_key in existing_by_name:
+                final_dicts.append(existing_by_name[name_key].to_dict())
             else:
-                final_entries.append({
-                    "name": name,
-                    "type": api.get("type", ""),
-                    "url": api.get("url", ""),
+                final_dicts.append({
+                    "name": name_key,
+                    "api_type": api.get("type", ""),
+                    "doc_url": api.get("url", ""),
                 })
     else:
-        # 合并：保留现有条目，追加新条目
-        final_entries = list(existing_entries)  # existing OperatorEntry objects
+        final_dicts = [e.to_dict() for e in existing_entries]
         for api in to_import:
-            final_entries.append({
+            final_dicts.append({
                 "name": api["name"],
-                "type": api.get("type", ""),
-                "url": api.get("url", ""),
+                "api_type": api.get("type", ""),
+                "doc_url": api.get("url", ""),
             })
+
+    # ── 可选：丰富 input_specs ────────────────────────────────────────────────
+    if enrich and not dry_run:
+        from deepmt.mr_generator.base.operator_enricher import OperatorEnricher
+
+        llm_client = None
+        if enrich_llm:
+            try:
+                from deepmt.tools.llm.client import LLMClient
+                llm_client = LLMClient()
+            except Exception as e:
+                click.echo(
+                    click.style(f"[warn] 无法初始化 LLM 客户端，将跳过 LLM 步骤：{e}", fg="yellow"),
+                    err=True,
+                )
+
+        from concurrent.futures import ThreadPoolExecutor, as_completed as _as_completed
+        import threading as _threading
+
+        enricher = OperatorEnricher()
+        need_enrich = [d for d in final_dicts if not d.get("input_specs")]
+        click.echo(
+            f"\n正在丰富 {len(need_enrich)} 个缺少 input_specs 的条目"
+            f"（inspect + HTML{'+ LLM' if llm_client else '，跳过 LLM'}，8 线程并发）...",
+            err=True,
+        )
+
+        completed = [0]
+        lock = _threading.Lock()
+
+        def _enrich_one(d: dict) -> None:
+            try:
+                updates = enricher.enrich(
+                    name=d["name"],
+                    api_type=d.get("api_type", ""),
+                    doc_url=d.get("doc_url", ""),
+                    framework=framework,
+                    use_llm=enrich_llm,
+                    llm_client=llm_client,
+                )
+                d.update(updates)
+            except Exception as e:
+                logger.debug(f"[import-api] enrich failed for {d['name']}: {e}")
+            with lock:
+                completed[0] += 1
+                if completed[0] % 50 == 0 or completed[0] == len(need_enrich):
+                    click.echo(
+                        f"  进度: {completed[0]}/{len(need_enrich)}",
+                        err=True,
+                    )
+
+        with ThreadPoolExecutor(max_workers=8) as executor:
+            futures = [executor.submit(_enrich_one, d) for d in need_enrich]
+            for _ in _as_completed(futures):
+                pass
+
+        enriched_count = sum(1 for d in final_dicts if d.get("input_specs_auto"))
+        click.echo(
+            click.style(f"  ✓ 自动生成 input_specs：{enriched_count} 个（已标记 input_specs_auto: true）", fg="cyan"),
+            err=True,
+        )
+        pending = sum(1 for d in final_dicts if d.get("input_specs_auto"))
+        if pending:
+            click.echo(
+                click.style(
+                    f"  ⚠  {pending} 个条目的 input_specs 需人工核查"
+                    f"（运行 'deepmt catalog info <operator>' 查看详情）",
+                    fg="yellow",
+                ),
+                err=True,
+            )
 
     # 写入 YAML
     with yaml_path.open("w", encoding="utf-8") as f:
@@ -859,38 +1148,10 @@ def catalog_import_from_docs(framework, version, replace, no_cache, dry_run, yes
             f.write(line + "\n")
         f.write(f'last_updated: "{today}"\n\n')
         f.write("operators:\n")
-        for entry in final_entries:
-            if hasattr(entry, "to_dict"):
-                # 现有 OperatorEntry 对象
-                d = entry.to_dict()
-                f.write(f"  - name: {d['name']}\n")
-                if d.get("category"):
-                    f.write(f"    category: {d['category']}\n")
-                if d.get("since") and d["since"] != "0.0":
-                    f.write(f"    since: \"{d['since']}\"\n")
-                if d.get("deprecated"):
-                    f.write(f"    deprecated: \"{d['deprecated']}\"\n")
-                if d.get("removed"):
-                    f.write(f"    removed: \"{d['removed']}\"\n")
-                if d.get("aliases"):
-                    aliases_str = "[" + ", ".join(d["aliases"]) + "]"
-                    f.write(f"    aliases: {aliases_str}\n")
-                if d.get("doc_url"):
-                    f.write(f"    doc_url: {d['doc_url']}\n")
-                if d.get("signature"):
-                    f.write(f"    signature: \"{d['signature']}\"\n")
-                if d.get("note"):
-                    f.write(f"    note: \"{d['note']}\"\n")
-            else:
-                # 新导入的 dict 条目
-                f.write(f"  - name: {entry['name']}\n")
-                if entry.get("type"):
-                    f.write(f"    api_type: {entry['type']}\n")
-                if entry.get("url"):
-                    f.write(f"    doc_url: {entry['url']}\n")
-            f.write("\n")
+        for d in final_dicts:
+            _write_entry_yaml(f, d)
 
     click.echo(click.style(
-        f"\n✓ 已写入 {len(final_entries)} 个条目到 {yaml_path}",
+        f"\n✓ 已写入 {len(final_dicts)} 个条目到 {yaml_path}",
         fg="green", bold=True,
     ))

@@ -116,3 +116,8 @@ source .venv/bin/activate && PYTHONPATH=$(pwd) python -m pytest tests/
    - 凡涉及框架相关逻辑，框架名称必须以 `FrameworkType` 参数传入，**不得写死**（包括字符串字面量 `"pytorch"`）
    - PyTorch 先行实现，其他框架入口处抛出 `NotImplementedError`，保留接口占位
    - 参考现有模式：`_SUPPORTED_FRAMEWORKS = {"pytorch"}` + 显式的 `not_implemented_error` 提示
+
+5. **无向后兼容性负担**
+   - 本项目处于初期开发阶段，**不考虑任何向后兼容性**
+   - 重命名函数/类/CLI 命令、修改接口签名、调整数据结构时，必须**彻底清理**：删除旧名称、更新所有调用点、移除兼容性 shim
+   - 禁止保留废弃别名、`_deprecated_` 包装、兼容性注释（如 `# kept for backward compat`）等过渡代码

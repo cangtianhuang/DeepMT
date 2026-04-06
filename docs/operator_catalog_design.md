@@ -57,14 +57,27 @@ last_updated: "2026-03-06"  # 上次人工更新日期
 description: "..."          # 简短说明
 
 operators:                  # 算子列表
-  - name: torch.nn.ReLU     # 必填：算子完整 API 路径
-    category: activation    # 必填：算子分类
-    since: "1.0"            # 必填：首次引入版本
+  - name: torch.nn.ReLU     # 必填：算子在文档/目录中的主标识名称
+    api_type: class         # 可选：class | function（从命名约定推断）
+    api_path: torch.nn.functional.relu  # 可选：用于测试的可导入完整路径
+    api_style: function     # 可选：function | module | method（默认 function）
+    module_class: torch.nn.ReLU         # 可选：对应的 nn.Module 类路径（元数据）
+    category: activation    # 推荐：算子分类
+    since: "1.0"            # 推荐：首次引入版本
     deprecated: "2.0"       # 可选：标记废弃的版本
     removed: "2.5"          # 可选：正式移除的版本
     aliases:                # 可选：其他等价 API 路径
       - torch.nn.functional.relu
+    doc_url: "https://..."  # 可选：官方文档页面 URL
+    signature: "(input)"    # 可选：参数签名快照（用于 check-updates 变更检测）
     note: "..."             # 可选：备注
+    input_specs:            # 可选：输入参数规范（见 4.3 节）
+      - name: input
+        dtype: [float16, bfloat16, float32, float64]
+        shape: any
+        value_range: null
+        required: true
+    input_specs_auto: true  # 可选：true = 自动生成待确认，false/缺省 = 已人工确认
 ```
 
 ### 4.1 算子分类（category）
@@ -85,6 +98,100 @@ operators:                  # 算子列表
 | `tensor_ops` | 张量操作（拼接、切分、变形等）|
 | `distance` | 距离 / 相似度度量 |
 | `sparse` | 稀疏张量运算（保留，待扩展）|
+
+### 4.3 input_specs 规范
+
+`input_specs` 描述算子的输入张量参数，供 `InputGenerator` 生成合法测试输入。每个条目对应一个 Tensor 类型参数（跳过标量 `int`/`float`/`bool`/`str` 参数）。
+
+#### 字段说明
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `name` | str | 参数名，与函数签名一致（如 `input`、`weight`） |
+| `dtype` | List[str] | 支持的 dtype 列表；空列表 `[]` 表示待确认 |
+| `shape` | str | 形状约束字符串（见下方） |
+| `value_range` | null \| [min, max] | 值域约束；`null` 表示无约束；边界用 `null` 表示无界 |
+| `required` | bool | 是否必填，默认 `true` |
+
+#### dtype 可选值
+
+仅使用以下 PyTorch 标准名称：
+
+```
+float16   bfloat16   float32   float64
+int8      int16      int32     int64    uint8
+bool      complex64  complex128
+```
+
+#### shape 语法
+
+| 值 | 含义 |
+|----|------|
+| `any` | 任意形状（默认） |
+| `nd>=N` | 至少 N 维（N 为正整数，如 `nd>=2`） |
+| `(n,)` | 恰好 1 维 |
+| `(n, m)` | 恰好 2 维 |
+| `(n, c, h, w)` | 恰好 4 维（如 CNN 输入） |
+| `(*, n, m)` | 最后 2 维固定，前面批次维任意 |
+
+#### value_range 格式
+
+```yaml
+value_range: null          # 无约束
+value_range: [0, null]     # 非负实数（≥ 0）
+value_range: [1.0e-7, null]  # 严格正数（避免 log(0)）
+value_range: [-1, 1]       # 有界区间 [-1, 1]
+value_range: [null, 0]     # 非正实数（≤ 0）
+```
+
+#### input_specs_auto 标志
+
+`input_specs_auto: true` 表示该条目的 `input_specs` 由 `deepmt catalog import-api --enrich` 自动生成，**需人工核查后修正**。确认无误后将该字段删除或设为 `false`。
+
+`catalog info <operator>` 命令会对 `input_specs_auto: true` 的条目显示警告提示。
+
+#### 完整示例
+
+```yaml
+- name: torch.nn.functional.relu
+  api_type: function
+  api_path: torch.nn.functional.relu
+  api_style: function
+  module_class: torch.nn.ReLU
+  category: activation
+  since: "1.0"
+  doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.relu.html
+  input_specs:
+    - name: input
+      dtype: [float16, bfloat16, float32, float64]
+      shape: any
+      value_range: null
+      required: true
+    - name: inplace
+      dtype: []          # 非 Tensor 参数，通常不在 input_specs 中
+      shape: any
+      value_range: null
+      required: false
+  input_specs_auto: false  # 已人工确认
+```
+
+注：`inplace` 等标量参数通常不需要列入 `input_specs`，示例仅供说明格式。
+
+---
+
+### 4.4 api_path 与 api_style
+
+当前阶段（算子层测试）统一使用 **function 形态**：
+
+| 字段 | 说明 |
+|------|------|
+| `api_path` | 可导入的完整 Python 路径（如 `torch.nn.functional.relu`），用于测试时动态调用 |
+| `api_style` | `function`：直接调用；`module`：需实例化后调用 forward；`method`：绑定方法 |
+| `module_class` | 对应的 `nn.Module` 子类（如 `torch.nn.ReLU`），仅作元数据，模型层使用 |
+
+`api_path` 为空时，插件（Plugin）会尝试直接使用 `name` 字段。
+
+---
 
 ### 4.2 版本管理语义
 

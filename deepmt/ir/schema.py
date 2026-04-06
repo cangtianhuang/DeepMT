@@ -8,6 +8,12 @@ class OperatorIR:
     inputs: Optional[List[Any]] = None
     outputs: Optional[List[Any]] = None
     properties: Optional[Dict[str, Any]] = None
+    # 可导入的完整 Python 路径，用于测试时动态调用（如 torch.nn.functional.relu）
+    api_path: str = ""
+    # 调用风格：function | module | method
+    api_style: str = "function"
+    # 输入参数规范，每项为 InputSpec 字典（name/dtype/shape/value_range/required）
+    input_specs: Optional[List[Dict[str, Any]]] = None
 
 
 @dataclass

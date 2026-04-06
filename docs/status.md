@@ -45,7 +45,8 @@
 | `deepmt catalog latest-version` | 从 PyPI 获取框架最新/历史版本 |
 | `deepmt catalog fetch-doc` | 获取算子文档（PyTorch 支持自动 URL） |
 | `deepmt catalog update-api` | 从官网拉取 PyTorch API 列表并缓存 |
-| `deepmt catalog import-api` | 从官方文档批量导入 API 到算子目录（支持清空重建）|
+| `deepmt catalog import-api` | 从官方文档批量导入 API 到算子目录（支持清空重建与 input_specs 自动丰富）|
+| `deepmt catalog enrich` | 对单个算子执行 input_specs 丰富（inspect + HTML + 可选 LLM）|
 | `deepmt test operator` | 单算子蜕变测试 |
 | `deepmt health` | 健康检查 |
 
@@ -102,13 +103,14 @@ tests/
 
 ### Phase A：算子数据层完善
 
-#### A1 — 算子目录 YAML 格式扩展 ⚠️ 其他阶段的基础
+#### A1 — 算子目录 YAML 格式扩展 ✅ 已完成
 
-扩展 `mr_generator/config/operator_catalog/pytorch.yaml` 格式，**向后兼容**，增加：
+扩展了 `mr_generator/config/operator_catalog/pytorch.yaml` 格式，增加以下字段：
 
 ```yaml
 operators:
-  - name: relu
+  - name: torch.nn.functional.relu
+    api_type: function
     api_path: torch.nn.functional.relu   # 用于测试的完整路径
     api_style: function                   # function | module | method
     module_class: torch.nn.ReLU          # module 风格的等价类（元数据）
@@ -116,33 +118,54 @@ operators:
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.relu.html
     input_specs:
       - name: input
-        dtype: [float16, float32, float64]
-        shape: any              # any | "nd>=1" | "(n,)" | "(n,m)" 等
-        value_range: null       # null=无限制 | [min, max] | [0, null]=正数
+        dtype: [float16, bfloat16, float32, float64]  # [] = 未知 | any = 无限制 | [...] = 受限
+        shape: any              # any | "nd>=N" | "(n,)" | "(n,m)" 等
+        value_range: null       # null=无限制 | [min, max] | [null, max]=负数上界
         required: true
-    aliases: [F.relu]
+    input_specs_auto: true      # true=自动生成待确认，false/缺省=已人工确认
 ```
 
-同时更新 `mr_generator/base/operator_catalog.py` 解析新字段，`OperatorIR` dataclass 增加 `api_path`、`api_style`、`input_specs` 字段。
+`input_specs` 完整规范详见 `docs/operator_catalog_design.md` 第 4.3 节。
 
-文件：`mr_generator/config/operator_catalog/pytorch.yaml`、`ir/schema.py`、`mr_generator/base/operator_catalog.py`
+已完成：
+- `OperatorEntry` 新增字段：`api_path`、`api_style`、`module_class`、`input_specs`、`input_specs_auto`
+- `OperatorIR` dataclass 增加 `api_path`、`api_style`、`input_specs` 字段
+- `deepmt catalog import-api --enrich [--enrich-llm/--no-enrich-llm]`：批量丰富 input_specs（inspect + HTML + LLM 三层策略，8 线程并发）
+- `deepmt catalog enrich <operator>`：单算子丰富命令（支持 `--dry-run`、`--llm`）
+- `deepmt catalog info` 对 `input_specs_auto: true` 条目显示警告
+- `mr_generator/base/operator_enricher.py`：独立丰富器模块（22 个单元测试）
+- `dtype` 三态语义：`[]`（未知）/ `any`（无约束）/ `[str,...]`（受限）
+- C builtin 方法（如 `torch.Tensor.argmin`）通过 `__doc__` 解析签名，`self` 标记为 `dtype: any`
+- 全量丰富执行结果：241 个算子获得 input_specs，1075 个非 Tensor API 无需丰富
 
-#### A2 — PyTorch API 列表接口框架化
+文件：`mr_generator/config/operator_catalog/pytorch.yaml`、`ir/schema.py`、`mr_generator/base/operator_catalog.py`、`mr_generator/base/operator_enricher.py`、`commands/catalog.py`
 
-- `fetch_api_list(url, use_cache)` → `fetch_api_list(framework, use_cache)` 统一入口
-- `_FRAMEWORK_API_PAGES` 已有结构，补充 `build_doc_url(framework, operator_name)` 函数集中管理 URL 构造逻辑
-- paddle/tensorflow 的 `_FRAMEWORK_API_PAGES` 和解析器**留空占位**，抛出 `NotImplementedError`
-- `deepmt catalog update-api-list` 命令的 `--framework` 已限制为 `pytorch`，保持不变
+#### A2 — PyTorch API 列表接口框架化 ✅ 已完成
 
-文件：`tools/web_search/search_agent.py`、`deepmt/commands/catalog.py`
+已完成：
+- `build_doc_url(framework, operator_name) -> Optional[str]`：集中管理各框架算子文档 URL 构造逻辑（`_FRAMEWORK_DOC_URL_TEMPLATES` 字典，非 pytorch 返回 None）
+- `_find_article_container(soup, framework)` 参数化：通过 `_FRAMEWORK_ARTICLE_IDS` 字典按框架查找页面主体容器，fallback 到 `<main>/<article>`
+- `parse_api_list(html, base_url, framework)`：透传 `framework` 到容器定位
+- `fetch_operator_doc_by_url(url, framework)`：透传 `framework` 到文档解析
+- `_execute_search`：改用域名白名单（`_SPHINX_SEARCH_DOMAINS`）判断搜索策略，移除 `if "pytorch" in search_url` 硬编码
+- `OperatorEnricher.enrich()` 新增 `framework` 参数，透传至 HTML 解析、LLM 提取（修复 LLM prompt 中硬编码的 "PyTorch 算子"）
+- `_enrich_from_html(html, updates, framework)`：非 pytorch 时跳过并打印 debug 日志（不抛异常）
+- TF/PaddlePaddle 在 `_FRAMEWORK_API_PAGES`/`_FRAMEWORK_DOC_URL_TEMPLATES` 中留空注释占位
 
-#### A3 — fetch-doc 使用 YAML 中的 doc_url
+文件：`tools/web_search/search_agent.py`、`mr_generator/base/operator_enricher.py`、`commands/catalog.py`
 
-- `deepmt catalog fetch-doc <operator>` 不再依赖 URL 格式猜测，直接从 YAML 读取 `doc_url`
-- 保留 `--url` 参数用于覆盖
-- 相应更新 `tools/web_search/operator_fetcher.py`
+#### A3 — fetch-doc 使用 YAML 中的 doc_url ✅ 已完成
 
-文件：`deepmt/commands/catalog.py`、`tools/web_search/operator_fetcher.py`
+已完成：
+- `deepmt catalog fetch-doc <operator>` URL 解析优先级（由高到低）：
+  1. `--url` 显式指定
+  2. 算子目录 YAML 的 `doc_url` 字段（`OperatorCatalog.get_doc_url()`）
+  3. `build_doc_url(framework, operator)` 按模板自动构造
+  4. 无法构造时输出友好错误提示
+- 移除原来硬编码的 `if framework == "pytorch": url = f".../{operator}.html"` 逻辑
+- 获取时显示 URL 来源（"算子目录 YAML" / "框架 URL 模板" / "--url 参数"）
+
+文件：`deepmt/commands/catalog.py`
 
 ---
 
@@ -303,4 +326,4 @@ A1 是最重要的前置任务：`input_specs` 格式一旦确定，C1、C2、C3
 
 ---
 
-*最后更新：2026-04-04*
+*最后更新：2026-04-06（A2/A3 完成）*

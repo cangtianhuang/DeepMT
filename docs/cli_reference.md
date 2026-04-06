@@ -44,7 +44,8 @@ PYTHONPATH=/home/lhy/DeepMT python -m deepmt <command> [options]
 | `fetch-doc` | 获取算子官方文档正文 |
 | `update-api` | 从官方文档更新 API 模块列表缓存 |
 | `check-updates` | 对比官方文档 API 与本地目录，报告差异 |
-| `import-api` | 批量导入官方文档 API 到算子目录（支持清空重建）|
+| `import-api` | 批量导入官方文档 API 到算子目录（支持清空重建与 input_specs 自动丰富）|
+| `enrich` | 对单个算子执行 input_specs 丰富（inspect + HTML + 可选 LLM）|
 
 ---
 
@@ -167,6 +168,11 @@ deepmt catalog latest-version --json
 
 从官方文档网页获取并打印算子文档正文（无需 LLM）。
 
+URL 解析优先级（由高到低）：
+1. `--url` 显式指定
+2. 算子目录 YAML 中的 `doc_url` 字段
+3. `build_doc_url(framework, operator)` 按框架模板自动构造
+
 ```
 deepmt catalog fetch-doc <OPERATOR> [OPTIONS]
 ```
@@ -174,14 +180,14 @@ deepmt catalog fetch-doc <OPERATOR> [OPTIONS]
 | 选项 | 默认值 | 说明 |
 |------|--------|------|
 | `--framework, -f` | `pytorch` | 目标框架 |
-| `--url, -u` | 自动推导 | 直接指定文档页面 URL |
+| `--url, -u` | 自动解析（见上方优先级）| 直接指定文档页面 URL，跳过自动解析 |
 | `--max-chars` | `3000` | 最多显示字符数（0 = 不限）|
 
 **示例：**
 
 ```bash
-deepmt catalog fetch-doc torch.matmul
-deepmt catalog fetch-doc relu --framework pytorch --max-chars 0
+deepmt catalog fetch-doc torch.matmul           # 自动从 YAML 或模板获取 URL
+deepmt catalog fetch-doc relu --max-chars 0     # 不限制字符数
 deepmt catalog fetch-doc torch.matmul --url https://docs.pytorch.org/docs/stable/generated/torch.matmul.html
 ```
 
@@ -275,6 +281,15 @@ deepmt catalog import-api [OPTIONS]
 | `--no-cache` | `False` | 忽略缓存，强制重新拉取 |
 | `--dry-run` | `False` | 试运行：仅显示将写入的内容，不修改文件 |
 | `--yes, -y` | `False` | 跳过确认提示直接执行 |
+| `--enrich` | `False` | 自动丰富缺少 `input_specs` 的条目（inspect + HTML + 可选 LLM）|
+| `--enrich-llm / --no-enrich-llm` | `True` | `--enrich` 时是否启用 LLM 提取约束（需配置 LLM API）|
+
+丰富策略（`--enrich`）：
+1. **inspect（离线）**：参数名、类型注解、签名
+2. **HTML 解析（需网络）**：从文档页补充 dtype
+3. **LLM（可选）**：提取 value_range、shape 等语义约束
+
+生成的 `input_specs` 会自动标记 `input_specs_auto: true`，提示需人工核查。`dtype` 有三种值：`[]`（未知）/ `any`（无约束）/ `[float32, ...]`（明确类型）。
 
 **示例：**
 
@@ -288,7 +303,21 @@ deepmt catalog import-api --replace --yes
 
 # 跳过确认，强制拉取
 deepmt catalog import-api --replace --no-cache --yes
+
+# 导入并自动丰富 input_specs（仅 inspect + HTML，不使用 LLM）
+deepmt catalog import-api --enrich --no-enrich-llm --yes
+
+# 导入并丰富，启用 LLM（需配置 config.yaml 中的 llm.api_key）
+deepmt catalog import-api --enrich --yes
 ```
+
+> **如何对全部算子批量丰富 input_specs（无 LLM）？**
+>
+> ```bash
+> deepmt catalog import-api --enrich --no-enrich-llm --yes
+> ```
+>
+> 约 1 分钟完成（8 线程并发，已有 input_specs 的条目自动跳过）。
 
 > **如何清空现有 PyTorch 算子列表并重新更新？**
 >
@@ -301,6 +330,55 @@ deepmt catalog import-api --replace --no-cache --yes
 > ```
 >
 > `--replace` 会清空 `mr_generator/config/operator_catalog/pytorch.yaml` 中的所有现有条目，用从官方文档抓取的最新 API 列表（经排除列表过滤后）完全替换。原有的 `category`、`since` 等元数据将丢失，需要重新手动标注。
+
+---
+
+### `deepmt catalog enrich <operator>`
+
+对**单个算子**执行 `input_specs` 自动丰富（inspect + HTML + 可选 LLM），并就地写回算子目录 YAML。
+
+适用场景：不想重跑全量 `import-api --enrich`，只需更新某一个算子的 `input_specs`。
+
+```
+deepmt catalog enrich <OPERATOR> [OPTIONS]
+```
+
+| 选项 | 默认值 | 说明 |
+|------|--------|------|
+| `--framework, -f` | `pytorch` | 目标框架 |
+| `--llm / --no-llm` | `False` | 是否启用 LLM 提取约束条件（需配置 LLM API）|
+| `--dry-run` | `False` | 仅打印丰富结果，不写入 YAML |
+
+**丰富策略**（按优先级）：
+
+1. **inspect（离线，最快）**：解析函数/方法签名，提取 Tensor 参数名、注解
+   - 对 C builtin 方法（如 `torch.Tensor.argmin`）：从 `__doc__` 第一行解析签名，`self` 对应输入张量标记为 `dtype: any`
+2. **HTML 解析（需网络）**：当 inspect 结果中存在 `dtype: []`（未知）时，从官方文档页面补充类型信息
+3. **LLM（可选）**：提取 `value_range`、`shape` 等语义约束
+
+`dtype` 的三态语义：
+
+| 值 | 含义 |
+|---|---|
+| `[]` | 未知，尚未确定 |
+| `any` | 无 dtype 限制（如纯 `Tensor` 注解或 builtin 方法）|
+| `[float32, ...]` | 受限，仅支持这些 dtype |
+
+**示例：**
+
+```bash
+# 预览，不写入（推荐先执行）
+deepmt catalog enrich torch.Tensor.argmin --dry-run
+
+# 写入 YAML
+deepmt catalog enrich torch.Tensor.argmin
+
+# 启用 LLM 提取约束
+deepmt catalog enrich torch.matmul --llm
+
+# 查看丰富结果
+deepmt catalog info torch.Tensor.argmin
+```
 
 ---
 

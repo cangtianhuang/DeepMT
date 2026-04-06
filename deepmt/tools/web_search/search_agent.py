@@ -30,12 +30,58 @@ _PYPI_URLS: Dict[str, str] = {
 
 _FRAMEWORK_API_PAGES: Dict[str, str] = {
     "pytorch": "https://docs.pytorch.org/docs/stable/pytorch-api.html",
+    # tensorflow: TODO
+    # paddlepaddle: TODO
+}
+
+# 各框架算子文档 URL 模板，{operator} 替换为完整算子名（如 torch.nn.functional.relu）
+_FRAMEWORK_DOC_URL_TEMPLATES: Dict[str, str] = {
+    "pytorch": "https://docs.pytorch.org/docs/stable/generated/{operator}.html",
+    # tensorflow: TODO
+    # paddlepaddle: TODO
+}
+
+# 各框架文档页面的主体容器 ID（Sphinx 生成文档的约定）
+_FRAMEWORK_ARTICLE_IDS: Dict[str, str] = {
+    "pytorch": "pytorch-article",
 }
 
 
-def _find_article_container(soup: BeautifulSoup) -> Any:
-    """从 BeautifulSoup 对象中找到文章容器（#pytorch-article → main → article）"""
-    return soup.find(id="pytorch-article") or soup.find("main") or soup.find("article")
+def build_doc_url(framework: str, operator_name: str) -> Optional[str]:
+    """根据框架和算子名称构造官方文档 URL。
+
+    Args:
+        framework:     框架名称（pytorch / tensorflow / paddlepaddle）
+        operator_name: 完整算子名称（如 torch.nn.functional.relu）
+
+    Returns:
+        文档 URL 字符串；框架暂未实现时返回 None（不抛异常，由调用方决策）
+
+    Examples:
+        >>> build_doc_url("pytorch", "torch.nn.functional.relu")
+        'https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.relu.html'
+    """
+    template = _FRAMEWORK_DOC_URL_TEMPLATES.get(framework)
+    if template is None:
+        return None
+    return template.format(operator=operator_name)
+
+
+def _find_article_container(soup: BeautifulSoup, framework: str = "pytorch") -> Any:
+    """从 BeautifulSoup 对象中找到文章容器。
+
+    按优先级查找：框架特定 ID → <main> → <article>
+
+    Args:
+        soup:      已解析的 BeautifulSoup 对象
+        framework: 框架名称，用于确定框架特定的容器 ID
+    """
+    article_id = _FRAMEWORK_ARTICLE_IDS.get(framework)
+    if article_id:
+        container = soup.find(id=article_id)
+        if container:
+            return container
+    return soup.find("main") or soup.find("article")
 
 if TYPE_CHECKING:
     from deepmt.tools.web_search.search_tool import SearchResult
@@ -132,17 +178,18 @@ class SearchAgent:
             for item in ranked_results[:max_results]
         ]
 
-    def parse_operator_doc(self, html: str) -> str:
+    def parse_operator_doc(self, html: str, framework: str = "pytorch") -> str:
         """从 HTML 字符串中提取算子文档正文
 
         Args:
-            html: 算子文档页面的 HTML 字符串
+            html:      算子文档页面的 HTML 字符串
+            framework: 框架名称，用于定位文档主体容器
 
         Returns:
             清洗后的文档文本
         """
         soup = BeautifulSoup(html, "html.parser")
-        container = _find_article_container(soup)
+        container = _find_article_container(soup, framework=framework)
         text = (
             container.get_text(separator="\n", strip=True)
             if container
@@ -150,11 +197,12 @@ class SearchAgent:
         )
         return self._clean_document(text)
 
-    def fetch_operator_doc_by_url(self, url: str) -> Optional[str]:
+    def fetch_operator_doc_by_url(self, url: str, framework: str = "pytorch") -> Optional[str]:
         """从指定 URL 获取并解析算子文档
 
         Args:
-            url: 算子文档页面的 URL
+            url:       算子文档页面的 URL
+            framework: 框架名称，用于定位文档主体容器
 
         Returns:
             清洗后的文档文本，获取失败时返回 None
@@ -162,25 +210,26 @@ class SearchAgent:
         try:
             response = requests.get(url, headers=_HEADERS, timeout=30)
             response.raise_for_status()
-            return self.parse_operator_doc(response.text)
+            return self.parse_operator_doc(response.text, framework=framework)
         except Exception as e:
             logger.warning(f"Failed to fetch operator doc from {url}: {e}")
             return None
 
     def parse_api_list(
-        self, html: str, base_url: str = ""
+        self, html: str, base_url: str = "", framework: str = "pytorch"
     ) -> List[Dict[str, str]]:
-        """从 PyTorch 参考 API 页面的 HTML 中提取 API 模块/函数列表
+        """从框架参考 API 页面的 HTML 中提取 API 模块/函数列表
 
         Args:
-            html: 参考 API 页面的 HTML 字符串
-            base_url: 用于解析相对链接的基础 URL
+            html:      参考 API 页面的 HTML 字符串
+            base_url:  用于解析相对链接的基础 URL
+            framework: 框架名称，用于定位页面主体容器
 
         Returns:
             API 条目列表，每项包含 'name' 和 'url'
         """
         soup = BeautifulSoup(html, "html.parser")
-        article = soup.find(id="pytorch-article") or soup.find("main") or soup.body
+        article = _find_article_container(soup, framework=framework) or soup.body
 
         results: List[Dict[str, str]] = []
         if not article:
@@ -241,7 +290,7 @@ class SearchAgent:
         try:
             response = requests.get(url, headers=_HEADERS, timeout=30)
             response.raise_for_status()
-            result = self.parse_api_list(response.text, base_url=url)
+            result = self.parse_api_list(response.text, base_url=url, framework=framework)
             save_json_cache(cache_path, result, indent=2)
             logger.debug(f"API list cached: {cache_path}")
             return result
@@ -361,12 +410,21 @@ Return JSON format only:
             logger.warning(f"Failed to detect input error: {e}")
             return None
 
+    # 使用 Sphinx 搜索索引的框架域名关键字（这些框架的文档由 Sphinx 生成并有 searchindex.js）
+    _SPHINX_SEARCH_DOMAINS: set = {"docs.pytorch.org"}
+
     def _execute_search(
         self, search_url: str, query: str, max_results: int
     ) -> List[Dict[str, Any]]:
-        """执行搜索请求 (PyTorch 使用 Sphinx 搜索索引，其他框架使用搜索引擎)"""
+        """执行搜索请求。
+
+        对于使用 Sphinx 构建文档的框架（通过域名判断），使用 Sphinx 搜索索引；
+        其他框架使用通用搜索引擎。
+        """
         try:
-            if "pytorch" in search_url:
+            from urllib.parse import urlparse as _urlparse
+            domain = _urlparse(search_url).netloc
+            if any(d in domain for d in self._SPHINX_SEARCH_DOMAINS):
                 return self._search_with_sphinx_index(search_url, query, max_results)
 
             response = requests.get(
