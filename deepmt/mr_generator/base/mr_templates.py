@@ -187,6 +187,8 @@ class MRTemplatePool:
         def transform(*args):
             try:
                 return template.transform_func(*args)
+            except TypeError:
+                raise  # 让 SymPy prover 的 Path 1 感知到失败，转入 Path 2（dict 协议）
             except Exception as e:
                 logger.warning(f"Transform function error: {e}")
                 return args
