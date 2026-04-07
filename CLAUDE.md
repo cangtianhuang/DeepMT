@@ -6,6 +6,24 @@
 
 DeepMT（Deep Metamorphic Testing）是面向深度学习框架（PyTorch、TensorFlow、PaddlePaddle）的**蜕变关系（MR）自动生成与分层测试系统**。
 
+## 当前阶段与下一步
+
+> **开始任何开发任务前，必须先阅读 `docs/deepmt_dev_docs/` 中的规划文档。**  
+> 入口：`docs/deepmt_dev_docs/README.md` → `00_开发总览与执行原则.md` → 对应阶段文档。  
+> 执行规范：`docs/deepmt_dev_docs/06_编码智能体执行规范.md`
+
+| 阶段 | 状态 | 文档 |
+|------|------|------|
+| Phase A：算子数据层完善 | ✅ 完成 | `docs/deepmt_dev_docs/01_Phase_A_算子数据层完善.md` |
+| Phase B：算子层 MR 生成与知识库 | ✅ 完成 | `docs/deepmt_dev_docs/02_Phase_B_算子层MR生成与知识库.md` |
+| Phase C：测试执行与跨框架适配 | 🔲 **当前目标** | `docs/deepmt_dev_docs/03_Phase_C_测试执行与跨框架适配.md` |
+| Phase D：缺陷分析与实验闭环 | ⬜ 待开始 | `docs/deepmt_dev_docs/04_Phase_D_缺陷分析、实验闭环与研究结论.md` |
+| Phase E：演示交付与生产化加固 | ⬜ 待开始 | `docs/deepmt_dev_docs/05_Phase_E_演示交付与生产化加固.md` |
+
+**当前主链：** 算子目录 → MR 生成 → **批量测试（Phase C：C1 InputGenerator → C2 插件接口 → C3 批量测试引擎）** → 结果报告 → 缺陷证据包
+
+已完成：A1~A6（算子目录与 input_specs）、B1~B3（MR 知识库与批量生成）。全量单元测试 124 个通过。
+
 ## 环境与运行
 
 项目使用 `uv` 管理虚拟环境：
@@ -23,13 +41,15 @@ source .venv/bin/activate && PYTHONPATH=$(pwd) python -m pytest tests/
 
 ## 文档
 
-| 文件                              | 内容                  |
-| --------------------------------- | --------------------- |
-| `docs/status.md`                  | 开发状态与进度        |
-| `docs/environment_variables.md`   | 环境变量说明          |
-| `docs/operator_catalog_design.md` | 算子目录设计          |
-| `docs/operator_mr_technical.md`   | 算子层 MR 技术细节    |
-| `docs/quick_start.md`             | 快速上手              |
+| 文件                                    | 内容                              |
+| --------------------------------------- | --------------------------------- |
+| `docs/deepmt_dev_docs/`                 | **主规划文档（开发任务优先读）**  |
+| `docs/status.md`                        | 已完成模块清单与当前测试状态      |
+| `docs/cli_reference.md`                 | CLI 命令参考                      |
+| `docs/environment_variables.md`         | 环境变量说明                      |
+| `docs/operator_catalog_design.md`       | 算子目录设计                      |
+| `docs/operator_mr_technical.md`         | 算子层 MR 技术细节                |
+| `docs/quick_start.md`                   | 快速上手                          |
 
 ## 架构概览
 
@@ -101,7 +121,8 @@ source .venv/bin/activate && PYTHONPATH=$(pwd) python -m pytest tests/
 每次完成功能开发后，必须同步更新以下内容：
 
 1. **文档同步**
-   - 修改了开发进度、模块状态、架构设计 → 更新 `docs/status.md`
+   - 修改了开发进度、模块状态、架构设计 → 更新 `docs/status.md`（已完成模块列表）
+   - 完成某阶段中的关键任务 → 在对应 `docs/deepmt_dev_docs/0X_Phase_*.md` 中标记完成状态
    - 新增或修改了 CLI 命令（含命令名、选项、行为）→ 更新 `docs/cli_reference.md`
 
 2. **依赖同步**

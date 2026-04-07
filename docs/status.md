@@ -1,9 +1,16 @@
 # DeepMT 开发状态
 
-## 当前阶段
+> 详细开发规划与任务清单见 `docs/deepmt_dev_docs/`。本文件只记录"已完成"状态与已知限制。
 
-**Phase 4**：算子层 MR 生成引擎（单算子）、CrawlAgent、CLI 框架完整，PyTorch 数据层部分实现。  
-**下一目标**：打通"数据→生成→测试→报告"完整流程（以 PyTorch 为主），并做好多框架扩展的接口设计。
+## 阶段进度
+
+| 阶段 | 状态 |
+|------|------|
+| Phase A：算子数据层完善（A1~A6） | ✅ 完成 |
+| Phase B：算子层 MR 生成与知识库（B1~B3） | ✅ 完成 |
+| Phase C：测试执行与跨框架适配 | 🔲 当前目标 |
+| Phase D：缺陷分析与实验闭环 | ⬜ 待开始 |
+| Phase E：演示交付与生产化加固 | ⬜ 待开始 |
 
 ---
 
@@ -15,39 +22,40 @@
 |------|------|
 | `mr_generator/operator/operator_mr.py` | 主生成器（4 阶段流水线） |
 | `mr_generator/operator/operator_llm_mr_generator.py` | LLM 猜想生成 |
-| `mr_generator/operator/mr_prechecker.py` | 随机输入快速筛选（5 组，80% 阈值） |
+| `mr_generator/operator/mr_prechecker.py` | 随机输入快速筛选 |
 | `mr_generator/operator/sympy_prover.py` | SymPy 符号证明引擎 |
-| `mr_generator/operator/sympy_translator.py` | 代码 → SymPy（LLM + AST 双路径，`use_llm` 可控） |
+| `mr_generator/operator/sympy_translator.py` | 代码 → SymPy（LLM + AST 双路径） |
 | `mr_generator/operator/ast_parser.py` | Python AST → SymPy |
 | `mr_generator/base/mr_templates.py` + YAML | MR 模板池 |
-| `mr_generator/base/mr_repository.py` | MR 知识库（SQLite） |
+| `mr_generator/base/mr_repository.py` | MR 知识库（SQLite，含 `applicable_frameworks` 字段） |
 | `mr_generator/base/knowledge_base.py` + YAML | 三层知识库 |
 | `mr_generator/base/operator_catalog.py` | 算子目录管理 |
+| `mr_generator/base/operator_enricher.py` | input_specs 自动丰富（inspect + HTML + LLM） |
 
 ### 工具层
 
 | 模块 | 说明 |
 |------|------|
 | `tools/llm/client.py` | LLM 客户端（OpenAI/Anthropic） |
-| `tools/web_search/search_agent.py` | HTML 解析 + 版本查询（无需 LLM） |
+| `tools/web_search/search_agent.py` | HTML 解析 + 版本查询 |
 | `tools/web_search/operator_fetcher.py` | 算子信息获取器 |
 | `tools/web_search/sphinx_search.py` | Sphinx 文档索引解析 |
 | `tools/agent/agent_core.py` | CrawlAgent（ReAct 模式） |
-| `tools/agent/task_runner.py` | TaskRunner（语义 API） |
+| `tools/agent/task_runner.py` | TaskRunner |
 
 ### 已实现 CLI 命令
 
 | 命令 | 说明 |
 |------|------|
-| `deepmt mr generate` | 单算子生成 MR（LLM + 验证） |
-| `deepmt mr batch-generate` | 批量生成 MR（模板源，按 framework/category 过滤，支持断点续跑）|
-| `deepmt repo list/stats/info` | MR 知识库查询 |
+| `deepmt mr generate` | 单算子生成 MR |
+| `deepmt mr batch-generate` | 批量生成 MR（含断点续跑、dry-run） |
+| `deepmt repo list/stats/info/delete` | MR 知识库查询与管理 |
 | `deepmt catalog list/search/info/sync` | 算子目录管理 |
-| `deepmt catalog latest-version` | 从 PyPI 获取框架最新/历史版本 |
-| `deepmt catalog fetch-doc` | 获取算子文档（PyTorch 支持自动 URL） |
-| `deepmt catalog update-api` | 从官网拉取 PyTorch API 列表并缓存 |
-| `deepmt catalog import-api` | 从官方文档批量导入 API 到算子目录（支持清空重建与 input_specs 自动丰富）|
-| `deepmt catalog enrich` | 对单个算子执行 input_specs 丰富（inspect + HTML + 可选 LLM）|
+| `deepmt catalog latest-version` | 从 PyPI 获取框架版本 |
+| `deepmt catalog fetch-doc` | 获取算子文档 |
+| `deepmt catalog update-api` | 拉取 PyTorch API 列表 |
+| `deepmt catalog import-api` | 批量导入 API 并丰富 input_specs |
+| `deepmt catalog enrich` | 单算子 input_specs 丰富 |
 | `deepmt test operator` | 单算子蜕变测试 |
 | `deepmt health` | 健康检查 |
 
@@ -56,310 +64,38 @@
 ```
 tests/
 ├── unit/
-│   ├── test_core.py          6 个用例（config、framework、IR）
-│   ├── test_parsers.py       13 个用例（ASTParser + SympyTranslator）
-│   ├── test_prover.py        8 个用例（SymPyProver，无 LLM 依赖）
-│   ├── test_search.py        搜索工具
-│   ├── test_enricher.py      22 个用例（OperatorEnricher）
-│   ├── test_repo.py          14 个用例（MRRepository B1/B2）
-│   ├── test_mr_generate.py   18 个用例（模板/oracle/precheck/import）
-│   └── test_batch_generate.py 13 个用例（batch-generate B3）
+│   ├── test_core.py            6 个（config、framework、IR）
+│   ├── test_parsers.py         13 个（ASTParser + SympyTranslator）
+│   ├── test_prover.py          8 个（SymPyProver，无 LLM 依赖）
+│   ├── test_search.py          搜索工具
+│   ├── test_enricher.py        22 个（OperatorEnricher）
+│   ├── test_repo.py            14 个（MRRepository）
+│   ├── test_mr_generate.py     18 个（模板/oracle/precheck/import）
+│   └── test_batch_generate.py  13 个（batch-generate）
 └── integration/
     ├── test_mr_generation.py   需 LLM API
     └── test_web_tools.py       需网络
 ```
 
-全部 124 个单元测试通过（无 LLM 依赖）。
+**全部 124 个单元测试通过（无 LLM/网络依赖）。**
 
 ---
 
-## 架构设计原则（本阶段约定）
-
-以下设计决策适用于接下来所有开发任务：
-
-### 1. 框架参数化
-
-所有框架相关代码以 `FrameworkType` 作为参数，**PyTorch 先行实现**，接口设计预留给 TensorFlow 和 PaddlePaddle，不写死框架名称。参考现有模式：`_SUPPORTED_FRAMEWORKS = {"pytorch"}` + `not_implemented_error` 提示。
-
-### 2. MR 与 IR 框架无关
-
-- `MetamorphicRelation` 不绑定特定框架，通过 `applicable_frameworks: Optional[List[str]]` 声明适用范围（None = 通用）
-- `transform_code` 仅使用 Python 原生算术运算符（PyTorch 张量也支持），不依赖框架特定 API；如使用框架 API 则在 MR 中明确标注为框架相关
-- 框架 tensor 的包装/解包由插件负责，不出现在 MR 逻辑中
-
-### 3. 算子双态：function vs module
-
-同一数学运算在 PyTorch 中存在两种调用形态：
-
-| 形态 | 示例 | 适用场景 |
-|------|------|----------|
-| `function` | `torch.nn.functional.relu(x)` | 算子层测试（当前） |
-| `module` | `torch.nn.ReLU()(x)` | 模型层测试（未来） |
-
-**当前阶段**：算子层测试统一使用 `function` 形态（`api_path` 字段），`module_class` 作为元数据保留供模型层使用。Plugin 的 `invoke(operator_ir, inputs)` 根据 `api_style` 字段分发。
-
-### 4. 输入约束严格化
-
-随机测试输入必须满足算子约束，否则会产生大量无意义异常（如对负数求 log）。每个算子在目录 YAML 中声明 `input_specs`，由统一的 `InputGenerator` 读取并生成合法输入。
-
----
-
-## 近期开发计划
-
-### Phase A：算子数据层完善
-
-#### A1 — 算子目录 YAML 格式扩展 ✅ 已完成
-
-扩展了 `mr_generator/config/operator_catalog/pytorch.yaml` 格式，增加以下字段：
-
-```yaml
-operators:
-  - name: torch.nn.functional.relu
-    api_type: function
-    api_path: torch.nn.functional.relu   # 用于测试的完整路径
-    api_style: function                   # function | module | method
-    module_class: torch.nn.ReLU          # module 风格的等价类（元数据）
-    category: activation
-    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.relu.html
-    input_specs:
-      - name: input
-        dtype: [float16, bfloat16, float32, float64]  # [] = 未知 | any = 无限制 | [...] = 受限
-        shape: any              # any | "nd>=N" | "(n,)" | "(n,m)" 等
-        value_range: null       # null=无限制 | [min, max] | [null, max]=负数上界
-        required: true
-    input_specs_auto: true      # true=自动生成待确认，false/缺省=已人工确认
-```
-
-`input_specs` 完整规范详见 `docs/operator_catalog_design.md` 第 4.3 节。
-
-已完成：
-- `OperatorEntry` 新增字段：`api_path`、`api_style`、`module_class`、`input_specs`、`input_specs_auto`
-- `OperatorIR` dataclass 增加 `api_path`、`api_style`、`input_specs` 字段
-- `deepmt catalog import-api --enrich [--enrich-llm/--no-enrich-llm]`：批量丰富 input_specs（inspect + HTML + LLM 三层策略，8 线程并发）
-- `deepmt catalog enrich <operator>`：单算子丰富命令（支持 `--dry-run`、`--llm`）
-- `deepmt catalog info` 对 `input_specs_auto: true` 条目显示警告
-- `mr_generator/base/operator_enricher.py`：独立丰富器模块（22 个单元测试）
-- `dtype` 三态语义：`[]`（未知）/ `any`（无约束）/ `[str,...]`（受限）
-- C builtin 方法（如 `torch.Tensor.argmin`）通过 `__doc__` 解析签名，`self` 标记为 `dtype: any`
-- 全量丰富执行结果：241 个算子获得 input_specs，1075 个非 Tensor API 无需丰富
-
-文件：`mr_generator/config/operator_catalog/pytorch.yaml`、`ir/schema.py`、`mr_generator/base/operator_catalog.py`、`mr_generator/base/operator_enricher.py`、`commands/catalog.py`
-
-#### A2 — PyTorch API 列表接口框架化 ✅ 已完成
-
-已完成：
-- `build_doc_url(framework, operator_name) -> Optional[str]`：集中管理各框架算子文档 URL 构造逻辑（`_FRAMEWORK_DOC_URL_TEMPLATES` 字典，非 pytorch 返回 None）
-- `_find_article_container(soup, framework)` 参数化：通过 `_FRAMEWORK_ARTICLE_IDS` 字典按框架查找页面主体容器，fallback 到 `<main>/<article>`
-- `parse_api_list(html, base_url, framework)`：透传 `framework` 到容器定位
-- `fetch_operator_doc_by_url(url, framework)`：透传 `framework` 到文档解析
-- `_execute_search`：改用域名白名单（`_SPHINX_SEARCH_DOMAINS`）判断搜索策略，移除 `if "pytorch" in search_url` 硬编码
-- `OperatorEnricher.enrich()` 新增 `framework` 参数，透传至 HTML 解析、LLM 提取（修复 LLM prompt 中硬编码的 "PyTorch 算子"）
-- `_enrich_from_html(html, updates, framework)`：非 pytorch 时跳过并打印 debug 日志（不抛异常）
-- TF/PaddlePaddle 在 `_FRAMEWORK_API_PAGES`/`_FRAMEWORK_DOC_URL_TEMPLATES` 中留空注释占位
-
-文件：`tools/web_search/search_agent.py`、`mr_generator/base/operator_enricher.py`、`commands/catalog.py`
-
-#### A3 — fetch-doc 使用 YAML 中的 doc_url ✅ 已完成
-
-已完成：
-- `deepmt catalog fetch-doc <operator>` URL 解析优先级（由高到低）：
-  1. `--url` 显式指定
-  2. 算子目录 YAML 的 `doc_url` 字段（`OperatorCatalog.get_doc_url()`）
-  3. `build_doc_url(framework, operator)` 按模板自动构造
-  4. 无法构造时输出友好错误提示
-- 移除原来硬编码的 `if framework == "pytorch": url = f".../{operator}.html"` 逻辑
-- 获取时显示 URL 来源（"算子目录 YAML" / "框架 URL 模板" / "--url 参数"）
-
-文件：`deepmt/commands/catalog.py`
-
----
-
-### Phase B：MR 生成层完善
-
-#### B1 — repo delete 命令 ✅ 已完成
-
-已完成：
-- `MRRepository.delete(operator, version=None, mr_id=None) -> int`：按 ID / 版本 / 算子全量删除
-- `deepmt repo delete <operator> [--id MR_ID] [--version V] [--all] [--yes]` CLI 命令
-- `--yes` 跳过交互确认，默认需确认
-- 14 个单元测试（`tests/unit/test_repo.py`）
-
-文件：`deepmt/commands/repo.py`、`mr_generator/base/mr_repository.py`
-
-#### B2 — MetamorphicRelation 增加 applicable_frameworks 字段 ✅ 已完成
-
-已完成：
-- `ir/schema.py`：`applicable_frameworks: Optional[List[str]] = None`（None = 通用）
-- `MRRepository._serialize_mr` / `_deserialize_mr`：序列化支持
-- DB 迁移：`_init_database` 自动 `ALTER TABLE` 添加 `applicable_frameworks` 列（旧库兼容）
-- `save()` / `save_with_validation()`：新增 `framework` 参数，自动填充 `applicable_frameworks`
-- `load(framework=None)` / `get_mr_with_validation_status(framework=None)`：按框架过滤
-- `list_operators_by_framework(framework)`：列出包含指定框架 MR 的算子
-- `deepmt repo list --framework pytorch`：按框架过滤算子列表
-- `deepmt repo info <op> --framework pytorch`：按框架过滤 MR 展示
-- `deepmt mr generate` 保存时自动传入 `framework`
-- 14 个单元测试覆盖序列化、过滤、通用 MR 不被排除等场景
-
-文件：`ir/schema.py`、`mr_generator/base/mr_repository.py`、`deepmt/commands/repo.py`、`deepmt/commands/mr.py`
-
-#### B3 — 批量 MR 生成命令 ✅ 已完成
-
-已完成：
-- `deepmt mr batch-generate [--framework pytorch] [--category linearity] [--limit N] [--skip-existing] [--dry-run]`
-- 算子来源：`mr_templates.yaml` 的 `operator_mr_mapping`，按 framework 前缀（`torch.`）过滤
-- `--category` 按模板 category 字段过滤（如 `linearity`、`symmetry`、`invariance`、`boundary`）
-- `--skip-existing`：跳过知识库已有 MR 的算子，支持 Ctrl+C 中断后断点续跑
-- `--dry-run`：仅列出待处理算子，不执行生成
-- `--limit N`：截断算子列表，便于小批量测试
-- 每行输出：`[idx/total] operator_name  OK/SKIP/NO_MR/FAIL  生成=N 验证=N 保存=N`
-- 最终汇总：完成/跳过/失败/总数
-- 串行执行（sources 默认 `template`，可指定 `llm,template`）
-- `_collect_batch_operators(framework, category_filter)` 辅助函数
-- 13 个单元测试（`tests/unit/test_batch_generate.py`）
-
-文件：`deepmt/commands/mr.py`（新增 `batch-generate` 子命令和 `_collect_batch_operators` 辅助函数）
-
----
-
-### Phase C：批量测试层
-
-#### C1 — InputGenerator（输入约束生成器）
-
-新建 `core/input_generator.py`，读取 `input_specs` 生成随机合法测试输入：
-
-- **dtype**：按声明的类型列表随机选择并生成对应 tensor
-- **shape**：
-  - `any`：随机 1~4 维，每维 1~32
-  - `nd>=N`：至少 N 维
-  - 固定形状字符串（如 `"(3,4)"`）：解析后生成
-- **value_range**：`[min, max]` 裁剪（支持 `null` 表示无边界），边界值 `0` 单独处理（+epsilon）
-- 生成策略：随机值 + 边界值（0、极值）混合，可配置 `n_samples`
-- 接口：`InputGenerator.generate(input_specs: List[dict], n_samples: int, framework: str) -> List[Dict[str, Any]]`
-
-文件：`core/input_generator.py`
-
-#### C2 — 插件 invoke 接口规范化
-
-当前 `PyTorchPlugin.ir_to_code()` 返回闭包，不便于批量测试。规范化为：
-
-```python
-class BasePlugin:
-    def invoke(self, operator_ir: OperatorIR, inputs: Dict[str, Any]) -> Any:
-        """执行算子，返回输出。inputs 为 {参数名: 值} 字典。"""
-        raise NotImplementedError
-```
-
-PyTorch 插件实现：
-- `api_style=function`：动态 import `api_path`，以 `inputs` dict 调用
-- `api_style=module`：实例化 `module_class`，以 `inputs['input']` 调用
-- 保持 `ir_to_code()` 向后兼容（委托给 `invoke`）
-
-文件：`plugins/base_plugin.py`（接口）、`plugins/pytorch_plugin.py`（实现）
-
-#### C3 — 批量测试引擎
-
-扩展 `core/test_runner.py`，支持批量模式：
-
-**执行流程（每条 MR）：**
-1. 从 repo 按 `framework` 筛选 MR 列表
-2. 从算子目录读取 `input_specs`
-3. `InputGenerator.generate(input_specs, n_samples)` → N 组输入
-4. `plugin.invoke(operator_ir, inputs)` → `orig`
-5. `mr.transform(inputs)` → `transformed_inputs`
-6. `plugin.invoke(operator_ir, transformed_inputs)` → `trans`
-7. `oracle_evaluator.evaluate(oracle_expr, orig, trans, x)` → pass/fail
-8. 聚合：通过率、失败样本、异常统计
-
-**CLI 扩展：**
-```
-deepmt test batch [--framework pytorch] [--operator relu] [--category activation]
-                  [--n-samples 100] [--mr-id ID] [--json]
-```
-
-文件：`core/test_runner.py`、`deepmt/commands/test.py`
-
----
-
-### Phase D：报告层
-
-#### D1 — 报告生成器
-
-新建 `analysis/report_generator.py`：
-
-- 读取 `ResultsManager` 中的测试结果
-- 生成纯文本摘要：各算子/MR 通过率、失败案例列表、缺陷分类分布
-- 支持 JSON 导出（便于后续可视化或外部处理）
-
-#### D2 — CLI 报告命令
-
-```
-deepmt test report [--framework pytorch] [--operator relu] [--format text|json]
-                   [--output FILE]
-```
-
-文件：`analysis/report_generator.py`、`deepmt/commands/test.py`
-
----
-
-### 推荐开发顺序
-
-```
-A1（格式设计，数据基础）
-  → B1（repo delete，独立小任务）
-  → A2/A3（数据层补全）
-  → B2（MR 框架字段）
-  → B3（批量生成）
-  → C1（InputGenerator）
-  → C2（插件接口规范化）
-  → C3（批量测试）
-  → D1/D2（报告）
-```
-
-A1 是最重要的前置任务：`input_specs` 格式一旦确定，C1、C2、C3 均依赖它。
-
----
-
-## 长期方向（不详细规划）
-
-1. TensorFlow / PaddlePaddle 插件实现（重复上述流程）
-2. 模型层 MR 生成与测试（网络拓扑 + 数据增强策略）
-3. 跨框架等价性测试（需算子跨框架映射表）
-4. 可视化演示
-5. 性能基准对比（与其他测试方法比较）
-6. CI/CD 流水线与持续监控
-7. 学术论文
+## 架构设计约定
+
+- **框架参数化**：所有框架相关代码以 `FrameworkType` 作为参数，PyTorch 先行实现，其他框架入口抛 `NotImplementedError`。参考：`_SUPPORTED_FRAMEWORKS = {"pytorch"}`。
+- **MR 与 IR 框架无关**：`MetamorphicRelation` 通过 `applicable_frameworks` 声明适用范围（`None` = 通用）；`transform_code` 仅用 Python 原生算术；框架 tensor 包装/解包由插件负责。
+- **算子双态**：`function`（`torch.nn.functional.relu`）与 `module`（`torch.nn.ReLU`）；当前算子层测试统一用 `function` 形态。
+- **input_specs 质量分层**：`confirmed`（人工确认）/ `auto-usable`（自动生成可用）/ `weak`（信息不足），通过 `input_specs_auto` 字段区分。
 
 ---
 
 ## 已知限制
 
 1. **SymPy 验证限制**：含浮点的复杂性质无法符号证明，仅依赖 pre-check 数值验证
-2. **LLM 依赖**：MR 猜想质量依赖提示工程与 API 密钥，单元测试已通过 `use_llm=False` 隔离
-3. **transform_code 可移植性**：跨框架 MR 要求 `transform_code` 不使用框架特定 API，PyTorch 阶段不强制，文档中标注
+2. **LLM 依赖**：MR 猜想质量依赖提示工程与 API 密钥，单元测试通过 `use_llm=False` 隔离
+3. **transform_code 可移植性**：跨框架 MR 要求 `transform_code` 不使用框架特定 API；PyTorch 阶段暂不强制，文档中标注
 
 ---
 
----
-
-### MR 生成测试（典型算子验证）
-
-针对 3 个典型 PyTorch 算子执行命令行生成测试，全部通过：
-
-| 算子 | 生成 MR | Precheck 通过 | MR 说明 |
-|------|---------|---------------|---------|
-| `torch.nn.functional.relu` | 2 | 2/2 ✓ | 正齐次性 `relu(2x)==2*relu(x)`；正负对称性 `relu(x)+relu(-x)==|x|` |
-| `torch.nn.functional.sigmoid` | 2 | 2/2 ✓ | 互补性 `sigmoid(-x)==1-sigmoid(x)`；单调递增 `sigmoid(x+1)>=sigmoid(x)` |
-| `torch.exp` | 2 | 1/2 ✓ | 指数加法 `exp(x+1)==e*exp(x)`（`exp_positive` 被 strict tolerance 过滤，符合预期） |
-
-**命令示例：**
-
-```bash
-python -m deepmt mr generate torch.nn.functional.relu \
-  --framework pytorch --sources template --precheck --no-sympy --no-auto-fetch --save --version 1
-```
-
-过程中发现并修复了以下问题（详见下方错误汇总）。
-
----
-
-*最后更新：2026-04-07（MR 生成测试完成）*
+*最后更新：2026-04-08（Phase A + Phase B 完成）*
