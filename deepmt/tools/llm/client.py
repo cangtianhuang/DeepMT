@@ -67,11 +67,14 @@ class LLMClient:
     def _init_client(self):
         if self.provider == "openai":
             try:
+                import httpx
                 import openai
+                # 延长 connect timeout（默认 5s 在代理场景下易超时）
+                _timeout = httpx.Timeout(timeout=120.0, connect=30.0)
                 if self.base_url:
-                    self.client = openai.OpenAI(api_key=self.api_key, base_url=self.base_url)
+                    self.client = openai.OpenAI(api_key=self.api_key, base_url=self.base_url, timeout=_timeout)
                 else:
-                    self.client = openai.OpenAI(api_key=self.api_key)
+                    self.client = openai.OpenAI(api_key=self.api_key, timeout=_timeout)
             except ImportError:
                 raise ImportError("openai package not installed. Install with: pip install openai")
         elif self.provider == "anthropic":

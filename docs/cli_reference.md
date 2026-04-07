@@ -455,6 +455,50 @@ deepmt mr generate my_model --layer model
 
 ---
 
+### `deepmt mr batch-generate`
+
+批量为算子目录中的算子生成蜕变关系并保存至知识库。算子来源：`mr_templates.yaml` 的 `operator_mr_mapping`，按 `framework` 前缀和 `category` 过滤。
+
+```
+deepmt mr batch-generate [OPTIONS]
+```
+
+| 选项 | 默认值 | 说明 |
+|------|--------|------|
+| `--framework` | `pytorch` | 目标框架 |
+| `--category` | 无（全部）| 按模板分类过滤（如 `linearity`、`symmetry`、`invariance`、`boundary`）|
+| `--limit N` | 无限制 | 最多处理 N 个算子 |
+| `--skip-existing` | `False` | 跳过知识库中已有 MR 的算子（支持 Ctrl+C 后断点续跑）|
+| `--sources` | `template` | MR 生成来源，逗号分隔（`llm` / `template`）|
+| `--precheck / --no-precheck` | `True` | 启用数值预检 |
+| `--sympy / --no-sympy` | `False` | 启用 SymPy 符号证明 |
+| `--version` | `1` | 知识库版本号 |
+| `--dry-run` | `False` | 仅列出待处理算子，不执行生成 |
+
+**示例：**
+
+```bash
+# 查看会处理哪些算子（不执行生成）
+deepmt mr batch-generate --dry-run
+
+# 批量生成 pytorch 所有有模板的算子
+deepmt mr batch-generate --framework pytorch
+
+# 只处理 linearity 分类算子
+deepmt mr batch-generate --category linearity
+
+# 跳过已有 MR 的算子（断点续跑）
+deepmt mr batch-generate --skip-existing
+
+# 小批量测试前 3 个算子
+deepmt mr batch-generate --limit 3 --dry-run
+```
+
+每行输出格式：`[idx/total] operator  OK/SKIP/NO_MR/FAIL  生成=N 验证=N 保存=N`  
+最终汇总行：完成/跳过/失败/总数
+
+---
+
 ### `deepmt mr verify <operator>`
 
 对知识库中已有的 MR 重新执行验证。

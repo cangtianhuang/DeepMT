@@ -479,6 +479,9 @@ class OperatorMRGenerator:
             original_inputs=original_inputs,
             framework=framework,
         )
+        # 通过 precheck 的 MR 标记为已验证（数值验证通过即视为 verified）
+        for mr in filtered:
+            mr.verified = True
         logger.info("✅ [CHECK] " + f"{len(filtered)}/{len(mr_candidates)} candidates passed pre-check")
         return filtered
 

@@ -23,6 +23,7 @@ class MRTemplate:
     name: str  # 模板名称
     description: str  # MR描述
     transform_func: Callable  # 输入变换函数
+    transform_code: str  # 原始 transform_code 字符串（来自 YAML）
     oracle_expr: str  # 框架无关的验证表达式
     category: str = "general"  # MR类别
     min_inputs: int = 1  # 最小输入数量
@@ -79,6 +80,7 @@ class MRTemplatePool:
                         name=template_data.get("name", template_name),
                         description=template_data.get("description", ""),
                         transform_func=transform_func,
+                        transform_code=transform_code,
                         oracle_expr=oracle_expr,
                         category=template_data.get("category", "general"),
                         min_inputs=template_data.get("min_inputs", 1),
@@ -189,13 +191,8 @@ class MRTemplatePool:
                 logger.warning(f"Transform function error: {e}")
                 return args
 
-        # 生成 transform_code
-        try:
-            import inspect
-
-            transform_code = inspect.getsource(template.transform_func).strip()
-        except:
-            transform_code = f"# Template: {template.name}"
+        # 直接使用模板中保存的原始 transform_code 字符串（来自 YAML）
+        transform_code = template.transform_code
 
         return MetamorphicRelation(
             id=str(uuid.uuid4()),

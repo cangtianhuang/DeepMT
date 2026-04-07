@@ -40,6 +40,7 @@
 | 命令 | 说明 |
 |------|------|
 | `deepmt mr generate` | 单算子生成 MR（LLM + 验证） |
+| `deepmt mr batch-generate` | 批量生成 MR（模板源，按 framework/category 过滤，支持断点续跑）|
 | `deepmt repo list/stats/info` | MR 知识库查询 |
 | `deepmt catalog list/search/info/sync` | 算子目录管理 |
 | `deepmt catalog latest-version` | 从 PyPI 获取框架最新/历史版本 |
@@ -55,16 +56,20 @@
 ```
 tests/
 ├── unit/
-│   ├── test_core.py       6 个用例（config、framework、IR）
-│   ├── test_parsers.py    13 个用例（ASTParser + SympyTranslator）
-│   ├── test_prover.py     8 个用例（SymPyProver，无 LLM 依赖）
-│   └── test_search.py     搜索工具
+│   ├── test_core.py          6 个用例（config、framework、IR）
+│   ├── test_parsers.py       13 个用例（ASTParser + SympyTranslator）
+│   ├── test_prover.py        8 个用例（SymPyProver，无 LLM 依赖）
+│   ├── test_search.py        搜索工具
+│   ├── test_enricher.py      22 个用例（OperatorEnricher）
+│   ├── test_repo.py          14 个用例（MRRepository B1/B2）
+│   ├── test_mr_generate.py   18 个用例（模板/oracle/precheck/import）
+│   └── test_batch_generate.py 13 个用例（batch-generate B3）
 └── integration/
     ├── test_mr_generation.py   需 LLM API
     └── test_web_tools.py       需网络
 ```
 
-全部 57 个单元测试通过（无 LLM 依赖）。
+全部 124 个单元测试通过（无 LLM 依赖）。
 
 ---
 
@@ -197,19 +202,22 @@ operators:
 
 文件：`ir/schema.py`、`mr_generator/base/mr_repository.py`、`deepmt/commands/repo.py`、`deepmt/commands/mr.py`
 
-#### B3 — 批量 MR 生成命令
+#### B3 — 批量 MR 生成命令 ✅ 已完成
 
-```
-deepmt mr batch-generate [--framework pytorch] [--category activation] [--limit N]
-                         [--skip-existing] [--workers N] [--dry-run]
-```
+已完成：
+- `deepmt mr batch-generate [--framework pytorch] [--category linearity] [--limit N] [--skip-existing] [--dry-run]`
+- 算子来源：`mr_templates.yaml` 的 `operator_mr_mapping`，按 framework 前缀（`torch.`）过滤
+- `--category` 按模板 category 字段过滤（如 `linearity`、`symmetry`、`invariance`、`boundary`）
+- `--skip-existing`：跳过知识库已有 MR 的算子，支持 Ctrl+C 中断后断点续跑
+- `--dry-run`：仅列出待处理算子，不执行生成
+- `--limit N`：截断算子列表，便于小批量测试
+- 每行输出：`[idx/total] operator_name  OK/SKIP/NO_MR/FAIL  生成=N 验证=N 保存=N`
+- 最终汇总：完成/跳过/失败/总数
+- 串行执行（sources 默认 `template`，可指定 `llm,template`）
+- `_collect_batch_operators(framework, category_filter)` 辅助函数
+- 13 个单元测试（`tests/unit/test_batch_generate.py`）
 
-- 从算子目录按 framework/category 筛选算子列表
-- 逐个调用 `operator_mr.py` 生成流水线，自动保存到 repo
-- 进度条显示（已完成/跳过/失败），支持 Ctrl+C 中断后续跑（`--skip-existing`）
-- LLM 调用默认串行（`--workers 1`），可选受控并发
-
-文件：`deepmt/commands/mr.py`（新增 `batch-generate` 子命令）
+文件：`deepmt/commands/mr.py`（新增 `batch-generate` 子命令和 `_collect_batch_operators` 辅助函数）
 
 ---
 
@@ -331,4 +339,27 @@ A1 是最重要的前置任务：`input_specs` 格式一旦确定，C1、C2、C3
 
 ---
 
-*最后更新：2026-04-06（B1/B2 完成）*
+---
+
+### MR 生成测试（典型算子验证）
+
+针对 3 个典型 PyTorch 算子执行命令行生成测试，全部通过：
+
+| 算子 | 生成 MR | Precheck 通过 | MR 说明 |
+|------|---------|---------------|---------|
+| `torch.nn.functional.relu` | 2 | 2/2 ✓ | 正齐次性 `relu(2x)==2*relu(x)`；正负对称性 `relu(x)+relu(-x)==|x|` |
+| `torch.nn.functional.sigmoid` | 2 | 2/2 ✓ | 互补性 `sigmoid(-x)==1-sigmoid(x)`；单调递增 `sigmoid(x+1)>=sigmoid(x)` |
+| `torch.exp` | 2 | 1/2 ✓ | 指数加法 `exp(x+1)==e*exp(x)`（`exp_positive` 被 strict tolerance 过滤，符合预期） |
+
+**命令示例：**
+
+```bash
+python -m deepmt mr generate torch.nn.functional.relu \
+  --framework pytorch --sources template --precheck --no-sympy --no-auto-fetch --save --version 1
+```
+
+过程中发现并修复了以下问题（详见下方错误汇总）。
+
+---
+
+*最后更新：2026-04-07（MR 生成测试完成）*
