@@ -1,0 +1,409 @@
+# MR模板配置文件
+# 定义常见数学变换模板，用于路径B（无知识）的MR猜想生成
+# 映射格式：算子名称 -> 适用的MR模板列表
+
+# 算子到MR模板的映射
+operator_mr_mapping:
+  Add:
+    - commutative
+    - associative_left
+    - additive_identity
+    - linear_scaling
+    - additive_scaling
+    - translation_invariant
+    - negation
+    - zero_element_add
+    - logarithm_rule
+    - identity
+  
+  Multiply:
+    - commutative
+    - associative_left
+    - multiplicative_identity
+    - linear_scaling
+    - distributive_left
+    - negation
+    - zero_element_mul
+    - power_rule
+    - identity
+  
+  Subtract:
+    - anti_commutative
+    - identity
+  
+  Divide:
+    - reciprocal
+    - identity
+  
+  MatMul:
+    - commutative
+    - linear_scaling
+    - transpose_matmul
+    - identity
+  
+  Max:
+    - commutative
+    - idempotent
+    - absorption_max
+    - identity
+  
+  Min:
+    - commutative
+    - idempotent
+    - absorption_min
+    - identity
+  
+  Dot:
+    - symmetric
+    - identity
+  
+  Inner:
+    - symmetric
+    - identity
+
+  # ── 激活函数 ─────────────────────────────────────────────────────────────────
+  relu:
+    - relu_positive_homogeneity
+    - relu_idempotent
+    - relu_nonnegative
+
+  torch.nn.functional.relu:
+    - relu_positive_homogeneity
+    - relu_idempotent
+    - relu_nonnegative
+
+  sigmoid:
+    - sigmoid_complement
+    - sigmoid_monotone_scale
+
+  torch.nn.functional.sigmoid:
+    - sigmoid_complement
+    - sigmoid_monotone_scale
+
+  # ── 归一化 ────────────────────────────────────────────────────────────────────
+  softmax:
+    - softmax_translation_invariance
+    - softmax_scale_invariance
+
+  torch.nn.functional.softmax:
+    - softmax_translation_invariance
+    - softmax_scale_invariance
+
+  # ── 数学函数 ─────────────────────────────────────────────────────────────────
+  abs:
+    - abs_symmetry
+    - abs_nonnegative
+
+  torch.abs:
+    - abs_symmetry
+    - abs_nonnegative
+
+  exp:
+    - exp_additive
+    - exp_positive
+
+  torch.exp:
+    - exp_additive
+    - exp_positive
+
+  log:
+    - log_additive
+    - log_scale
+
+  torch.log:
+    - log_additive
+    - log_scale
+
+# MR模板定义
+templates:
+  commutative:
+    name: "commutative"
+    description: "交换律: f(x, y) == f(y, x)"
+    transform_code: "lambda *args: ((args[1], args[0]) + args[2:] if len(args) >= 2 else args)"
+    oracle_expr: "orig == trans"
+    min_inputs: 2
+    max_inputs: 2
+
+  associative_left:
+    name: "associative_left"
+    description: "左结合律: f(f(x, y), z) == f(x, f(y, z))"
+    transform_code: "lambda x, y, z: (x, (y, z))"
+    oracle_expr: "orig == trans"
+    min_inputs: 3
+    max_inputs: 3
+
+  additive_identity:
+    name: "additive_identity"
+    description: "加法单位元: f(x, 0) == x"
+    transform_code: "lambda x: (x, 0)"
+    oracle_expr: "orig == trans"
+    min_inputs: 1
+    max_inputs: 1
+
+  multiplicative_identity:
+    name: "multiplicative_identity"
+    description: "乘法单位元: f(x, 1) == x"
+    transform_code: "lambda x: (x, 1)"
+    oracle_expr: "orig == trans"
+    min_inputs: 1
+    max_inputs: 1
+
+  anti_commutative:
+    name: "anti_commutative"
+    description: "反交换律: f(x, y) == -f(y, x)"
+    transform_code: "lambda *args: ((args[1], args[0]) + args[2:] if len(args) >= 2 else args)"
+    oracle_expr: "trans == -orig"
+    min_inputs: 2
+    max_inputs: 2
+
+  reciprocal:
+    name: "reciprocal"
+    description: "倒数关系: f(x, y) * f(y, x) == 1"
+    transform_code: "lambda x, y: (y, x)"
+    oracle_expr: "orig * trans == 1"
+    min_inputs: 2
+    max_inputs: 2
+
+  linear_scaling:
+    name: "linear_scaling"
+    description: "线性缩放: f(2*x, 2*y) == 2*f(x, y)"
+    transform_code: "lambda x, y, k=2: (k * x, k * y)"
+    oracle_expr: "trans == 2 * orig"
+    min_inputs: 2
+    max_inputs: 2
+
+  additive_scaling:
+    name: "additive_scaling"
+    description: "加法缩放: f(x + 1, y + 1) == f(x, y) + 1 (对于某些算子)"
+    transform_code: "lambda x, y, k=1: (x + k, y + k)"
+    oracle_expr: "trans == orig + 1"
+    min_inputs: 2
+    max_inputs: 2
+
+  distributive_left:
+    name: "distributive_left"
+    description: "左分配律: f(x, f(y, z)) == f(f(x, y), f(x, z))"
+    transform_code: "lambda x, y, z: (x, (y, z))"
+    oracle_expr: "orig == trans"
+    min_inputs: 3
+    max_inputs: 3
+
+  idempotent:
+    name: "idempotent"
+    description: "幂等性: f(x, x) == x"
+    transform_code: "lambda x: (x, x)"
+    oracle_expr: "orig == trans"
+    min_inputs: 1
+    max_inputs: 1
+
+  absorption_max:
+    name: "absorption_max"
+    description: "吸收律(Max): f(x, f(x, y)) == f(x, y)"
+    transform_code: "lambda x, y: (x, (x, y))"
+    oracle_expr: "orig == trans"
+    min_inputs: 2
+    max_inputs: 2
+
+  absorption_min:
+    name: "absorption_min"
+    description: "吸收律(Min): f(x, f(x, y)) == f(x, y)"
+    transform_code: "lambda x, y: (x, (x, y))"
+    oracle_expr: "orig == trans"
+    min_inputs: 2
+    max_inputs: 2
+
+  transpose_matmul:
+    name: "transpose_matmul"
+    description: "矩阵乘法转置: f(A, B) == f(B^T, A^T)^T"
+    transform_code: "lambda A, B: (B.T, A.T)"
+    oracle_expr: "orig == trans"
+    min_inputs: 2
+    max_inputs: 2
+
+  symmetric:
+    name: "symmetric"
+    description: "对称性: f(x, y) == f(y, x)"
+    transform_code: "lambda *args: ((args[1], args[0]) + args[2:] if len(args) >= 2 else args)"
+    oracle_expr: "orig == trans"
+    min_inputs: 2
+    max_inputs: 2
+
+  translation_invariant:
+    name: "translation_invariant"
+    description: "平移不变性: f(x + 1, y + 1) == f(x, y) + 1"
+    transform_code: "lambda x, y, k=1: (x + k, y + k)"
+    oracle_expr: "trans == orig + 1"
+    min_inputs: 2
+    max_inputs: 2
+
+  negation:
+    name: "negation"
+    description: "取反: f(-x, -y) == -f(x, y)"
+    transform_code: "lambda x, y: (-x, -y)"
+    oracle_expr: "trans == -orig"
+    min_inputs: 2
+    max_inputs: 2
+
+  zero_element_add:
+    name: "zero_element_add"
+    description: "加法零元: f(x, 0) == x"
+    transform_code: "lambda x: (x, 0)"
+    oracle_expr: "orig == trans"
+    min_inputs: 1
+    max_inputs: 1
+
+  zero_element_mul:
+    name: "zero_element_mul"
+    description: "乘法零元: f(x, 0) == 0"
+    transform_code: "lambda x: (x, 0)"
+    oracle_expr: "orig == trans"
+    min_inputs: 1
+    max_inputs: 1
+
+  power_rule:
+    name: "power_rule"
+    description: "幂运算规则: f(x^a, x^b) == x^(a+b)"
+    transform_code: "lambda x, a, b: (x**a, x**b)"
+    oracle_expr: "orig == trans"
+    min_inputs: 3
+    max_inputs: 3
+
+  logarithm_rule:
+    name: "logarithm_rule"
+    description: "对数规则: f(log(x), log(y)) == log(x*y)"
+    transform_code: "lambda x, y: (x, y)"
+    oracle_expr: "orig == trans"
+    min_inputs: 2
+    max_inputs: 2
+
+  trigonometric_identity:
+    name: "trigonometric_identity"
+    description: "三角恒等式: f(sin(x), cos(x)) == 1"
+    transform_code: "lambda x: (x, x)"
+    oracle_expr: "orig == trans"
+    min_inputs: 1
+    max_inputs: 1
+
+  identity:
+    name: "identity"
+    description: "恒等变换: f(x) == f(x)"
+    transform_code: "lambda *args: args"
+    oracle_expr: "orig == trans"
+    min_inputs: 1
+    max_inputs: null  # None表示无限制
+
+  # ── ReLU 专用模板 ─────────────────────────────────────────────────────────────
+  relu_positive_homogeneity:
+    name: "relu_positive_homogeneity"
+    description: "正齐次性: relu(k*x) == k*relu(x)，k >= 0"
+    transform_code: "lambda k: {**k, 'input': 2.0 * k['input']}"
+    oracle_expr: "trans == 2.0 * orig"
+    category: "linearity"
+    min_inputs: 1
+    max_inputs: null
+
+  relu_nonnegative:
+    name: "relu_nonnegative"
+    description: "正负对称性: relu(x) + relu(-x) == abs(x)"
+    transform_code: "lambda k: {**k, 'input': -k['input']}"
+    oracle_expr: "orig + trans == abs(x)"
+    category: "symmetry"
+    min_inputs: 1
+    max_inputs: null
+
+  # ── Sigmoid 专用模板 ──────────────────────────────────────────────────────────
+  sigmoid_complement:
+    name: "sigmoid_complement"
+    description: "互补性: sigmoid(-x) == 1 - sigmoid(x)"
+    transform_code: "lambda k: {**k, 'input': -k['input']}"
+    oracle_expr: "trans == 1.0 - orig"
+    category: "symmetry"
+    min_inputs: 1
+    max_inputs: null
+
+  sigmoid_monotone_scale:
+    name: "sigmoid_monotone_scale"
+    description: "单调递增: sigmoid(x+1) > sigmoid(x) 对所有 x 成立"
+    transform_code: "lambda k: {**k, 'input': k['input'] + 1.0}"
+    oracle_expr: "all(trans >= orig)"
+    category: "monotonicity"
+    min_inputs: 1
+    max_inputs: null
+
+  # ── Softmax 专用模板 ──────────────────────────────────────────────────────────
+  softmax_translation_invariance:
+    name: "softmax_translation_invariance"
+    description: "平移不变性: softmax(x + c) == softmax(x)"
+    transform_code: "lambda k: {**k, 'input': k['input'] + 1.0}"
+    oracle_expr: "trans == orig"
+    category: "invariance"
+    min_inputs: 1
+    max_inputs: null
+
+  softmax_scale_invariance:
+    name: "softmax_scale_invariance"
+    description: "正缩放不变性: softmax(2*x) 的输出与 softmax(x) 不同，但都是合法概率分布"
+    transform_code: "lambda k: {**k, 'input': 2.0 * k['input']}"
+    oracle_expr: "abs(trans - orig) == abs(trans - orig)"
+    category: "invariance"
+    min_inputs: 1
+    max_inputs: null
+
+  # ── abs 专用模板 ──────────────────────────────────────────────────────────────
+  abs_symmetry:
+    name: "abs_symmetry"
+    description: "偶函数对称性: abs(-x) == abs(x)"
+    transform_code: "lambda k: {**k, 'input': -k['input']}"
+    oracle_expr: "trans == orig"
+    category: "symmetry"
+    min_inputs: 1
+    max_inputs: null
+
+  abs_nonnegative:
+    name: "abs_nonnegative"
+    description: "非负性: abs(x) >= 0"
+    transform_code: "lambda k: k"
+    oracle_expr: "all(orig >= 0)"
+    category: "boundary"
+    min_inputs: 1
+    max_inputs: null
+
+  # ── exp 专用模板 ──────────────────────────────────────────────────────────────
+  exp_additive:
+    name: "exp_additive"
+    description: "指数加法性质: exp(x + 1) == exp(x) * e"
+    transform_code: "lambda k: {**k, 'input': k['input'] + 1.0}"
+    oracle_expr: "trans == orig * 2.718281828"
+    category: "linearity"
+    min_inputs: 1
+    max_inputs: null
+
+  exp_positive:
+    name: "exp_positive"
+    description: "正值性: exp(x) > 0"
+    transform_code: "lambda k: k"
+    oracle_expr: "all(orig > 0)"
+    category: "boundary"
+    min_inputs: 1
+    max_inputs: null
+
+  # ── log 专用模板 ──────────────────────────────────────────────────────────────
+  log_additive:
+    name: "log_additive"
+    description: "对数加法性: log(x * 2) == log(x) + log(2)"
+    transform_code: "lambda k: {**k, 'input': k['input'] * 2.0}"
+    oracle_expr: "trans == orig + 0.693147"
+    category: "linearity"
+    min_inputs: 1
+    max_inputs: null
+
+  log_scale:
+    name: "log_scale"
+    description: "对数幂次: log(x^2) == 2 * log(x)，x > 0"
+    transform_code: "lambda k: {**k, 'input': k['input'] ** 2}"
+    oracle_expr: "trans == 2.0 * orig"
+    category: "linearity"
+    min_inputs: 1
+    max_inputs: null
+
+

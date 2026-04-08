@@ -1,15 +1,31 @@
-*.db
-*.log
-.DS_Store
-.cache/
-.claude/
-.cursor/
-.idea/
-.tmp/
-.venv/
-.vscode/
-Thumbs.db
+# ── Python ────────────────────────────────────────────────────────────────────
 __pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+
+# ── Virtual environment ───────────────────────────────────────────────────────
+.venv/
+
+# ── Project config（可能含密钥） ──────────────────────────────────────────────
 config*.yaml
-data/
-examples/
+
+# ── Runtime databases ─────────────────────────────────────────────────────────
+*.db
+
+# ── Runtime data（日志、缓存、生成的 MR 实例） ───────────────────────────────────
+data/logs/
+data/web_search_cache/
+data/mr_repository/*.yaml
+!data/mr_repository/mr_templates.yaml
+
+# ── OS / Editor ───────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+.cursor/
+.claude/
+.cache/
+.tmp/

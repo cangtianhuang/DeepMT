@@ -19,7 +19,7 @@ from typing import Dict, List, Optional
 import click
 import yaml
 
-_CATALOG_DIR = Path(__file__).parent.parent / "mr_generator" / "config" / "operator_catalog"
+_CATALOG_DIR = Path(__file__).parents[2] / "data" / "operator_catalog"
 _ALL_FRAMEWORKS = ["pytorch", "tensorflow", "paddlepaddle"]
 
 
@@ -1028,7 +1028,7 @@ def catalog_import_from_docs(framework, version, replace, no_cache, dry_run, enr
     from pathlib import Path as _Path
     from datetime import datetime as _dt
 
-    catalog_dir = _Path(__file__).parent.parent / "mr_generator" / "config" / "operator_catalog"
+    catalog_dir = _Path(__file__).parents[2] / "data" / "operator_catalog"
     yaml_path = catalog_dir / f"{framework}.yaml"
 
     # 读取现有文件头（注释行 + 非 operators 的字段行）
