@@ -13,7 +13,6 @@ from deepmt.core.results_manager import ResultsManager
 from deepmt.core.scheduler import TaskScheduler
 from deepmt.core.test_runner import TestRunner
 from deepmt.ir.schema import ApplicationIR, ModelIR, OperatorIR
-from deepmt.mr_generator.base.knowledge_base import KnowledgeBase
 from deepmt.mr_generator.base.mr_repository import MRRepository
 from deepmt.mr_generator.operator.operator_mr import OperatorMRGenerator
 
@@ -149,8 +148,7 @@ class DeepMT:
             else:
                 logger.info(f"Generating MRs for {operator_ir.name}")
                 if self._mr_generator is None:
-                    kb = KnowledgeBase()
-                    self._mr_generator = OperatorMRGenerator(kb)
+                    self._mr_generator = OperatorMRGenerator()
                 mrs = self._mr_generator.generate(operator_ir, framework)
                 # 保存到知识库以便后续重用
                 self.mr_repository.save(operator_ir.name, mrs)

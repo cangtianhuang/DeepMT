@@ -51,8 +51,7 @@ def mr():
 @click.option("--sympy/--no-sympy", default=False, show_default=True, help="启用 SymPy 符号证明")
 @click.option("--auto-fetch/--no-auto-fetch", default=False, show_default=True, help="自动从网络获取算子文档")
 @click.option("--save/--no-save", default=True, show_default=True, help="将结果保存至知识库")
-@click.option("--version", "ver", default=1, show_default=True, type=int, help="知识库版本号")
-def mr_generate(operator, layer, framework, sources, precheck, sympy, auto_fetch, save, ver):
+def mr_generate(operator, layer, framework, sources, precheck, sympy, auto_fetch, save):
     """为算子生成蜕变关系并（可选）保存至知识库。
 
     \b
@@ -75,9 +74,7 @@ def mr_generate(operator, layer, framework, sources, precheck, sympy, auto_fetch
     try:
         from deepmt.ir.schema import OperatorIR
         from deepmt.mr_generator.operator.operator_mr import OperatorMRGenerator
-        from deepmt.mr_generator.base.mr_repository import MRRepository
 
-        # 尝试动态导入算子函数（支持 "torch.nn.functional.relu" 这样的完整路径）
         operator_func = _try_import_operator(operator, framework)
         if operator_func:
             click.echo(f"           operator_func=已加载 ({operator})")
@@ -116,8 +113,8 @@ def mr_generate(operator, layer, framework, sources, precheck, sympy, auto_fetch
 
         if save and mrs:
             repo = get_repo()
-            count = repo.save(operator, mrs, version=ver, framework=framework)
-            click.echo(click.style(f"\n已保存 {count} 个 MR 至知识库（version={ver}）", fg="cyan"))
+            count = repo.save(operator, mrs, framework=framework)
+            click.echo(click.style(f"\n已保存 {count} 个 MR 至知识库", fg="cyan"))
 
     except Exception as e:
         click.echo(click.style(f"错误: {e}", fg="red"), err=True)
@@ -135,24 +132,23 @@ def mr_generate(operator, layer, framework, sources, precheck, sympy, auto_fetch
     show_default=True,
     help="目标框架",
 )
-@click.option("--version", "ver", default=None, type=int, help="版本号（默认: 最新）")
 @click.option("--precheck/--no-precheck", default=True, show_default=True, help="启用数值预检")
 @click.option("--sympy/--no-sympy", default=False, show_default=True, help="启用 SymPy 符号证明")
 @click.option("--save/--no-save", default=False, show_default=True, help="将验证结果更新到知识库")
-def mr_verify(operator, framework, ver, precheck, sympy, save):
+def mr_verify(operator, framework, precheck, sympy, save):
     """对知识库中已有的 MR 执行验证。
 
     \b
     示例:
       deepmt mr verify relu
-      deepmt mr verify relu --sympy --version 1
+      deepmt mr verify relu --sympy
     """
     repo = get_repo()
-    if not repo.exists(operator, ver):
-        click.echo(click.style(f"知识库中未找到算子 '{operator}' 的 MR（version={ver}）", fg="yellow"))
+    if not repo.exists(operator):
+        click.echo(click.style(f"知识库中未找到算子 '{operator}' 的 MR", fg="yellow"))
         sys.exit(1)
 
-    click.echo(f"[verify] 算子: {operator}  version={ver}  precheck={precheck}  sympy={sympy}")
+    click.echo(f"[verify] 算子: {operator}  precheck={precheck}  sympy={sympy}")
 
     try:
         from deepmt.ir.schema import OperatorIR
@@ -161,7 +157,7 @@ def mr_verify(operator, framework, ver, precheck, sympy, save):
         operator_ir = OperatorIR(name=operator)
         generator = OperatorMRGenerator()
 
-        mrs = repo.load(operator, ver)
+        mrs = repo.load(operator)
         click.echo(f"从知识库加载: {len(mrs)} 个 MR")
 
         mrs = generator.verify_mrs(
@@ -180,7 +176,7 @@ def mr_verify(operator, framework, ver, precheck, sympy, save):
             click.echo(f"  [{mark}] {m.description}")
 
         if save:
-            repo.save(operator, mrs, version=ver if ver else 1)
+            repo.save(operator, mrs)
             click.echo(click.style("验证结果已更新至知识库", fg="cyan"))
 
     except Exception as e:
@@ -192,10 +188,9 @@ def mr_verify(operator, framework, ver, precheck, sympy, save):
 
 @mr.command("list")
 @click.argument("operator", required=False, default=None)
-@click.option("--version", "ver", default=None, type=int, help="版本号（默认: 最新）")
 @click.option("--verified-only", is_flag=True, default=False, help="仅显示已验证的 MR")
 @click.option("--json", "as_json", is_flag=True, default=False, help="以 JSON 格式输出")
-def mr_list(operator, ver, verified_only, as_json):
+def mr_list(operator, verified_only, as_json):
     """列出算子的蜕变关系。
 
     OPERATOR 可省略，省略时列出所有算子名称。
@@ -204,7 +199,7 @@ def mr_list(operator, ver, verified_only, as_json):
     示例:
       deepmt mr list
       deepmt mr list relu
-      deepmt mr list relu --version 1 --verified-only
+      deepmt mr list relu --verified-only
       deepmt mr list relu --json
     """
     repo = get_repo()
@@ -216,16 +211,15 @@ def mr_list(operator, ver, verified_only, as_json):
             return
         click.echo(f"知识库中共有 {len(ops)} 个算子:")
         for op in ops:
-            versions = repo.get_versions(op)
             stats = repo.get_statistics(op)
-            click.echo(f"  {op}  (versions: {versions}, total: {stats['total_mrs']}, verified: {stats['verified_mrs']})")
+            click.echo(f"  {op}  (total: {stats['total_mrs']}, verified: {stats['verified_mrs']})")
         return
 
-    if not repo.exists(operator, ver):
+    if not repo.exists(operator):
         click.echo(click.style(f"知识库中未找到算子 '{operator}' 的 MR", fg="yellow"))
         sys.exit(1)
 
-    mrs = repo.get_mr_with_validation_status(operator, ver, verified_only=verified_only)
+    mrs = repo.get_mr_with_validation_status(operator, verified_only=verified_only)
 
     if as_json:
         data = [
@@ -242,8 +236,7 @@ def mr_list(operator, ver, verified_only, as_json):
         click.echo(json.dumps(data, ensure_ascii=False, indent=2))
         return
 
-    label = f"算子 '{operator}'" + (f" version={ver}" if ver else " (最新版本)")
-    click.echo(f"{label} — {len(mrs)} 个 MR:")
+    click.echo(f"算子 '{operator}' — {len(mrs)} 个 MR:")
     for m in mrs:
         mark = click.style("✓", fg="green") if m.verified else click.style("✗", fg="red")
         click.echo(f"  [{mark}] [{m.category}] {m.description}")
@@ -405,14 +398,13 @@ def _try_import_operator(operator_name: str, framework: str):
 )
 @click.option("--precheck/--no-precheck", default=True, show_default=True, help="启用数值预检")
 @click.option("--sympy/--no-sympy", default=False, show_default=True, help="启用 SymPy 符号证明")
-@click.option("--version", "ver", default=1, show_default=True, type=int, help="知识库版本号")
 @click.option(
     "--dry-run",
     is_flag=True,
     default=False,
     help="只列出待处理算子，不实际执行生成",
 )
-def mr_batch_generate(framework, category, limit, skip_existing, sources, precheck, sympy, ver, dry_run):
+def mr_batch_generate(framework, category, limit, skip_existing, sources, precheck, sympy, dry_run):
     """批量为算子目录中的算子生成蜕变关系并保存至知识库。
 
     \b
@@ -427,9 +419,6 @@ def mr_batch_generate(framework, category, limit, skip_existing, sources, preche
     if invalid:
         raise click.BadParameter(f"未知来源: {', '.join(invalid)}，可选 llm / template")
 
-    # 构建待处理算子列表
-    # 优先使用模板映射（有明确 MR 模板的算子），按 framework 前缀过滤
-    # 若指定 --category，则按模板分类过滤
     operator_list = _collect_batch_operators(framework, category)
 
     if not operator_list:
@@ -440,7 +429,6 @@ def mr_batch_generate(framework, category, limit, skip_existing, sources, preche
         ))
         return
 
-    # 按 limit 截断
     if limit is not None and limit > 0:
         operator_list = operator_list[:limit]
 
@@ -457,7 +445,6 @@ def mr_batch_generate(framework, category, limit, skip_existing, sources, preche
             click.echo(f"  {op_name}  [{op_category}]")
         return
 
-    # 加载依赖
     try:
         from deepmt.ir.schema import OperatorIR
         from deepmt.mr_generator.operator.operator_mr import OperatorMRGenerator
@@ -467,7 +454,6 @@ def mr_batch_generate(framework, category, limit, skip_existing, sources, preche
         click.echo(click.style(f"初始化失败: {e}", fg="red"), err=True)
         sys.exit(1)
 
-    # 统计
     total = len(operator_list)
     done = 0
     skipped = 0
@@ -479,19 +465,15 @@ def mr_batch_generate(framework, category, limit, skip_existing, sources, preche
         for idx, (operator, op_category) in enumerate(operator_list, 1):
             prefix = f"[{idx:>3}/{total}] {operator}"
 
-            # skip-existing 检查
-            if skip_existing and repo.exists(operator, ver):
+            if skip_existing and repo.exists(operator):
                 click.echo(f"{prefix}  {click.style('SKIP', fg='yellow')}")
                 skipped += 1
                 continue
 
             try:
-                # 动态导入算子函数
                 operator_func = _try_import_operator(operator, framework)
-
                 operator_ir = OperatorIR(name=operator)
 
-                # 生成候选 MR
                 mrs = generator.generate_only(
                     operator_ir=operator_ir,
                     auto_fetch_info=False,
@@ -504,7 +486,6 @@ def mr_batch_generate(framework, category, limit, skip_existing, sources, preche
                     skipped += 1
                     continue
 
-                # 验证
                 if precheck or sympy:
                     mrs = generator.verify_mrs(
                         mrs=mrs,
@@ -516,9 +497,7 @@ def mr_batch_generate(framework, category, limit, skip_existing, sources, preche
                     )
 
                 passed = sum(1 for m in mrs if m.verified)
-
-                # 保存
-                count = repo.save(operator, mrs, version=ver, framework=framework)
+                count = repo.save(operator, mrs, framework=framework)
 
                 if passed == 0:
                     click.echo(f"{prefix}  {click.style('NO_MR', fg='yellow')} (生成={len(mrs)} 验证通过=0)")
@@ -539,7 +518,6 @@ def mr_batch_generate(framework, category, limit, skip_existing, sources, preche
     except KeyboardInterrupt:
         click.echo(click.style("\n用户中断（Ctrl+C）", fg="yellow"))
 
-    # 汇总
     click.echo("\n" + "─" * 50)
     click.echo(
         f"完成: {click.style(str(done), fg='green')}  "
@@ -553,17 +531,16 @@ def mr_batch_generate(framework, category, limit, skip_existing, sources, preche
 
 @mr.command("delete")
 @click.argument("operator")
-@click.option("--version", "ver", default=None, type=int, help="版本号（默认: 所有版本）")
 @click.option("--yes", "-y", is_flag=True, default=False, help="跳过确认提示")
-def mr_delete(operator, ver, yes):
+def mr_delete(operator, yes):
     """删除知识库中算子的 MR 记录。
 
     \b
     示例:
       deepmt mr delete relu
-      deepmt mr delete relu --version 1 -y
+      deepmt mr delete relu -y
     """
     not_implemented_error(
         "deepmt mr delete",
-        "MR 删除功能尚未实现。如需清理，可直接删除或操作 data/mr_knowledge_base.db 文件。",
+        "MR 删除功能尚未实现。如需清理，可直接删除 data/mr_repository/<operator>.yaml 文件。",
     )

@@ -44,9 +44,9 @@ class MRTemplatePool:
         self.operator_mr_mapping: Dict[str, List[str]] = {}
 
         if config_path is None:
-            # 默认配置文件路径
-            base_dir = Path(__file__).parent.parent
-            default_path = base_dir / "config" / "mr_templates.yaml"
+            # 默认配置文件路径：data/mr_repository/mr_templates.yaml（项目根目录下）
+            project_root = Path(__file__).parents[3]
+            default_path = project_root / "data" / "mr_repository" / "mr_templates.yaml"
             self.config_path = default_path
         else:
             self.config_path = Path(config_path)

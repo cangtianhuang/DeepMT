@@ -44,7 +44,7 @@ def generator():
 
 @pytest.fixture
 def repo(tmp_path):
-    return MRRepository(db_path=str(tmp_path / "test.db"))
+    return MRRepository(repo_dir=str(tmp_path / "mr_repo"))
 
 
 # ---------------------------------------------------------------------------

@@ -1,256 +1,146 @@
-"""
-MR知识库：持久化存储和管理蜕变关系
-实现MR生成与测试的分离
+"""MR 仓库：以 YAML 文件持久化存储蜕变关系（每算子一文件）。
+
+存储结构：
+    data/mr_repository/<operator_name>.yaml
+
+每个文件格式：
+    operator: torch.nn.functional.relu
+    framework: pytorch
+    generated_at: "2024-01-01T00:00:00"
+    mrs:
+      - id: "abc-123"
+        description: "..."
+        transform_code: "lambda k: {**k, 'input': 2.0 * k['input']}"
+        oracle_expr: "trans == 2.0 * orig"
+        category: "linearity"
+        tolerance: 1.0e-6
+        verified: true
+        precheck_passed: null
+        sympy_proven: null
+        created_at: "2024-01-01T00:00:00"
+        applicable_frameworks:
+          - pytorch
 """
 
-import json
-import sqlite3
-import uuid
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
+
+import yaml
 
 from deepmt.core.logger import logger
 from deepmt.ir.schema import MetamorphicRelation
 
 
 class MRRepository:
-    """
-    MR知识库：存储和管理蜕变关系
+    """MR 仓库：每个算子的 MR 列表存为独立 YAML 文件，便于人工查阅与版本追踪。"""
 
-    实现MR生成与测试的分离：
-    - MR生成阶段：生成MR并保存到知识库
-    - MR测试阶段：从知识库加载MR进行测试
-    """
+    def __init__(self, repo_dir: str = "data/mr_repository"):
+        self.repo_dir = Path(repo_dir)
+        self.repo_dir.mkdir(parents=True, exist_ok=True)
+        logger.info(f"📦 [REPO] MR repository at: {self.repo_dir}")
 
-    def __init__(self, db_path: str = "data/mr_knowledge_base.db"):
-        """
-        初始化MR知识库
+    # ── 内部工具 ──────────────────────────────────────────────────────────────
 
-        Args:
-            db_path: SQLite数据库路径
-        """
-        self.db_path = Path(db_path)
-        self.db_path.parent.mkdir(parents=True, exist_ok=True)
-        self._init_database()
+    def _op_file(self, operator_name: str) -> Path:
+        """算子名 → YAML 文件路径（将 / 替换为 __ 以确保路径安全）。"""
+        safe_name = operator_name.replace("/", "__")
+        return self.repo_dir / f"{safe_name}.yaml"
 
-    def _init_database(self):
-        """初始化数据库表结构"""
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
+    def _serialize_mr(self, mr: MetamorphicRelation) -> Dict:
+        return {
+            "id": mr.id,
+            "description": mr.description,
+            "transform_code": mr.transform_code,
+            "oracle_expr": mr.oracle_expr,
+            "category": mr.category,
+            "tolerance": mr.tolerance,
+            "analysis": mr.analysis,
+            "layer": mr.layer,
+            "verified": mr.verified,
+            "precheck_passed": getattr(mr, "_precheck_passed", None),
+            "sympy_proven": getattr(mr, "_sympy_proven", None),
+            "created_at": datetime.now().isoformat(),
+            "applicable_frameworks": mr.applicable_frameworks,
+        }
 
-        cursor.execute(
-            """
-            CREATE TABLE IF NOT EXISTS mr_knowledge_base (
-                id TEXT PRIMARY KEY,
-                operator_name TEXT NOT NULL,
-                mr_id TEXT NOT NULL,
-                mr_description TEXT NOT NULL,
-                mr_type TEXT NOT NULL,
-                mr_data TEXT NOT NULL,
-                version INTEGER DEFAULT 1,
-                created_at TEXT NOT NULL,
-                updated_at TEXT NOT NULL,
-                verified BOOLEAN DEFAULT 0,
-                precheck_passed BOOLEAN,
-                sympy_proven BOOLEAN,
-                last_validated_at TEXT,
-                validation_summary TEXT
-            )
-        """
+    def _deserialize_mr(self, data: Dict) -> MetamorphicRelation:
+        transform_code = data.get("transform_code", "")
+        try:
+            transform = eval(transform_code) if transform_code else lambda *args: args
+        except Exception:
+            transform = lambda *args: args
+
+        mr = MetamorphicRelation(
+            id=data["id"],
+            description=data.get("description", ""),
+            transform=transform,
+            transform_code=transform_code,
+            oracle_expr=data.get("oracle_expr", ""),
+            category=data.get("category", "general"),
+            tolerance=float(data.get("tolerance", 1e-6)),
+            analysis=data.get("analysis", ""),
+            layer=data.get("layer", "operator"),
+            verified=data.get("verified", False),
+            applicable_frameworks=data.get("applicable_frameworks"),
         )
+        # 附加验证字段（仅供统计使用，不在 schema 中定义）
+        mr._precheck_passed = data.get("precheck_passed")  # type: ignore[attr-defined]
+        mr._sympy_proven = data.get("sympy_proven")  # type: ignore[attr-defined]
+        return mr
 
-        cursor.execute(
-            """
-            CREATE INDEX IF NOT EXISTS idx_operator_name
-            ON mr_knowledge_base(operator_name)
-        """
-        )
+    def _load_file(self, operator_name: str) -> Optional[Dict]:
+        path = self._op_file(operator_name)
+        if not path.exists():
+            return None
+        with open(path, "r", encoding="utf-8") as f:
+            return yaml.safe_load(f) or {}
 
-        cursor.execute(
-            """
-            CREATE TABLE IF NOT EXISTS mr_validation_records (
-                id TEXT PRIMARY KEY,
-                record_id TEXT NOT NULL,
-                mr_id TEXT NOT NULL,
-                operator_name TEXT NOT NULL,
-                validation_type TEXT NOT NULL,
-                validation_result TEXT NOT NULL,
-                error_message TEXT,
-                validated_at TEXT NOT NULL,
-                validation_details TEXT,
-                FOREIGN KEY (record_id) REFERENCES mr_knowledge_base(id)
-            )
-        """
-        )
+    def _write_file(self, operator_name: str, data: Dict):
+        path = self._op_file(operator_name)
+        with open(path, "w", encoding="utf-8") as f:
+            yaml.dump(data, f, allow_unicode=True, sort_keys=False, default_flow_style=False)
 
-        cursor.execute(
-            """
-            CREATE INDEX IF NOT EXISTS idx_mr_id_validation
-            ON mr_validation_records(mr_id)
-        """
-        )
-
-        cursor.execute(
-            """
-            CREATE INDEX IF NOT EXISTS idx_record_id_validation
-            ON mr_validation_records(record_id)
-        """
-        )
-
-        cursor.execute(
-            """
-            CREATE INDEX IF NOT EXISTS idx_operator_name_validation
-            ON mr_validation_records(operator_name)
-        """
-        )
-
-        cursor.execute(
-            """
-            CREATE INDEX IF NOT EXISTS idx_validated_at
-            ON mr_validation_records(validated_at)
-        """
-        )
-
-        # 迁移：添加 applicable_frameworks 列（旧库兼容）
-        cursor.execute("PRAGMA table_info(mr_knowledge_base)")
-        existing_cols = {row[1] for row in cursor.fetchall()}
-        if "applicable_frameworks" not in existing_cols:
-            cursor.execute(
-                "ALTER TABLE mr_knowledge_base ADD COLUMN applicable_frameworks TEXT"
-            )
-
-        conn.commit()
-        conn.close()
-        logger.info("📦 [REPO] " + f"MR knowledge base initialized at: {self.db_path}")
+    # ── 公共接口 ──────────────────────────────────────────────────────────────
 
     def save(
         self,
         operator_name: str,
         mrs: List[MetamorphicRelation],
-        version: int = 1,
         framework: Optional[str] = None,
     ) -> int:
-        """
-        保存MR列表到知识库
-
-        Args:
-            operator_name: 算子名称
-            mrs: MR对象列表
-            version: MR版本号
-
-        Returns:
-            保存的MR数量
-        """
+        """将 MR 列表写入该算子的 YAML 文件（覆盖已有内容）。"""
         if not mrs:
             return 0
 
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-
-        saved_count = 0
-        timestamp = datetime.now().isoformat()
-
         for mr in mrs:
-            try:
-                # 若调用方传入了 framework，设置到 MR 的 applicable_frameworks
-                if framework and not mr.applicable_frameworks:
-                    mr.applicable_frameworks = [framework]
+            if framework and not mr.applicable_frameworks:
+                mr.applicable_frameworks = [framework]
 
-                mr_data = self._serialize_mr(mr)
-                record_id = str(uuid.uuid4())
-                af_json = (
-                    json.dumps(mr.applicable_frameworks)
-                    if mr.applicable_frameworks is not None
-                    else None
-                )
-
-                cursor.execute(
-                    """
-                    INSERT INTO mr_knowledge_base
-                    (id, operator_name, mr_id, mr_description, mr_type, mr_data, version, created_at, updated_at, verified, applicable_frameworks)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """,
-                    (
-                        record_id,
-                        operator_name,
-                        mr.id,
-                        mr.description,
-                        mr.oracle_expr,
-                        mr_data,
-                        version,
-                        timestamp,
-                        timestamp,
-                        mr.verified,
-                        af_json,
-                    ),
-                )
-
-                saved_count += 1
-
-            except Exception as e:
-                logger.error(f"Error saving MR {mr.id}: {e}")
-
-        conn.commit()
-        conn.close()
-
-        logger.info("📦 [REPO] " + f"Saved {saved_count} MRs for operator: {operator_name}")
-        return saved_count
+        data = {
+            "operator": operator_name,
+            "framework": framework,
+            "generated_at": datetime.now().isoformat(),
+            "mrs": [self._serialize_mr(mr) for mr in mrs],
+        }
+        self._write_file(operator_name, data)
+        logger.info(f"📦 [REPO] Saved {len(mrs)} MRs for operator: {operator_name}")
+        return len(mrs)
 
     def load(
         self,
         operator_name: str,
-        version: Optional[int] = None,
         framework: Optional[str] = None,
     ) -> List[MetamorphicRelation]:
-        """
-        从知识库加载MR列表
-
-        Args:
-            operator_name: 算子名称
-            version: MR版本号（可选，None表示最新版本）
-
-        Returns:
-            MR对象列表
-        """
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-
-        if version is None:
-            # 获取最新版本
-            cursor.execute(
-                """
-                SELECT MAX(version) FROM mr_knowledge_base
-                WHERE operator_name = ?
-            """,
-                (operator_name,),
-            )
-            result = cursor.fetchone()
-            version = result[0] if result[0] else 1
-
-        # 加载MR
-        cursor.execute(
-            """
-            SELECT mr_data, mr_id, mr_description, mr_type, verified, applicable_frameworks
-            FROM mr_knowledge_base
-            WHERE operator_name = ? AND version = ?
-        """,
-            (operator_name, version),
-        )
-
-        rows = cursor.fetchall()
-        conn.close()
+        """从 YAML 文件加载 MR 列表，可按框架过滤。"""
+        data = self._load_file(operator_name)
+        if not data:
+            return []
 
         mrs = []
-        for row in rows:
+        for entry in data.get("mrs", []):
             try:
-                mr_data_str, mr_id, description, mr_type, verified, af_json = row
-                mr = self._deserialize_mr(mr_data_str, mr_id, description, mr_type)
-                if verified is not None:
-                    mr.verified = bool(verified)
-                if af_json:
-                    mr.applicable_frameworks = json.loads(af_json)
-                # framework 过滤：None=通用 MR 不过滤，否则仅保留匹配的
+                mr = self._deserialize_mr(entry)
                 if framework and mr.applicable_frameworks is not None:
                     if framework not in mr.applicable_frameworks:
                         continue
@@ -258,539 +148,99 @@ class MRRepository:
             except Exception as e:
                 logger.error(f"Error loading MR: {e}")
 
-        logger.info("📦 [REPO] " + f"Loaded {len(mrs)} MRs for operator: {operator_name} (version {version})")
+        logger.info(f"📦 [REPO] Loaded {len(mrs)} MRs for operator: {operator_name}")
         return mrs
 
-    def exists(self, operator_name: str, version: Optional[int] = None) -> bool:
-        """
-        检查算子是否有保存的MR
-
-        Args:
-            operator_name: 算子名称
-            version: MR版本号（可选）
-
-        Returns:
-            是否存在
-        """
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-
-        if version is None:
-            cursor.execute(
-                """
-                SELECT COUNT(*) FROM mr_knowledge_base
-                WHERE operator_name = ?
-            """,
-                (operator_name,),
-            )
-        else:
-            cursor.execute(
-                """
-                SELECT COUNT(*) FROM mr_knowledge_base
-                WHERE operator_name = ? AND version = ?
-            """,
-                (operator_name, version),
-            )
-
-        count = cursor.fetchone()[0]
-        conn.close()
-
-        return count > 0
+    def exists(self, operator_name: str) -> bool:
+        """检查算子是否有保存的 MR 文件。"""
+        return self._op_file(operator_name).exists()
 
     def list_operators(self) -> List[str]:
-        """列出所有有MR的算子名称"""
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-
-        cursor.execute(
-            """
-            SELECT DISTINCT operator_name FROM mr_knowledge_base
-            ORDER BY operator_name
-        """
+        """列出所有有 MR 的算子名称（排除 mr_templates.yaml）。"""
+        return sorted(
+            f.stem
+            for f in self.repo_dir.glob("*.yaml")
+            if f.name != "mr_templates.yaml"
         )
 
-        operators = [row[0] for row in cursor.fetchall()]
-        conn.close()
-
-        return operators
-
-    def get_versions(self, operator_name: str) -> List[int]:
-        """获取算子的所有MR版本"""
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-
-        cursor.execute(
-            """
-            SELECT DISTINCT version FROM mr_knowledge_base
-            WHERE operator_name = ?
-            ORDER BY version DESC
-        """,
-            (operator_name,),
-        )
-
-        versions = [row[0] for row in cursor.fetchall()]
-        conn.close()
-
-        return versions
-
-    def _serialize_mr(self, mr: MetamorphicRelation) -> str:
-        """序列化MR对象为JSON字符串"""
-        data = {
-            "id": mr.id,
-            "description": mr.description,
-            "oracle_expr": mr.oracle_expr,
-            "transform_code": mr.transform_code,
-            "category": mr.category,
-            "tolerance": mr.tolerance,
-            "analysis": mr.analysis,
-            "layer": mr.layer,
-            "verified": mr.verified,
-            "applicable_frameworks": mr.applicable_frameworks,
-            "transform_type": "lambda",
-        }
-        return json.dumps(data)
-
-    def _deserialize_mr(
-        self, mr_data_str: str, mr_id: str, description: str, mr_type: str
-    ) -> MetamorphicRelation:
-        """反序列化MR对象"""
-        data = json.loads(mr_data_str)
-
-        transform = self._rebuild_transform(mr_type, description)
-
-        return MetamorphicRelation(
-            id=mr_id,
-            description=description,
-            transform=transform,
-            transform_code=data.get("transform_code", ""),
-            oracle_expr=data.get("oracle_expr", mr_type),
-            category=data.get("category", "general"),
-            tolerance=data.get("tolerance"),
-            analysis=data.get("analysis", ""),
-            layer=data.get("layer", "operator"),
-            verified=data.get("verified", False),
-            applicable_frameworks=data.get("applicable_frameworks"),
-        )
-
-    def _rebuild_transform(self, expected: str, description: str):
-        """重建transform函数"""
-        if "commutative" in description.lower():
-            return lambda *args: (
-                (args[1], args[0]) + args[2:] if len(args) >= 2 else args
-            )
-        elif "associative" in description.lower():
-            return lambda *args: args
-        elif "anti-commutative" in description.lower():
-            return lambda *args: (
-                (args[1], args[0]) + args[2:] if len(args) >= 2 else args
-            )
-        else:
-            return lambda *args: args
-
-    def save_with_validation(
+    def delete(
         self,
         operator_name: str,
-        mrs: List[MetamorphicRelation],
-        validation_records: List[Dict],
-        version: int = 1,
-        framework: Optional[str] = None,
+        mr_id: Optional[str] = None,
     ) -> int:
-        """
-        保存MR及其验证记录
+        """删除 MR 记录。mr_id=None 则删除整个算子文件，否则仅删除指定条目。"""
+        path = self._op_file(operator_name)
+        if not path.exists():
+            return 0
 
-        Args:
-            operator_name: 算子名称
-            mrs: MR对象列表
-            validation_records: 验证记录列表，每个记录包含:
-                {
-                    'mr_id': str,
-                    'validation_type': 'precheck' | 'sympy',
-                    'result': 'passed' | 'failed',
-                    'error_message': str,
-                    'details': dict,
-                    'validated_at': str
-                }
-            version: MR版本号
+        if mr_id is None:
+            data = self._load_file(operator_name)
+            count = len(data.get("mrs", [])) if data else 0
+            path.unlink()
+            logger.info(f"📦 [REPO] Deleted all {count} MRs for '{operator_name}'")
+            return count
 
-        Returns:
-            保存的MR数量
-        """
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
+        data = self._load_file(operator_name)
+        if not data:
+            return 0
+        before = len(data.get("mrs", []))
+        data["mrs"] = [m for m in data.get("mrs", []) if m.get("id") != mr_id]
+        deleted = before - len(data["mrs"])
+        if deleted > 0:
+            self._write_file(operator_name, data)
+        logger.info(f"📦 [REPO] Deleted {deleted} MR(s) for '{operator_name}' mr_id={mr_id}")
+        return deleted
 
-        saved_count = 0
-        timestamp = datetime.now().isoformat()
-
-        # 创建验证记录的索引映射
-        validation_map = {}
-        for record in validation_records:
-            mr_id = record.get("mr_id")
-            if mr_id:
-                if mr_id not in validation_map:
-                    validation_map[mr_id] = []
-                validation_map[mr_id].append(record)
-
-        for mr in mrs:
-            try:
-                # 若调用方传入了 framework，设置到 MR 的 applicable_frameworks
-                if framework and not mr.applicable_frameworks:
-                    mr.applicable_frameworks = [framework]
-
-                mr_data = self._serialize_mr(mr)
-                record_id = str(uuid.uuid4())
-
-                # 从验证记录中汇总验证状态
-                validations = validation_map.get(mr.id, [])
-                precheck_passed = None
-                sympy_proven = None
-                last_validated_at = None
-                verified = mr.verified
-
-                for v in validations:
-                    v_type = v.get("validation_type")
-                    v_result = v.get("validation_result")
-                    if v_type == "precheck":
-                        precheck_passed = v_result == "passed"
-                    elif v_type == "sympy":
-                        sympy_proven = v_result == "passed"
-
-                    if v.get("validated_at"):
-                        if (
-                            last_validated_at is None
-                            or v["validated_at"] > last_validated_at
-                        ):
-                            last_validated_at = v["validated_at"]
-
-                af_json = (
-                    json.dumps(mr.applicable_frameworks)
-                    if mr.applicable_frameworks is not None
-                    else None
-                )
-
-                cursor.execute(
-                    """
-                    INSERT INTO mr_knowledge_base
-                    (id, operator_name, mr_id, mr_description, mr_type, mr_data, version, created_at, updated_at, verified, precheck_passed, sympy_proven, last_validated_at, applicable_frameworks)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """,
-                    (
-                        record_id,
-                        operator_name,
-                        mr.id,
-                        mr.description,
-                        mr.oracle_expr,
-                        mr_data,
-                        version,
-                        timestamp,
-                        timestamp,
-                        verified,
-                        precheck_passed,
-                        sympy_proven,
-                        last_validated_at,
-                        af_json,
-                    ),
-                )
-
-                for v in validations:
-                    validation_id = str(uuid.uuid4())
-                    cursor.execute(
-                        """
-                        INSERT INTO mr_validation_records
-                        (id, record_id, mr_id, operator_name, validation_type, validation_result, error_message, validated_at, validation_details)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    """,
-                        (
-                            validation_id,
-                            record_id,
-                            mr.id,
-                            operator_name,
-                            v.get("validation_type"),
-                            v.get("validation_result"),
-                            v.get("error_message", ""),
-                            v.get("validated_at", timestamp),
-                            json.dumps(v.get("details", {})),
-                        ),
-                    )
-
-                saved_count += 1
-
-            except Exception as e:
-                logger.error(f"Error saving MR {mr.id} with validation: {e}")
-
-        conn.commit()
-        conn.close()
-
-        logger.info("📦 [REPO] " + f"Saved {saved_count} MRs for '{operator_name}' | version: {version}")
-        return saved_count
-
-    def update_validation_status(
-        self,
-        record_id: str,
-        mr_id: str,
-        validation_type: str,
-        result: str,
-        error_message: str = "",
-        details: Optional[Dict] = None,
-    ) -> bool:
-        """
-        更新MR的验证状态
-
-        Args:
-            record_id: mr_knowledge_base表中的id
-            mr_id: MR的id
-            validation_type: 'precheck' 或 'sympy'
-            result: 'passed' 或 'failed'
-            error_message: 错误信息
-            details: 详细信息(字典)
-
-        Returns:
-            是否更新成功
-        """
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-
-        try:
-            # 插入验证记录
-            validation_id = str(uuid.uuid4())
-            validated_at = datetime.now().isoformat()
-
-            cursor.execute(
-                """
-                INSERT INTO mr_validation_records
-                (id, record_id, mr_id, operator_name, validation_type, validation_result, error_message, validated_at, validation_details)
-                SELECT ?, ?, ?, operator_name, ?, ?, ?, ?, ?
-                FROM mr_knowledge_base WHERE id = ?
-            """,
-                (
-                    validation_id,
-                    record_id,
-                    mr_id,
-                    validation_type,
-                    result,
-                    error_message,
-                    validated_at,
-                    json.dumps(details or {}),
-                    record_id,
-                ),
-            )
-
-            # 更新 mr_knowledge_base 表的验证状态
-            if validation_type == "precheck":
-                cursor.execute(
-                    """
-                    UPDATE mr_knowledge_base
-                    SET precheck_passed = ?, last_validated_at = ?, updated_at = ?
-                    WHERE id = ?
-                """,
-                    (result == "passed", validated_at, validated_at, record_id),
-                )
-            elif validation_type == "sympy":
-                cursor.execute(
-                    """
-                    UPDATE mr_knowledge_base
-                    SET sympy_proven = ?, last_validated_at = ?, updated_at = ?
-                    WHERE id = ?
-                """,
-                    (result == "passed", validated_at, validated_at, record_id),
-                )
-
-            # 更新 verified 字段（如果有任一验证通过）
-            cursor.execute(
-                """
-                UPDATE mr_knowledge_base
-                SET verified = CASE
-                    WHEN (precheck_passed = 1 OR sympy_proven = 1) THEN 1
-                    ELSE 0
-                END
-                WHERE id = ?
-            """,
-                (record_id,),
-            )
-
-            conn.commit()
-            logger.info("📦 [REPO] " + f"Updated validation status for MR '{mr_id}' | {validation_type} = {result}")
-            return True
-
-        except Exception as e:
-            logger.error(f"Error updating validation status for MR {mr_id}: {e}")
-            conn.rollback()
-            return False
-        finally:
-            conn.close()
-
-    def get_validation_history(
-        self,
-        mr_id: str,
-    ) -> List[Dict]:
-        """
-        获取MR的验证历史
-
-        Args:
-            mr_id: MR的id
-
-        Returns:
-            验证记录列表，按时间倒序排列
-        """
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-
-        try:
-            cursor.execute(
-                """
-                SELECT validation_type, validation_result, error_message, validated_at, validation_details
-                FROM mr_validation_records
-                WHERE mr_id = ?
-                ORDER BY validated_at DESC
-            """,
-                (mr_id,),
-            )
-
-            records = []
-            for row in cursor.fetchall():
-                records.append(
-                    {
-                        "validation_type": row[0],
-                        "validation_result": row[1],
-                        "error_message": row[2],
-                        "validated_at": row[3],
-                        "validation_details": json.loads(row[4]) if row[4] else {},
-                    }
-                )
-
-            return records
-
-        except Exception as e:
-            logger.error(f"Error getting validation history for MR {mr_id}: {e}")
-            return []
-        finally:
-            conn.close()
+    def list_operators_by_framework(self, framework: str) -> List[str]:
+        """列出包含指定框架 MR 的算子（applicable_frameworks 包含该框架，或为 None）。"""
+        result = []
+        for op in self.list_operators():
+            for mr in self.load(op):
+                if mr.applicable_frameworks is None or framework in mr.applicable_frameworks:
+                    result.append(op)
+                    break
+        return sorted(result)
 
     def get_mr_with_validation_status(
         self,
         operator_name: str,
-        version: Optional[int] = None,
         verified_only: bool = False,
         framework: Optional[str] = None,
     ) -> List[MetamorphicRelation]:
-        """
-        获取MR及其验证状态
-
-        Args:
-            operator_name: 算子名称
-            version: 版本号（None表示最新版本）
-            verified_only: 是否只返回已验证的MR
-
-        Returns:
-            MR列表，每个MR包含验证状态信息
-        """
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-
-        try:
-            # 获取版本号
-            if version is None:
-                cursor.execute(
-                    """
-                    SELECT MAX(version) FROM mr_knowledge_base
-                    WHERE operator_name = ?
-                """,
-                    (operator_name,),
-                )
-                result = cursor.fetchone()
-                version = result[0] if result and result[0] else 1
-
-            # 构建查询
-            query = """
-                SELECT mr_data, mr_id, mr_description, mr_type, verified, precheck_passed, sympy_proven, last_validated_at, applicable_frameworks
-                FROM mr_knowledge_base
-                WHERE operator_name = ? AND version = ?
-            """
-
-            if verified_only:
-                query += " AND verified = 1"
-
-            cursor.execute(query, (operator_name, version))
-
-            mrs = []
-            for row in cursor.fetchall():
-                try:
-                    (
-                        mr_data_str,
-                        mr_id,
-                        description,
-                        expected,
-                        verified,
-                        precheck_passed,
-                        sympy_proven,
-                        last_validated_at,
-                        af_json,
-                    ) = row
-                    mr = self._deserialize_mr(mr_data_str, mr_id, description, expected)
-
-                    mr.verified = (
-                        bool(verified) if verified is not None else mr.verified
-                    )
-                    if af_json:
-                        mr.applicable_frameworks = json.loads(af_json)
-
-                    # framework 过滤：None=通用 MR 不过滤，否则仅保留匹配的
-                    if framework and mr.applicable_frameworks is not None:
-                        if framework not in mr.applicable_frameworks:
-                            continue
-
-                    validation_info = {
-                        "precheck_passed": precheck_passed,
-                        "sympy_proven": sympy_proven,
-                        "last_validated_at": last_validated_at,
-                    }
-                    if mr.analysis:
-                        mr.analysis = f"{mr.analysis}\n\nValidation: {json.dumps(validation_info)}"
-                    else:
-                        mr.analysis = json.dumps(validation_info)
-
-                    mrs.append(mr)
-
-                except Exception as e:
-                    logger.error(f"Error loading MR with validation status: {e}")
-
-            logger.info("📦 [REPO] " + f"Loaded {len(mrs)} MRs for '{operator_name}' | version: {version}")
-            return mrs
-
-        except Exception as e:
-            logger.error(f"Error getting MRs with validation status: {e}")
-            return []
-        finally:
-            conn.close()
+        """加载 MR，支持 verified_only 过滤（与 load() 等价，供 CLI 调用）。"""
+        mrs = self.load(operator_name, framework=framework)
+        if verified_only:
+            mrs = [m for m in mrs if m.verified]
+        return mrs
 
     def get_statistics(self, operator_name: Optional[str] = None) -> Dict:
-        """
-        获取MR统计信息
+        """统计 MR 数量信息（total/verified/unverified/precheck_passed/sympy_proven）。"""
 
-        Args:
-            operator_name: 算子名称（None表示统计所有）
-
-        Returns:
-            统计信息:
-            {
-                'total_mrs': int,
-                'verified_mrs': int,
-                'unverified_mrs': int,
-                'precheck_passed': int,
-                'sympy_proven': int,
-                'by_operator': {
-                    'operator_name': {
-                        'total': int,
-                        'verified': int,
-                        ...
-                    }
-                }
+        def _stats_for(mrs: List[MetamorphicRelation]) -> Dict:
+            return {
+                "total": len(mrs),
+                "verified": sum(1 for m in mrs if m.verified),
+                "unverified": sum(1 for m in mrs if not m.verified),
+                "precheck_passed": sum(
+                    1 for m in mrs if getattr(m, "_precheck_passed", None) is True
+                ),
+                "sympy_proven": sum(
+                    1 for m in mrs if getattr(m, "_sympy_proven", None) is True
+                ),
             }
-        """
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
 
-        # 初始化统计信息
-        stats = {
+        if operator_name:
+            c = _stats_for(self.load(operator_name))
+            return {
+                "total_mrs": c["total"],
+                "verified_mrs": c["verified"],
+                "unverified_mrs": c["unverified"],
+                "precheck_passed": c["precheck_passed"],
+                "sympy_proven": c["sympy_proven"],
+                "by_operator": {operator_name: c},
+            }
+
+        stats: Dict = {
             "total_mrs": 0,
             "verified_mrs": 0,
             "unverified_mrs": 0,
@@ -798,197 +248,12 @@ class MRRepository:
             "sympy_proven": 0,
             "by_operator": {},
         }
-
-        try:
-            if operator_name:
-                # 特定算子统计
-                cursor.execute(
-                    """
-                    SELECT
-                        COUNT(*) as total,
-                        SUM(CASE WHEN verified = 1 THEN 1 ELSE 0 END) as verified,
-                        SUM(CASE WHEN precheck_passed = 1 THEN 1 ELSE 0 END) as precheck,
-                        SUM(CASE WHEN sympy_proven = 1 THEN 1 ELSE 0 END) as sympy
-                    FROM mr_knowledge_base
-                    WHERE operator_name = ?
-                """,
-                    (operator_name,),
-                )
-                row = cursor.fetchone()
-                stats["total_mrs"] = row[0]
-                stats["verified_mrs"] = row[1] or 0
-                stats["unverified_mrs"] = stats["total_mrs"] - stats["verified_mrs"]
-                stats["precheck_passed"] = row[2] or 0
-                stats["sympy_proven"] = row[3] or 0
-
-                stats["by_operator"][operator_name] = {
-                    "total": stats["total_mrs"],
-                    "verified": stats["verified_mrs"],
-                    "unverified": stats["unverified_mrs"],
-                    "precheck_passed": stats["precheck_passed"],
-                    "sympy_proven": stats["sympy_proven"],
-                }
-            else:
-                # 整体统计
-                cursor.execute(
-                    """
-                    SELECT
-                        COUNT(*) as total,
-                        SUM(CASE WHEN verified = 1 THEN 1 ELSE 0 END) as verified,
-                        SUM(CASE WHEN precheck_passed = 1 THEN 1 ELSE 0 END) as precheck,
-                        SUM(CASE WHEN sympy_proven = 1 THEN 1 ELSE 0 END) as sympy
-                    FROM mr_knowledge_base
-                """,
-                )
-                row = cursor.fetchone()
-                stats["total_mrs"] = row[0]
-                stats["verified_mrs"] = row[1] or 0
-                stats["unverified_mrs"] = stats["total_mrs"] - stats["verified_mrs"]
-                stats["precheck_passed"] = row[2] or 0
-                stats["sympy_proven"] = row[3] or 0
-
-                # 按算子统计
-                cursor.execute(
-                    """
-                    SELECT operator_name,
-                        COUNT(*) as total,
-                        SUM(CASE WHEN verified = 1 THEN 1 ELSE 0 END) as verified,
-                        SUM(CASE WHEN precheck_passed = 1 THEN 1 ELSE 0 END) as precheck,
-                        SUM(CASE WHEN sympy_proven = 1 THEN 1 ELSE 0 END) as sympy
-                    FROM mr_knowledge_base
-                    GROUP BY operator_name
-                    ORDER BY operator_name
-                """
-                )
-                for row in cursor.fetchall():
-                    op_name = row[0]
-                    stats["by_operator"][op_name] = {
-                        "total": row[1],
-                        "verified": row[2] or 0,
-                        "unverified": row[1] - (row[2] or 0),
-                        "precheck_passed": row[3] or 0,
-                        "sympy_proven": row[4] or 0,
-                    }
-
-            return stats
-
-        except Exception as e:
-            logger.error(f"Error getting statistics: {e}")
-            return stats
-        finally:
-            conn.close()
-
-    def get_record_id_by_mr_id(
-        self, mr_id: str, operator_name: str, version: Optional[int] = None
-    ) -> Optional[str]:
-        """
-        根据MR ID获取记录ID
-
-        Args:
-            mr_id: MR的id
-            operator_name: 算子名称
-            version: 版本号（None表示最新版本）
-
-        Returns:
-            记录ID，如果不存在则返回None
-        """
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-
-        try:
-            query = (
-                "SELECT id FROM mr_knowledge_base WHERE mr_id = ? AND operator_name = ?"
-            )
-            params: List = [str(mr_id), str(operator_name)]
-
-            if version is not None:
-                query += " AND version = ?"
-                params.append(version)
-            else:
-                query += " ORDER BY version DESC LIMIT 1"
-
-            cursor.execute(query, params)
-            result = cursor.fetchone()
-
-            return result[0] if result else None
-
-        except Exception as e:
-            logger.error(f"Error getting record ID for MR {mr_id}: {e}")
-            return None
-        finally:
-            conn.close()
-
-    def delete(
-        self,
-        operator_name: str,
-        version: Optional[int] = None,
-        mr_id: Optional[str] = None,
-    ) -> int:
-        """
-        删除 MR 记录
-
-        Args:
-            operator_name: 算子名称
-            version:  仅删除该版本的 MR（None = 所有版本）
-            mr_id:    仅删除该 MR ID（优先级最高，同时限定 operator/version）
-
-        Returns:
-            删除的行数
-        """
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-
-        try:
-            if mr_id is not None:
-                # 删除单条 MR
-                query = "DELETE FROM mr_knowledge_base WHERE operator_name = ? AND mr_id = ?"
-                params: List[Any] = [operator_name, mr_id]
-                if version is not None:
-                    query += " AND version = ?"
-                    params.append(version)
-            elif version is not None:
-                # 删除指定版本的全部 MR
-                query = "DELETE FROM mr_knowledge_base WHERE operator_name = ? AND version = ?"
-                params = [operator_name, version]
-            else:
-                # 删除算子的全部 MR
-                query = "DELETE FROM mr_knowledge_base WHERE operator_name = ?"
-                params = [operator_name]
-
-            cursor.execute(query, params)
-            deleted = cursor.rowcount
-            conn.commit()
-            logger.info(
-                "📦 [REPO] "
-                + f"Deleted {deleted} MRs for '{operator_name}'"
-                + (f" version={version}" if version else "")
-                + (f" mr_id={mr_id}" if mr_id else "")
-            )
-            return deleted
-
-        except Exception as e:
-            logger.error(f"Error deleting MRs for {operator_name}: {e}")
-            conn.rollback()
-            return 0
-        finally:
-            conn.close()
-
-    def list_operators_by_framework(self, framework: str) -> List[str]:
-        """列出包含指定框架 MR 的算子名称（applicable_frameworks 包含该框架，或为 NULL）"""
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-
-        # applicable_frameworks 为 NULL 表示通用 MR，也纳入结果
-        cursor.execute(
-            """
-            SELECT DISTINCT operator_name FROM mr_knowledge_base
-            WHERE applicable_frameworks IS NULL
-               OR applicable_frameworks LIKE ?
-            ORDER BY operator_name
-        """,
-            (f'%"{framework}"%',),
-        )
-
-        operators = [row[0] for row in cursor.fetchall()]
-        conn.close()
-        return operators
+        for op in self.list_operators():
+            c = _stats_for(self.load(op))
+            stats["total_mrs"] += c["total"]
+            stats["verified_mrs"] += c["verified"]
+            stats["unverified_mrs"] += c["unverified"]
+            stats["precheck_passed"] += c["precheck_passed"]
+            stats["sympy_proven"] += c["sympy_proven"]
+            stats["by_operator"][op] = c
+        return stats

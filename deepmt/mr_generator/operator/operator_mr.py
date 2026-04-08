@@ -270,27 +270,16 @@ class OperatorMRGenerator:
         operator_doc: Optional[str] = None,
         use_precheck: bool = True,
         use_sympy_proof: bool = True,
-        version: Optional[int] = None,
     ) -> List[MetamorphicRelation]:
-        """
-        从MR知识库加载MR并进行验证
-
-        参数：
-            operator_name: 算子名称
-            version: MR版本号（默认最新版本）
-            其他参数同 verify_mrs()
-
-        返回：
-            经过验证的MR列表
-        """
+        """从 MR 仓库加载 MR 并进行验证。"""
         from deepmt.mr_generator.base.mr_repository import MRRepository
 
         generator = OperatorMRGenerator()
         repo = MRRepository()
-        mrs = repo.load(operator_name=operator_name, version=version)
+        mrs = repo.load(operator_name=operator_name)
 
         if not mrs:
-            logger.warning(f"⚠️ [WARN] No MRs found for operator '{operator_name}' (version {version or 'latest'})")
+            logger.warning(f"⚠️ [WARN] No MRs found for operator '{operator_name}'")
             return []
 
         verified_mrs = generator.verify_mrs(

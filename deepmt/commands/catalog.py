@@ -264,11 +264,9 @@ def catalog_info(operator, as_json):
         repo = MRRepository()
         has_mr = repo.exists(operator)
         mr_stats = repo.get_statistics(operator) if has_mr else None
-        versions = repo.get_versions(operator) if has_mr else []
     except Exception as e:
         has_mr = False
         mr_stats = None
-        versions = []
         click.echo(click.style(f"[warn] 知识库查询失败: {e}", fg="yellow"), err=True)
 
     if as_json:
@@ -286,7 +284,6 @@ def catalog_info(operator, as_json):
             },
             "knowledge_base": {
                 "has_mr": has_mr,
-                "versions": versions,
                 **(mr_stats if mr_stats else {}),
             },
         }
@@ -339,7 +336,6 @@ def catalog_info(operator, as_json):
     click.echo("\n  知识库 MR 情况:")
     if has_mr and mr_stats:
         click.echo(f"    {click.style('✓', fg='green')} 已有 MR   "
-                   f"versions={versions}  "
                    f"total={mr_stats['total_mrs']}  "
                    f"verified={mr_stats['verified_mrs']}")
     else:

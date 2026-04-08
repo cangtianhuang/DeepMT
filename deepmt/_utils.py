@@ -13,10 +13,10 @@ def not_implemented_error(feature: str, hint: str = ""):
     sys.exit(2)
 
 
-def get_repo(db_path: str = "data/mr_knowledge_base.db"):
+def get_repo(repo_dir: str = "data/mr_repository"):
     """获取 MRRepository 实例（复用配置中的路径）。"""
     from deepmt.mr_generator.base.mr_repository import MRRepository
-    return MRRepository(db_path=db_path)
+    return MRRepository(repo_dir=repo_dir)
 
 
 def get_results_manager(db_path: str = "data/defects.db"):
