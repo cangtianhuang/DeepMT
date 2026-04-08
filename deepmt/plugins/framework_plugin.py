@@ -15,9 +15,35 @@
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, Callable, List, Tuple
+from dataclasses import dataclass
+from typing import Any, Callable, List
 
 from deepmt.ir.schema import MetamorphicRelation, OperatorIR
+
+
+@dataclass
+class CompareResult:
+    """
+    张量比较的详细结果。
+
+    Attributes:
+        passed:               是否在给定容差内相等
+        max_abs_diff:         最大绝对差值 max|a - b|
+        max_rel_diff:         最大相对差值 max(|a - b| / max(|b|, eps))
+        mismatched_elements:  超出容差的元素数；形状不匹配时为 0
+        total_elements:       张量总元素数；形状不匹配时为 0
+    """
+
+    passed: bool
+    max_abs_diff: float
+    max_rel_diff: float
+    mismatched_elements: int
+    total_elements: int
+
+    @property
+    def mismatched_ratio(self) -> float:
+        """超出容差的元素占比；total_elements 为 0 时返回 0.0"""
+        return self.mismatched_elements / self.total_elements if self.total_elements > 0 else 0.0
 
 
 class FrameworkPlugin(ABC):
@@ -44,12 +70,22 @@ class FrameworkPlugin(ABC):
         ...
 
     @abstractmethod
-    def allclose(self, a: Any, b: Any, atol: float) -> Tuple[bool, float]:
+    def get_shape(self, tensor: Any) -> tuple:
+        """返回张量形状（不应调用 to_numpy，应使用框架原生接口）"""
+        ...
+
+    @abstractmethod
+    def allclose(self, a: Any, b: Any, atol: float, rtol: float = 0.0) -> CompareResult:
         """
-        判断两个张量是否在容差内相等。
+        比较两个张量，返回详细的差值统计。
+
+        Args:
+            a, b:  待比较的张量（或可转换为张量的值）
+            atol:  绝对容差
+            rtol:  相对容差（默认 0.0）；判定条件：|a-b| <= atol + rtol*|b|
 
         Returns:
-            (is_close, actual_max_diff) — 是否接近 + 实测最大绝对差值
+            CompareResult，含通过状态、最大绝对/相对差值、不匹配元素统计
         """
         ...
 

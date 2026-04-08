@@ -11,6 +11,7 @@ import torch.nn.functional as F
 
 from deepmt.analysis.mr_verifier import MRVerifier
 from deepmt.ir.schema import MetamorphicRelation, OracleResult
+from deepmt.plugins.framework_plugin import CompareResult
 from deepmt.plugins.pytorch_plugin import PyTorchPlugin
 
 
@@ -56,7 +57,9 @@ class TestMRVerifier:
         x = torch.tensor([1.0, 2.0, 3.0])
         orig = F.relu(x)
         trans = 3 * orig
-        result = verifier.verify(orig, trans, _mr("trans == 3 * orig"), plugin, x_input=x)
+        result = verifier.verify(
+            orig, trans, _mr("trans == 3 * orig"), plugin, x_input=x
+        )
         assert result.passed
 
     def test_monotonicity_expression(self, verifier, plugin):
@@ -71,7 +74,9 @@ class TestMRVerifier:
         x = torch.tensor([-5.0, -2.0, 0.0, 1.0, 3.0, 5.0])
         orig = F.relu(x)
         trans = F.relu(-x)
-        result = verifier.verify(orig, trans, _mr("orig + trans == abs(x)"), plugin, x_input=x)
+        result = verifier.verify(
+            orig, trans, _mr("orig + trans == abs(x)"), plugin, x_input=x
+        )
         assert result.passed
 
     def test_failing_expression(self, verifier, plugin):
@@ -115,6 +120,72 @@ class TestMRVerifier:
         assert isinstance(result.actual_diff, float)
         assert isinstance(result.tolerance, float)
         assert isinstance(result.detail, str)
+
+
+# ── CompareResult / allclose 测试 ─────────────────────────────────────────────
+
+
+class TestAllclose:
+
+    def test_equal_tensors_passed(self, plugin):
+        a = torch.tensor([1.0, 2.0, 3.0])
+        r = plugin.allclose(a, a.clone(), atol=1e-6)
+        assert isinstance(r, CompareResult)
+        assert r.passed
+        assert r.max_abs_diff == pytest.approx(0.0, abs=1e-9)
+        assert r.max_rel_diff == pytest.approx(0.0, abs=1e-9)
+        assert r.mismatched_elements == 0
+        assert r.total_elements == 3
+
+    def test_different_tensors_fails(self, plugin):
+        a = torch.tensor([1.0, 2.0, 3.0])
+        b = torch.tensor([1.0, 2.0, 5.0])  # 最后一个元素差 2
+        r = plugin.allclose(a, b, atol=1e-6)
+        assert not r.passed
+        assert r.max_abs_diff == pytest.approx(2.0)
+        assert r.mismatched_elements == 1
+        assert r.total_elements == 3
+        assert r.mismatched_ratio == pytest.approx(1 / 3)
+
+    def test_within_atol_passes(self, plugin):
+        a = torch.tensor([0.0, 1.0])
+        b = torch.tensor([0.05, 1.05])
+        r = plugin.allclose(a, b, atol=0.1)
+        assert r.passed
+
+    def test_rtol_respected(self, plugin):
+        a = torch.tensor([100.0])
+        b = torch.tensor([101.0])  # abs_diff=1, rel_diff=0.01
+        # atol=0, rtol=0.02 → threshold=2 → pass
+        r_pass = plugin.allclose(a, b, atol=0.0, rtol=0.02)
+        assert r_pass.passed
+        # atol=0, rtol=0.005 → threshold=0.5 → fail
+        r_fail = plugin.allclose(a, b, atol=0.0, rtol=0.005)
+        assert not r_fail.passed
+
+    def test_dtype_mismatch_handled(self, plugin):
+        a = torch.tensor([1.0], dtype=torch.float32)
+        b = torch.tensor([1.0], dtype=torch.float64)
+        r = plugin.allclose(a, b, atol=1e-5)
+        assert r.passed
+
+    def test_shape_mismatch_returns_inf(self, plugin):
+        a = torch.tensor([1.0, 2.0])
+        b = torch.tensor([1.0, 2.0, 3.0])
+        r = plugin.allclose(a, b, atol=1e-6)
+        assert not r.passed
+        assert r.max_abs_diff == float("inf")
+        assert r.total_elements == 0
+
+    def test_compare_result_detail_in_verify(self, verifier, plugin):
+        """oracle_expr 为空且不通过时 detail 含 max_abs/max_rel/mismatched"""
+        orig = torch.tensor([1.0, 2.0])
+        trans = torch.tensor([1.0, 5.0])
+        result = verifier.verify(orig, trans, _mr(""), plugin)
+        assert not result.passed
+        assert "max_abs" in result.detail
+        assert "max_rel" in result.detail
+        assert "mismatched" in result.detail
 
 
 if __name__ == "__main__":

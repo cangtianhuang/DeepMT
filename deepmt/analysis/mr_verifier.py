@@ -12,7 +12,7 @@ MR 验证器：评估蜕变关系的 oracle 表达式，量化测试偏差
 """
 
 import numpy as np
-from typing import Any, Optional
+from typing import Any
 
 from deepmt.core.logger import logger
 from deepmt.ir.schema import MetamorphicRelation, OracleResult
@@ -43,6 +43,51 @@ class MRVerifier:
         Returns:
             OracleResult
         """
+        # 形状检查：通过框架原生接口，无需 to_numpy
+        try:
+            orig_shape = plugin.get_shape(orig)
+            trans_shape = plugin.get_shape(trans)
+        except Exception as e:
+            return OracleResult(
+                passed=False,
+                expr=mr.oracle_expr,
+                actual_diff=float("inf"),
+                tolerance=mr.tolerance,
+                detail=f"CONVERSION_ERROR: {e}",
+            )
+
+        if orig_shape != trans_shape:
+            return OracleResult(
+                passed=False,
+                expr=mr.oracle_expr,
+                actual_diff=float("inf"),
+                tolerance=mr.tolerance,
+                detail=f"SHAPE_MISMATCH: {orig_shape} vs {trans_shape}",
+            )
+
+        # oracle_expr 为空：用插件原生 allclose 做等值检查（无需 to_numpy）
+        if not mr.oracle_expr:
+            cmp = plugin.allclose(orig, trans, atol=mr.tolerance)
+            detail = (
+                ""
+                if cmp.passed
+                else (
+                    f"NUMERICAL_DEVIATION: "
+                    f"max_abs={cmp.max_abs_diff:.6g}, "
+                    f"max_rel={cmp.max_rel_diff:.6g}, "
+                    f"mismatched={cmp.mismatched_elements}/{cmp.total_elements} "
+                    f"({cmp.mismatched_ratio:.1%})"
+                )
+            )
+            return OracleResult(
+                passed=cmp.passed,
+                expr="orig == trans",
+                actual_diff=cmp.max_abs_diff,
+                tolerance=mr.tolerance,
+                detail=detail,
+            )
+
+        # oracle_expr 非空：回退至 numpy 求值路径
         try:
             orig_np = plugin.to_numpy(orig)
             trans_np = plugin.to_numpy(trans)
@@ -56,30 +101,7 @@ class MRVerifier:
                 detail=f"CONVERSION_ERROR: {e}",
             )
 
-        # 始终测量 orig 与 trans 的最大绝对差（用于监控）
         actual_diff = self._measure_diff(orig_np, trans_np)
-
-        # 形状不一致直接失败
-        if orig_np.shape != trans_np.shape:
-            return OracleResult(
-                passed=False,
-                expr=mr.oracle_expr,
-                actual_diff=actual_diff,
-                tolerance=mr.tolerance,
-                detail=f"SHAPE_MISMATCH: {orig_np.shape} vs {trans_np.shape}",
-            )
-
-        # oracle_expr 为空：用插件原生 allclose 做等值检查
-        if not mr.oracle_expr:
-            is_close, measured_diff = plugin.allclose(orig, trans, atol=mr.tolerance)
-            return OracleResult(
-                passed=is_close,
-                expr="orig == trans",
-                actual_diff=measured_diff,
-                tolerance=mr.tolerance,
-                detail="" if is_close else f"NUMERICAL_DEVIATION: max_diff={measured_diff:.6g}",
-            )
-
         return self._eval_oracle_expr(
             orig_np, trans_np, x_np, mr.oracle_expr, mr.tolerance, actual_diff
         )
@@ -114,6 +136,7 @@ class MRVerifier:
 
         class _T:
             """容差感知的数组包装器"""
+
             __slots__ = ("v",)
 
             def __init__(self, v):
@@ -123,23 +146,51 @@ class MRVerifier:
                     else np.asarray(v, dtype=float)
                 )
 
-            def __add__(self, o):      return _T(self.v + _u(o))
-            def __radd__(self, o):     return _T(_u(o) + self.v)
-            def __sub__(self, o):      return _T(self.v - _u(o))
-            def __rsub__(self, o):     return _T(_u(o) - self.v)
-            def __mul__(self, o):      return _T(self.v * _u(o))
-            def __rmul__(self, o):     return _T(_u(o) * self.v)
-            def __truediv__(self, o):  return _T(self.v / _u(o))
-            def __rtruediv__(self, o): return _T(_u(o) / self.v)
-            def __neg__(self):         return _T(-self.v)
-            def __abs__(self):         return _T(np.abs(self.v))
+            def __add__(self, o):
+                return _T(self.v + _u(o))
+
+            def __radd__(self, o):
+                return _T(_u(o) + self.v)
+
+            def __sub__(self, o):
+                return _T(self.v - _u(o))
+
+            def __rsub__(self, o):
+                return _T(_u(o) - self.v)
+
+            def __mul__(self, o):
+                return _T(self.v * _u(o))
+
+            def __rmul__(self, o):
+                return _T(_u(o) * self.v)
+
+            def __truediv__(self, o):
+                return _T(self.v / _u(o))
+
+            def __rtruediv__(self, o):
+                return _T(_u(o) / self.v)
+
+            def __neg__(self):
+                return _T(-self.v)
+
+            def __abs__(self):
+                return _T(np.abs(self.v))
 
             # 比较运算：== 使用 isclose，其余保持数学语义
-            def __eq__(self, o):  return np.isclose(self.v, _u(o), atol=tol, rtol=0)
-            def __lt__(self, o):  return self.v <  _u(o)
-            def __le__(self, o):  return self.v <= _u(o)
-            def __gt__(self, o):  return self.v >  _u(o)
-            def __ge__(self, o):  return self.v >= _u(o)
+            def __eq__(self, o) -> bool:
+                return np.isclose(self.v, _u(o), atol=tol, rtol=0)  # type: ignore[override]
+
+            def __lt__(self, o):
+                return self.v < _u(o)
+
+            def __le__(self, o):
+                return self.v <= _u(o)
+
+            def __gt__(self, o):
+                return self.v > _u(o)
+
+            def __ge__(self, o):
+                return self.v >= _u(o)
 
         def _u(x):
             return x.v if isinstance(x, _T) else x
@@ -151,13 +202,13 @@ class MRVerifier:
 
         ctx = {
             "__builtins__": {},
-            "orig":  _T(orig_np),
+            "orig": _T(orig_np),
             "trans": _T(trans_np),
-            "x":     _T(x_np),
-            "all":   np.all,
-            "any":   np.any,
-            "abs":   lambda v: _T(np.abs(_u(v))),
-            "np":    np,
+            "x": _T(x_np),
+            "all": np.all,
+            "any": np.any,
+            "abs": lambda v: _T(np.abs(_u(v))),
+            "np": np,
         }
 
         try:
@@ -168,7 +219,9 @@ class MRVerifier:
                 expr=oracle_expr,
                 actual_diff=actual_diff,
                 tolerance=tolerance,
-                detail="" if passed else f"ORACLE_VIOLATION: '{oracle_expr}' not satisfied",
+                detail=(
+                    "" if passed else f"ORACLE_VIOLATION: '{oracle_expr}' not satisfied"
+                ),
             )
         except Exception as e:
             logger.debug(f"oracle_expr eval error | expr='{oracle_expr}' | {e}")
