@@ -8,17 +8,17 @@ DeepMT（Deep Metamorphic Testing）是面向深度学习框架（PyTorch、Tens
 
 ## 当前阶段与下一步
 
-> **开始任何开发任务前，必须先阅读 `docs/deepmt_dev_docs/` 中的规划文档。**  
+> **在开始任何“阶段开发”任务前，必须先阅读 `docs/deepmt_dev_docs/` 中的规划文档。“代码修复”任务不必查阅。**  
 > 入口：`docs/deepmt_dev_docs/README.md` → `00_开发总览与执行原则.md` → 对应阶段文档。  
 > 执行规范：`docs/deepmt_dev_docs/06_编码智能体执行规范.md`
 
-| 阶段 | 状态 | 文档 |
-|------|------|------|
-| Phase A：算子数据层完善 | ✅ 完成 | `docs/deepmt_dev_docs/01_Phase_A_算子数据层完善.md` |
-| Phase B：算子层 MR 生成与知识库 | ✅ 完成 | `docs/deepmt_dev_docs/02_Phase_B_算子层MR生成与知识库.md` |
-| Phase C：测试执行与跨框架适配 | 🔲 **当前目标** | `docs/deepmt_dev_docs/03_Phase_C_测试执行与跨框架适配.md` |
-| Phase D：缺陷分析与实验闭环 | ⬜ 待开始 | `docs/deepmt_dev_docs/04_Phase_D_缺陷分析、实验闭环与研究结论.md` |
-| Phase E：演示交付与生产化加固 | ⬜ 待开始 | `docs/deepmt_dev_docs/05_Phase_E_演示交付与生产化加固.md` |
+| 阶段                            | 状态           | 文档                                                              |
+| ------------------------------- | -------------- | ----------------------------------------------------------------- |
+| Phase A：算子数据层完善         | ✅ 完成         | `docs/deepmt_dev_docs/01_Phase_A_算子数据层完善.md`               |
+| Phase B：算子层 MR 生成与知识库 | ✅ 完成         | `docs/deepmt_dev_docs/02_Phase_B_算子层MR生成与知识库.md`         |
+| Phase C：测试执行与跨框架适配   | 🔲 **当前目标** | `docs/deepmt_dev_docs/03_Phase_C_测试执行与跨框架适配.md`         |
+| Phase D：缺陷分析与实验闭环     | ⬜ 待开始       | `docs/deepmt_dev_docs/04_Phase_D_缺陷分析、实验闭环与研究结论.md` |
+| Phase E：演示交付与生产化加固   | ⬜ 待开始       | `docs/deepmt_dev_docs/05_Phase_E_演示交付与生产化加固.md`         |
 
 **当前主链：** 算子目录 → MR 生成 → **批量测试（Phase C：C1 InputGenerator → C2 插件接口 → C3 批量测试引擎）** → 结果报告 → 缺陷证据包
 
@@ -32,24 +32,19 @@ DeepMT（Deep Metamorphic Testing）是面向深度学习框架（PyTorch、Tens
 source .venv/bin/activate && PYTHONPATH=$(pwd) python -m pytest tests/
 ```
 
-配置文件查找顺序：`DEEPMT_CONFIG_PATH` → 当前目录 `config.yaml` → 项目根 `config.yaml` → `~/.config/deepmt/config.yaml`
-
-关键配置项（参考 `config.yaml.example`）：
-- `llm.api_key` / `llm.url`：LLM API 密钥与地址
-
 关键环境变量：`OPENAI_API_KEY`、`DEEPMT_LOG_LEVEL`、`DEEPMT_LOG_DIR`。详见 `docs/environment_variables.md`。
 
 ## 文档
 
-| 文件                                    | 内容                              |
-| --------------------------------------- | --------------------------------- |
-| `docs/deepmt_dev_docs/`                 | **主规划文档（开发任务优先读）**  |
-| `docs/status.md`                        | 已完成模块清单与当前测试状态      |
-| `docs/cli_reference.md`                 | CLI 命令参考                      |
-| `docs/environment_variables.md`         | 环境变量说明                      |
-| `docs/operator_catalog_design.md`       | 算子目录设计                      |
-| `docs/operator_mr_technical.md`         | 算子层 MR 技术细节                |
-| `docs/quick_start.md`                   | 快速上手                          |
+| 文件                              | 内容               |
+| --------------------------------- | ------------------ |
+| `docs/deepmt_dev_docs/`           | 主规划文档         |
+| `docs/status.md`                  | 已完成模块清单     |
+| `docs/cli_reference.md`           | CLI 命令参考       |
+| `docs/environment_variables.md`   | 环境变量说明       |
+| `docs/operator_catalog_design.md` | 算子目录设计       |
+| `docs/operator_mr_technical.md`   | 算子层 MR 技术细节 |
+| `docs/quick_start.md`             | 快速上手           |
 
 ## 架构概览
 
@@ -140,5 +135,5 @@ source .venv/bin/activate && PYTHONPATH=$(pwd) python -m pytest tests/
 
 5. **无向后兼容性负担**
    - 本项目处于初期开发阶段，**不考虑任何向后兼容性**
-   - 重命名函数/类/CLI 命令、修改接口签名、调整数据结构时，必须**彻底清理**：删除旧名称、更新所有调用点、移除兼容性 shim
+   - 重命名函数/类/CLI 命令、修改接口签名、调整数据结构时，必须**彻底清理**：删除旧名称、更新所有调用点、移除兼容性代码
    - 禁止保留废弃别名、`_deprecated_` 包装、兼容性注释（如 `# kept for backward compat`）等过渡代码

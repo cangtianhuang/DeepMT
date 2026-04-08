@@ -1,22 +1,22 @@
 """
-插件管理器：动态加载和管理框架适配插件
+插件管理器：从注册表（YAML）加载框架适配插件
 """
 
 import importlib
-import inspect
 from pathlib import Path
 from typing import Any, Dict
+
+import yaml
 
 from deepmt.core.logger import logger
 from deepmt.plugins.framework_adapter import FrameworkAdapter
 
 
 class PluginsManager:
-    """插件管理器：负责加载和管理框架适配插件"""
+    """插件管理器：根据 plugins.yaml 注册表加载框架适配插件"""
 
     def __init__(self, plugins_dir: str = None):
         if plugins_dir is None:
-            # Default to deepmt/plugins relative to this file's package root
             self.plugins_dir = Path(__file__).resolve().parent.parent / "plugins"
         else:
             self.plugins_dir = Path(plugins_dir)
@@ -24,48 +24,32 @@ class PluginsManager:
         self.framework_adapters: Dict[str, FrameworkAdapter] = {}
 
     def load_plugins(self):
-        """动态加载plugins目录中的所有插件"""
-        if not self.plugins_dir.exists():
-            logger.debug(f"Plugins directory not found: {self.plugins_dir}")
+        """从 plugins/plugins.yaml 注册表加载插件"""
+        registry_file = self.plugins_dir / "plugins.yaml"
+        if not registry_file.exists():
+            logger.warning(f"Plugin registry not found: {registry_file}")
             return
 
-        logger.debug(f"Loading plugins from {self.plugins_dir}")
+        with open(registry_file) as f:
+            config = yaml.safe_load(f)
 
-        plugin_files = list(self.plugins_dir.glob("*_plugin.py"))
-
-        for plugin_file in plugin_files:
+        for entry in config.get("plugins", []):
+            name = entry["name"]
+            module_path = entry["module"]
+            class_name = entry["class"]
             try:
-                module_name = f"deepmt.plugins.{plugin_file.stem}"
-                module = importlib.import_module(module_name)
-
-                for name, obj in inspect.getmembers(module, inspect.isclass):
-                    if name.endswith("Plugin") and obj.__module__ == module_name:
-                        plugin_name = self._extract_plugin_name(name)
-                        plugin_instance = obj()
-                        self.plugins[plugin_name] = plugin_instance
-                        self.framework_adapters[plugin_name] = FrameworkAdapter(
-                            framework=plugin_name
-                        )
-                        logger.debug(f"Loaded plugin: {plugin_name} ({name})")
-
+                module = importlib.import_module(module_path)
+                cls = getattr(module, class_name)
+                self.plugins[name] = cls()
+                self.framework_adapters[name] = FrameworkAdapter(framework=name)
+                logger.debug(f"Loaded plugin: {name} ({class_name})")
             except Exception as e:
-                logger.error(f"Failed to load plugin {plugin_file}: {e}")
+                logger.error(f"Failed to load plugin '{name}' from {module_path}: {e}")
 
         if self.plugins:
             logger.info(f"🚀 [INIT] {len(self.plugins)} plugin(s) loaded: {list(self.plugins.keys())}")
         else:
             logger.debug("Total plugins loaded: 0")
-
-    def _extract_plugin_name(self, class_name: str) -> str:
-        name = class_name.replace("Plugin", "").lower()
-        name_mapping = {
-            "pytorch": "pytorch",
-            "tensorflow": "tensorflow",
-            "tf": "tensorflow",
-            "paddle": "paddle",
-            "paddlepaddle": "paddle",
-        }
-        return name_mapping.get(name, name)
 
     def get_plugin(self, name: str):
         name = name.lower()
@@ -82,10 +66,6 @@ class PluginsManager:
                 f"Framework adapter for '{framework}' not found. Available adapters: {available}"
             )
         return self.framework_adapters[framework]
-
-    def register_plugin(self, name: str, plugin_instance: Any):
-        self.plugins[name.lower()] = plugin_instance
-        logger.info(f"🚀 [INIT] Manually registered plugin: {name}")
 
     def list_plugins(self) -> list:
         return list(self.plugins.keys())
