@@ -6,14 +6,12 @@ DeepMT 主API类
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
-from deepmt.core.framework import FrameworkType
 from deepmt.core.ir_manager import IRManager
 from deepmt.core.logger import logger
-from deepmt.core.plugins_manager import PluginsManager
+from deepmt.core.plugins_manager import FrameworkType, PluginsManager
 from deepmt.core.results_manager import ResultsManager
 from deepmt.core.scheduler import TaskScheduler
 from deepmt.core.test_runner import TestRunner
-from deepmt.ir.converter import IRConverter
 from deepmt.ir.schema import ApplicationIR, ModelIR, OperatorIR
 from deepmt.mr_generator.base.knowledge_base import KnowledgeBase
 from deepmt.mr_generator.base.mr_repository import MRRepository
@@ -99,9 +97,6 @@ class DeepMT:
         self.plugins_manager.load_plugins()
         self.results_manager = ResultsManager(db_path=db_path)
 
-        # IR转换器
-        self.ir_converter = IRConverter()
-
         # MR生成器（延迟初始化）
         self._mr_generator = None
 
@@ -139,9 +134,9 @@ class DeepMT:
         logger.info(f"Testing operator: {name} on {framework}")
 
         try:
-            # 1. 自动创建IR（用户不需要知道IR的存在）
-            operator_ir = self.ir_converter.from_operator_name(
-                name=name, inputs=inputs, properties=properties
+            # 1. 创建 OperatorIR
+            operator_ir = OperatorIR(
+                name=name, inputs=inputs, outputs=[], properties=properties or {}
             )
 
             # 2. 尝试从知识库加载MR，如果没有则生成

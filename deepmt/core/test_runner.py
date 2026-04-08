@@ -6,7 +6,7 @@
 from typing import Any, List, Tuple
 
 from deepmt.analysis.mr_verifier import MRVerifier
-from deepmt.core.framework import FrameworkType
+from deepmt.core.plugins_manager import FrameworkType
 from deepmt.core.logger import logger
 from deepmt.core.plugins_manager import PluginsManager
 from deepmt.core.results_manager import ResultsManager

@@ -4,11 +4,10 @@ IR管理器：负责IR的加载、保存、转换
 
 import json
 from pathlib import Path
-from typing import Any, Optional, Union
+from typing import Any, Union
 
 import yaml
 
-from deepmt.core.framework import FrameworkType
 from deepmt.core.logger import logger
 from deepmt.ir.schema import ApplicationIR, ModelIR, OperatorIR
 
@@ -95,29 +94,6 @@ class IRManager:
                 json.dump(data, f, indent=2, ensure_ascii=False)
 
         logger.info(f"Successfully saved {ir_type} to {path}")
-
-    def create_ir_from_framework(
-        self, model_code: str, framework: FrameworkType = "pytorch"
-    ):
-        """
-        从框架代码生成IR（基础实现，后续可扩展）
-
-        Args:
-            model_code: 框架代码字符串
-            framework: 框架名称（"pytorch", "tensorflow", "paddlepaddle"）
-
-        Returns:
-            IR对象
-
-        Raises:
-            NotImplementedError: 功能尚未完全实现
-        """
-        logger.warning(
-            f"create_ir_from_framework is not fully implemented for {framework}"
-        )
-        # TODO: 实现框架代码解析逻辑
-        # 这需要AST解析或使用框架特定的工具
-        raise NotImplementedError("Framework code parsing not yet implemented")
 
     def validate_ir(self, ir_object: Any) -> bool:
         """

@@ -136,15 +136,12 @@ class TestPrecheckSetsVerified():
             assert mr.verified is False  # 初始状态
 
         generator = OperatorMRGenerator()
-        operator_ir = OperatorIR(
-            name="torch.nn.functional.relu",
-            inputs=[torch.randn(4, 4, dtype=torch.float32)],
-        )
+        operator_ir = OperatorIR(name="torch.nn.functional.relu")
 
         verified = generator._apply_precheck(
             operator_func=F.relu,
             mr_candidates=mrs,
-            original_inputs=operator_ir.inputs,
+            operator_ir=operator_ir,
             framework="pytorch",
         )
 
@@ -178,20 +175,47 @@ class TestTryImportOperator:
         assert func is None
 
 
-# ── _make_default_inputs helper ───────────────────────────────────────────────
+# ── InputGenerator ────────────────────────────────────────────────────────────
 
-class TestMakeDefaultInputs:
-    def test_returns_single_tensor(self):
-        from deepmt.commands.mr import _make_default_inputs
-        import torch.nn.functional as F
-        inputs = _make_default_inputs(F.relu, "pytorch")
+class TestInputGenerator:
+    def setup_method(self):
+        from deepmt.analysis.input_generator import InputGenerator
+        from deepmt.plugins.pytorch_plugin import PyTorchPlugin
+        self.gen = InputGenerator()
+        self.plugin = PyTorchPlugin()
+
+    def test_empty_specs_returns_default(self):
+        inputs = self.gen.generate([], self.plugin)
         assert len(inputs) == 1
         assert isinstance(inputs[0], torch.Tensor)
         assert inputs[0].dtype == torch.float32
-        assert inputs[0].shape == (4, 4)
 
-    def test_unknown_framework_returns_empty(self):
-        from deepmt.commands.mr import _make_default_inputs
-        import torch.nn.functional as F
-        inputs = _make_default_inputs(F.relu, "tensorflow")
-        assert inputs == []
+    def test_basic_float_spec(self):
+        inputs = self.gen.generate([
+            {"name": "input", "dtype": ["float32"], "shape": "any", "value_range": None, "required": True}
+        ], self.plugin)
+        assert len(inputs) == 1
+        assert isinstance(inputs[0], torch.Tensor)
+        assert inputs[0].dtype == torch.float32
+
+    def test_shape_nd_ge(self):
+        inputs = self.gen.generate([
+            {"name": "x", "dtype": ["float64"], "shape": "nd>=2", "value_range": None, "required": True}
+        ], self.plugin)
+        assert len(inputs[0].shape) >= 2
+        assert inputs[0].dtype == torch.float64
+
+    def test_value_range(self):
+        inputs = self.gen.generate([
+            {"name": "x", "dtype": ["float32"], "shape": "any", "value_range": [0.0, 1.0], "required": True}
+        ], self.plugin)
+        t = inputs[0]
+        assert float(t.min()) >= 0.0
+        assert float(t.max()) <= 1.0
+
+    def test_optional_param_skipped(self):
+        inputs = self.gen.generate([
+            {"name": "x", "dtype": ["float32"], "shape": "any", "value_range": None, "required": True},
+            {"name": "bias", "dtype": ["float32"], "shape": "any", "value_range": None, "required": False},
+        ], self.plugin)
+        assert len(inputs) == 1

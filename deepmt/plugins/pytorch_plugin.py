@@ -2,7 +2,7 @@
 PyTorch 框架适配插件
 """
 
-from typing import Any, Callable, Tuple
+from typing import Any, Callable, ClassVar, Dict, Optional, Tuple
 
 import numpy as np
 import torch
@@ -71,6 +71,15 @@ class PyTorchPlugin(FrameworkPlugin):
     _root_modules = [torch]
     _overrides: dict = {}
 
+    _DTYPE_MAP: ClassVar[Dict[str, torch.dtype]] = {
+        "float16": torch.float16,
+        "float32": torch.float32,
+        "float64": torch.float64,
+        "int32":   torch.int32,
+        "int64":   torch.int64,
+        "bool":    torch.bool,
+    }
+
     def _to_tensor(self, value: Any) -> torch.Tensor:
         if isinstance(value, torch.Tensor):
             return value
@@ -82,6 +91,24 @@ class PyTorchPlugin(FrameworkPlugin):
 
     def _execute_operator(self, func: Callable, inputs: list) -> torch.Tensor:
         return func(*inputs)
+
+    def make_tensor(
+        self,
+        shape: tuple,
+        dtype: str,
+        value_range: Optional[Tuple[Optional[float], Optional[float]]] = None,
+    ) -> torch.Tensor:
+        """根据完全确定的 shape/dtype/value_range 创建随机 PyTorch 张量。"""
+        th_dtype = self._DTYPE_MAP.get(dtype, torch.float32)
+        if th_dtype in (torch.int32, torch.int64):
+            lo = int(value_range[0]) if value_range and value_range[0] is not None else -10
+            hi = int(value_range[1]) if value_range and value_range[1] is not None else 10
+            return torch.randint(lo, hi + 1, shape, dtype=th_dtype)
+        lo_f = float(value_range[0]) if value_range and value_range[0] is not None else None
+        hi_f = float(value_range[1]) if value_range and value_range[1] is not None else None
+        if lo_f is not None and hi_f is not None:
+            return torch.rand(shape, dtype=th_dtype) * (hi_f - lo_f) + lo_f
+        return torch.randn(shape, dtype=th_dtype) * 10.0
 
     def to_numpy(self, tensor: Any) -> np.ndarray:
         if isinstance(tensor, torch.Tensor):

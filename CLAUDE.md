@@ -137,3 +137,9 @@ source .venv/bin/activate && PYTHONPATH=$(pwd) python -m pytest tests/
    - 本项目处于初期开发阶段，**不考虑任何向后兼容性**
    - 重命名函数/类/CLI 命令、修改接口签名、调整数据结构时，必须**彻底清理**：删除旧名称、更新所有调用点、移除兼容性代码
    - 禁止保留废弃别名、`_deprecated_` 包装、兼容性注释（如 `# kept for backward compat`）等过渡代码
+
+6. **插件职责边界（反复违规，强制记忆）**
+   - `FrameworkPlugin` / `FrameworkAdapter` 只提供**基础、框架专属**的原语接口：
+     - ✅ 合法：`make_tensor(shape, dtype, value_range)`、`allclose`、`to_numpy`、`get_shape`、`_execute_operator`
+     - ❌ 禁止：任何需要解析项目自定义数据格式（`input_specs`、MR 结构、YAML 字段）的逻辑
+   - 需要解析 `input_specs` 或执行生成策略的代码，统一放在 `deepmt/analysis/`（如 `InputGenerator`），再调用插件的基础接口

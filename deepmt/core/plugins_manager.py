@@ -1,15 +1,33 @@
 """
-插件管理器：从注册表（YAML）加载框架适配插件
+插件管理器：从注册表（YAML）加载框架适配插件。
+同时维护框架类型定义（FrameworkType、别名、支持列表）。
 """
 
 import importlib
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, List, Literal
 
 import yaml
 
 from deepmt.core.logger import logger
 from deepmt.plugins.framework_adapter import FrameworkAdapter
+
+# ── 框架类型定义 ──────────────────────────────────────────────────────────────
+
+FrameworkType = Literal["pytorch", "tensorflow", "paddlepaddle"]
+
+# 全部已知框架（含尚未实现插件的）
+SUPPORTED_FRAMEWORKS: List[str] = ["pytorch", "tensorflow", "paddlepaddle"]
+
+# 框架别名映射（用于 CLI 输入或用户传入的非规范名称）
+FRAMEWORK_ALIASES: Dict[str, str] = {
+    "pytorch": "pytorch",
+    "torch": "pytorch",
+    "tensorflow": "tensorflow",
+    "tf": "tensorflow",
+    "paddlepaddle": "paddlepaddle",
+    "paddle": "paddlepaddle",
+}
 
 
 class PluginsManager:
@@ -70,3 +88,18 @@ class PluginsManager:
 
     def list_plugins(self) -> list:
         return list(self.plugins.keys())
+
+    @staticmethod
+    def normalize_framework(framework: str) -> str:
+        """将框架别名统一转为标准名称（e.g. "torch" -> "pytorch"）。
+
+        Raises:
+            ValueError: 若 framework 不在已知别名表中
+        """
+        normalized = FRAMEWORK_ALIASES.get(framework.lower(), framework.lower())
+        if normalized not in SUPPORTED_FRAMEWORKS:
+            raise ValueError(
+                f"Unknown framework: {framework!r}. "
+                f"Supported: {SUPPORTED_FRAMEWORKS}"
+            )
+        return normalized

@@ -13,7 +13,7 @@ from typing import Any, Dict, List, Optional, Set
 
 import yaml
 
-from deepmt.core.framework import FRAMEWORK_ALIASES, SUPPORTED_FRAMEWORKS
+from deepmt.core.plugins_manager import FRAMEWORK_ALIASES, SUPPORTED_FRAMEWORKS
 from deepmt.core.logger import logger
 
 

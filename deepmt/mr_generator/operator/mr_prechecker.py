@@ -10,11 +10,12 @@ MR 快速筛选器：对候选 MR 进行少量随机数值测试
 
 from typing import Any, Callable, Dict, List
 
+from deepmt.analysis.input_generator import InputGenerator
 from deepmt.analysis.mr_verifier import MRVerifier
-from deepmt.core.framework import FrameworkType
+from deepmt.core.plugins_manager import FrameworkType
 from deepmt.core.logger import logger
 from deepmt.core.plugins_manager import PluginsManager
-from deepmt.ir.schema import MetamorphicRelation
+from deepmt.ir.schema import MetamorphicRelation, OperatorIR
 
 
 class MRPreChecker:
@@ -27,22 +28,23 @@ class MRPreChecker:
         self.plugins_manager = PluginsManager()
         self.plugins_manager.load_plugins()
         self.verifier = MRVerifier()
+        self.input_generator = InputGenerator()
 
     def check_mr(
         self,
         operator_func: Callable,
         mr: MetamorphicRelation,
-        original_inputs: List[Any],
+        operator_ir: OperatorIR,
         framework: FrameworkType,
     ) -> tuple[bool, str]:
         """
         快速检查单个 MR 是否满足。
 
         Args:
-            operator_func:   算子函数
-            mr:              蜕变关系
-            original_inputs: 原始输入（用于推断类型和形状）
-            framework:       框架类型
+            operator_func: 算子函数
+            mr:            蜕变关系
+            operator_ir:   算子 IR（通过 input_specs 驱动随机输入生成）
+            framework:     框架类型
 
         Returns:
             (是否通过, 详细信息)
@@ -56,13 +58,13 @@ class MRPreChecker:
         if bound_transform is None:
             return False, "Failed to bind transform code"
 
-        test_cases = self._generate_test_cases(original_inputs, self.NUM_TEST_CASES)
-
+        input_specs = operator_ir.input_specs or []
         passed_count = 0
         failed_count = 0
         error_messages = []
 
-        for i, test_input in enumerate(test_cases):
+        for i in range(self.NUM_TEST_CASES):
+            test_input = self.input_generator.generate(input_specs, plugin)
             try:
                 orig_kwargs = self._build_kwargs(test_input)
 
@@ -127,7 +129,7 @@ class MRPreChecker:
         self,
         operator_func: Callable,
         mr_candidates: List[MetamorphicRelation],
-        original_inputs: List[Any],
+        operator_ir: OperatorIR,
         framework: FrameworkType,
     ) -> List[MetamorphicRelation]:
         """
@@ -136,7 +138,7 @@ class MRPreChecker:
         Args:
             operator_func:  算子函数
             mr_candidates:  MR 候选列表
-            original_inputs: 原始输入
+            operator_ir:    算子 IR（通过 input_specs 驱动随机输入生成）
             framework:      框架类型
 
         Returns:
@@ -149,7 +151,7 @@ class MRPreChecker:
         logger.info(f"✅ [CHECK] Pre-checking {len(mr_candidates)} MR candidates...")
 
         for i, mr in enumerate(mr_candidates):
-            is_valid, msg = self.check_mr(operator_func, mr, original_inputs, framework)
+            is_valid, msg = self.check_mr(operator_func, mr, operator_ir, framework)
             if is_valid:
                 filtered.append(mr)
                 logger.debug(f"MR {i+1} passed pre-check: {mr.description}")
@@ -162,57 +164,6 @@ class MRPreChecker:
             f"✅ [CHECK] Pre-check completed: {len(filtered)}/{len(mr_candidates)} MRs passed"
         )
         return filtered
-
-    def _generate_test_cases(
-        self, original_inputs: List[Any], num_cases: int
-    ) -> List[List[Any]]:
-        """生成随机测试用例"""
-        test_cases = []
-        for _ in range(num_cases):
-            test_input = [self._generate_random_value(inp) for inp in original_inputs]
-            test_cases.append(test_input)
-        return test_cases
-
-    def _generate_random_value(self, original: Any) -> Any:
-        """根据原始输入生成同类型随机值"""
-        import numpy as np
-
-        try:
-            import torch
-            HAS_TORCH = True
-        except ImportError:
-            HAS_TORCH = False
-
-        if HAS_TORCH and "Tensor" in str(type(original)):
-            import torch as th
-            shape = original.shape
-            dtype = original.dtype
-            device = original.device
-            if dtype in (th.float32, th.float64, th.float16):
-                return th.randn(shape, dtype=dtype, device=device) * 10.0
-            elif dtype in (th.int32, th.int64):
-                return th.randint(-10, 10, shape, dtype=dtype, device=device)
-            else:
-                return th.randn(shape, device=device) * 10.0
-
-        if isinstance(original, np.ndarray):
-            shape = original.shape
-            dtype = original.dtype
-            if np.issubdtype(dtype, np.integer):
-                return np.random.randint(-10, 10, size=shape).astype(dtype)
-            return np.random.uniform(-10.0, 10.0, size=shape).astype(dtype)
-
-        if isinstance(original, (list, tuple)):
-            arr = np.array(original)
-            random_arr = np.random.uniform(-10.0, 10.0, size=arr.shape)
-            return type(original)(random_arr.flatten().tolist())
-
-        if isinstance(original, int):
-            return int(np.random.randint(-10, 10))
-        if isinstance(original, float):
-            return float(np.random.uniform(-10.0, 10.0))
-
-        return original
 
     def _build_kwargs(self, inputs: List[Any]) -> Dict[str, Any]:
         """将输入列表转换为 kwargs 字典"""

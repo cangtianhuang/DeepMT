@@ -35,10 +35,7 @@ pool = MRTemplatePool()
 templates = pool.get_applicable_templates(OPERATOR_NAME, operator_func=OPERATOR_FUNC)
 candidates = [pool.create_mr_from_template(t) for t in templates]
 
-operator_ir = OperatorIR(
-    name=OPERATOR_NAME,
-    inputs=[torch.randn(4, 4, dtype=torch.float32)],
-)
+operator_ir = OperatorIR(name=OPERATOR_NAME)
 
 print(f"候选 MR: {len(candidates)} 个")
 for i, mr in enumerate(candidates, 1):
@@ -56,7 +53,7 @@ for i, mr in enumerate(candidates, 1):
     ok, msg = prechecker.check_mr(
         operator_func=OPERATOR_FUNC,
         mr=mr,
-        original_inputs=operator_ir.inputs,
+        operator_ir=operator_ir,
         framework="pytorch",
     )
     status = "PASS ✓" if ok else "FAIL ✗"

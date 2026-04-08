@@ -84,10 +84,7 @@ def mr_generate(operator, layer, framework, sources, precheck, sympy, auto_fetch
         else:
             click.echo(f"           operator_func=未找到（precheck 将跳过）")
 
-        # 生成默认测试输入（precheck 需要）
-        default_inputs = _make_default_inputs(operator_func, framework) if operator_func else []
-
-        operator_ir = OperatorIR(name=operator, inputs=default_inputs)
+        operator_ir = OperatorIR(name=operator)
         generator = OperatorMRGenerator()
 
         click.echo("正在生成候选 MR …")
@@ -153,7 +150,7 @@ def mr_verify(operator, ver, precheck, sympy, save):
         from deepmt.ir.schema import OperatorIR
         from deepmt.mr_generator.operator.operator_mr import OperatorMRGenerator
 
-        operator_ir = OperatorIR(name=operator, inputs=[])
+        operator_ir = OperatorIR(name=operator)
         generator = OperatorMRGenerator()
 
         mrs = repo.load(operator, ver)
@@ -364,20 +361,6 @@ def _try_import_operator(operator_name: str, framework: str):
     return None
 
 
-def _make_default_inputs(operator_func, framework: str):
-    """
-    为 precheck 生成默认测试输入（float32 tensor，形状 (4, 4)）。
-    返回 [tensor] 列表，与 OperatorIR.inputs 格式一致。
-    """
-    if framework == "pytorch":
-        try:
-            import torch
-            return [torch.randn(4, 4, dtype=torch.float32)]
-        except Exception:
-            pass
-    return []
-
-
 # ── batch-generate ───────────────────────────────────────────────────────────
 
 @mr.command("batch-generate")
@@ -496,9 +479,8 @@ def mr_batch_generate(framework, category, limit, skip_existing, sources, preche
             try:
                 # 动态导入算子函数
                 operator_func = _try_import_operator(operator, framework)
-                default_inputs = _make_default_inputs(operator_func, framework) if operator_func else []
 
-                operator_ir = OperatorIR(name=operator, inputs=default_inputs)
+                operator_ir = OperatorIR(name=operator)
 
                 # 生成候选 MR
                 mrs = generator.generate_only(

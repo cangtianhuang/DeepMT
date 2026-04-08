@@ -10,7 +10,7 @@
 
 from typing import Callable, Dict, List, Literal, Optional, Set
 
-from deepmt.core.framework import FrameworkType
+from deepmt.core.plugins_manager import FrameworkType
 from deepmt.core.logger import logger
 from deepmt.ir.schema import MetamorphicRelation, OperatorIR
 from deepmt.mr_generator.base.mr_templates import MRTemplatePool
@@ -124,7 +124,7 @@ class OperatorMRGenerator:
             candidate_mrs = self._apply_precheck(
                 operator_func=operator_func,
                 mr_candidates=candidate_mrs,
-                original_inputs=operator_ir.inputs or [],
+                operator_ir=operator_ir,
                 framework=framework,
             )
 
@@ -135,7 +135,7 @@ class OperatorMRGenerator:
             operator_code=operator_code,
             operator_doc=operator_doc,
             operator_name=operator_ir.name,
-            num_inputs=len(operator_ir.inputs) if operator_ir.inputs else None,
+            num_inputs=len(operator_ir.input_specs) if operator_ir.input_specs else None,
             use_sympy_proof=use_sympy_proof,
         )
 
@@ -238,7 +238,7 @@ class OperatorMRGenerator:
             mrs = self._apply_precheck(
                 operator_func=operator_func,
                 mr_candidates=mrs,
-                original_inputs=operator_ir.inputs or [],
+                operator_ir=operator_ir,
                 framework=framework,
             )
 
@@ -249,7 +249,7 @@ class OperatorMRGenerator:
             operator_code=operator_code,
             operator_doc=operator_doc,
             operator_name=operator_name,
-            num_inputs=len(operator_ir.inputs) if operator_ir.inputs else None,
+            num_inputs=len(operator_ir.input_specs) if operator_ir.input_specs else None,
             use_sympy_proof=use_sympy_proof,
         )
 
@@ -457,7 +457,7 @@ class OperatorMRGenerator:
         self,
         operator_func: Callable,
         mr_candidates: List[MetamorphicRelation],
-        original_inputs: List,
+        operator_ir: OperatorIR,
         framework: FrameworkType,
     ) -> List[MetamorphicRelation]:
         """
@@ -466,8 +466,8 @@ class OperatorMRGenerator:
         Args:
             operator_func: 算子函数
             mr_candidates: MR候选列表
-            original_inputs: 原始输入
-            framework: 框架类型
+            operator_ir:   算子 IR（通过 input_specs 驱动随机输入生成）
+            framework:     框架类型
 
         Returns:
             通过快速筛选的MR列表
@@ -476,7 +476,7 @@ class OperatorMRGenerator:
         filtered = self.prechecker.filter_mrs(
             operator_func=operator_func,
             mr_candidates=mr_candidates,
-            original_inputs=original_inputs,
+            operator_ir=operator_ir,
             framework=framework,
         )
         # 通过 precheck 的 MR 标记为已验证（数值验证通过即视为 verified）

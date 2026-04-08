@@ -6,6 +6,7 @@
 子类必须实现：
     _to_tensor(value)             — 将任意值转换为框架张量
     _execute_operator(func, inputs) — 调用算子函数并返回输出
+    generate_random_inputs(input_specs) — 根据 input_specs 生成随机张量列表
 
 子类可声明的类属性：
     _root_modules: list   — 框架根模块列表，供算子名称解析使用
@@ -16,7 +17,7 @@
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any, Callable, List
+from typing import Any, Callable, Dict, List
 
 from deepmt.ir.schema import MetamorphicRelation, OperatorIR
 
@@ -72,6 +73,29 @@ class FrameworkPlugin(ABC):
     @abstractmethod
     def get_shape(self, tensor: Any) -> tuple:
         """返回张量形状（不应调用 to_numpy，应使用框架原生接口）"""
+        ...
+
+    @abstractmethod
+    def make_tensor(
+        self,
+        shape: tuple,
+        dtype: str,
+        value_range: "tuple[float | None, float | None] | None" = None,
+    ) -> Any:
+        """
+        创建一个具有给定形状、数据类型和值域约束的随机张量。
+
+        这是框架适配器提供的基础接口——仅负责将完全确定的参数转换为框架原生张量，
+        不包含任何格式解析或策略选择逻辑（那些属于上层 InputGenerator）。
+
+        Args:
+            shape:       张量形状，如 (4, 4)
+            dtype:       数据类型字符串，如 "float32"、"int64"、"bool"
+            value_range: (lo, hi) 值域约束；None 表示无限制；lo/hi 单独为 None 表示单侧无界
+
+        Returns:
+            框架原生张量
+        """
         ...
 
     @abstractmethod
@@ -146,10 +170,11 @@ class FrameworkPlugin(ABC):
         operator_func = self._resolve_operator(ir_object.name)
 
         def run():
-            orig_inputs = self._normalize_inputs(ir_object.inputs)
+            raw_inputs = ir_object.inputs or []
+            orig_inputs = self._normalize_inputs(raw_inputs)
             orig_output = self._execute_operator(operator_func, orig_inputs)
 
-            transformed_raw = mr.transform(*ir_object.inputs)
+            transformed_raw = mr.transform(*raw_inputs)
             trans_inputs = self._normalize_inputs(transformed_raw)
             trans_output = self._execute_operator(operator_func, trans_inputs)
 
