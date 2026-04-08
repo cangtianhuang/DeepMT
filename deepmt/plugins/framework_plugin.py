@@ -15,7 +15,7 @@
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, Callable, List
+from typing import Any, Callable, List, Tuple
 
 from deepmt.ir.schema import MetamorphicRelation, OperatorIR
 
@@ -36,6 +36,21 @@ class FrameworkPlugin(ABC):
     @abstractmethod
     def _execute_operator(self, func: Callable, inputs: list) -> Any:
         """以 inputs 为位置参数调用算子函数，返回输出"""
+        ...
+
+    @abstractmethod
+    def to_numpy(self, tensor: Any) -> Any:
+        """将框架张量转换为 numpy ndarray"""
+        ...
+
+    @abstractmethod
+    def allclose(self, a: Any, b: Any, atol: float) -> Tuple[bool, float]:
+        """
+        判断两个张量是否在容差内相等。
+
+        Returns:
+            (is_close, actual_max_diff) — 是否接近 + 实测最大绝对差值
+        """
         ...
 
     # ── 具体方法（子类通常无需覆盖） ─────────────────────────────────────────

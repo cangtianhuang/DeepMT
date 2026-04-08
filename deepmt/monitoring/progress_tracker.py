@@ -192,11 +192,11 @@ class ProgressTracker:
         ),
         # 分析
         ModuleProgress(
-            "缺陷分类器",
-            "analysis/defect_classifier.py",
+            "MR验证器",
+            "analysis/mr_verifier.py",
             ModuleStatus.COMPLETED,
             100,
-            "缺陷分类",
+            "oracle评估与缺陷量化",
         ),
         ModuleProgress(
             "报告生成器",

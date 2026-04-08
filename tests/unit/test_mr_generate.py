@@ -10,10 +10,10 @@ No LLM or network dependencies.
 import torch
 import pytest
 
-from deepmt.ir.schema import MetamorphicRelation, OperatorIR
+from deepmt.ir.schema import MetamorphicRelation, OracleResult, OperatorIR
 from deepmt.mr_generator.base.mr_templates import MRTemplatePool
-from deepmt.core.oracle_evaluator import OracleEvaluator
-from deepmt.plugins.framework_adapter import FrameworkAdapter
+from deepmt.analysis.mr_verifier import MRVerifier
+from deepmt.plugins.pytorch_plugin import PyTorchPlugin
 
 
 # ── Template transform_code 保存正确性 ────────────────────────────────────────
@@ -36,8 +36,10 @@ class TestTemplateTransformCode:
 
     def test_transform_code_is_bindable(self):
         """transform_code 必须能被 FrameworkAdapter.bind_transform_code 解析"""
+        from deepmt.plugins.framework_adapter import FrameworkAdapter
+        from deepmt.plugins.pytorch_plugin import PyTorchPlugin
         pool = MRTemplatePool()
-        adapter = FrameworkAdapter("pytorch")
+        adapter = FrameworkAdapter(plugin=PyTorchPlugin())
 
         for name, t in pool.templates.items():
             mr = pool.create_mr_from_template(t)
@@ -68,48 +70,54 @@ class TestTemplateTransformCode:
 class TestOracleExpressions:
     @pytest.fixture(autouse=True)
     def setup(self):
-        self.ev = OracleEvaluator()
+        self.verifier = MRVerifier()
+        self.plugin = PyTorchPlugin()
         self.x = torch.tensor([1.0, -2.0, 0.5, -0.3])
+
+    def _mr(self, oracle_expr: str) -> MetamorphicRelation:
+        return MetamorphicRelation(
+            id="test", description="test",
+            transform=lambda k: k, transform_code="",
+            oracle_expr=oracle_expr, tolerance=1e-5,
+        )
+
+    def _verify(self, orig, trans, expr: str) -> bool:
+        result = self.verifier.verify(orig, trans, self._mr(expr), self.plugin, x_input=self.x)
+        return result.passed
 
     def test_relu_positive_homogeneity(self):
         import torch.nn.functional as F
         orig = F.relu(self.x)
         trans = F.relu(2.0 * self.x)
-        f = self.ev.compile_expression("trans == 2.0 * orig", "pytorch")
-        assert bool(f(orig, trans, self.x))
+        assert self._verify(orig, trans, "trans == 2.0 * orig")
 
     def test_relu_nonnegative(self):
         import torch.nn.functional as F
         orig = F.relu(self.x)
         trans = F.relu(-self.x)
-        f = self.ev.compile_expression("orig + trans == abs(x)", "pytorch")
-        assert bool(f(orig, trans, self.x))
+        assert self._verify(orig, trans, "orig + trans == abs(x)")
 
     def test_sigmoid_complement(self):
         import torch.nn.functional as F
         orig = F.sigmoid(self.x)
         trans = F.sigmoid(-self.x)
-        f = self.ev.compile_expression("trans == 1.0 - orig", "pytorch")
-        assert bool(f(orig, trans, self.x))
+        assert self._verify(orig, trans, "trans == 1.0 - orig")
 
     def test_sigmoid_monotone(self):
         import torch.nn.functional as F
         orig = F.sigmoid(self.x)
         trans = F.sigmoid(self.x + 1.0)
-        f = self.ev.compile_expression("all(trans >= orig)", "pytorch")
-        assert bool(f(orig, trans, self.x))
+        assert self._verify(orig, trans, "all(trans >= orig)")
 
     def test_exp_additive(self):
         orig = torch.exp(self.x)
         trans = torch.exp(self.x + 1.0)
-        f = self.ev.compile_expression("trans == orig * 2.718281828", "pytorch")
-        assert bool(f(orig, trans, self.x))
+        assert self._verify(orig, trans, "trans == orig * 2.718281828")
 
     def test_exp_positive(self):
         orig = torch.exp(self.x)
         trans = torch.exp(self.x + 1.0)
-        f = self.ev.compile_expression("all(orig > 0)", "pytorch")
-        assert bool(f(orig, trans, self.x))
+        assert self._verify(orig, trans, "all(orig > 0)")
 
 
 # ── precheck 后 mr.verified 被正确设置 ──────────────────────────────────────────

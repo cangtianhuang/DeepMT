@@ -1,38 +1,33 @@
 """
-测试执行器：使用预生成的MR执行测试
-实现MR生成与测试的分离
+测试执行器：使用预生成的 MR 执行测试
+实现 MR 生成与测试执行的分离
 """
 
 from typing import Any, List, Tuple
 
+from deepmt.analysis.mr_verifier import MRVerifier
 from deepmt.core.framework import FrameworkType
 from deepmt.core.logger import logger
 from deepmt.core.plugins_manager import PluginsManager
 from deepmt.core.results_manager import ResultsManager
-from deepmt.ir.schema import ApplicationIR, MetamorphicRelation, ModelIR, OperatorIR
+from deepmt.ir.schema import ApplicationIR, MetamorphicRelation, ModelIR, OracleResult, OperatorIR
 
 
 class TestRunner:
     """
-    测试执行器：使用预生成的MR执行测试
+    测试执行器：使用预生成的 MR 执行测试
 
-    与TaskScheduler的区别：
-    - TaskScheduler：生成MR + 执行测试（耦合）
-    - TestRunner：只执行测试，使用预生成的MR（分离）
+    与 TaskScheduler 的区别：
+    - TaskScheduler：生成 MR + 执行测试（耦合）
+    - TestRunner：只执行测试，使用预生成的 MR（分离）
     """
 
     def __init__(
         self, plugins_manager: PluginsManager, results_manager: ResultsManager
     ):
-        """
-        初始化测试执行器
-
-        Args:
-            plugins_manager: 插件管理器
-            results_manager: 结果管理器
-        """
         self.plugins_manager = plugins_manager
         self.results_manager = results_manager
+        self.verifier = MRVerifier()
 
     def run_with_mrs(
         self,
@@ -41,56 +36,57 @@ class TestRunner:
         target_framework: FrameworkType,
     ):
         """
-        使用预生成的MR执行测试
+        使用预生成的 MR 执行测试。
 
         Args:
-            ir_object: IR对象（OperatorIR, ModelIR, 或 ApplicationIR）
-            mrs: 预生成的MR列表
-            target_framework: 目标框架名称（"pytorch", "tensorflow", "paddlepaddle"）
+            ir_object:        IR 对象（OperatorIR / ModelIR / ApplicationIR）
+            mrs:              预生成的 MR 列表
+            target_framework: 目标框架（"pytorch" / "tensorflow" / "paddlepaddle"）
         """
         logger.info(
-            f"Running tests for {type(ir_object).__name__}: {ir_object.name if hasattr(ir_object, 'name') else 'unknown'}"
+            f"Running tests for {type(ir_object).__name__}: "
+            f"{ir_object.name if hasattr(ir_object, 'name') else 'unknown'}"
         )
         logger.info(f"Target framework: {target_framework}")
         logger.info(f"Using {len(mrs)} pre-generated MRs")
 
         try:
-            # 验证IR对象
             if not isinstance(ir_object, (OperatorIR, ModelIR, ApplicationIR)):
                 raise ValueError(f"Invalid IR type: {type(ir_object)}")
 
-            # 获取插件
             try:
                 plugin = self.plugins_manager.get_plugin(target_framework)
             except KeyError as e:
                 logger.error(f"Plugin not found: {e}")
                 return
 
-            # 执行每个MR
-            results = []
+            x_input = (
+                ir_object.inputs[0]
+                if hasattr(ir_object, "inputs") and ir_object.inputs
+                else None
+            )
+
+            results: List[Tuple[MetamorphicRelation, OracleResult]] = []
+
             for i, mr in enumerate(mrs):
                 logger.info(f"Executing MR {i+1}/{len(mrs)}: {mr.description}")
-
                 try:
-                    # 将IR和MR转换为框架代码
                     run_func = plugin.ir_to_code(ir_object, mr)
+                    orig_output, trans_output = plugin.execute(run_func)
 
-                    # 执行代码
-                    output = plugin.execute(run_func)
-
-                    # 存储结果
-                    results.append((mr, output))
-                    logger.debug(f"MR {i+1} executed successfully")
-
+                    oracle_result = self.verifier.verify(
+                        orig_output, trans_output, mr, plugin, x_input=x_input
+                    )
+                    results.append((mr, oracle_result))
+                    logger.debug(
+                        f"MR {i+1}: {'PASS' if oracle_result.passed else 'FAIL'} "
+                        f"(diff={oracle_result.actual_diff:.4g})"
+                    )
                 except Exception as e:
                     logger.error(f"Error executing MR {i+1}: {e}")
-                    # 继续执行其他MR
-                    continue
 
-            # 比对和存储结果
             if results:
-                logger.info("Comparing and storing results...")
-                self.results_manager.compare_and_store(ir_object, results)
+                self.results_manager.store_result(ir_object, results, str(target_framework))
                 logger.info("Test execution completed successfully")
             else:
                 logger.warning("No results to store")

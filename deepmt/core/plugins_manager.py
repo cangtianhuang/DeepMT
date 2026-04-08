@@ -40,8 +40,9 @@ class PluginsManager:
             try:
                 module = importlib.import_module(module_path)
                 cls = getattr(module, class_name)
-                self.plugins[name] = cls()
-                self.framework_adapters[name] = FrameworkAdapter(framework=name)
+                plugin = cls()
+                self.plugins[name] = plugin
+                self.framework_adapters[name] = FrameworkAdapter(plugin=plugin)
                 logger.debug(f"Loaded plugin: {name} ({class_name})")
             except Exception as e:
                 logger.error(f"Failed to load plugin '{name}' from {module_path}: {e}")

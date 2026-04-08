@@ -76,3 +76,24 @@ class MetamorphicRelation:
     layer: str = "operator"  # MR所属层次
     verified: bool = False  # 是否已通过验证
     applicable_frameworks: Optional[List[str]] = None  # 适用框架列表（None = 通用）
+
+
+@dataclass
+class OracleResult:
+    """单次 MR oracle 表达式评估的结果。
+
+    由 MRVerifier.verify() 产生，流向 ResultsManager 持久化。
+
+    Attributes:
+        passed:      MR 是否满足
+        expr:        评估使用的 oracle 表达式字符串
+        actual_diff: 实测最大绝对差值（orig 与 trans 之间）
+        tolerance:   配置的数值容差阈值
+        detail:      补充信息（如失败原因、SHAPE_MISMATCH 等）
+    """
+
+    passed: bool
+    expr: str
+    actual_diff: float
+    tolerance: float
+    detail: str = ""

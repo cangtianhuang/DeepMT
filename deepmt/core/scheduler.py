@@ -1,17 +1,18 @@
 """
-任务调度器：协调MR生成、插件执行和结果管理
-支持使用预生成的MR（通过MR知识库）或动态生成MR
+任务调度器：协调 MR 生成、插件执行和结果管理
+支持使用预生成的 MR（通过 MR 知识库）或动态生成 MR
 """
 
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Tuple
 
+from deepmt.analysis.mr_verifier import MRVerifier
 from deepmt.core.framework import FrameworkType
 from deepmt.core.ir_manager import IRManager
 from deepmt.core.logger import logger
 from deepmt.core.plugins_manager import PluginsManager
 from deepmt.core.results_manager import ResultsManager
 from deepmt.core.test_runner import TestRunner
-from deepmt.ir.schema import ApplicationIR, MetamorphicRelation, ModelIR, OperatorIR
+from deepmt.ir.schema import ApplicationIR, MetamorphicRelation, ModelIR, OracleResult, OperatorIR
 
 
 class TaskScheduler:
@@ -24,19 +25,11 @@ class TaskScheduler:
         plugins_manager: PluginsManager,
         results_manager: ResultsManager,
     ):
-        """
-        初始化任务调度器
-
-        Args:
-            ir_manager: IR管理器
-            mr_generator: MR生成器（可以是OperatorMRGenerator等）
-            plugins_manager: 插件管理器
-            results_manager: 结果管理器
-        """
         self.ir_manager = ir_manager
         self.mr_generator = mr_generator
         self.plugins_manager = plugins_manager
         self.results_manager = results_manager
+        self.verifier = MRVerifier()
 
     def run_task(
         self,
@@ -45,75 +38,72 @@ class TaskScheduler:
         pre_generated_mrs: Optional[List[MetamorphicRelation]] = None,
     ):
         """
-        运行测试任务
+        运行测试任务。
 
         Args:
-            ir_object: IR对象（OperatorIR, ModelIR, 或 ApplicationIR）
-            target_framework: 目标框架名称（如 "pytorch", "tensorflow", "paddlepaddle"）
-            pre_generated_mrs: 预生成的MR列表（可选，如果提供则跳过MR生成）
+            ir_object:          IR 对象（OperatorIR / ModelIR / ApplicationIR）
+            target_framework:   目标框架
+            pre_generated_mrs:  预生成的 MR 列表（可选，提供则跳过 MR 生成）
         """
         logger.info(
-            f"Starting task for {type(ir_object).__name__}: {ir_object.name if hasattr(ir_object, 'name') else 'unknown'}"
+            f"Starting task for {type(ir_object).__name__}: "
+            f"{ir_object.name if hasattr(ir_object, 'name') else 'unknown'}"
         )
         logger.info(f"Target framework: {target_framework}")
 
         try:
-            # 验证IR对象
             if not self.ir_manager.validate_ir(ir_object):
                 logger.error("IR validation failed")
                 return
 
-            # 获取MR列表（使用预生成的或动态生成）
             if pre_generated_mrs is not None:
                 logger.info(f"Using {len(pre_generated_mrs)} pre-generated MRs")
                 mrs = pre_generated_mrs
             else:
-                # 动态生成蜕变关系
                 logger.info("Generating metamorphic relations...")
                 if self.mr_generator is None:
                     raise ValueError(
                         "MR generator not provided and no pre-generated MRs"
                     )
                 mrs = self.mr_generator.generate(ir_object)
-
                 if not mrs:
                     logger.warning("No MRs generated")
                     return
-
                 logger.info(f"Generated {len(mrs)} MRs")
 
-            # 获取插件
             try:
                 plugin = self.plugins_manager.get_plugin(target_framework)
             except KeyError as e:
                 logger.error(f"Plugin not found: {e}")
                 return
 
-            # 执行每个MR
-            results = []
+            x_input = (
+                ir_object.inputs[0]
+                if hasattr(ir_object, "inputs") and ir_object.inputs
+                else None
+            )
+
+            results: List[Tuple[MetamorphicRelation, OracleResult]] = []
+
             for i, mr in enumerate(mrs):
                 logger.info(f"Executing MR {i+1}/{len(mrs)}: {mr.description}")
-
                 try:
-                    # 将IR和MR转换为框架代码
                     run_func = plugin.ir_to_code(ir_object, mr)
+                    orig_output, trans_output = plugin.execute(run_func)
 
-                    # 执行代码
-                    output = plugin.execute(run_func)
-
-                    # 存储结果
-                    results.append((mr, output))
-                    logger.debug(f"MR {i+1} executed successfully")
-
+                    oracle_result = self.verifier.verify(
+                        orig_output, trans_output, mr, plugin, x_input=x_input
+                    )
+                    results.append((mr, oracle_result))
+                    logger.debug(
+                        f"MR {i+1}: {'PASS' if oracle_result.passed else 'FAIL'} "
+                        f"(diff={oracle_result.actual_diff:.4g})"
+                    )
                 except Exception as e:
                     logger.error(f"Error executing MR {i+1}: {e}")
-                    # 继续执行其他MR
-                    continue
 
-            # 比对和存储结果
             if results:
-                logger.info("Comparing and storing results...")
-                self.results_manager.compare_and_store(ir_object, results)
+                self.results_manager.store_result(ir_object, results, str(target_framework))
                 logger.info("Task completed successfully")
             else:
                 logger.warning("No results to store")
