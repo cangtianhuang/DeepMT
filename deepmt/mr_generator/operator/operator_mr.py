@@ -59,7 +59,7 @@ class OperatorMRGenerator:
     def fetch_operator_info(
         self,
         operator_name: str,
-        framework: FrameworkType = "pytorch",
+        framework: FrameworkType,
     ) -> Dict[str, str]:
         """获取算子信息"""
         return self.info_fetcher.fetch_operator_info(
@@ -69,11 +69,11 @@ class OperatorMRGenerator:
     def generate(
         self,
         operator_ir: OperatorIR,
+        framework: FrameworkType,
         operator_func: Optional[Callable] = None,
         operator_code: Optional[str] = None,
         operator_doc: Optional[str] = None,
         auto_fetch_info: bool = True,
-        framework: FrameworkType = "pytorch",
         sources: Optional[List[MRSource]] = None,
         use_precheck: bool = True,
         use_sympy_proof: bool = True,
@@ -83,11 +83,11 @@ class OperatorMRGenerator:
 
         Args:
             operator_ir: 算子IR对象
+            framework: 框架名称（"pytorch" / "tensorflow" / "paddlepaddle"）
             operator_func: 算子函数对象（可选）
             operator_code: 算子源代码（可选）
             operator_doc: 算子文档（可选）
             auto_fetch_info: 是否自动从网络获取算子信息（默认True）
-            framework: 框架名称（默认pytorch）
             sources: MR生成来源列表，可选值：
                 - "llm": LLM猜想
                 - "template": 模板池
@@ -155,11 +155,11 @@ class OperatorMRGenerator:
     def generate_only(
         self,
         operator_ir: OperatorIR,
+        framework: FrameworkType,
         operator_func: Optional[Callable] = None,
         operator_code: Optional[str] = None,
         operator_doc: Optional[str] = None,
         auto_fetch_info: bool = True,
-        framework: FrameworkType = "pytorch",
         sources: Optional[List[MRSource]] = None,
     ) -> List[MetamorphicRelation]:
         """
@@ -194,12 +194,12 @@ class OperatorMRGenerator:
         self,
         mrs: List[MetamorphicRelation],
         operator_ir: OperatorIR,
+        framework: FrameworkType,
         operator_func: Optional[Callable] = None,
         operator_code: Optional[str] = None,
         operator_doc: Optional[str] = None,
         use_precheck: bool = True,
         use_sympy_proof: bool = True,
-        framework: FrameworkType = "pytorch",
     ) -> List[MetamorphicRelation]:
         """
         对已生成的MR进行验证
@@ -264,12 +264,12 @@ class OperatorMRGenerator:
     def verify_from_repository(
         operator_name: str,
         operator_ir: OperatorIR,
+        framework: FrameworkType,
         operator_func: Optional[Callable] = None,
         operator_code: Optional[str] = None,
         operator_doc: Optional[str] = None,
         use_precheck: bool = True,
         use_sympy_proof: bool = True,
-        framework: FrameworkType = "pytorch",
         version: Optional[int] = None,
     ) -> List[MetamorphicRelation]:
         """
@@ -296,12 +296,12 @@ class OperatorMRGenerator:
         verified_mrs = generator.verify_mrs(
             mrs=mrs,
             operator_ir=operator_ir,
+            framework=framework,
             operator_func=operator_func,
             operator_code=operator_code,
             operator_doc=operator_doc,
             use_precheck=use_precheck,
             use_sympy_proof=use_sympy_proof,
-            framework=framework,
         )
 
         return verified_mrs

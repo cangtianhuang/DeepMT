@@ -22,6 +22,7 @@ import requests
 from bs4 import BeautifulSoup
 
 from deepmt.core.logger import logger
+from deepmt.core.plugins_manager import FrameworkType
 
 _HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
 
@@ -90,9 +91,9 @@ class OperatorEnricher:
     def enrich(
         self,
         name: str,
+        framework: FrameworkType,
         api_type: str = "",
         doc_url: str = "",
-        framework: str = "pytorch",
         use_llm: bool = True,
         llm_client=None,
     ) -> Dict[str, Any]:
@@ -333,7 +334,7 @@ class OperatorEnricher:
             logger.debug(f"[Enricher] HTML fetch failed for {url}: {e}")
             return None
 
-    def _enrich_from_html(self, html: str, updates: Dict[str, Any], framework: str = "pytorch") -> None:
+    def _enrich_from_html(self, html: str, updates: Dict[str, Any], framework: FrameworkType) -> None:
         """
         从 HTML 文档补充 dtype 信息。
 
@@ -396,7 +397,7 @@ class OperatorEnricher:
 
     # ── Step 3: LLM 提取 ──────────────────────────────────────────────────────
 
-    def _fetch_doc_text(self, url: str, framework: str = "pytorch") -> Optional[str]:
+    def _fetch_doc_text(self, url: str, framework: FrameworkType) -> Optional[str]:
         """获取文档文本（使用 SearchAgent 的解析逻辑）"""
         try:
             from deepmt.tools.web_search.search_agent import SearchAgent
@@ -411,7 +412,7 @@ class OperatorEnricher:
         name: str,
         doc_text: str,
         llm_client,
-        framework: str = "pytorch",
+        framework: FrameworkType,
     ) -> Optional[List[dict]]:
         """使用 LLM 从文档文本中提取结构化 input_specs"""
         prompt = f"""给定 {framework} 算子 `{name}` 的官方文档：

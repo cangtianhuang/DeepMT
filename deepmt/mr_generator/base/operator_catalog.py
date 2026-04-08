@@ -13,7 +13,7 @@ from typing import Any, Dict, List, Optional, Set
 
 import yaml
 
-from deepmt.core.plugins_manager import FRAMEWORK_ALIASES, SUPPORTED_FRAMEWORKS
+from deepmt.core.plugins_manager import FRAMEWORK_ALIASES, SUPPORTED_FRAMEWORKS, FrameworkType
 from deepmt.core.logger import logger
 
 
@@ -222,7 +222,7 @@ class OperatorCatalog:
 
     def get_all_entries(
         self,
-        framework: str,
+        framework: FrameworkType,
         version: Optional[str] = None,
         include_deprecated: bool = True,
     ) -> List[OperatorEntry]:
@@ -249,7 +249,7 @@ class OperatorCatalog:
 
     def get_operator_names(
         self,
-        framework: str,
+        framework: FrameworkType,
         version: Optional[str] = None,
         include_deprecated: bool = True,
     ) -> List[str]:
@@ -271,7 +271,7 @@ class OperatorCatalog:
 
     def get_by_category(
         self,
-        framework: str,
+        framework: FrameworkType,
         category: str,
         version: Optional[str] = None,
     ) -> List[OperatorEntry]:
@@ -293,7 +293,7 @@ class OperatorCatalog:
         ]
 
     def get_operator_info(
-        self, framework: str, operator_name: str
+        self, framework: FrameworkType, operator_name: str
     ) -> Optional[OperatorEntry]:
         """
         按算子名称或别名查找 OperatorEntry。
@@ -312,7 +312,7 @@ class OperatorCatalog:
         return None
 
     def is_available(
-        self, framework: str, operator_name: str, version: str
+        self, framework: FrameworkType, operator_name: str, version: str
     ) -> bool:
         """
         判断指定算子在给定版本是否可用（已引入且未被移除）。
@@ -330,7 +330,7 @@ class OperatorCatalog:
             return False
         return entry.is_available_in(version)
 
-    def get_categories(self, framework: str) -> List[str]:
+    def get_categories(self, framework: FrameworkType) -> List[str]:
         """返回指定框架目录中所有出现过的算子分类（去重、有序）"""
         fw = self._normalize_framework(framework)
         seen = []
@@ -339,7 +339,7 @@ class OperatorCatalog:
                 seen.append(e.category)
         return seen
 
-    def summary(self, framework: Optional[str] = None) -> Dict[str, int]:
+    def summary(self, framework: Optional[FrameworkType] = None) -> Dict[str, int]:
         """
         返回各框架的算子数量摘要。
 
@@ -360,7 +360,7 @@ class OperatorCatalog:
         self._load_all()
         logger.info("Operator catalog reloaded.")
 
-    def get_doc_url(self, framework: str, operator_name: str) -> str:
+    def get_doc_url(self, framework: FrameworkType, operator_name: str) -> str:
         """
         获取指定算子的文档 URL。
 
@@ -380,7 +380,7 @@ class OperatorCatalog:
     # 排除列表与 diff（用于 check-updates）
     # ------------------------------------------------------------------
 
-    def load_exclude_config(self, framework: str) -> Dict[str, Any]:
+    def load_exclude_config(self, framework: FrameworkType) -> Dict[str, Any]:
         """
         加载框架的 API 排除配置。
 
@@ -423,7 +423,7 @@ class OperatorCatalog:
 
     def diff_with_fetched(
         self,
-        framework: str,
+        framework: FrameworkType,
         fetched_apis: List[Dict],
     ) -> Dict[str, List]:
         """

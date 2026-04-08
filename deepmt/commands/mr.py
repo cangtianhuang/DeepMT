@@ -101,6 +101,7 @@ def mr_generate(operator, layer, framework, sources, precheck, sympy, auto_fetch
             mrs = generator.verify_mrs(
                 mrs=mrs,
                 operator_ir=operator_ir,
+                framework=framework,
                 operator_func=operator_func,
                 use_precheck=precheck,
                 use_sympy_proof=sympy,
@@ -127,11 +128,18 @@ def mr_generate(operator, layer, framework, sources, precheck, sympy, auto_fetch
 
 @mr.command("verify")
 @click.argument("operator")
+@click.option(
+    "--framework",
+    default="pytorch",
+    type=click.Choice(["pytorch", "tensorflow", "paddlepaddle"], case_sensitive=False),
+    show_default=True,
+    help="目标框架",
+)
 @click.option("--version", "ver", default=None, type=int, help="版本号（默认: 最新）")
 @click.option("--precheck/--no-precheck", default=True, show_default=True, help="启用数值预检")
 @click.option("--sympy/--no-sympy", default=False, show_default=True, help="启用 SymPy 符号证明")
 @click.option("--save/--no-save", default=False, show_default=True, help="将验证结果更新到知识库")
-def mr_verify(operator, ver, precheck, sympy, save):
+def mr_verify(operator, framework, ver, precheck, sympy, save):
     """对知识库中已有的 MR 执行验证。
 
     \b
@@ -159,6 +167,7 @@ def mr_verify(operator, ver, precheck, sympy, save):
         mrs = generator.verify_mrs(
             mrs=mrs,
             operator_ir=operator_ir,
+            framework=framework,
             operator_func=None,
             use_precheck=precheck,
             use_sympy_proof=sympy,
@@ -500,6 +509,7 @@ def mr_batch_generate(framework, category, limit, skip_existing, sources, preche
                     mrs = generator.verify_mrs(
                         mrs=mrs,
                         operator_ir=operator_ir,
+                        framework=framework,
                         operator_func=operator_func,
                         use_precheck=precheck,
                         use_sympy_proof=sympy,

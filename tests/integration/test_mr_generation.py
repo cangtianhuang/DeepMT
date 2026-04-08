@@ -84,6 +84,7 @@ class TestMRGeneration:
         op_ir = OperatorIR(name="ReLU", inputs=[])
         mrs = generator.generate_only(
             operator_ir=op_ir,
+            framework="pytorch",
             operator_doc="ReLU(x) = max(0, x)",
             auto_fetch_info=False,
             sources=["template"],
@@ -102,6 +103,7 @@ class TestMRGeneration:
         op_ir = OperatorIR(name="TestOp", inputs=[])
         mrs = generator.generate_only(
             operator_ir=op_ir,
+            framework="pytorch",
             operator_doc="test doc",
             auto_fetch_info=False,
             sources=["llm"],
@@ -115,6 +117,7 @@ class TestMRGeneration:
         op_ir = OperatorIR(name="ReLU", inputs=[])
         generator.generate_only(
             operator_ir=op_ir,
+            framework="pytorch",
             operator_doc="docs",
             auto_fetch_info=False,
             sources=["template"],
@@ -130,6 +133,7 @@ class TestMRGeneration:
         op_ir = OperatorIR(name="ReLU", inputs=[])
         generator.generate_only(
             operator_ir=op_ir,
+            framework="pytorch",
             auto_fetch_info=True,
             sources=["template"],
         )
@@ -148,6 +152,7 @@ class TestMRVerification:
         result = generator.verify_mrs(
             mrs=[mr],
             operator_ir=op_ir,
+            framework="pytorch",
             operator_func=lambda x: x,
             use_precheck=True,
             use_sympy_proof=False,
@@ -160,6 +165,7 @@ class TestMRVerification:
         result = generator.verify_mrs(
             mrs=[mr],
             operator_ir=op_ir,
+            framework="pytorch",
             operator_code="def f(x):\n    return x\n",
             use_precheck=False,
             use_sympy_proof=True,
@@ -171,6 +177,7 @@ class TestMRVerification:
         result = generator.verify_mrs(
             mrs=[],
             operator_ir=op_ir,
+            framework="pytorch",
             use_precheck=False,
             use_sympy_proof=False,
         )
@@ -188,6 +195,7 @@ class TestMRWorkflow:
         op_ir = OperatorIR(name="WorkflowOp", inputs=[])
         mrs = generator.generate_only(
             operator_ir=op_ir,
+            framework="pytorch",
             operator_doc="test",
             auto_fetch_info=False,
             sources=["llm"],
@@ -202,6 +210,7 @@ class TestMRWorkflow:
         op_ir = OperatorIR(name="ReLU", inputs=[])
         mrs = generator.generate(
             operator_ir=op_ir,
+            framework="pytorch",
             operator_func=torch.nn.functional.relu,
             operator_doc="ReLU activation",
             auto_fetch_info=False,

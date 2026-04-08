@@ -162,7 +162,7 @@ class TestOperatorEnricherHTML:
                  "value_range": None, "required": True}
             ]
         }
-        self.enricher._enrich_from_html(html, updates)
+        self.enricher._enrich_from_html(html, updates, framework="pytorch")
         # 纯 "Tensor" 类型 → dtype=any（无具体限制，有别于空列表的"未知"）
         assert updates["input_specs"][0]["dtype"] == "any"
 
@@ -179,7 +179,7 @@ class TestOperatorEnricherHTML:
                  "value_range": None, "required": True}
             ]
         }
-        self.enricher._enrich_from_html(html, updates)
+        self.enricher._enrich_from_html(html, updates, framework="pytorch")
         # 已有 dtype，不应覆盖
         assert updates["input_specs"][0]["dtype"] == ["float32"]
 
@@ -255,6 +255,7 @@ class TestOperatorEnricherIntegration:
         """enrich() 成功提取到 input_specs 后自动设置 input_specs_auto"""
         updates = self.enricher.enrich(
             name="torch.nn.functional.relu",
+            framework="pytorch",
             api_type="function",
             doc_url="",
             use_llm=False,
@@ -265,6 +266,7 @@ class TestOperatorEnricherIntegration:
         """无法提取任何 input_specs 时不设置 input_specs_auto"""
         updates = self.enricher.enrich(
             name="torch.nonexistent_module.op",
+            framework="pytorch",
             api_type="function",
             doc_url="",
             use_llm=False,
@@ -277,6 +279,7 @@ class TestOperatorEnricherIntegration:
         """doc_url 为空时不发起网络请求"""
         self.enricher.enrich(
             name="torch.nn.functional.relu",
+            framework="pytorch",
             api_type="function",
             doc_url="",
             use_llm=True,

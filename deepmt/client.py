@@ -151,7 +151,7 @@ class DeepMT:
                 if self._mr_generator is None:
                     kb = KnowledgeBase()
                     self._mr_generator = OperatorMRGenerator(kb)
-                mrs = self._mr_generator.generate(operator_ir)
+                mrs = self._mr_generator.generate(operator_ir, framework)
                 # 保存到知识库以便后续重用
                 self.mr_repository.save(operator_ir.name, mrs)
 

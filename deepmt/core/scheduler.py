@@ -65,7 +65,7 @@ class TaskScheduler:
                     raise ValueError(
                         "MR generator not provided and no pre-generated MRs"
                     )
-                mrs = self.mr_generator.generate(ir_object)
+                mrs = self.mr_generator.generate(ir_object, target_framework)
                 if not mrs:
                     logger.warning("No MRs generated")
                     return
