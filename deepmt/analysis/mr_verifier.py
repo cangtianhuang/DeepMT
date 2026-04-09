@@ -1,11 +1,11 @@
 """
-MR 验证器：将 oracle_expr 解析为 lhs <op> rhs，统一经由 plugin 完成数值比较
+MR 验证器：将 oracle_expr 解析为 lhs <op> rhs，统一经由 backend 完成数值比较
 
 架构：
   oracle_expr → _strip_quantifier → _parse_top_compare → (lhs_code, op, rhs_code)
-    - 调用 plugin.eval_expr 在框架张量空间内求值 lhs / rhs
-    - op == "=="   → plugin.allclose(lhs, rhs, atol)     框架原生精密比较
-    - op 不等式    → plugin.element_compare(lhs, rhs, op) 框架原生逐元素比较
+    - 调用 backend.eval_expr 在框架张量空间内求值 lhs / rhs
+    - op == "=="   → backend.allclose(lhs, rhs, atol)     框架原生精密比较
+    - op 不等式    → backend.element_compare(lhs, rhs, op) 框架原生逐元素比较
     - 解析失败     → _complex_eval_fallback               numpy 退化路径
 """
 
@@ -86,15 +86,15 @@ def _safe_eval_numpy(code: str, ctx: dict) -> np.ndarray:
     return np.asarray(eval(code, ns))  # noqa: S307
 
 
-def _compare(lhs: Any, rhs: Any, op: str, plugin: Any, atol: float) -> CompareResult:
+def _compare(lhs: Any, rhs: Any, op: str, backend: Any, atol: float) -> CompareResult:
     """
     框架原生比较分发：
-      op == "==" → plugin.allclose（精密等值，含广播）
-      其他不等式  → plugin.element_compare（逐元素，含广播）
+      op == "==" → backend.allclose（精密等值，含广播）
+      其他不等式  → backend.element_compare（逐元素，含广播）
     """
     if op == "==":
-        return plugin.allclose(lhs, rhs, atol=atol)
-    return plugin.element_compare(lhs, rhs, op)
+        return backend.allclose(lhs, rhs, atol=atol)
+    return backend.element_compare(lhs, rhs, op)
 
 
 def _to_oracle_result(
@@ -135,14 +135,14 @@ def _to_oracle_result(
 
 
 class MRVerifier:
-    """MR 验证器：将 oracle_expr 解析为 lhs <op> rhs，经由 plugin 完成数值比较"""
+    """MR 验证器：将 oracle_expr 解析为 lhs <op> rhs，经由 backend 完成数值比较"""
 
     def verify(
         self,
         orig: Any,
         trans: Any,
         mr: MetamorphicRelation,
-        plugin: Any,
+        backend: Any,
         x_input: Any = None,
     ) -> OracleResult:
         """
@@ -152,15 +152,15 @@ class MRVerifier:
             orig:     原始算子输出（框架张量）
             trans:    变换后算子输出（框架张量）
             mr:       蜕变关系（含 oracle_expr 和 tolerance）
-            plugin:   FrameworkPlugin 实例
+            backend:  FrameworkPlugin 实例（被测框架的计算后端）
             x_input:  原始输入张量（oracle_expr 中 x 变量）；为 None 时回退使用 orig
 
         Returns:
             OracleResult
         """
         try:
-            orig_shape = plugin.get_shape(orig)
-            trans_shape = plugin.get_shape(trans)
+            orig_shape = backend.get_shape(orig)
+            trans_shape = backend.get_shape(trans)
         except Exception as e:
             return OracleResult(
                 passed=False,
@@ -187,8 +187,8 @@ class MRVerifier:
         if parsed is not None:
             lhs_code, op, rhs_code = parsed
             try:
-                lhs = plugin.eval_expr(lhs_code, orig, trans, x)
-                rhs = plugin.eval_expr(rhs_code, orig, trans, x)
+                lhs = backend.eval_expr(lhs_code, orig, trans, x)
+                rhs = backend.eval_expr(rhs_code, orig, trans, x)
             except Exception as e:
                 return OracleResult(
                     passed=False,
@@ -197,15 +197,15 @@ class MRVerifier:
                     tolerance=mr.tolerance,
                     detail=f"EVAL_ERROR: {e}",
                 )
-            cmp = _compare(lhs, rhs, op, plugin, mr.tolerance)
+            cmp = _compare(lhs, rhs, op, backend, mr.tolerance)
             return _to_oracle_result(cmp, display_expr, mr.tolerance, op)
 
-        return self._complex_eval_fallback(inner, plugin, orig, trans, x, mr, display_expr)
+        return self._complex_eval_fallback(inner, backend, orig, trans, x, mr, display_expr)
 
     def _complex_eval_fallback(
         self,
         inner: str,
-        plugin: Any,
+        backend: Any,
         orig: Any,
         trans: Any,
         x: Any,
@@ -218,9 +218,9 @@ class MRVerifier:
         """
         try:
             ctx = {
-                "orig": plugin.to_numpy(orig),
-                "trans": plugin.to_numpy(trans),
-                "x": plugin.to_numpy(x),
+                "orig": backend.to_numpy(orig),
+                "trans": backend.to_numpy(trans),
+                "x": backend.to_numpy(x),
             }
             raw = _safe_eval_numpy(inner, ctx)
             passed = bool(np.all(raw))

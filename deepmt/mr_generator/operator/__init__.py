@@ -4,7 +4,7 @@
 """
 
 from deepmt.mr_generator.operator.ast_parser import ASTParser
-from deepmt.mr_generator.operator.operator_mr import OperatorMRGenerator
+from deepmt.mr_generator.operator.operator_mr_generator import OperatorMRGenerator
 from deepmt.mr_generator.operator.sympy_translator import SympyTranslator
 
 __all__ = [

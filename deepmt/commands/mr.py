@@ -73,7 +73,7 @@ def mr_generate(operator, layer, framework, sources, precheck, sympy, auto_fetch
 
     try:
         from deepmt.ir.schema import OperatorIR
-        from deepmt.mr_generator.operator.operator_mr import OperatorMRGenerator
+        from deepmt.mr_generator.operator.operator_mr_generator import OperatorMRGenerator
 
         operator_func = _try_import_operator(operator, framework)
         if operator_func:
@@ -152,7 +152,7 @@ def mr_verify(operator, framework, precheck, sympy, save):
 
     try:
         from deepmt.ir.schema import OperatorIR
-        from deepmt.mr_generator.operator.operator_mr import OperatorMRGenerator
+        from deepmt.mr_generator.operator.operator_mr_generator import OperatorMRGenerator
 
         operator_ir = OperatorIR(name=operator)
         generator = OperatorMRGenerator()
@@ -447,7 +447,7 @@ def mr_batch_generate(framework, category, limit, skip_existing, sources, preche
 
     try:
         from deepmt.ir.schema import OperatorIR
-        from deepmt.mr_generator.operator.operator_mr import OperatorMRGenerator
+        from deepmt.mr_generator.operator.operator_mr_generator import OperatorMRGenerator
         repo = get_repo()
         generator = OperatorMRGenerator()
     except Exception as e:

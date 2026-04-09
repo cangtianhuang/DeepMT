@@ -51,7 +51,7 @@ class TestRunner:
                 raise ValueError(f"Invalid IR type: {type(ir_object)}")
 
             try:
-                plugin = get_plugins_manager().get_plugin(target_framework)
+                backend = get_plugins_manager().get_backend(target_framework)
             except KeyError as e:
                 logger.error(f"Plugin not found: {e}")
                 return
@@ -67,11 +67,11 @@ class TestRunner:
             for i, mr in enumerate(mrs):
                 logger.info(f"Executing MR {i+1}/{len(mrs)}: {mr.description}")
                 try:
-                    run_func = plugin.ir_to_code(ir_object, mr)
-                    orig_output, trans_output = plugin.execute(run_func)
+                    run_func = backend.ir_to_code(ir_object, mr)
+                    orig_output, trans_output = backend.execute(run_func)
 
                     oracle_result = self.verifier.verify(
-                        orig_output, trans_output, mr, plugin, x_input=x_input
+                        orig_output, trans_output, mr, backend, x_input=x_input
                     )
                     results.append((mr, oracle_result))
                     logger.debug(

@@ -2,7 +2,7 @@
 
 from typing import Any, Dict, Optional
 
-from deepmt.core.config_loader import get_config_value
+from deepmt.core.config_manager import get_config_value
 from deepmt.core.plugins_manager import FrameworkType
 from deepmt.core.logger import logger
 from deepmt.tools.web_search.search_tool import WebSearchTool

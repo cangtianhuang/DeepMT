@@ -10,11 +10,11 @@ from deepmt.core.ir_manager import IRManager
 from deepmt.core.logger import logger
 from deepmt.core.plugins_manager import FrameworkType
 from deepmt.core.results_manager import ResultsManager
-from deepmt.core.scheduler import TaskScheduler
-from deepmt.core.test_runner import TestRunner
+from deepmt.engine.scheduler import TaskScheduler
+from deepmt.engine.test_runner import TestRunner
 from deepmt.ir.schema import ApplicationIR, ModelIR, OperatorIR
 from deepmt.mr_generator.base.mr_repository import MRRepository
-from deepmt.mr_generator.operator.operator_mr import OperatorMRGenerator
+from deepmt.mr_generator.operator.operator_mr_generator import OperatorMRGenerator
 
 
 class TestResult:

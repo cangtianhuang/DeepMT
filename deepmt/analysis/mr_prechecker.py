@@ -45,7 +45,7 @@ class MRPreChecker:
         Returns:
             (是否通过, 详细信息)
         """
-        plugin = get_plugins_manager().get_plugin(framework)
+        backend = get_plugins_manager().get_backend(framework)
 
         bound_transform = self._bind_transform_code(mr.transform_code, operator_func)
         if bound_transform is None:
@@ -57,7 +57,7 @@ class MRPreChecker:
         error_messages = []
 
         for i in range(self.NUM_TEST_CASES):
-            test_input = self.random_generator.generate(input_specs, plugin)
+            test_input = self.random_generator.generate(input_specs, backend)
             try:
                 orig_kwargs = self._build_kwargs(test_input)
 
@@ -84,7 +84,7 @@ class MRPreChecker:
                 x_input = orig_kwargs.get("input", orig_kwargs.get("x", None))
 
                 oracle_result = self.verifier.verify(
-                    orig_output, trans_output, mr, plugin, x_input=x_input
+                    orig_output, trans_output, mr, backend, x_input=x_input
                 )
 
                 if oracle_result.passed:

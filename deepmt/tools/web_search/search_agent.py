@@ -14,7 +14,7 @@ import aiohttp
 import requests
 from bs4 import BeautifulSoup
 
-from deepmt.core.config_loader import get_config_value
+from deepmt.core.config_manager import get_config_value
 from deepmt.core.logger import logger
 from deepmt.tools.llm.client import LLMClient
 from deepmt.tools.llm.ocr_client import OCRClient

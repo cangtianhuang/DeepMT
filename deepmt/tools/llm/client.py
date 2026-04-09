@@ -5,7 +5,7 @@ import os
 import time
 from typing import Any, Dict, List, Optional
 
-from deepmt.core.config_loader import get_config_value
+from deepmt.core.config_manager import get_config_value
 from deepmt.core.logger import logger
 
 

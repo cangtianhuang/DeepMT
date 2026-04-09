@@ -67,7 +67,7 @@ class PluginsManager:
         else:
             logger.debug("Total plugins loaded: 0")
 
-    def get_plugin(self, name: str):
+    def get_backend(self, name: str):
         name = name.lower()
         if name not in self.plugins:
             available = ", ".join(self.plugins.keys())

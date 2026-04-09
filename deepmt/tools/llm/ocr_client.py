@@ -8,7 +8,7 @@ from urllib.parse import urlparse
 
 import requests
 
-from deepmt.core.config_loader import get_config_value
+from deepmt.core.config_manager import get_config_value
 from deepmt.core.logger import logger
 
 # OCR API 支持的图片格式

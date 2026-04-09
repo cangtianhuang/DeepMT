@@ -1,4 +1,4 @@
-"""配置加载器：统一的配置文件管理，遵循 XDG Base Directory 规范"""
+"""配置管理器：统一的配置文件管理，遵循 XDG Base Directory 规范"""
 
 import os
 from pathlib import Path
@@ -9,9 +9,9 @@ import yaml
 from deepmt.core.logger import logger
 
 
-class ConfigLoader:
+class ConfigManager:
     """
-    配置加载器：统一的配置管理
+    配置管理器：统一的配置管理
 
     配置文件查找优先级：
     1. 环境变量 DEEPMT_CONFIG_PATH 指定的路径
@@ -151,25 +151,25 @@ class ConfigLoader:
         return self._config_path
 
 
-_config_loader = ConfigLoader()
+_config_manager = ConfigManager()
 
 
 def get_config(config_path: Optional[Path] = None) -> Dict[str, Any]:
     """获取完整配置"""
-    _config_loader.load(config_path)
-    return _config_loader._config
+    _config_manager.load(config_path)
+    return _config_manager._config
 
 
 def get_config_value(key: str, default: Any = None) -> Any:
     """获取配置值（支持点号路径，如 "llm.api_key"）"""
-    return _config_loader.get(key, default)
+    return _config_manager.get(key, default)
 
 
 def get_config_section(section: str) -> Dict[str, Any]:
     """获取配置节"""
-    return _config_loader.section(section)
+    return _config_manager.section(section)
 
 
 def get_config_path() -> Optional[Path]:
     """获取当前配置文件路径"""
-    return _config_loader.path
+    return _config_manager.path

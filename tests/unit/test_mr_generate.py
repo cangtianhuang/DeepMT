@@ -36,7 +36,7 @@ class TestTemplateTransformCode:
 
     def test_transform_code_is_bindable(self):
         """transform_code 必须能被 MRPreChecker._bind_transform_code 解析"""
-        from deepmt.mr_generator.operator.mr_prechecker import MRPreChecker
+        from deepmt.analysis.mr_prechecker import MRPreChecker
         pool = MRTemplatePool()
 
         for name, t in pool.templates.items():
@@ -123,7 +123,7 @@ class TestOracleExpressions:
 class TestPrecheckSetsVerified():
     def test_precheck_marks_verified(self):
         import torch.nn.functional as F
-        from deepmt.mr_generator.operator.operator_mr import OperatorMRGenerator
+        from deepmt.mr_generator.operator.operator_mr_generator import OperatorMRGenerator
 
         pool = MRTemplatePool()
         templates = pool.get_applicable_templates("torch.nn.functional.relu")

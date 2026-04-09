@@ -62,14 +62,14 @@ class HealthChecker:
 
     # 需要检查的核心模块
     CORE_MODULES = [
-        ("core.scheduler", "任务调度器"),
-        ("core.test_runner", "测试执行器"),
+        ("engine.scheduler", "任务调度器"),
+        ("engine.test_runner", "测试执行器"),
         ("core.ir_manager", "IR管理器"),
         ("core.plugins_manager", "插件管理器"),
         ("core.results_manager", "结果管理器"),
         ("core.framework", "框架管理"),
         ("core.logger", "日志系统"),
-        ("core.config_loader", "配置加载器"),
+        ("core.config_manager", "配置管理器"),
     ]
 
     IR_MODULES = [
@@ -78,8 +78,8 @@ class HealthChecker:
     ]
 
     MR_GENERATOR_MODULES = [
-        ("mr_generator.operator.operator_mr", "算子MR生成器"),
-        ("mr_generator.operator.mr_prechecker", "MR快速筛选"),
+        ("mr_generator.operator.operator_mr_generator", "算子MR生成器"),
+        ("analysis.mr_prechecker", "MR快速筛选"),
         ("mr_generator.operator.sympy_prover", "SymPy验证器"),
         ("mr_generator.operator.sympy_translator", "代码翻译器"),
         ("mr_generator.base.knowledge_base", "知识库"),

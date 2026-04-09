@@ -13,7 +13,7 @@ import pytest
 import torch
 
 from deepmt.ir.schema import OperatorIR, MetamorphicRelation
-from deepmt.mr_generator.operator.operator_mr import OperatorMRGenerator
+from deepmt.mr_generator.operator.operator_mr_generator import OperatorMRGenerator
 from deepmt.mr_generator.base.mr_repository import MRRepository
 
 
@@ -228,7 +228,7 @@ class TestMRWorkflow:
 class TestModuleImports:
 
     def test_operator_mr_generator_importable(self):
-        from deepmt.mr_generator.operator.operator_mr import OperatorMRGenerator
+        from deepmt.mr_generator.operator.operator_mr_generator import OperatorMRGenerator
         assert OperatorMRGenerator is not None
 
     def test_operator_info_fetcher_importable(self):

@@ -4,9 +4,9 @@
 职责：
   - 解析算子目录中定义的 input_specs 字段（dtype / shape / value_range）
   - 选择生成策略（当前：随机样本；后续可扩展边界值注入等）
-  - 调用框架插件的基础接口（make_tensor）创建框架原生张量
+  - 调用被测框架后端的基础接口（make_tensor）创建框架原生张量
 
-框架插件只负责创建具体张量，解析和策略逻辑集中在此处。
+框架后端只负责创建具体张量，解析和策略逻辑集中在此处。
 """
 
 from typing import Any, Dict, List, Optional, Tuple
@@ -24,14 +24,14 @@ class RandomGenerator:
 
     用法示例：
         gen = RandomGenerator()
-        inputs = gen.generate(operator_ir.input_specs or [], plugin)
+        inputs = gen.generate(operator_ir.input_specs or [], backend)
         # inputs: [tensor, ...]  每个元素对应一个必填参数
     """
 
     def generate(
         self,
         input_specs: List[Dict[str, Any]],
-        plugin: FrameworkPlugin,
+        backend: FrameworkPlugin,
     ) -> List[Any]:
         """
         根据 input_specs 生成一组随机框架张量列表。
@@ -40,28 +40,28 @@ class RandomGenerator:
             input_specs: 算子目录中定义的输入参数规范列表。
                 格式：[{"name": str, "dtype": list, "shape": str|list,
                         "value_range": null|[lo, hi], "required": bool}, ...]
-            plugin:      框架插件实例，用于调用 make_tensor 创建框架原生张量
+            backend:     被测框架的计算后端，用于调用 make_tensor 创建框架原生张量
 
         Returns:
             张量列表，每个元素对应一个必填参数；specs 为空时返回默认单张量列表
         """
         if not input_specs:
-            return [plugin.make_tensor(_DEFAULT_SHAPE, _DEFAULT_DTYPE)]
+            return [backend.make_tensor(_DEFAULT_SHAPE, _DEFAULT_DTYPE)]
 
         result = [
-            self._generate_one(spec, plugin)
+            self._generate_one(spec, backend)
             for spec in input_specs
             if spec.get("required", True)
         ]
-        return result or [plugin.make_tensor(_DEFAULT_SHAPE, _DEFAULT_DTYPE)]
+        return result or [backend.make_tensor(_DEFAULT_SHAPE, _DEFAULT_DTYPE)]
 
     # ── 私有实现 ──────────────────────────────────────────────────────────────
 
-    def _generate_one(self, spec: Dict[str, Any], plugin: FrameworkPlugin) -> Any:
+    def _generate_one(self, spec: Dict[str, Any], backend: FrameworkPlugin) -> Any:
         dtype = self._parse_dtype(spec.get("dtype", []))
         shape = self._parse_shape(spec.get("shape", "any"))
         value_range = self._parse_value_range(spec.get("value_range"))
-        return plugin.make_tensor(shape, dtype, value_range)
+        return backend.make_tensor(shape, dtype, value_range)
 
     def _parse_dtype(self, dtype_spec) -> str:
         """将 dtype 字段（字符串或列表）解析为统一 dtype 字符串。"""

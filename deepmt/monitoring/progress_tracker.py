@@ -47,14 +47,14 @@ class ProgressTracker:
         # 核心层
         ModuleProgress(
             "任务调度器",
-            "core/scheduler.py",
+            "engine/scheduler.py",
             ModuleStatus.COMPLETED,
             100,
             "测试任务协调",
         ),
         ModuleProgress(
             "测试执行器",
-            "core/test_runner.py",
+            "engine/test_runner.py",
             ModuleStatus.COMPLETED,
             100,
             "MR测试执行",
@@ -79,7 +79,7 @@ class ProgressTracker:
         # 算子层MR生成
         ModuleProgress(
             "算子MR生成器",
-            "mr_generator/operator/operator_mr.py",
+            "mr_generator/operator/operator_mr_generator.py",
             ModuleStatus.COMPLETED,
             100,
             "LLM猜想+SymPy验证",
@@ -93,7 +93,7 @@ class ProgressTracker:
         ),
         ModuleProgress(
             "MR快速筛选",
-            "mr_generator/operator/mr_precheck.py",
+            "analysis/mr_prechecker.py",
             ModuleStatus.COMPLETED,
             100,
             "随机输入验证",
