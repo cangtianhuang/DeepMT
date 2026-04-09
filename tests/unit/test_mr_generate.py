@@ -143,9 +143,10 @@ class TestPrecheckSetsVerified():
             framework="pytorch",
         )
 
-        # 通过 precheck 的 MR 必须标记为 verified
+        # 通过 precheck 的 MR 必须标记为 checked
+        assert len(verified) >= 1, "Expected at least one MR to pass precheck"
         for mr in verified:
-            assert mr.verified is True, f"MR '{mr.description}' should be verified after precheck"
+            assert mr.checked is True, f"MR '{mr.description}' should have checked=True after precheck"
 
 
 # ── _try_import_operator helper ───────────────────────────────────────────────

@@ -27,6 +27,7 @@ class MRTemplate:
     category: str = "general"  # MR类别
     min_inputs: int = 1  # 最小输入数量
     max_inputs: Optional[int] = None  # 最大输入数量（None表示无限制）
+    tolerance: Optional[float] = None  # 数值容差（None表示使用系统默认值 1e-6）
 
 
 class MRTemplatePool:
@@ -62,6 +63,7 @@ class MRTemplatePool:
                         category=tdata.get("category", "general"),
                         min_inputs=tdata.get("min_inputs", 1),
                         max_inputs=tdata.get("max_inputs"),
+                        tolerance=tdata.get("tolerance"),
                     )
                 except Exception as e:
                     logger.warning(f"Failed to load template {template_name}: {e}")
@@ -174,7 +176,7 @@ class MRTemplatePool:
             transform_code=transform_code,
             oracle_expr=template.oracle_expr,
             category=template.category,
-            tolerance=1e-6,
+            tolerance=template.tolerance if template.tolerance is not None else 1e-6,
             layer="operator",
             source="template",
             verified=False,

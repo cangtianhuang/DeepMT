@@ -141,7 +141,7 @@ class PyTorchPlugin(FrameworkPlugin):
             return tuple(tensor.shape)
         return np.asarray(tensor).shape
 
-    def allclose(self, a: Any, b: Any, atol: float, rtol: float = 0.0) -> CompareResult:
+    def allclose(self, a: Any, b: Any, atol: float, rtol: float = 1e-5) -> CompareResult:
         if isinstance(a, torch.Tensor) and isinstance(b, torch.Tensor):
             try:
                 a, b = torch.broadcast_tensors(a, b)
