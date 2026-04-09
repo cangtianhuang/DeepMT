@@ -5,7 +5,7 @@
 
 import importlib
 from pathlib import Path
-from typing import Any, Dict, List, Literal
+from typing import Any, Dict, List, Literal, Optional
 
 import yaml
 
@@ -103,3 +103,16 @@ class PluginsManager:
                 f"Supported: {SUPPORTED_FRAMEWORKS}"
             )
         return normalized
+
+
+# ── 进程级单例 ────────────────────────────────────────────────────────────────
+
+_shared_plugins_manager: Optional[PluginsManager] = None
+
+
+def get_plugins_manager() -> PluginsManager:
+    global _shared_plugins_manager
+    if _shared_plugins_manager is None:
+        _shared_plugins_manager = PluginsManager()
+        _shared_plugins_manager.load_plugins()
+    return _shared_plugins_manager

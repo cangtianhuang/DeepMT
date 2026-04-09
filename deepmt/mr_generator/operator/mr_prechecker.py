@@ -12,9 +12,8 @@ from typing import Any, Callable, Dict, List
 
 from deepmt.analysis.input_generator import InputGenerator
 from deepmt.analysis.mr_verifier import MRVerifier
-from deepmt.core.plugins_manager import FrameworkType
+from deepmt.core.plugins_manager import FrameworkType, get_plugins_manager
 from deepmt.core.logger import logger
-from deepmt.core.plugins_manager import PluginsManager
 from deepmt.ir.schema import MetamorphicRelation, OperatorIR
 
 
@@ -25,8 +24,6 @@ class MRPreChecker:
     NUM_TEST_CASES = 5
 
     def __init__(self):
-        self.plugins_manager = PluginsManager()
-        self.plugins_manager.load_plugins()
         self.verifier = MRVerifier()
         self.input_generator = InputGenerator()
 
@@ -49,8 +46,9 @@ class MRPreChecker:
         Returns:
             (是否通过, 详细信息)
         """
-        framework_adapter = self.plugins_manager.get_framework_adapter(framework)
-        plugin = self.plugins_manager.get_plugin(framework)
+        pm = get_plugins_manager()
+        framework_adapter = pm.get_framework_adapter(framework)
+        plugin = pm.get_plugin(framework)
 
         bound_transform = framework_adapter.bind_transform_code(
             mr.transform_code, operator_func

@@ -6,10 +6,9 @@
 from typing import Any, List, Optional, Tuple
 
 from deepmt.analysis.mr_verifier import MRVerifier
-from deepmt.core.plugins_manager import FrameworkType
+from deepmt.core.plugins_manager import FrameworkType, get_plugins_manager
 from deepmt.core.ir_manager import IRManager
 from deepmt.core.logger import logger
-from deepmt.core.plugins_manager import PluginsManager
 from deepmt.core.results_manager import ResultsManager
 from deepmt.core.test_runner import TestRunner
 from deepmt.ir.schema import ApplicationIR, MetamorphicRelation, ModelIR, OracleResult, OperatorIR
@@ -22,12 +21,10 @@ class TaskScheduler:
         self,
         ir_manager: IRManager,
         mr_generator: Any,
-        plugins_manager: PluginsManager,
         results_manager: ResultsManager,
     ):
         self.ir_manager = ir_manager
         self.mr_generator = mr_generator
-        self.plugins_manager = plugins_manager
         self.results_manager = results_manager
         self.verifier = MRVerifier()
 
@@ -72,7 +69,7 @@ class TaskScheduler:
                 logger.info(f"Generated {len(mrs)} MRs")
 
             try:
-                plugin = self.plugins_manager.get_plugin(target_framework)
+                plugin = get_plugins_manager().get_plugin(target_framework)
             except KeyError as e:
                 logger.error(f"Plugin not found: {e}")
                 return

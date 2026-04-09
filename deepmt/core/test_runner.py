@@ -6,9 +6,8 @@
 from typing import Any, List, Tuple
 
 from deepmt.analysis.mr_verifier import MRVerifier
-from deepmt.core.plugins_manager import FrameworkType
+from deepmt.core.plugins_manager import FrameworkType, get_plugins_manager
 from deepmt.core.logger import logger
-from deepmt.core.plugins_manager import PluginsManager
 from deepmt.core.results_manager import ResultsManager
 from deepmt.ir.schema import ApplicationIR, MetamorphicRelation, ModelIR, OracleResult, OperatorIR
 
@@ -22,10 +21,7 @@ class TestRunner:
     - TestRunner：只执行测试，使用预生成的 MR（分离）
     """
 
-    def __init__(
-        self, plugins_manager: PluginsManager, results_manager: ResultsManager
-    ):
-        self.plugins_manager = plugins_manager
+    def __init__(self, results_manager: ResultsManager):
         self.results_manager = results_manager
         self.verifier = MRVerifier()
 
@@ -55,7 +51,7 @@ class TestRunner:
                 raise ValueError(f"Invalid IR type: {type(ir_object)}")
 
             try:
-                plugin = self.plugins_manager.get_plugin(target_framework)
+                plugin = get_plugins_manager().get_plugin(target_framework)
             except KeyError as e:
                 logger.error(f"Plugin not found: {e}")
                 return

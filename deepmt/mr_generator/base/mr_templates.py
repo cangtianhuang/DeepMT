@@ -22,7 +22,6 @@ class MRTemplate:
 
     name: str  # 模板名称
     description: str  # MR描述
-    transform_func: Callable  # 输入变换函数
     transform_code: str  # 原始 transform_code 字符串（来自 YAML）
     oracle_expr: str  # 框架无关的验证表达式
     category: str = "general"  # MR类别
@@ -34,60 +33,36 @@ class MRTemplatePool:
     """MR模板池：从配置文件读取和管理常见数学变换模板"""
 
     def __init__(self, config_path: Optional[str] = None):
-        """
-        初始化模板池
-
-        Args:
-            config_path: 配置文件路径（如果为None，则使用默认路径）
-        """
-        self.templates: Dict[str, MRTemplate] = {}
-        self.operator_mr_mapping: Dict[str, List[str]] = {}
-
         if config_path is None:
-            # 默认配置文件路径：data/mr_repository/mr_templates.yaml（项目根目录下）
             project_root = Path(__file__).parents[3]
-            default_path = project_root / "data" / "mr_repository" / "mr_templates.yaml"
-            self.config_path = default_path
+            self.config_path = project_root / "data" / "mr_repository" / "mr_templates.yaml"
         else:
             self.config_path = Path(config_path)
+
+        self.templates: Dict[str, MRTemplate] = {}
+        self.operator_mr_mapping: Dict[str, List[str]] = {}
 
         self._load_config()
 
     def _load_config(self):
-        """从配置文件加载模板"""
+        """从配置文件加载模板（只解析 YAML，不 eval transform_code）"""
         try:
             with open(self.config_path, "r", encoding="utf-8") as f:
                 config = yaml.safe_load(f)
 
-            # 加载算子到MR的映射
             self.operator_mr_mapping = config.get("operator_mr_mapping", {})
 
-            # 加载模板定义
-            templates_config = config.get("templates", {})
-
-            for template_name, template_data in templates_config.items():
+            for template_name, tdata in config.get("templates", {}).items():
                 try:
-                    # 解析transform_code为函数
-                    transform_code = template_data.get("transform_code", "")
-                    transform_func = (
-                        eval(transform_code) if transform_code else lambda *args: args
+                    self.templates[template_name] = MRTemplate(
+                        name=tdata.get("name", template_name),
+                        description=tdata.get("description", ""),
+                        transform_code=tdata.get("transform_code", ""),
+                        oracle_expr=tdata.get("oracle_expr", ""),
+                        category=tdata.get("category", "general"),
+                        min_inputs=tdata.get("min_inputs", 1),
+                        max_inputs=tdata.get("max_inputs"),
                     )
-
-                    # 解析 oracle_expr
-                    oracle_expr = template_data.get("oracle_expr", "")
-
-                    template = MRTemplate(
-                        name=template_data.get("name", template_name),
-                        description=template_data.get("description", ""),
-                        transform_func=transform_func,
-                        transform_code=transform_code,
-                        oracle_expr=oracle_expr,
-                        category=template_data.get("category", "general"),
-                        min_inputs=template_data.get("min_inputs", 1),
-                        max_inputs=template_data.get("max_inputs"),
-                    )
-
-                    self.templates[template_name] = template
                 except Exception as e:
                     logger.warning(f"Failed to load template {template_name}: {e}")
 
@@ -139,7 +114,6 @@ class MRTemplatePool:
 
         applicable = []
 
-        # 从算子到MR的映射中获取适用的模板名称
         template_names = self.operator_mr_mapping.get(operator_name, [])
 
         for template_name in template_names:
@@ -147,7 +121,6 @@ class MRTemplatePool:
             if template is None:
                 continue
 
-            # 检查输入数量
             if num_inputs < template.min_inputs:
                 continue
             if template.max_inputs is not None and num_inputs > template.max_inputs:
@@ -182,19 +155,17 @@ class MRTemplatePool:
         Returns:
             MetamorphicRelation对象
         """
+        transform_code = template.transform_code
+        raw_func = eval(transform_code) if transform_code else lambda *args: args
 
-        # 创建变换函数
         def transform(*args):
             try:
-                return template.transform_func(*args)
+                return raw_func(*args)
             except TypeError:
                 raise  # 让 SymPy prover 的 Path 1 感知到失败，转入 Path 2（dict 协议）
             except Exception as e:
                 logger.warning(f"Transform function error: {e}")
                 return args
-
-        # 直接使用模板中保存的原始 transform_code 字符串（来自 YAML）
-        transform_code = template.transform_code
 
         return MetamorphicRelation(
             id=str(uuid.uuid4()),

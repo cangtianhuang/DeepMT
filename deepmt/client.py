@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Optional, Union
 
 from deepmt.core.ir_manager import IRManager
 from deepmt.core.logger import logger
-from deepmt.core.plugins_manager import FrameworkType, PluginsManager
+from deepmt.core.plugins_manager import FrameworkType
 from deepmt.core.results_manager import ResultsManager
 from deepmt.core.scheduler import TaskScheduler
 from deepmt.core.test_runner import TestRunner
@@ -90,10 +90,7 @@ class DeepMT:
         """
         logger.info("Initializing DeepMT client")
 
-        # 初始化核心组件
         self.ir_manager = IRManager()
-        self.plugins_manager = PluginsManager()
-        self.plugins_manager.load_plugins()
         self.results_manager = ResultsManager(db_path=db_path)
 
         # MR生成器（延迟初始化）
@@ -154,10 +151,7 @@ class DeepMT:
                 self.mr_repository.save(operator_ir.name, mrs)
 
             # 3. 使用TestRunner执行测试（MR生成与测试分离）
-            test_runner = TestRunner(
-                plugins_manager=self.plugins_manager,
-                results_manager=self.results_manager,
-            )
+            test_runner = TestRunner(results_manager=self.results_manager)
             test_runner.run_with_mrs(operator_ir, mrs, framework)
 
             # 4. 获取结果
