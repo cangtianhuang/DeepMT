@@ -10,7 +10,6 @@ from typing import Any, Dict, List, Literal, Optional
 import yaml
 
 from deepmt.core.logger import logger
-from deepmt.plugins.framework_adapter import FrameworkAdapter
 
 # ── 框架类型定义 ──────────────────────────────────────────────────────────────
 
@@ -39,7 +38,6 @@ class PluginsManager:
         else:
             self.plugins_dir = Path(plugins_dir)
         self.plugins: Dict[str, Any] = {}
-        self.framework_adapters: Dict[str, FrameworkAdapter] = {}
 
     def load_plugins(self):
         """从 plugins/plugins.yaml 注册表加载插件"""
@@ -60,7 +58,6 @@ class PluginsManager:
                 cls = getattr(module, class_name)
                 plugin = cls()
                 self.plugins[name] = plugin
-                self.framework_adapters[name] = FrameworkAdapter(plugin=plugin)
                 logger.debug(f"Loaded plugin: {name} ({class_name})")
             except Exception as e:
                 logger.error(f"Failed to load plugin '{name}' from {module_path}: {e}")
@@ -76,15 +73,6 @@ class PluginsManager:
             available = ", ".join(self.plugins.keys())
             raise KeyError(f"Plugin '{name}' not found. Available plugins: {available}")
         return self.plugins[name]
-
-    def get_framework_adapter(self, framework: str) -> FrameworkAdapter:
-        framework = framework.lower()
-        if framework not in self.framework_adapters:
-            available = ", ".join(self.framework_adapters.keys())
-            raise KeyError(
-                f"Framework adapter for '{framework}' not found. Available adapters: {available}"
-            )
-        return self.framework_adapters[framework]
 
     def list_plugins(self) -> list:
         return list(self.plugins.keys())

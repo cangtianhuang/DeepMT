@@ -3,14 +3,13 @@ MR 快速筛选器：对候选 MR 进行少量随机数值测试
 
 设计原则：
 - 框架无关：通过插件系统支持多个框架
-- 职责分离：transform 绑定由 FrameworkAdapter 负责，
-            oracle 评估由 MRVerifier 负责
+- 职责分离：transform 绑定（_bind_transform_code）、oracle 评估（MRVerifier）均在此层完成
 - 快速筛选：5 组随机用例，通过率 ≥ 80% 保留
 """
 
-from typing import Any, Callable, Dict, List
+from typing import Any, Callable, Dict, List, Optional
 
-from deepmt.analysis.input_generator import InputGenerator
+from deepmt.analysis.random_generator import RandomGenerator
 from deepmt.analysis.mr_verifier import MRVerifier
 from deepmt.core.plugins_manager import FrameworkType, get_plugins_manager
 from deepmt.core.logger import logger
@@ -25,7 +24,7 @@ class MRPreChecker:
 
     def __init__(self):
         self.verifier = MRVerifier()
-        self.input_generator = InputGenerator()
+        self.random_generator = RandomGenerator()
 
     def check_mr(
         self,
@@ -46,13 +45,9 @@ class MRPreChecker:
         Returns:
             (是否通过, 详细信息)
         """
-        pm = get_plugins_manager()
-        framework_adapter = pm.get_framework_adapter(framework)
-        plugin = pm.get_plugin(framework)
+        plugin = get_plugins_manager().get_plugin(framework)
 
-        bound_transform = framework_adapter.bind_transform_code(
-            mr.transform_code, operator_func
-        )
+        bound_transform = self._bind_transform_code(mr.transform_code, operator_func)
         if bound_transform is None:
             return False, "Failed to bind transform code"
 
@@ -62,7 +57,7 @@ class MRPreChecker:
         error_messages = []
 
         for i in range(self.NUM_TEST_CASES):
-            test_input = self.input_generator.generate(input_specs, plugin)
+            test_input = self.random_generator.generate(input_specs, plugin)
             try:
                 orig_kwargs = self._build_kwargs(test_input)
 
@@ -163,7 +158,50 @@ class MRPreChecker:
         )
         return filtered
 
-    def _build_kwargs(self, inputs: List[Any]) -> Dict[str, Any]:
+    # ── 私有方法 ──────────────────────────────────────────────────────────────
+
+    @staticmethod
+    def _bind_transform_code(
+        transform_code: str,
+        operator_func: Optional[Callable],
+    ) -> Optional[Callable]:
+        """
+        将 transform_code lambda 字符串编译为可执行函数。
+
+        处理 apply_operator() 占位符：若表达式中包含 apply_operator，
+        则将其绑定为 operator_func。
+
+        Args:
+            transform_code: lambda 表达式字符串
+                例："lambda k: {**k, 'input': 2.0 * k['input']}"
+                例："lambda k: {**k, 'input': apply_operator(k['input'])}"
+            operator_func:  具体的算子函数（用于 apply_operator 绑定）
+
+        Returns:
+            绑定后的可调用对象，失败返回 None
+        """
+        try:
+            safe_dict: dict = {}
+            if "apply_operator" in transform_code:
+                safe_dict["apply_operator"] = operator_func
+
+            func = eval(transform_code, {"__builtins__": {}}, safe_dict)
+
+            if not callable(func):
+                logger.warning(
+                    f"transform_code compiled to non-callable: {type(func)}"
+                )
+                return None
+
+            return func
+
+        except Exception as e:
+            logger.error(f"Failed to bind transform_code: {e}")
+            logger.debug(f"transform_code: {transform_code}")
+            return None
+
+    @staticmethod
+    def _build_kwargs(inputs: List[Any]) -> Dict[str, Any]:
         """将输入列表转换为 kwargs 字典"""
         if len(inputs) == 0:
             return {}

@@ -35,17 +35,15 @@ class TestTemplateTransformCode:
         assert "2.0" in mr.transform_code
 
     def test_transform_code_is_bindable(self):
-        """transform_code 必须能被 FrameworkAdapter.bind_transform_code 解析"""
-        from deepmt.plugins.framework_adapter import FrameworkAdapter
-        from deepmt.plugins.pytorch_plugin import PyTorchPlugin
+        """transform_code 必须能被 MRPreChecker._bind_transform_code 解析"""
+        from deepmt.mr_generator.operator.mr_prechecker import MRPreChecker
         pool = MRTemplatePool()
-        adapter = FrameworkAdapter(plugin=PyTorchPlugin())
 
         for name, t in pool.templates.items():
             mr = pool.create_mr_from_template(t)
             if not mr.transform_code or mr.transform_code.startswith("#"):
                 pytest.fail(f"Template '{name}' has invalid transform_code: {mr.transform_code!r}")
-            bound = adapter.bind_transform_code(mr.transform_code, None)
+            bound = MRPreChecker._bind_transform_code(mr.transform_code, None)
             assert bound is not None, f"Template '{name}' failed to bind: {mr.transform_code}"
 
     def test_new_operator_templates_loaded(self):
@@ -175,13 +173,13 @@ class TestTryImportOperator:
         assert func is None
 
 
-# ── InputGenerator ────────────────────────────────────────────────────────────
+# ── RandomGenerator ───────────────────────────────────────────────────────────
 
-class TestInputGenerator:
+class TestRandomGenerator:
     def setup_method(self):
-        from deepmt.analysis.input_generator import InputGenerator
+        from deepmt.analysis.random_generator import RandomGenerator
         from deepmt.plugins.pytorch_plugin import PyTorchPlugin
-        self.gen = InputGenerator()
+        self.gen = RandomGenerator()
         self.plugin = PyTorchPlugin()
 
     def test_empty_specs_returns_default(self):

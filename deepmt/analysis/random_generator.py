@@ -1,5 +1,5 @@
 """
-输入生成器：根据 input_specs 自动生成随机测试输入
+随机数据生成器：根据 input_specs 自动生成随机张量数据
 
 职责：
   - 解析算子目录中定义的 input_specs 字段（dtype / shape / value_range）
@@ -18,12 +18,12 @@ _DEFAULT_SHAPE: tuple = (4, 4)
 _DEFAULT_DTYPE: str = "float32"
 
 
-class InputGenerator:
+class RandomGenerator:
     """
-    根据 input_specs 生成随机输入列表，驱动 MR 数值预检与测试执行。
+    根据 input_specs 生成随机张量列表。
 
     用法示例：
-        gen = InputGenerator()
+        gen = RandomGenerator()
         inputs = gen.generate(operator_ir.input_specs or [], plugin)
         # inputs: [tensor, ...]  每个元素对应一个必填参数
     """
