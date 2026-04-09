@@ -5,5 +5,6 @@ MR生成器基础模块
 
 from deepmt.mr_generator.base.mr_templates import MRTemplatePool
 from deepmt.mr_generator.base.mr_repository import MRRepository
+from deepmt.mr_generator.base.mr_library import MRLibrary
 
-__all__ = ["MRTemplatePool", "MRRepository"]
+__all__ = ["MRTemplatePool", "MRRepository", "MRLibrary"]

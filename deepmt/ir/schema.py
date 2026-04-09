@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional
 
 
@@ -8,11 +8,8 @@ class OperatorIR:
     inputs: Optional[List[Any]] = None
     outputs: Optional[List[Any]] = None
     properties: Optional[Dict[str, Any]] = None
-    # 可导入的完整 Python 路径，用于测试时动态调用（如 torch.nn.functional.relu）
     api_path: str = ""
-    # 调用风格：function | module | method
     api_style: str = "function"
-    # 输入参数规范，每项为 InputSpec 字典（name/dtype/shape/value_range/required）
     input_specs: Optional[List[Dict[str, Any]]] = None
 
 
@@ -33,56 +30,54 @@ class ApplicationIR:
 
 @dataclass
 class MetamorphicRelation:
-    """标准化MR对象数据结构
-
-    一个 MR 由两部分组成：
+    """MR 对象数据结构。
 
     transform_code / transform（输入侧）
         描述"如何将原始输入变换为测试输入"。
         - transform_code: lambda 字符串，格式为 "lambda k: {**k, 'input': ...}"
           （LLM 生成）或 "lambda x, y: (y, x)"（模板/手写）。
         - transform: 由 transform_code eval 得到的可调用对象，运行时直接调用。
-        - 用途：① 实际测试时产生变换后输入；② SymPy 证明时对符号做同等变换。
 
     oracle_expr（输出侧）
         描述"变换后输出 (trans) 与原始输出 (orig) 之间应满足的数学关系"。
         - 格式：框架无关的 Python 表达式字符串。
         - 可用变量：orig（原始输出）、trans（变换后输出）、x（原始输入张量）。
         - 示例：
-            "orig == trans"           # 相等（幂等性、交换律等）
-            "trans == 2 * orig"       # 线性缩放
-            "trans == -orig"          # 取反（反交换律）
-            "orig * trans == 1"       # 倒数关系
-            "all((trans == orig + 1) | (x < 0))"  # 条件不变性
-        - 用途：① SymPy 符号证明；② 数值执行时的运行时断言。
-        - 空字符串表示默认检查相等（orig == trans）。
+            "orig == trans"
+            "trans == 2 * orig"
+            "trans == -orig"
     """
 
-    id: str  # MR唯一标识
-    description: str  # MR描述
+    # ── 核心标识 ────────────────────────────────────────────────────────────
+    id: str
+    description: str
 
-    # 输入变换（见上方文档）
-    transform: Callable  # transform_code eval 后的可调用对象
-    transform_code: str = ""  # 输入变换的 lambda 表达式字符串
+    # ── 变换定义 ─────────────────────────────────────────────────────────────
+    transform_code: str = ""
+    oracle_expr: str = ""
 
-    # 输出验证（见上方文档）
-    oracle_expr: str = ""  # 框架无关的输出关系断言表达式
-
-    # 元数据
+    # ── 分类元数据 ────────────────────────────────────────────────────────────
     category: str = "general"
-    # MR类别：linearity, monotonicity, idempotency, composition, invariance, symmetry, boundary
-    tolerance: float = 1e-6  # 数值容差
-    analysis: str = ""  # 分析说明
-    layer: str = "operator"  # MR所属层次
-    verified: bool = False  # 是否已通过验证
-    applicable_frameworks: Optional[List[str]] = None  # 适用框架列表（None = 通用）
+    tolerance: float = 1e-6
+    layer: str = "operator"
+    source: str = ""  # "llm" | "template" | "manual"
+    applicable_frameworks: Optional[List[str]] = None  # None = 通用
+
+    # ── 验证状态 ──────────────────────────────────────────────────────────────
+    checked: Optional[bool] = None  # 数值 precheck 通过
+    proven: Optional[bool] = None  # SymPy 符号证明通过
+    verified: bool = False  # True iff checked=True AND proven=True，或人工确认
+
+    # ── 用户工作区噪音字段（项目库不序列化）──────────────────────────────────
+    analysis: str = ""
+
+    # ── 运行时专用（永不序列化）──────────────────────────────────────────────
+    transform: Optional[Callable] = field(default=None, repr=False, compare=False)
 
 
 @dataclass
 class OracleResult:
     """单次 MR oracle 表达式评估的结果。
-
-    由 MRVerifier.verify() 产生，流向 ResultsManager 持久化。
 
     Attributes:
         passed:               MR 是否满足
@@ -91,7 +86,7 @@ class OracleResult:
         tolerance:            配置的数值容差阈值
         detail:               补充信息（如失败原因、SHAPE_MISMATCH 等）
         max_rel_diff:         最大相对差值；仅等值（==）路径有效
-        mismatched_elements:  违规元素数（== 路径超容差；不等式路径不满足约束）
+        mismatched_elements:  违规元素数
         total_elements:       参与比较的总元素数
     """
 

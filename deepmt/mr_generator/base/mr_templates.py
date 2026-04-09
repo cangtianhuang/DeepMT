@@ -176,6 +176,7 @@ class MRTemplatePool:
             category=template.category,
             tolerance=1e-6,
             layer="operator",
+            source="template",
             verified=False,
         )
 

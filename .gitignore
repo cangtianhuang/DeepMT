@@ -14,11 +14,12 @@ config*.yaml
 # ── Runtime databases ─────────────────────────────────────────────────────────
 *.db
 
-# ── Runtime data（日志、缓存、生成的 MR 实例） ───────────────────────────────────
+# ── Runtime data（日志、缓存）────────────────────────────────────────────────────
 data/logs/
 data/web_search_cache/
-data/mr_repository/*.yaml
-!data/mr_repository/mr_templates.yaml
+
+# ── 用户工作区 MR（生成的 MR 实例，不上传）────────────────────────────────────────
+data/mr_repository/operator/
 
 # ── OS / Editor ───────────────────────────────────────────────────────────────
 .DS_Store

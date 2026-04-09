@@ -142,6 +142,9 @@ class OperatorMRGenerator:
         # ========== 去重 ==========
         final_mrs = self._deduplicate_mrs(verified_mrs)
 
+        for mr in final_mrs:
+            mr.verified = (mr.checked is True) and (mr.proven is True)
+
         verified_count = sum(1 for mr in final_mrs if mr.verified)
         if verified_count == len(final_mrs):
             logger.success("✨ [SUCCESS] " + f"{len(final_mrs)} MRs (all verified)")
@@ -254,6 +257,9 @@ class OperatorMRGenerator:
         )
 
         final_mrs = self._deduplicate_mrs(mrs)
+
+        for mr in final_mrs:
+            mr.verified = (mr.checked is True) and (mr.proven is True)
 
         verified_count = sum(1 for mr in final_mrs if mr.verified)
         logger.success("✨ [SUCCESS] " + f"Verification completed: {verified_count}/{len(final_mrs)} MRs verified")
@@ -468,9 +474,8 @@ class OperatorMRGenerator:
             operator_ir=operator_ir,
             framework=framework,
         )
-        # 通过 precheck 的 MR 标记为已验证（数值验证通过即视为 verified）
         for mr in filtered:
-            mr.verified = True
+            mr.checked = True
         logger.info("✅ [CHECK] " + f"{len(filtered)}/{len(mr_candidates)} candidates passed pre-check")
         return filtered
 
@@ -524,16 +529,15 @@ class OperatorMRGenerator:
                     num_inputs=num_inputs,
                     sympy_expr=sympy_expr,
                 )
+                proven_ids = {mr.id for mr in proven_mrs}
                 for mr in proven_mrs:
-                    mr.verified = True
+                    mr.proven = True
                 logger.info("✅ [CHECK] " + f"{len(proven_mrs)} MRs proven")
                 verified_mrs.extend(proven_mrs)
 
-                # 未证明的MR也加入输出（标记为未验证）
-                proven_ids = {mr.id for mr in proven_mrs}
                 for mr in candidate_mrs:
                     if mr.id not in proven_ids:
-                        mr.verified = False
+                        mr.proven = False
                         verified_mrs.append(mr)
             else:
                 logger.debug("✅ [CHECK] " + "SymPy proof skipped (no code)")

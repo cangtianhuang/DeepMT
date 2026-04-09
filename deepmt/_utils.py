@@ -14,9 +14,15 @@ def not_implemented_error(feature: str, hint: str = ""):
 
 
 def get_repo(repo_dir: str = "data/mr_repository/operator"):
-    """获取 MRRepository 实例（复用配置中的路径）。"""
+    """获取 MRRepository 实例（用户工作区）。"""
     from deepmt.mr_generator.base.mr_repository import MRRepository
     return MRRepository(repo_dir=repo_dir)
+
+
+def get_library(layer: str = "operator", library_dir: str = "data/mr_library"):
+    """获取 MRLibrary 实例（项目库）。"""
+    from deepmt.mr_generator.base.mr_library import MRLibrary
+    return MRLibrary(layer=layer, library_dir=library_dir)
 
 
 def get_results_manager(db_path: str = "data/defects.db"):

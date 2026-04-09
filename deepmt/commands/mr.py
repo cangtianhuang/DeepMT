@@ -15,7 +15,7 @@ import sys
 
 import click
 
-from deepmt._utils import get_repo, not_implemented_error
+from deepmt._utils import get_library, get_repo, not_implemented_error
 
 
 @click.group()
@@ -114,7 +114,7 @@ def mr_generate(operator, layer, framework, sources, precheck, sympy, auto_fetch
         if save and mrs:
             repo = get_repo()
             count = repo.save(operator, mrs, framework=framework)
-            click.echo(click.style(f"\n已保存 {count} 个 MR 至知识库", fg="cyan"))
+            click.echo(click.style(f"\n已保存 {count} 个 MR 至用户仓库", fg="cyan"))
 
     except Exception as e:
         click.echo(click.style(f"错误: {e}", fg="red"), err=True)
@@ -269,11 +269,11 @@ def mr_stats(operator, as_json):
     title = f"算子 '{operator}' 的统计" if operator else "知识库整体统计"
     click.echo(f"\n{title}")
     click.echo("─" * 40)
-    click.echo(f"  总 MR 数:      {stats['total_mrs']}")
-    click.echo(f"  已验证:        {stats['verified_mrs']}")
-    click.echo(f"  未验证:        {stats['unverified_mrs']}")
-    click.echo(f"  Precheck 通过: {stats['precheck_passed']}")
-    click.echo(f"  SymPy 证明:    {stats['sympy_proven']}")
+    click.echo(f"  总 MR 数:   {stats['total_mrs']}")
+    click.echo(f"  已验证:     {stats['verified_mrs']}")
+    click.echo(f"  未验证:     {stats['unverified_mrs']}")
+    click.echo(f"  数值检查:   {stats['checked']}")
+    click.echo(f"  符号证明:   {stats['proven']}")
 
     if not operator and stats["by_operator"]:
         click.echo("\n  按算子分布:")
@@ -544,3 +544,28 @@ def mr_delete(operator, yes):
         "deepmt mr delete",
         "MR 删除功能尚未实现。如需清理，可直接删除 data/mr_repository/operator/<operator>.yaml 文件。",
     )
+
+
+# ── promote ───────────────────────────────────────────────────────────────────
+
+@mr.command("promote")
+@click.argument("operator")
+@click.option("--layer", default="operator", show_default=True, help="MR 层次")
+def mr_promote(operator, layer):
+    """将用户仓库中 verified=True 的 MR 迁移到项目库。
+
+    \b
+    示例:
+      deepmt mr promote torch.add
+    """
+    repo = get_repo()
+    if not repo.exists(operator):
+        click.echo(click.style(f"用户仓库中未找到算子 '{operator}' 的 MR", fg="yellow"))
+        sys.exit(1)
+
+    lib = get_library(layer=layer)
+    count = lib.promote_from_repository(operator, repo)
+    if count:
+        click.echo(click.style(f"已迁移 {count} 个 MR 到项目库", fg="green"))
+    else:
+        click.echo(click.style("没有 verified=True 的 MR 可迁移", fg="yellow"))

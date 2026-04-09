@@ -1,12 +1,11 @@
-"""MR 仓库：以 YAML 文件持久化存储蜕变关系（每算子一文件）。
+"""MR 用户工作区仓库：以 YAML 文件持久化存储蜕变关系（每算子一文件）。
 
 存储结构：
     data/mr_repository/operator/<operator_name>.yaml
 
 每个文件格式：
-    operator: torch.nn.functional.relu
-    framework: pytorch
-    generated_at: "2024-01-01T00:00:00"
+    operator: torch.add
+    generated_at: "2026-01-01T00:00:00"
     mrs:
       - id: "abc-123"
         description: "..."
@@ -14,12 +13,12 @@
         oracle_expr: "trans == 2.0 * orig"
         category: "linearity"
         tolerance: 1.0e-6
+        source: "llm"
+        applicable_frameworks: ["pytorch"]
+        checked: true
+        proven: true
         verified: true
-        precheck_passed: null
-        sympy_proven: null
-        created_at: "2024-01-01T00:00:00"
-        applicable_frameworks:
-          - pytorch
+        analysis: "..."
 """
 
 from datetime import datetime
@@ -33,7 +32,7 @@ from deepmt.ir.schema import MetamorphicRelation
 
 
 class MRRepository:
-    """MR 仓库：每个算子的 MR 列表存为独立 YAML 文件，便于人工查阅与版本追踪。"""
+    """用户工作区 MR 仓库：每个算子的 MR 列表存为独立 YAML 文件。"""
 
     def __init__(self, repo_dir: str = "data/mr_repository/operator"):
         self.repo_dir = Path(repo_dir)
@@ -43,26 +42,26 @@ class MRRepository:
     # ── 内部工具 ──────────────────────────────────────────────────────────────
 
     def _op_file(self, operator_name: str) -> Path:
-        """算子名 → YAML 文件路径（将 / 替换为 __ 以确保路径安全）。"""
         safe_name = operator_name.replace("/", "__")
         return self.repo_dir / f"{safe_name}.yaml"
 
     def _serialize_mr(self, mr: MetamorphicRelation) -> Dict:
-        return {
+        d: Dict = {
             "id": mr.id,
             "description": mr.description,
             "transform_code": mr.transform_code,
             "oracle_expr": mr.oracle_expr,
             "category": mr.category,
             "tolerance": mr.tolerance,
-            "analysis": mr.analysis,
             "layer": mr.layer,
-            "verified": mr.verified,
-            "precheck_passed": getattr(mr, "_precheck_passed", None),
-            "sympy_proven": getattr(mr, "_sympy_proven", None),
-            "created_at": datetime.now().isoformat(),
+            "source": mr.source,
             "applicable_frameworks": mr.applicable_frameworks,
+            "checked": mr.checked,
+            "proven": mr.proven,
+            "verified": mr.verified,
+            "analysis": mr.analysis,
         }
+        return d
 
     def _deserialize_mr(self, data: Dict) -> MetamorphicRelation:
         transform_code = data.get("transform_code", "")
@@ -71,23 +70,22 @@ class MRRepository:
         except Exception:
             transform = lambda *args: args
 
-        mr = MetamorphicRelation(
+        return MetamorphicRelation(
             id=data["id"],
             description=data.get("description", ""),
-            transform=transform,
             transform_code=transform_code,
+            transform=transform,
             oracle_expr=data.get("oracle_expr", ""),
             category=data.get("category", "general"),
             tolerance=float(data.get("tolerance", 1e-6)),
-            analysis=data.get("analysis", ""),
             layer=data.get("layer", "operator"),
-            verified=data.get("verified", False),
+            source=data.get("source", ""),
             applicable_frameworks=data.get("applicable_frameworks"),
+            checked=data.get("checked"),
+            proven=data.get("proven"),
+            verified=data.get("verified", False),
+            analysis=data.get("analysis", ""),
         )
-        # 附加验证字段（仅供统计使用，不在 schema 中定义）
-        mr._precheck_passed = data.get("precheck_passed")  # type: ignore[attr-defined]
-        mr._sympy_proven = data.get("sympy_proven")  # type: ignore[attr-defined]
-        return mr
 
     def _load_file(self, operator_name: str) -> Optional[Dict]:
         path = self._op_file(operator_name)
@@ -109,7 +107,10 @@ class MRRepository:
         mrs: List[MetamorphicRelation],
         framework: Optional[str] = None,
     ) -> int:
-        """将 MR 列表写入该算子的 YAML 文件（覆盖已有内容）。"""
+        """将 MR 列表写入该算子的 YAML 文件（覆盖已有内容）。
+
+        framework 为便利参数：若 MR 的 applicable_frameworks 为空则自动填入。
+        """
         if not mrs:
             return 0
 
@@ -119,7 +120,6 @@ class MRRepository:
 
         data = {
             "operator": operator_name,
-            "framework": framework,
             "generated_at": datetime.now().isoformat(),
             "mrs": [self._serialize_mr(mr) for mr in mrs],
         }
@@ -132,7 +132,7 @@ class MRRepository:
         operator_name: str,
         framework: Optional[str] = None,
     ) -> List[MetamorphicRelation]:
-        """从 YAML 文件加载 MR 列表，可按框架过滤。"""
+        """从 YAML 文件加载 MR 列表，可按 applicable_frameworks 过滤。"""
         data = self._load_file(operator_name)
         if not data:
             return []
@@ -152,11 +152,9 @@ class MRRepository:
         return mrs
 
     def exists(self, operator_name: str) -> bool:
-        """检查算子是否有保存的 MR 文件。"""
         return self._op_file(operator_name).exists()
 
     def list_operators(self) -> List[str]:
-        """列出所有有 MR 的算子名称。"""
         return sorted(f.stem for f in self.repo_dir.glob("*.yaml"))
 
     def delete(
@@ -203,26 +201,22 @@ class MRRepository:
         verified_only: bool = False,
         framework: Optional[str] = None,
     ) -> List[MetamorphicRelation]:
-        """加载 MR，支持 verified_only 过滤（与 load() 等价，供 CLI 调用）。"""
+        """加载 MR，支持 verified_only 过滤。"""
         mrs = self.load(operator_name, framework=framework)
         if verified_only:
             mrs = [m for m in mrs if m.verified]
         return mrs
 
     def get_statistics(self, operator_name: Optional[str] = None) -> Dict:
-        """统计 MR 数量信息（total/verified/unverified/precheck_passed/sympy_proven）。"""
+        """统计 MR 数量信息（total/verified/unverified/checked/proven）。"""
 
         def _stats_for(mrs: List[MetamorphicRelation]) -> Dict:
             return {
                 "total": len(mrs),
                 "verified": sum(1 for m in mrs if m.verified),
                 "unverified": sum(1 for m in mrs if not m.verified),
-                "precheck_passed": sum(
-                    1 for m in mrs if getattr(m, "_precheck_passed", None) is True
-                ),
-                "sympy_proven": sum(
-                    1 for m in mrs if getattr(m, "_sympy_proven", None) is True
-                ),
+                "checked": sum(1 for m in mrs if m.checked is True),
+                "proven": sum(1 for m in mrs if m.proven is True),
             }
 
         if operator_name:
@@ -231,8 +225,8 @@ class MRRepository:
                 "total_mrs": c["total"],
                 "verified_mrs": c["verified"],
                 "unverified_mrs": c["unverified"],
-                "precheck_passed": c["precheck_passed"],
-                "sympy_proven": c["sympy_proven"],
+                "checked": c["checked"],
+                "proven": c["proven"],
                 "by_operator": {operator_name: c},
             }
 
@@ -240,8 +234,8 @@ class MRRepository:
             "total_mrs": 0,
             "verified_mrs": 0,
             "unverified_mrs": 0,
-            "precheck_passed": 0,
-            "sympy_proven": 0,
+            "checked": 0,
+            "proven": 0,
             "by_operator": {},
         }
         for op in self.list_operators():
@@ -249,7 +243,7 @@ class MRRepository:
             stats["total_mrs"] += c["total"]
             stats["verified_mrs"] += c["verified"]
             stats["unverified_mrs"] += c["unverified"]
-            stats["precheck_passed"] += c["precheck_passed"]
-            stats["sympy_proven"] += c["sympy_proven"]
+            stats["checked"] += c["checked"]
+            stats["proven"] += c["proven"]
             stats["by_operator"][op] = c
         return stats

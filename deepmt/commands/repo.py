@@ -87,11 +87,11 @@ def repo_stats(as_json):
 
     click.echo("\nMR 知识库统计")
     click.echo("─" * 40)
-    click.echo(f"  总 MR 数:      {stats['total_mrs']}")
-    click.echo(f"  已验证:        {stats['verified_mrs']}")
-    click.echo(f"  未验证:        {stats['unverified_mrs']}")
-    click.echo(f"  Precheck 通过: {stats['precheck_passed']}")
-    click.echo(f"  SymPy 证明:    {stats['sympy_proven']}")
+    click.echo(f"  总 MR 数:   {stats['total_mrs']}")
+    click.echo(f"  已验证:     {stats['verified_mrs']}")
+    click.echo(f"  未验证:     {stats['unverified_mrs']}")
+    click.echo(f"  数值检查:   {stats['checked']}")
+    click.echo(f"  符号证明:   {stats['proven']}")
 
     if stats["by_operator"]:
         click.echo("\n  按算子分布:")

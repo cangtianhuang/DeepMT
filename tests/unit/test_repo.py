@@ -1,5 +1,5 @@
 """
-Unit tests for MRRepository (YAML-based) — applicable_frameworks and delete.
+Unit tests for MRRepository — checked/proven/verified and delete.
 No LLM or network dependencies.
 """
 
@@ -47,7 +47,6 @@ class TestApplicableFrameworks:
         assert loaded[0].applicable_frameworks is None
 
     def test_framework_set_from_save_param(self, repo):
-        """若 MR 本身无 applicable_frameworks，save 时传入 framework 应自动设置"""
         mr = _make_mr("mr-003")
         assert mr.applicable_frameworks is None
         repo.save("relu", [mr], framework="pytorch")
@@ -66,7 +65,6 @@ class TestApplicableFrameworks:
         assert len(loaded) == 0
 
     def test_load_filter_universal_mr_always_included(self, repo):
-        """applicable_frameworks=None 的通用 MR 不被框架过滤排除"""
         repo.save("relu", [_make_mr("mr-univ")])
         loaded = repo.load("relu", framework="pytorch")
         assert len(loaded) == 1
@@ -80,18 +78,60 @@ class TestApplicableFrameworks:
     def test_list_operators_by_framework(self, repo):
         repo.save("relu", [_make_mr("mr-pt", "pytorch")])
         repo.save("sigmoid", [_make_mr("mr-tf", "tensorflow")])
-        repo.save("tanh", [_make_mr("mr-univ")])  # 通用
+        repo.save("tanh", [_make_mr("mr-univ")])
 
         pt_ops = repo.list_operators_by_framework("pytorch")
         assert "relu" in pt_ops
-        assert "tanh" in pt_ops  # 通用 MR 也包含
+        assert "tanh" in pt_ops
         assert "sigmoid" not in pt_ops
 
     def test_schema_field_default_none(self):
-        mr = MetamorphicRelation(
-            id="x", description="d", transform=lambda x: x
-        )
+        mr = MetamorphicRelation(id="x", description="d", transform=lambda x: x)
         assert mr.applicable_frameworks is None
+
+
+# ── checked / proven / verified ───────────────────────────────────────────────
+
+class TestVerificationState:
+    def test_checked_proven_roundtrip(self, repo):
+        mr = _make_mr("mr-v")
+        mr.checked = True
+        mr.proven = True
+        mr.verified = True
+        repo.save("relu", [mr])
+
+        loaded = repo.load("relu")
+        assert loaded[0].checked is True
+        assert loaded[0].proven is True
+        assert loaded[0].verified is True
+
+    def test_checked_only_not_verified(self, repo):
+        mr = _make_mr("mr-c")
+        mr.checked = True
+        mr.proven = None
+        mr.verified = False
+        repo.save("relu", [mr])
+
+        loaded = repo.load("relu")
+        assert loaded[0].checked is True
+        assert loaded[0].proven is None
+        assert loaded[0].verified is False
+
+    def test_source_roundtrip(self, repo):
+        mr = _make_mr("mr-s")
+        mr.source = "llm"
+        repo.save("relu", [mr])
+
+        loaded = repo.load("relu")
+        assert loaded[0].source == "llm"
+
+    def test_analysis_roundtrip(self, repo):
+        mr = _make_mr("mr-a")
+        mr.analysis = "some explanation"
+        repo.save("relu", [mr])
+
+        loaded = repo.load("relu")
+        assert loaded[0].analysis == "some explanation"
 
 
 # ── delete ────────────────────────────────────────────────────────────────────
@@ -132,7 +172,7 @@ class TestBasicCRUD:
         repo.save("relu", [_make_mr("mr-1")])
         assert repo.exists("relu")
 
-    def test_list_operators_excludes_templates(self, repo):
+    def test_list_operators(self, repo):
         repo.save("relu", [_make_mr("mr-1")])
         repo.save("sigmoid", [_make_mr("mr-2")])
         ops = repo.list_operators()
@@ -148,6 +188,8 @@ class TestBasicCRUD:
     def test_get_statistics(self, repo):
         mr_verified = _make_mr("mr-v")
         mr_verified.verified = True
+        mr_verified.checked = True
+        mr_verified.proven = True
         mr_unverified = _make_mr("mr-u")
         repo.save("relu", [mr_verified, mr_unverified])
 
@@ -155,6 +197,8 @@ class TestBasicCRUD:
         assert stats["total_mrs"] == 2
         assert stats["verified_mrs"] == 1
         assert stats["unverified_mrs"] == 1
+        assert stats["checked"] == 1
+        assert stats["proven"] == 1
 
     def test_transform_code_roundtrip(self, repo):
         mr = MetamorphicRelation(
@@ -168,6 +212,5 @@ class TestBasicCRUD:
         loaded = repo.load("op")
         assert len(loaded) == 1
         assert loaded[0].transform_code == "lambda *args: (args[1], args[0])"
-        # 验证 eval 重建的 transform 可调用
         result = loaded[0].transform(1, 2)
         assert result == (2, 1)

@@ -301,6 +301,7 @@ Generate the response for the user's operator. Start with **Analysis**, then pro
                 analysis=analysis,
                 tolerance=1e-6,
                 layer="operator",
+                source="llm",
                 verified=False,
             )
 
