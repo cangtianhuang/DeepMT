@@ -1,25 +1,141 @@
 """
-MR 验证器：评估蜕变关系的 oracle 表达式，量化测试偏差
+MR 验证器：将 oracle_expr 解析为 lhs <op> rhs，统一经由 plugin 完成数值比较
 
-职责：
-  - 将 oracle_expr（框架无关的数学表达式字符串）在数值上求值
-  - 返回包含通过/失败状态、实测差值等完整信息的 OracleResult
-
-设计原则：
-  - 框架无关：张量转换委托给 FrameworkPlugin.to_numpy()
-  - 容差感知：== 运算符自动走 np.isclose（_T 包装器方案）
-  - 可量化：始终记录实测差值，支持精度长期监控
+架构：
+  oracle_expr → _strip_quantifier → _parse_top_compare → (lhs_code, op, rhs_code)
+    - 调用 plugin.eval_expr 在框架张量空间内求值 lhs / rhs
+    - op == "=="   → plugin.allclose(lhs, rhs, atol)     框架原生精密比较
+    - op 不等式    → plugin.element_compare(lhs, rhs, op) 框架原生逐元素比较
+    - 解析失败     → _complex_eval_fallback               numpy 退化路径
 """
 
+import ast
+from typing import Any, Optional, Tuple
+
 import numpy as np
-from typing import Any
 
 from deepmt.core.logger import logger
 from deepmt.ir.schema import MetamorphicRelation, OracleResult
+from deepmt.plugins.framework_plugin import CompareResult
+
+# ── AST 操作符映射 ─────────────────────────────────────────────────────────────
+
+_AST_OP_MAP = {
+    ast.Eq:    "==",
+    ast.NotEq: "!=",
+    ast.Lt:    "<",
+    ast.LtE:   "<=",
+    ast.Gt:    ">",
+    ast.GtE:   ">=",
+}
+
+# ── 辅助函数 ──────────────────────────────────────────────────────────────────
+
+
+def _strip_quantifier(expr: str) -> str:
+    """用 AST 剥离外层 all(...) / any(...) 包装。"""
+    try:
+        tree = ast.parse(expr, mode="eval")
+    except SyntaxError:
+        return expr
+    node = tree.body
+    if (
+        isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Name)
+        and node.func.id in ("all", "any")
+        and len(node.args) == 1
+        and not node.keywords
+    ):
+        inner = ast.get_source_segment(expr, node.args[0])
+        return inner if inner is not None else expr
+    return expr
+
+
+def _parse_top_compare(expr: str) -> Optional[Tuple[str, str, str]]:
+    """
+    AST 解析顶层单一比较，返回 (lhs_code, op_str, rhs_code)。
+    非单一 Compare 节点则返回 None。
+    """
+    try:
+        tree = ast.parse(expr, mode="eval")
+    except SyntaxError:
+        return None
+    node = tree.body
+    if not isinstance(node, ast.Compare) or len(node.ops) != 1:
+        return None
+    op_str = _AST_OP_MAP.get(type(node.ops[0]))
+    if op_str is None:
+        return None
+    lhs_code = ast.get_source_segment(expr, node.left)
+    rhs_code = ast.get_source_segment(expr, node.comparators[0])
+    if lhs_code is None or rhs_code is None:
+        return None
+    return lhs_code, op_str, rhs_code
+
+
+def _safe_eval_numpy(code: str, ctx: dict) -> np.ndarray:
+    """在受限 numpy 命名空间中对代码求值（仅用于退化路径）。"""
+    ns = {
+        "__builtins__": {},
+        "np": np,
+        "abs": np.abs,
+        "all": np.all,
+        "any": np.any,
+        **ctx,
+    }
+    return np.asarray(eval(code, ns))  # noqa: S307
+
+
+def _compare(lhs: Any, rhs: Any, op: str, plugin: Any, atol: float) -> CompareResult:
+    """
+    框架原生比较分发：
+      op == "==" → plugin.allclose（精密等值，含广播）
+      其他不等式  → plugin.element_compare（逐元素，含广播）
+    """
+    if op == "==":
+        return plugin.allclose(lhs, rhs, atol=atol)
+    return plugin.element_compare(lhs, rhs, op)
+
+
+def _to_oracle_result(
+    cmp: CompareResult,
+    expr: str,
+    tolerance: float,
+    op: str,
+) -> OracleResult:
+    """将 CompareResult 转换为 OracleResult，附带格式化诊断信息。"""
+    if cmp.passed:
+        detail = ""
+    elif op == "==":
+        detail = (
+            f"NUMERICAL_DEVIATION: "
+            f"max_abs={cmp.max_abs_diff:.6g}, "
+            f"max_rel={cmp.max_rel_diff:.6g}, "
+            f"mismatched={cmp.mismatched_elements}/{cmp.total_elements} "
+            f"({cmp.mismatched_ratio:.1%})"
+        )
+    else:
+        detail = (
+            f"INEQUALITY_VIOLATION: {cmp.mismatched_elements}/{cmp.total_elements} "
+            f"elements violate '{expr}'; max_abs_diff={cmp.max_abs_diff:.6g}"
+        )
+    return OracleResult(
+        passed=cmp.passed,
+        expr=expr,
+        actual_diff=cmp.max_abs_diff,
+        tolerance=tolerance,
+        detail=detail,
+        max_rel_diff=cmp.max_rel_diff,
+        mismatched_elements=cmp.mismatched_elements,
+        total_elements=cmp.total_elements,
+    )
+
+
+# ── 验证器 ────────────────────────────────────────────────────────────────────
 
 
 class MRVerifier:
-    """MR 验证器：评估 oracle 表达式并量化偏差"""
+    """MR 验证器：将 oracle_expr 解析为 lhs <op> rhs，经由 plugin 完成数值比较"""
 
     def verify(
         self,
@@ -36,14 +152,12 @@ class MRVerifier:
             orig:     原始算子输出（框架张量）
             trans:    变换后算子输出（框架张量）
             mr:       蜕变关系（含 oracle_expr 和 tolerance）
-            plugin:   FrameworkPlugin 实例，提供 to_numpy() / allclose()
-            x_input:  原始输入张量（oracle_expr 中 x 变量的值）；
-                      为 None 时回退使用 orig
+            plugin:   FrameworkPlugin 实例
+            x_input:  原始输入张量（oracle_expr 中 x 变量）；为 None 时回退使用 orig
 
         Returns:
             OracleResult
         """
-        # 形状检查：通过框架原生接口，无需 to_numpy
         try:
             orig_shape = plugin.get_shape(orig)
             trans_shape = plugin.get_shape(trans)
@@ -53,7 +167,7 @@ class MRVerifier:
                 expr=mr.oracle_expr,
                 actual_diff=float("inf"),
                 tolerance=mr.tolerance,
-                detail=f"CONVERSION_ERROR: {e}",
+                detail=f"SHAPE_CHECK_ERROR: {e}",
             )
 
         if orig_shape != trans_shape:
@@ -65,170 +179,64 @@ class MRVerifier:
                 detail=f"SHAPE_MISMATCH: {orig_shape} vs {trans_shape}",
             )
 
-        # oracle_expr 为空：用插件原生 allclose 做等值检查（无需 to_numpy）
-        if not mr.oracle_expr:
-            cmp = plugin.allclose(orig, trans, atol=mr.tolerance)
-            detail = (
-                ""
-                if cmp.passed
-                else (
-                    f"NUMERICAL_DEVIATION: "
-                    f"max_abs={cmp.max_abs_diff:.6g}, "
-                    f"max_rel={cmp.max_rel_diff:.6g}, "
-                    f"mismatched={cmp.mismatched_elements}/{cmp.total_elements} "
-                    f"({cmp.mismatched_ratio:.1%})"
+        x = x_input if x_input is not None else orig
+        display_expr = mr.oracle_expr or "orig == trans"
+        inner = _strip_quantifier(display_expr)
+        parsed = _parse_top_compare(inner)
+
+        if parsed is not None:
+            lhs_code, op, rhs_code = parsed
+            try:
+                lhs = plugin.eval_expr(lhs_code, orig, trans, x)
+                rhs = plugin.eval_expr(rhs_code, orig, trans, x)
+            except Exception as e:
+                return OracleResult(
+                    passed=False,
+                    expr=display_expr,
+                    actual_diff=float("inf"),
+                    tolerance=mr.tolerance,
+                    detail=f"EVAL_ERROR: {e}",
                 )
-            )
-            return OracleResult(
-                passed=cmp.passed,
-                expr="orig == trans",
-                actual_diff=cmp.max_abs_diff,
-                tolerance=mr.tolerance,
-                detail=detail,
-            )
+            cmp = _compare(lhs, rhs, op, plugin, mr.tolerance)
+            return _to_oracle_result(cmp, display_expr, mr.tolerance, op)
 
-        # oracle_expr 非空：回退至 numpy 求值路径
-        try:
-            orig_np = plugin.to_numpy(orig)
-            trans_np = plugin.to_numpy(trans)
-            x_np = plugin.to_numpy(x_input) if x_input is not None else orig_np
-        except Exception as e:
-            return OracleResult(
-                passed=False,
-                expr=mr.oracle_expr,
-                actual_diff=float("inf"),
-                tolerance=mr.tolerance,
-                detail=f"CONVERSION_ERROR: {e}",
-            )
+        return self._complex_eval_fallback(inner, plugin, orig, trans, x, mr, display_expr)
 
-        actual_diff = self._measure_diff(orig_np, trans_np)
-        return self._eval_oracle_expr(
-            orig_np, trans_np, x_np, mr.oracle_expr, mr.tolerance, actual_diff
-        )
-
-    # ── 内部方法 ──────────────────────────────────────────────────────────────
-
-    def _measure_diff(self, orig_np: np.ndarray, trans_np: np.ndarray) -> float:
-        """计算两数组间的最大绝对差值"""
-        try:
-            if orig_np.shape != trans_np.shape:
-                return float("inf")
-            return float(np.max(np.abs(orig_np.astype(float) - trans_np.astype(float))))
-        except Exception:
-            return float("inf")
-
-    def _eval_oracle_expr(
+    def _complex_eval_fallback(
         self,
-        orig_np: np.ndarray,
-        trans_np: np.ndarray,
-        x_np: np.ndarray,
-        oracle_expr: str,
-        tolerance: float,
-        actual_diff: float,
+        inner: str,
+        plugin: Any,
+        orig: Any,
+        trans: Any,
+        x: Any,
+        mr: MetamorphicRelation,
+        display_expr: str,
     ) -> OracleResult:
         """
-        用容差感知的 _T 包装器对 oracle_expr 求值。
-
-        _T 覆写 __eq__ 使 == 走 np.isclose，其余算术/比较原样保留，
-        从而使任意 Python 表达式（含 +、*、abs、all 等）均可正确求值。
+        布尔组合表达式退化路径（如 (trans==orig+1)|(x<0)）。
+        转换至 numpy 后求值；此路径中的 == 为精确等值，不经 allclose。
         """
-        tol = tolerance
-
-        class _T:
-            """容差感知的数组包装器"""
-
-            __slots__ = ("v",)
-
-            def __init__(self, v):
-                self.v = (
-                    v.astype(float)
-                    if isinstance(v, np.ndarray)
-                    else np.asarray(v, dtype=float)
-                )
-
-            def __add__(self, o):
-                return _T(self.v + _u(o))
-
-            def __radd__(self, o):
-                return _T(_u(o) + self.v)
-
-            def __sub__(self, o):
-                return _T(self.v - _u(o))
-
-            def __rsub__(self, o):
-                return _T(_u(o) - self.v)
-
-            def __mul__(self, o):
-                return _T(self.v * _u(o))
-
-            def __rmul__(self, o):
-                return _T(_u(o) * self.v)
-
-            def __truediv__(self, o):
-                return _T(self.v / _u(o))
-
-            def __rtruediv__(self, o):
-                return _T(_u(o) / self.v)
-
-            def __neg__(self):
-                return _T(-self.v)
-
-            def __abs__(self):
-                return _T(np.abs(self.v))
-
-            # 比较运算：== 使用 isclose，其余保持数学语义
-            def __eq__(self, o) -> bool:
-                return np.isclose(self.v, _u(o), atol=tol, rtol=0)  # type: ignore[override]
-
-            def __lt__(self, o):
-                return self.v < _u(o)
-
-            def __le__(self, o):
-                return self.v <= _u(o)
-
-            def __gt__(self, o):
-                return self.v > _u(o)
-
-            def __ge__(self, o):
-                return self.v >= _u(o)
-
-        def _u(x):
-            return x.v if isinstance(x, _T) else x
-
-        # 剥去外层 all(...)（末尾统一用 np.all 处理）
-        expr = oracle_expr.strip()
-        if expr.startswith("all(") and expr.endswith(")"):
-            expr = expr[4:-1]
-
-        ctx = {
-            "__builtins__": {},
-            "orig": _T(orig_np),
-            "trans": _T(trans_np),
-            "x": _T(x_np),
-            "all": np.all,
-            "any": np.any,
-            "abs": lambda v: _T(np.abs(_u(v))),
-            "np": np,
-        }
-
         try:
-            raw = eval(expr, ctx)  # noqa: S307
-            passed = bool(np.all(_u(raw)))
+            ctx = {
+                "orig": plugin.to_numpy(orig),
+                "trans": plugin.to_numpy(trans),
+                "x": plugin.to_numpy(x),
+            }
+            raw = _safe_eval_numpy(inner, ctx)
+            passed = bool(np.all(raw))
             return OracleResult(
                 passed=passed,
-                expr=oracle_expr,
-                actual_diff=actual_diff,
-                tolerance=tolerance,
-                detail=(
-                    "" if passed else f"ORACLE_VIOLATION: '{oracle_expr}' not satisfied"
-                ),
+                expr=display_expr,
+                actual_diff=float("nan"),
+                tolerance=mr.tolerance,
+                detail="" if passed else f"ORACLE_VIOLATION: '{display_expr}' not satisfied",
             )
         except Exception as e:
-            logger.debug(f"oracle_expr eval error | expr='{oracle_expr}' | {e}")
+            logger.debug(f"complex oracle eval error | expr='{display_expr}' | {e}")
             return OracleResult(
                 passed=False,
-                expr=oracle_expr,
-                actual_diff=actual_diff,
-                tolerance=tolerance,
+                expr=display_expr,
+                actual_diff=float("inf"),
+                tolerance=mr.tolerance,
                 detail=f"ORACLE_EVAL_ERROR: {e}",
             )

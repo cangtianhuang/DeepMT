@@ -85,11 +85,14 @@ class OracleResult:
     由 MRVerifier.verify() 产生，流向 ResultsManager 持久化。
 
     Attributes:
-        passed:      MR 是否满足
-        expr:        评估使用的 oracle 表达式字符串
-        actual_diff: 实测最大绝对差值（orig 与 trans 之间）
-        tolerance:   配置的数值容差阈值
-        detail:      补充信息（如失败原因、SHAPE_MISMATCH 等）
+        passed:               MR 是否满足
+        expr:                 评估使用的 oracle 表达式字符串
+        actual_diff:          实测最大绝对差值 max|lhs - rhs|
+        tolerance:            配置的数值容差阈值
+        detail:               补充信息（如失败原因、SHAPE_MISMATCH 等）
+        max_rel_diff:         最大相对差值；仅等值（==）路径有效
+        mismatched_elements:  违规元素数（== 路径超容差；不等式路径不满足约束）
+        total_elements:       参与比较的总元素数
     """
 
     passed: bool
@@ -97,3 +100,6 @@ class OracleResult:
     actual_diff: float
     tolerance: float
     detail: str = ""
+    max_rel_diff: float = float("inf")
+    mismatched_elements: int = 0
+    total_elements: int = 0

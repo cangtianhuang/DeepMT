@@ -10,7 +10,7 @@ No LLM or network dependencies.
 import torch
 import pytest
 
-from deepmt.ir.schema import MetamorphicRelation, OracleResult, OperatorIR
+from deepmt.ir.schema import MetamorphicRelation, OperatorIR
 from deepmt.mr_generator.base.mr_templates import MRTemplatePool
 from deepmt.analysis.mr_verifier import MRVerifier
 from deepmt.plugins.pytorch_plugin import PyTorchPlugin

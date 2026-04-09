@@ -101,15 +101,36 @@ class FrameworkPlugin(ABC):
     @abstractmethod
     def allclose(self, a: Any, b: Any, atol: float, rtol: float = 0.0) -> CompareResult:
         """
-        比较两个张量，返回详细的差值统计。
+        比较两个张量，返回详细的差值统计。支持广播语义。
 
         Args:
-            a, b:  待比较的张量（或可转换为张量的值）
+            a, b:  待比较的张量（或可转换为张量的值）；形状广播兼容即可
             atol:  绝对容差
             rtol:  相对容差（默认 0.0）；判定条件：|a-b| <= atol + rtol*|b|
 
         Returns:
             CompareResult，含通过状态、最大绝对/相对差值、不匹配元素统计
+        """
+        ...
+
+    @abstractmethod
+    def eval_expr(self, expr: str, orig: Any, trans: Any, x: Any) -> Any:
+        """
+        委托计算接口：在框架张量空间内执行表达式，返回框架原生张量。
+
+        expr 中可使用变量 orig / trans / x 及框架原生数学函数（abs、exp 等）。
+        标量结果需包装为与 orig 同 dtype 的零维张量。
+        不包含任何 MR / oracle 业务语义，仅作为计算代理。
+        """
+        ...
+
+    @abstractmethod
+    def element_compare(self, a: Any, b: Any, op: str) -> CompareResult:
+        """
+        逐元素不等式比较原语，返回完整统计。
+
+        op: "!=" | "<" | "<=" | ">" | ">="
+        支持框架原生广播语义（a/b 形状广播兼容即可）。
         """
         ...
 

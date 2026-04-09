@@ -80,6 +80,27 @@ class PyTorchPlugin(FrameworkPlugin):
         "bool":    torch.bool,
     }
 
+    _TORCH_OPS: ClassVar[Dict[str, Any]] = {
+        "abs":  torch.abs,
+        "exp":  torch.exp,
+        "sqrt": torch.sqrt,
+        "log":  torch.log,
+        "sin":  torch.sin,
+        "cos":  torch.cos,
+        "all":  torch.all,
+        "any":  torch.any,
+        "sum":  torch.sum,
+        "mean": torch.mean,
+    }
+
+    _CMP_FN: ClassVar[Dict[str, Any]] = {
+        "!=": torch.ne,
+        "<":  torch.lt,
+        "<=": torch.le,
+        ">":  torch.gt,
+        ">=": torch.ge,
+    }
+
     def _to_tensor(self, value: Any) -> torch.Tensor:
         if isinstance(value, torch.Tensor):
             return value
@@ -122,7 +143,9 @@ class PyTorchPlugin(FrameworkPlugin):
 
     def allclose(self, a: Any, b: Any, atol: float, rtol: float = 0.0) -> CompareResult:
         if isinstance(a, torch.Tensor) and isinstance(b, torch.Tensor):
-            if a.shape != b.shape:
+            try:
+                a, b = torch.broadcast_tensors(a, b)
+            except RuntimeError:
                 return CompareResult(
                     passed=False,
                     max_abs_diff=float("inf"),
@@ -132,17 +155,9 @@ class PyTorchPlugin(FrameworkPlugin):
                 )
 
             total_elements = a.numel()
-
-            # 单次调用（atol=0, rtol=0）取真实 diff 统计；
-            # 完全相等则直接通过，否则解析消息并用调用方指定的容差判定。
             try:
                 torch.testing.assert_close(
-                    a,
-                    b,
-                    atol=0,
-                    rtol=0,
-                    check_dtype=False,
-                    equal_nan=False,
+                    a, b, atol=0, rtol=0, check_dtype=False, equal_nan=False,
                 )
                 return CompareResult(
                     passed=True,
@@ -155,7 +170,6 @@ class PyTorchPlugin(FrameworkPlugin):
                 max_abs_diff, max_rel_diff, mismatched_elements, total_elements = (
                     _parse_assert_close_msg(str(e))
                 )
-                # 判定条件：绝对差值在 atol 内，或相对差值在 rtol 内
                 passed = max_abs_diff <= atol or max_rel_diff <= rtol
                 return CompareResult(
                     passed=passed,
@@ -166,9 +180,11 @@ class PyTorchPlugin(FrameworkPlugin):
                 )
 
         # ── 非张量输入回退至 numpy ─────────────────────────────────────────
-        a_np = self.to_numpy(a).astype(float)
-        b_np = self.to_numpy(b).astype(float)
-        if a_np.shape != b_np.shape:
+        a_np = self.to_numpy(a)
+        b_np = self.to_numpy(b)
+        try:
+            a_np, b_np = np.broadcast_arrays(a_np.astype(float), b_np.astype(float))
+        except ValueError:
             return CompareResult(
                 passed=False,
                 max_abs_diff=float("inf"),
@@ -178,14 +194,55 @@ class PyTorchPlugin(FrameworkPlugin):
             )
         abs_b = np.abs(b_np)
         abs_diff = np.abs(a_np - b_np)
-        max_abs_diff = float(abs_diff.max())
-        max_rel_diff = float((abs_diff / np.maximum(abs_b, np.finfo(float).tiny)).max())
         threshold = atol + rtol * abs_b
         mismatched_mask = abs_diff > threshold
         return CompareResult(
             passed=bool(mismatched_mask.sum() == 0),
-            max_abs_diff=max_abs_diff,
-            max_rel_diff=max_rel_diff,
+            max_abs_diff=float(abs_diff.max()),
+            max_rel_diff=float((abs_diff / np.maximum(abs_b, np.finfo(float).tiny)).max()),
             mismatched_elements=int(mismatched_mask.sum()),
             total_elements=a_np.size,
+        )
+
+    def eval_expr(self, expr: str, orig: Any, trans: Any, x: Any) -> Any:
+        ns = {
+            "__builtins__": {},
+            "orig": orig,
+            "trans": trans,
+            "x": x,
+            **self._TORCH_OPS,
+        }
+        result = eval(expr, ns)  # noqa: S307
+        if not isinstance(result, torch.Tensor):
+            dtype = orig.dtype if isinstance(orig, torch.Tensor) else torch.float32
+            result = torch.tensor(result, dtype=dtype)
+        return result
+
+    def element_compare(self, a: Any, b: Any, op: str) -> CompareResult:
+        fn = self._CMP_FN.get(op)
+        if fn is None:
+            raise ValueError(f"Unsupported comparison operator: {op!r}")
+        a_t = a if isinstance(a, torch.Tensor) else torch.as_tensor(a)
+        b_t = b if isinstance(b, torch.Tensor) else torch.as_tensor(b)
+        try:
+            mask = fn(a_t, b_t)
+        except RuntimeError:
+            return CompareResult(
+                passed=False,
+                max_abs_diff=float("inf"),
+                max_rel_diff=float("inf"),
+                mismatched_elements=0,
+                total_elements=0,
+            )
+        mismatched = int((~mask).sum())
+        a_f = a_t.float()
+        b_f = b_t.float()
+        abs_diff = (a_f - b_f).abs()
+        rel_diff = abs_diff / b_f.abs().clamp(min=torch.finfo(torch.float32).tiny)
+        return CompareResult(
+            passed=mismatched == 0,
+            max_abs_diff=float(abs_diff.max()),
+            max_rel_diff=float(rel_diff.max()),
+            mismatched_elements=mismatched,
+            total_elements=int(mask.numel()),
         )
