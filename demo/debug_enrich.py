@@ -47,6 +47,7 @@ print("\n" + "=" * 60)
 print("Step 3: 完整 enrich（无 LLM）")
 result = enricher.enrich(
     name=NAME,
+    framework="pytorch",
     api_type="function",
     doc_url=DOC_URL,
     use_llm=False,

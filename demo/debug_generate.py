@@ -14,7 +14,7 @@ import torch.nn.functional as F
 
 from deepmt.ir.schema import OperatorIR
 from deepmt.mr_generator.base.mr_templates import MRTemplatePool
-from deepmt.mr_generator.operator.operator_mr import OperatorMRGenerator
+from deepmt.mr_generator.operator.operator_mr_generator import OperatorMRGenerator
 
 OPERATOR_NAME = "torch.nn.functional.relu"
 OPERATOR_FUNC = F.relu
@@ -51,6 +51,7 @@ operator_ir = OperatorIR(
 
 candidates = generator.generate_only(
     operator_ir=operator_ir,
+    framework="pytorch",
     operator_func=OPERATOR_FUNC,
     auto_fetch_info=False,   # 不联网
     sources=["template"],    # 仅模板，不使用 LLM

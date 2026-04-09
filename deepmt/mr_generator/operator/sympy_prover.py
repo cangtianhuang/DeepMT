@@ -433,16 +433,25 @@ class SymPyProver:
             )
 
             if is_proven:
-                logger.debug(f"MR proven: {mr.description}")
+                logger.info(
+                    f"⚡ [GEN]   PROVED ✓  {mr.description}\n"
+                    f"           oracle_expr: {mr.oracle_expr}\n"
+                    f"           orig  = {orig}\n"
+                    f"           trans = {trans}"
+                )
             else:
-                logger.debug(
-                    f"MR proof failed: {mr.description}. Reason: {error_msg}"
+                logger.info(
+                    f"⚡ [GEN]   UNPROVED ✗  {mr.description}\n"
+                    f"           oracle_expr: {mr.oracle_expr}\n"
+                    f"           orig  = {orig}\n"
+                    f"           trans = {trans}\n"
+                    f"           reason: {error_msg}"
                 )
             return is_proven, error_msg
 
         except Exception as e:
             error_msg = f"SymPy proof error: {str(e)}"
-            logger.debug(f"SymPy proof exception: {error_msg}")
+            logger.info(f"⚡ [GEN]   UNPROVED ✗  {mr.description}  reason: {error_msg}")
             return False, error_msg
 
     def prove_mr(
@@ -542,9 +551,6 @@ class SymPyProver:
         logger.info("⚡ [GEN] " + f"Proving {len(mrs)} MRs using SymPy...")
 
         if sympy_expr is None:
-            logger.debug(
-                "Converting code to SymPy expression (once for all MRs)..."
-            )
             sympy_expr = self.code_to_sympy(
                 code=operator_code,
                 func=operator_func,
@@ -557,14 +563,15 @@ class SymPyProver:
                     f"All {len(mrs)} MRs will fail proof."
                 )
                 return []
-        else:
-            logger.debug(
-                "Using provided SymPy expression (reusing from previous stage)"
-            )
 
         if num_inputs is None:
             free_symbols = sympy_expr.free_symbols
             num_inputs = len(free_symbols) if free_symbols else 1
+
+        logger.info(
+            f"⚡ [GEN] SymPy expression: {sympy_expr}"
+            f"  (free_symbols={sympy_expr.free_symbols})"
+        )
 
         for i, mr in enumerate(mrs):
             is_proven, error_msg = self.prove_mr_with_expr(
@@ -576,11 +583,6 @@ class SymPyProver:
 
             if is_proven:
                 proven_mrs.append(mr)
-                logger.debug(f"MR {i+1} proven: {mr.description}")
-            else:
-                logger.debug(
-                    f"MR {i+1} proof failed: {mr.description}. Reason: {error_msg}"
-                )
 
         logger.info(f"⚡ [GEN] SymPy proof completed: {len(proven_mrs)}/{len(mrs)} MRs proven")
         return proven_mrs

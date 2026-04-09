@@ -18,8 +18,8 @@ import torch.nn.functional as F
 
 from deepmt.ir.schema import OperatorIR
 from deepmt.mr_generator.base.mr_templates import MRTemplatePool
-from deepmt.mr_generator.operator.mr_prechecker import MRPreChecker
-from deepmt.mr_generator.operator.operator_mr import OperatorMRGenerator
+from deepmt.analysis.mr_prechecker import MRPreChecker
+from deepmt.mr_generator.operator.operator_mr_generator import OperatorMRGenerator
 from deepmt.mr_generator.operator.sympy_prover import SymPyProver
 from deepmt.mr_generator.operator.sympy_translator import SympyTranslator
 

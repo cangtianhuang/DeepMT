@@ -66,6 +66,16 @@ class ASTParser:
             "ceil": sp.ceiling,
             # 符号函数
             "sign": sp.sign,
+            # 激活函数（处理 torch.relu(x)、relu(x) 等调用形式）
+            "relu": lambda x: sp.Max(0, x),
+            "relu_": lambda x: sp.Max(0, x),  # in-place 版本，数学等价
+            "sigmoid": lambda x: sp.Rational(1) / (1 + sp.exp(-x)),
+            "silu": lambda x: x / (1 + sp.exp(-x)),
+            "gelu": lambda x: x * sp.Rational(1, 2) * (1 + sp.erf(x / sp.sqrt(2))),
+            "leaky_relu": lambda x, negative_slope=sp.Rational(1, 100): sp.Piecewise(
+                (x, x >= 0), (negative_slope * x, True)
+            ),
+            "softplus": lambda x, beta=1, threshold=20: sp.log(1 + sp.exp(beta * x)) / beta,
         }
 
     def parse_to_sympy(self, code: str, num_inputs: int = None) -> Optional[sp.Expr]:
@@ -125,18 +135,73 @@ class ASTParser:
         symbols: List[sp.Symbol],
         param_to_symbol: Dict[str, sp.Symbol],
     ) -> Optional[sp.Expr]:
-        """解析函数体，提取return表达式"""
+        """解析函数体，提取return表达式（顺序处理赋值语句，建立局部变量映射）"""
         # 简单情况：只有一个return语句
         if len(body) == 1 and isinstance(body[0], ast.Return):
             return self._parse_expr(body[0].value, symbols, param_to_symbol)
 
-        # 复杂情况：多个语句，查找最后一个return
-        for stmt in reversed(body):
-            if isinstance(stmt, ast.Return) and stmt.value is not None:
-                return self._parse_expr(stmt.value, symbols, param_to_symbol)
+        # 复杂情况：顺序处理语句，跟踪局部变量赋值
+        local_vars: Dict[str, sp.Expr] = {}
+
+        for stmt in body:
+            # 将参数映射与当前局部变量合并，局部变量优先
+            extended_map = {**param_to_symbol, **local_vars}
+
+            if isinstance(stmt, ast.Assign):
+                # 处理简单赋值：var = expr
+                if (
+                    len(stmt.targets) == 1
+                    and isinstance(stmt.targets[0], ast.Name)
+                ):
+                    var_name = stmt.targets[0].id
+                    try:
+                        value = self._parse_expr(stmt.value, symbols, extended_map)
+                        local_vars[var_name] = value
+                    except Exception as e:
+                        logger.debug(f"Failed to parse assignment '{var_name}': {e}")
+
+            elif isinstance(stmt, ast.If):
+                # 从 if/else 分支中提取赋值（优先取 else 分支，跳过 dispatch 守卫分支）
+                self._extract_assignments_from_if(stmt, symbols, extended_map, local_vars)
+
+            elif isinstance(stmt, ast.Return) and stmt.value is not None:
+                return self._parse_expr(stmt.value, symbols, extended_map)
 
         logger.warning("No return statement found in function body")
         return None
+
+    def _extract_assignments_from_if(
+        self,
+        if_node: ast.If,
+        symbols: List[sp.Symbol],
+        extended_map: Dict[str, sp.Symbol],
+        local_vars: Dict[str, sp.Expr],
+    ) -> None:
+        """
+        从 if/else 语句中提取赋值到 local_vars。
+
+        策略：优先取 else 分支（核心计算路径，避免跳过 dispatch 守卫），
+        再取 if 分支，已赋值的变量不覆盖。
+        """
+        # 优先 else 分支（如 torch.relu），再 if 分支（如 torch.relu_）
+        for branch in [if_node.orelse, if_node.body]:
+            for branch_stmt in branch:
+                if (
+                    isinstance(branch_stmt, ast.Assign)
+                    and len(branch_stmt.targets) == 1
+                    and isinstance(branch_stmt.targets[0], ast.Name)
+                ):
+                    var_name = branch_stmt.targets[0].id
+                    if var_name not in local_vars:
+                        try:
+                            value = self._parse_expr(
+                                branch_stmt.value, symbols, extended_map
+                            )
+                            local_vars[var_name] = value
+                        except Exception as e:
+                            logger.debug(
+                                f"Failed to parse if-branch assignment '{var_name}': {e}"
+                            )
 
     def _parse_expr(
         self,
