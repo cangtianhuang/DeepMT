@@ -392,7 +392,7 @@ class OperatorCatalog:
             }
         """
         fw = self._normalize_framework(framework)
-        path = self._catalog_dir / f"{fw}_exclude.yaml"
+        path = self._catalog_dir / f"{fw}_exclusion_rule.yaml"
         if not path.exists():
             return {"excluded_namespaces": [], "excluded_prefixes": [], "excluded_exact": set()}
         try:

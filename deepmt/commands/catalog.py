@@ -590,7 +590,7 @@ def catalog_check_updates(framework, version, no_cache, show_no_sig, as_json, sk
     """对比官方文档 API 与本地目录，报告新增/变更的 API。
 
     从官方文档逐页提取所有个体 API（类/函数），与本地算子目录（pytorch.yaml）
-    和排除列表（pytorch_exclude.yaml）对比，输出三类差异：
+    和排除列表（pytorch_exclusion_rule.yaml）对比，输出三类差异：
 
     \b
     1. 目录中的算子，在文档中签名发生变化（recorded_sig != current_sig）

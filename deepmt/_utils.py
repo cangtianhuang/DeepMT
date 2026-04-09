@@ -13,7 +13,7 @@ def not_implemented_error(feature: str, hint: str = ""):
     sys.exit(2)
 
 
-def get_repo(repo_dir: str = "data/mr_repository"):
+def get_repo(repo_dir: str = "data/mr_repository/operator"):
     """获取 MRRepository 实例（复用配置中的路径）。"""
     from deepmt.mr_generator.base.mr_repository import MRRepository
     return MRRepository(repo_dir=repo_dir)

@@ -1,7 +1,7 @@
 """MR 仓库：以 YAML 文件持久化存储蜕变关系（每算子一文件）。
 
 存储结构：
-    data/mr_repository/<operator_name>.yaml
+    data/mr_repository/operator/<operator_name>.yaml
 
 每个文件格式：
     operator: torch.nn.functional.relu
@@ -35,7 +35,7 @@ from deepmt.ir.schema import MetamorphicRelation
 class MRRepository:
     """MR 仓库：每个算子的 MR 列表存为独立 YAML 文件，便于人工查阅与版本追踪。"""
 
-    def __init__(self, repo_dir: str = "data/mr_repository"):
+    def __init__(self, repo_dir: str = "data/mr_repository/operator"):
         self.repo_dir = Path(repo_dir)
         self.repo_dir.mkdir(parents=True, exist_ok=True)
         logger.info(f"📦 [REPO] MR repository at: {self.repo_dir}")
@@ -156,12 +156,8 @@ class MRRepository:
         return self._op_file(operator_name).exists()
 
     def list_operators(self) -> List[str]:
-        """列出所有有 MR 的算子名称（排除 mr_templates.yaml）。"""
-        return sorted(
-            f.stem
-            for f in self.repo_dir.glob("*.yaml")
-            if f.name != "mr_templates.yaml"
-        )
+        """列出所有有 MR 的算子名称。"""
+        return sorted(f.stem for f in self.repo_dir.glob("*.yaml"))
 
     def delete(
         self,
