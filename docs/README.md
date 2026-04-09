@@ -40,13 +40,12 @@ DeepMT/
 │   └── commands/               #   mr / test / repo / catalog / data / health
 ├── api/                        # 用户 API（DeepMT 主入口）
 ├── core/                       # 微内核框架
-│   ├── config_loader.py        #   配置加载
-│   ├── framework.py            #   FrameworkType 定义
+│   ├── config_manager.py       #   配置加载与管理
 │   ├── ir_manager.py           #   IR 管理
 │   ├── logger.py               #   日志
-│   ├── oracle_evaluator.py     #   oracle_expr 运行时评估
 │   ├── plugins_manager.py      #   插件加载
-│   ├── results_manager.py      #   结果管理
+│   └── results_manager.py      #   结果管理
+├── engine/                     # 测试执行引擎
 │   ├── scheduler.py            #   任务调度
 │   └── test_runner.py          #   测试执行
 ├── ir/                         # 统一中间表示
@@ -54,9 +53,8 @@ DeepMT/
 │   └── converter.py            #   IR 转换器
 ├── mr_generator/               # MR 生成引擎
 │   ├── operator/               #   算子层（核心）
-│   │   ├── operator_mr.py      #     主生成器（4阶段流水线）
+│   │   ├── operator_mr_generator.py      # 主生成器（4阶段流水线）
 │   │   ├── operator_llm_mr_generator.py  # LLM 生成
-│   │   ├── mr_prechecker.py              # 数值预检
 │   │   ├── sympy_prover.py               # 符号证明
 │   │   ├── sympy_translator.py           # 代码→SymPy
 │   │   └── ast_parser.py                 # AST 解析
@@ -74,7 +72,7 @@ DeepMT/
 │   │   └── tasks/              #     任务规格 YAML
 │   └── web_search/             #   搜索、Sphinx 解析、算子文档获取
 ├── plugins/                    # 框架适配器（PyTorch 可用）
-├── analysis/                   # 缺陷分类器
+├── analysis/                   # 输入生成、预检、验证（mr_prechecker.py、mr_verifier.py 等）
 ├── monitoring/                 # 健康检查与进度追踪
 ├── tests/                      # 测试用例
 │   ├── unit/                   #   单元测试
@@ -111,7 +109,7 @@ result = deepmt.test_operator("torch.add", framework="pytorch", num_tests=10)
 ### 直接调用 MR 生成器
 
 ```python
-from mr_generator.operator.operator_mr import OperatorMRGenerator
+from mr_generator.operator.operator_mr_generator import OperatorMRGenerator
 
 generator = OperatorMRGenerator()
 mrs = generator.generate(
@@ -183,4 +181,4 @@ mr_generation:
 
 ---
 
-*最后更新：2026-04-04*
+*最后更新：2026-04-09*

@@ -20,9 +20,9 @@
 
 | 模块 | 说明 |
 |------|------|
-| `mr_generator/operator/operator_mr.py` | 主生成器（4 阶段流水线） |
+| `mr_generator/operator/operator_mr_generator.py` | 主生成器（4 阶段流水线） |
 | `mr_generator/operator/operator_llm_mr_generator.py` | LLM 猜想生成 |
-| `mr_generator/operator/mr_prechecker.py` | 随机输入快速筛选 |
+| `analysis/mr_prechecker.py` | 随机输入快速筛选 |
 | `mr_generator/operator/sympy_prover.py` | SymPy 符号证明引擎 |
 | `mr_generator/operator/sympy_translator.py` | 代码 → SymPy（LLM + AST 双路径） |
 | `mr_generator/operator/ast_parser.py` | Python AST → SymPy |
@@ -98,4 +98,4 @@ tests/
 
 ---
 
-*最后更新：2026-04-08（Phase A + Phase B 完成）*
+*最后更新：2026-04-09（文件重构同步）*

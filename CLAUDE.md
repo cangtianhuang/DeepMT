@@ -50,7 +50,7 @@ source .venv/bin/activate && PYTHONPATH=$(pwd) python -m pytest tests/
 
 采用**微内核 + 插件化**架构。MR 生成与测试执行分离：先生成 MR 存入知识库（SQLite），再复用于多次测试。
 
-### MR 生成四阶段流水线（`deepmt/mr_generator/operator/operator_mr.py`）
+### MR 生成四阶段流水线（`deepmt/mr_generator/operator/operator_mr_generator.py`）
 
 1. **信息准备** — 提取算子代码与文档（网络搜索）
 2. **候选生成** — LLM 猜想 + 模板池匹配
@@ -72,24 +72,22 @@ source .venv/bin/activate && PYTHONPATH=$(pwd) python -m pytest tests/
 │   ├── cli.py              #   CLI 命令组
 │   ├── client.py           #   DeepMT / TestResult 高层 API
 │   ├── commands/           #   CLI 子命令实现（mr / test / repo / catalog / data / health）
-│   ├── core/               #   微内核框架（原 core/）
-│   │   ├── config_loader.py    #   配置加载
-│   │   ├── framework.py        #   FrameworkType 定义
+│   ├── core/               #   微内核框架
+│   │   ├── config_manager.py   #   配置加载与管理
 │   │   ├── ir_manager.py       #   IR 管理
 │   │   ├── logger.py           #   日志（get_logger / log_structured）
-│   │   ├── oracle_evaluator.py #   oracle_expr 运行时评估
 │   │   ├── plugins_manager.py  #   插件加载
-│   │   ├── results_manager.py  #   结果管理
+│   │   └── results_manager.py  #   结果管理
+│   ├── engine/             #   测试执行引擎
 │   │   ├── scheduler.py        #   任务调度
 │   │   └── test_runner.py      #   测试执行（使用已生成的 MR）
-│   ├── ir/                 #   统一中间表示（原 ir/）
+│   ├── ir/                 #   统一中间表示
 │   │   ├── schema.py           #   IR 与 MR 数据结构
 │   │   └── converter.py        #   IR 转换器
-│   ├── mr_generator/       #   MR 生成引擎（原 mr_generator/）
+│   ├── mr_generator/       #   MR 生成引擎
 │   │   ├── operator/           #   算子层（核心）
-│   │   │   ├── operator_mr.py  #     主生成器（generate/verify 流水线）
+│   │   │   ├── operator_mr_generator.py  #   主生成器（generate/verify 流水线）
 │   │   │   ├── operator_llm_mr_generator.py  # LLM 生成
-│   │   │   ├── mr_prechecker.py              # 数值预检
 │   │   │   ├── sympy_prover.py               # 符号证明
 │   │   │   ├── sympy_translator.py           # 代码→SymPy
 │   │   │   └── ast_parser.py                 # AST 解析
@@ -97,12 +95,12 @@ source .venv/bin/activate && PYTHONPATH=$(pwd) python -m pytest tests/
 │   │   ├── application/        #   应用层（开发中）
 │   │   ├── base/               #   知识库、模板池、MR 仓库
 │   │   └── config/             #   模板/知识库 YAML + 算子目录
-│   ├── plugins/            #   框架适配器（原 plugins/，目前仅 PyTorch 可用）
-│   ├── tools/              #   通用工具（原 tools/）
+│   ├── plugins/            #   框架适配器（目前仅 PyTorch 可用）
+│   ├── tools/              #   通用工具
 │   │   ├── llm/            #     LLM 客户端 / OCR
 │   │   └── web_search/     #     搜索、Sphinx 解析、算子文档获取（缓存位于 data/web_search_cache/）
-│   ├── analysis/           #   缺陷分类器（原 analysis/）
-│   └── monitoring/         #   健康检查与进度追踪（原 monitoring/）
+│   ├── analysis/           #   输入生成、预检、验证（mr_prechecker.py、mr_verifier.py 等）
+│   └── monitoring/         #   健康检查与进度追踪
 ├── tests/                  # 测试用例
 ├── demo/                   # 快速演示
 ├── docs/                   # 开发文档
