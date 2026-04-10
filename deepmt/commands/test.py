@@ -5,7 +5,10 @@ deepmt test — 测试执行子命令组
     operator      测试单个算子
     batch         批量测试（从 MR 知识库自动选取算子，RandomGenerator 生成输入）
     mutate        变异测试（注入已知错误实现，验证缺陷检测能力）
+    open          开放测试（对含预设缺陷的插件运行批量测试，模拟真实框架缺陷场景）
     report        生成测试结果报告
+    dedup         缺陷线索去重（将失败证据包聚类为独立缺陷线索）
+    evidence      证据包管理（list / show / script）
     from-config   从 YAML 配置文件批量测试
     history       查看测试历史
     failures      查看失败的测试用例
@@ -132,8 +135,9 @@ def test_operator(operator, framework, inputs, generate, as_json):
     default=False,
     help="仅使用已通过验证（verified=True）的 MR",
 )
+@click.option("--collect-evidence", is_flag=True, default=False, help="失败时捕获可复现证据包并保存到 data/evidence/")
 @click.option("--json", "as_json", is_flag=True, default=False, help="以 JSON 格式输出结果")
-def test_batch(framework, operator, category, mr_id, n_samples, verified_only, as_json):
+def test_batch(framework, operator, category, mr_id, n_samples, verified_only, collect_evidence, as_json):
     """从 MR 知识库批量执行蜕变测试（自动生成输入）。
 
     系统从 MR 知识库中读取已生成的 MR，调用 RandomGenerator 自动生成随机输入，
@@ -162,6 +166,7 @@ def test_batch(framework, operator, category, mr_id, n_samples, verified_only, a
                     n_samples=n_samples,
                     verified_only=verified_only,
                     mr_id=mr_id,
+                    collect_evidence=collect_evidence,
                 )
             ]
         else:
@@ -208,6 +213,8 @@ def test_batch(framework, operator, category, mr_id, n_samples, verified_only, a
                     f"  pass={m.passed}/{m.total}"
                     + (f"  err={m.errors}" if m.errors else "")
                 )
+            if s.evidence_ids:
+                click.echo(f"      证据包: {', '.join(s.evidence_ids)}")
 
         click.echo("─" * 70)
         total_ops = len(summaries)
@@ -325,6 +332,173 @@ def test_mutate(operator, framework, mutant_type, n_samples, verified_only, scal
         sys.exit(1)
 
 
+# ── open ─────────────────────────────────────────────────────────────────────
+
+
+@test.command("open")
+@click.option(
+    "--framework",
+    default="pytorch",
+    type=click.Choice(list(_ALL_FRAMEWORKS), case_sensitive=False),
+    show_default=True,
+    help="目标框架",
+)
+@click.option(
+    "--operator",
+    default=None,
+    help="指定单个算子（不指定则测试知识库中所有算子）",
+)
+@click.option(
+    "--inject-faults",
+    "inject_faults",
+    default=None,
+    help=(
+        "缺陷注入规格，优先于 DEEPMT_INJECT_FAULTS 环境变量。"
+        " 格式: 'all' 或 'op1:mutant1,op2:mutant2'。"
+        " 例: 'torch.nn.functional.relu:negate,torch.exp:scale'"
+    ),
+)
+@click.option(
+    "--list-catalog",
+    "list_catalog",
+    is_flag=True,
+    default=False,
+    help="列出内置缺陷目录后退出",
+)
+@click.option("--n-samples", default=10, show_default=True, type=int, help="每条 MR 的随机测试样本数")
+@click.option("--verified-only", is_flag=True, default=False, help="仅使用已验证的 MR")
+@click.option("--collect-evidence", is_flag=True, default=False, help="失败时保存可复现证据包")
+@click.option("--json", "as_json", is_flag=True, default=False, help="以 JSON 格式输出结果")
+def test_open(framework, operator, inject_faults, list_catalog, n_samples, verified_only, collect_evidence, as_json):
+    """开放测试：对含预设缺陷的插件运行批量蜕变测试（受控真实场景）。
+
+    使用 FaultyPyTorchPlugin 代替正常 PyTorchPlugin，将指定算子替换为含已知缺陷的版本，
+    验证 DeepMT 能否在"真实框架缺陷"场景中检测问题。
+
+    缺陷来源（优先级从高到低）：
+      1. --inject-faults 命令行参数
+      2. DEEPMT_INJECT_FAULTS 环境变量
+      3. 若均未设置，使用完整内置缺陷目录
+
+    \b
+    示例:
+      deepmt test open --list-catalog
+      deepmt test open --operator torch.nn.functional.relu --inject-faults all
+      deepmt test open --inject-faults torch.exp:scale --n-samples 20 --collect-evidence
+      DEEPMT_INJECT_FAULTS=all deepmt test open
+    """
+    _check_framework(framework)
+
+    try:
+        from deepmt.plugins.faulty_pytorch_plugin import (
+            BUILTIN_FAULT_CATALOG,
+            FaultyPyTorchPlugin,
+        )
+
+        if list_catalog:
+            click.echo("\n内置缺陷目录：")
+            click.echo("─" * 72)
+            for op, (mt, desc) in FaultyPyTorchPlugin.list_catalog().items():
+                click.echo(f"  {op}")
+                click.echo(f"    变异类型: {mt}")
+                click.echo(f"    描述:     {desc}")
+                click.echo()
+            return
+
+        # 解析 fault_specs
+        import os
+
+        if inject_faults:
+            # 临时写入环境变量（仅本进程，不污染用户环境）
+            os.environ["DEEPMT_INJECT_FAULTS"] = inject_faults
+            faulty_plugin = FaultyPyTorchPlugin()
+            del os.environ["DEEPMT_INJECT_FAULTS"]
+        else:
+            env_val = os.environ.get("DEEPMT_INJECT_FAULTS", "")
+            if not env_val:
+                # 默认：激活全部内置缺陷
+                click.echo(
+                    click.style(
+                        "提示: 未指定 --inject-faults 且 DEEPMT_INJECT_FAULTS 未设置，"
+                        "将使用完整内置缺陷目录（all）。",
+                        fg="yellow",
+                    )
+                )
+                faulty_plugin = FaultyPyTorchPlugin(
+                    fault_specs={op: mt for op, (mt, _, _) in BUILTIN_FAULT_CATALOG.items()}
+                )
+            else:
+                faulty_plugin = FaultyPyTorchPlugin()
+
+        active = faulty_plugin.active_faults_from_env() if not inject_faults else {}
+        active_count = len(faulty_plugin._active_faults)
+
+        click.echo(f"\n开放测试（framework={framework}）| 激活缺陷算子: {active_count} 个")
+        click.echo("─" * 72)
+        for op, (mt, _, desc) in faulty_plugin._active_faults.items():
+            click.echo(f"  ⚠  {op}  [{mt}]  {desc[:60]}")
+        click.echo("─" * 72)
+
+        from deepmt.engine.batch_test_runner import BatchTestRunner
+
+        runner = BatchTestRunner(
+            backend_override=faulty_plugin,
+            evidence_collector=None,  # 使用默认（若 collect_evidence 则自动创建）
+        )
+
+        if operator:
+            summaries = [
+                runner.run_operator(
+                    operator_name=operator,
+                    framework=framework,
+                    n_samples=n_samples,
+                    verified_only=verified_only,
+                    collect_evidence=collect_evidence,
+                )
+            ]
+        else:
+            summaries = runner.run_batch(
+                framework=framework,
+                n_samples=n_samples,
+                verified_only=verified_only,
+            )
+
+        if as_json:
+            click.echo(json.dumps([s.to_dict() for s in summaries], ensure_ascii=False, indent=2))
+            return
+
+        if not summaries:
+            click.echo("没有找到可测试的算子（MR 知识库为空）。")
+            return
+
+        detected_ops = [s for s in summaries if s.failed > 0]
+        click.echo(f"\n开放测试结果（framework={framework}）")
+        click.echo("─" * 72)
+        for s in summaries:
+            if s.mr_count == 0:
+                continue
+            status_str = (
+                click.style("检出", fg="green") if s.failed > 0
+                else click.style("漏检", fg="red")
+            )
+            click.echo(
+                f"  [{status_str}] {s.operator}"
+                f"  fail={s.failed}/{s.total_cases}"
+                f"  err={s.errors}"
+            )
+            if s.evidence_ids:
+                click.echo(f"      证据: {', '.join(s.evidence_ids)}")
+        click.echo("─" * 72)
+        click.echo(
+            f"算子检出: {len(detected_ops)}/{len([s for s in summaries if s.mr_count > 0])}  |  "
+            f"总失败: {sum(s.failed for s in summaries)}"
+        )
+
+    except Exception as e:
+        click.echo(click.style(f"错误: {e}", fg="red"), err=True)
+        sys.exit(1)
+
+
 # ── report ────────────────────────────────────────────────────────────────────
 
 
@@ -373,6 +547,171 @@ def test_report(framework, operator, failures_only, limit, as_json):
             click.echo(json.dumps(report, ensure_ascii=False, indent=2))
         else:
             click.echo(gen.format_text(report))
+
+    except Exception as e:
+        click.echo(click.style(f"错误: {e}", fg="red"), err=True)
+        sys.exit(1)
+
+
+# ── dedup ─────────────────────────────────────────────────────────────────────
+
+
+@test.command("dedup")
+@click.option("--operator", default=None, help="按算子名称过滤")
+@click.option("--framework", default=None, help="按框架过滤")
+@click.option("--limit", default=0, show_default=True, type=int, help="最多显示条数（0=不限）")
+@click.option("--json", "as_json", is_flag=True, default=False, help="以 JSON 格式输出")
+def test_dedup(operator, framework, limit, as_json):
+    """缺陷线索去重：将失败证据包聚类为独立缺陷模式。
+
+    从 data/evidence/ 读取已保存的证据包，按（算子 × MR × 错误类型）签名聚类，
+    将大量重复失败压缩为可人工复核的缺陷线索集。
+
+    前提：先运行 deepmt test batch --collect-evidence 或 deepmt test open --collect-evidence
+    收集证据包。
+
+    \b
+    示例:
+      deepmt test dedup
+      deepmt test dedup --operator torch.nn.functional.relu
+      deepmt test dedup --limit 10 --json
+    """
+    try:
+        from deepmt.analysis.defect_deduplicator import DefectDeduplicator
+
+        dedup = DefectDeduplicator()
+        leads = dedup.deduplicate(operator=operator, framework=framework, limit=limit)
+
+        if as_json:
+            click.echo(json.dumps([l.to_dict() for l in leads], ensure_ascii=False, indent=2))
+            return
+
+        click.echo(dedup.format_text(leads))
+
+    except Exception as e:
+        click.echo(click.style(f"错误: {e}", fg="red"), err=True)
+        sys.exit(1)
+
+
+# ── evidence ──────────────────────────────────────────────────────────────────
+
+
+@test.group("evidence")
+def test_evidence():
+    """证据包管理：查看、展示可复现失败案例。"""
+
+
+@test_evidence.command("list")
+@click.option("--operator", default=None, help="按算子名称过滤")
+@click.option("--framework", default=None, help="按框架过滤")
+@click.option("--limit", default=20, show_default=True, type=int, help="最多显示条数（0=不限）")
+@click.option("--json", "as_json", is_flag=True, default=False, help="以 JSON 格式输出")
+def evidence_list(operator, framework, limit, as_json):
+    """列出已保存的证据包。
+
+    \b
+    示例:
+      deepmt test evidence list
+      deepmt test evidence list --operator torch.nn.functional.relu
+      deepmt test evidence list --limit 5 --json
+    """
+    try:
+        from deepmt.analysis.evidence_collector import EvidenceCollector
+
+        collector = EvidenceCollector()
+        packs = collector.list_all(operator=operator, framework=framework, limit=limit)
+
+        if as_json:
+            click.echo(json.dumps([p.to_dict() for p in packs], ensure_ascii=False, indent=2))
+            return
+
+        if not packs:
+            click.echo("暂无证据包记录。运行 deepmt test batch 时添加 --collect-evidence 可生成证据包。")
+            return
+
+        click.echo(f"\n证据包列表（共 {len(packs)} 条）")
+        click.echo("─" * 70)
+        for p in packs:
+            click.echo(
+                f"  {p.evidence_id}  {p.timestamp[:16]}"
+                f"  {p.operator}  [{p.framework} {p.framework_version}]"
+            )
+            click.echo(f"    MR: {p.mr_description[:60]}")
+            click.echo(f"    diff={p.actual_diff:.4g}  tol={p.tolerance:.4g}  {p.detail[:50]}")
+        click.echo("─" * 70)
+
+    except Exception as e:
+        click.echo(click.style(f"错误: {e}", fg="red"), err=True)
+        sys.exit(1)
+
+
+@test_evidence.command("show")
+@click.argument("evidence_id")
+@click.option("--json", "as_json", is_flag=True, default=False, help="以 JSON 格式输出完整数据")
+def evidence_show(evidence_id, as_json):
+    """显示单个证据包的详细信息。
+
+    \b
+    示例:
+      deepmt test evidence show abc123def456
+      deepmt test evidence show abc123def456 --json
+    """
+    try:
+        from deepmt.analysis.evidence_collector import EvidenceCollector
+
+        collector = EvidenceCollector()
+        pack = collector.load(evidence_id)
+
+        if pack is None:
+            click.echo(click.style(f"未找到证据包 {evidence_id!r}", fg="red"), err=True)
+            sys.exit(1)
+
+        if as_json:
+            click.echo(json.dumps(pack.to_dict(), ensure_ascii=False, indent=2))
+            return
+
+        click.echo(f"\n证据包详情 — {pack.evidence_id}")
+        click.echo("─" * 70)
+        click.echo(f"  时间:     {pack.timestamp}")
+        click.echo(f"  算子:     {pack.operator}")
+        click.echo(f"  框架:     {pack.framework} {pack.framework_version}")
+        click.echo(f"  MR ID:    {pack.mr_id}")
+        click.echo(f"  MR 描述:  {pack.mr_description}")
+        click.echo(f"  变换代码: {pack.transform_code}")
+        click.echo(f"  Oracle:   {pack.oracle_expr}")
+        click.echo(f"  实测差值: {pack.actual_diff:.6g}  (容忍阈值: {pack.tolerance:.6g})")
+        click.echo(f"  失败原因: {pack.detail}")
+        shape = pack.input_summary.get("shape", "?")
+        dtype = pack.input_summary.get("dtype", "?")
+        click.echo(f"  输入形状: {shape}  dtype={dtype}")
+        click.echo("─" * 70)
+
+    except Exception as e:
+        click.echo(click.style(f"错误: {e}", fg="red"), err=True)
+        sys.exit(1)
+
+
+@test_evidence.command("script")
+@click.argument("evidence_id")
+def evidence_script(evidence_id):
+    """打印指定证据包的可复现 Python 脚本。
+
+    \b
+    示例:
+      deepmt test evidence script abc123def456
+      deepmt test evidence script abc123def456 > repro.py
+    """
+    try:
+        from deepmt.analysis.evidence_collector import EvidenceCollector
+
+        collector = EvidenceCollector()
+        pack = collector.load(evidence_id)
+
+        if pack is None:
+            click.echo(click.style(f"未找到证据包 {evidence_id!r}", fg="red"), err=True)
+            sys.exit(1)
+
+        click.echo(pack.reproduce_script)
 
     except Exception as e:
         click.echo(click.style(f"错误: {e}", fg="red"), err=True)

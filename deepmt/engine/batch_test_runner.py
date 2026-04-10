@@ -14,6 +14,7 @@
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
+from deepmt.analysis.evidence_collector import EvidenceCollector, EvidencePack
 from deepmt.analysis.mr_prechecker import MRPreChecker
 from deepmt.analysis.mr_verifier import MRVerifier
 from deepmt.analysis.random_generator import RandomGenerator
@@ -28,6 +29,7 @@ from deepmt.mr_generator.base.operator_catalog import OperatorCatalog
 @dataclass
 class MRTestSummary:
     """单条 MR 在一个算子上的测试摘要"""
+
 
     mr_id: str
     description: str
@@ -57,6 +59,7 @@ class OperatorTestSummary:
     failed: int
     errors: int
     mr_summaries: List[MRTestSummary] = field(default_factory=list)
+    evidence_ids: List[str] = field(default_factory=list)  # 捕获到的证据包 ID 列表
 
     @property
     def pass_rate(self) -> float:
@@ -73,6 +76,7 @@ class OperatorTestSummary:
             "failed": self.failed,
             "errors": self.errors,
             "pass_rate": round(self.pass_rate, 4),
+            "evidence_ids": self.evidence_ids,
             "mr_summaries": [
                 {
                     "mr_id": m.mr_id,
@@ -110,12 +114,16 @@ class BatchTestRunner:
         repo: Optional[MRRepository] = None,
         catalog: Optional[OperatorCatalog] = None,
         results_manager: Optional[ResultsManager] = None,
+        evidence_collector: Optional[EvidenceCollector] = None,
+        backend_override: Optional[Any] = None,
     ):
         self.repo = repo or MRRepository()
         self.catalog = catalog or OperatorCatalog()
         self.results_manager = results_manager or ResultsManager()
+        self.evidence_collector = evidence_collector or EvidenceCollector()
         self.random_gen = RandomGenerator()
         self.verifier = MRVerifier()
+        self._backend_override = backend_override  # 用于注入 FaultyPyTorchPlugin 等
 
     # ── 公共接口 ──────────────────────────────────────────────────────────────
 
@@ -127,18 +135,20 @@ class BatchTestRunner:
         verified_only: bool = False,
         mr_id: Optional[str] = None,
         operator_func: Optional[Any] = None,
+        collect_evidence: bool = False,
     ) -> OperatorTestSummary:
         """
         对单个算子执行批量蜕变测试。
 
         Args:
-            operator_name: 算子名称（需与 MR 知识库中的键一致，如 "torch.nn.functional.relu"）
-            framework:     目标框架
-            n_samples:     每条 MR 的随机测试样本数
-            verified_only: 仅使用已验证（verified=True）的 MR
-            mr_id:         若指定，则只测试该 MR
-            operator_func: 可选，直接传入算子函数（跳过 _resolve_operator）；
-                           用于变异测试时注入人工错误实现
+            operator_name:    算子名称（需与 MR 知识库中的键一致，如 "torch.nn.functional.relu"）
+            framework:        目标框架
+            n_samples:        每条 MR 的随机测试样本数
+            verified_only:    仅使用已验证（verified=True）的 MR
+            mr_id:            若指定，则只测试该 MR
+            operator_func:    可选，直接传入算子函数（跳过 _resolve_operator）；
+                              用于变异测试时注入人工错误实现
+            collect_evidence: 失败时是否捕获可复现证据包并保存（默认 False）
 
         Returns:
             OperatorTestSummary，含逐条 MR 的通过/失败/异常统计
@@ -166,9 +176,9 @@ class BatchTestRunner:
                 errors=0,
             )
 
-        # 2. 获取框架后端与 input_specs
+        # 2. 获取框架后端与 input_specs（支持 backend_override 注入缺陷插件）
         try:
-            backend = get_plugins_manager().get_backend(framework)
+            backend = self._backend_override or get_plugins_manager().get_backend(framework)
         except KeyError as e:
             logger.error(f"[BATCH] Plugin not found for {fw_str}: {e}")
             return OperatorTestSummary(
@@ -204,6 +214,7 @@ class BatchTestRunner:
         # 4. 逐 MR 执行
         op_ir = OperatorIR(name=operator_name, input_specs=input_specs)
         all_oracle_results: List[tuple[MetamorphicRelation, OracleResult]] = []
+        evidence_packs: List[EvidencePack] = []
         mr_summaries: List[MRTestSummary] = []
         total_passed = total_failed = total_errors = 0
 
@@ -215,6 +226,9 @@ class BatchTestRunner:
                 backend=backend,
                 n_samples=n_samples,
                 oracle_results_out=all_oracle_results,
+                evidence_out=evidence_packs if collect_evidence else None,
+                operator_name=operator_name,
+                framework=fw_str,
             )
             mr_summaries.append(mr_summary)
             total_passed += mr_summary.passed
@@ -224,6 +238,12 @@ class BatchTestRunner:
         # 5. 持久化结果
         if all_oracle_results:
             self.results_manager.store_result(op_ir, all_oracle_results, fw_str)
+
+        # 6. 保存证据包
+        saved_ids: List[str] = []
+        for pack in evidence_packs:
+            self.evidence_collector.save(pack)
+            saved_ids.append(pack.evidence_id)
 
         summary = OperatorTestSummary(
             operator=operator_name,
@@ -235,6 +255,7 @@ class BatchTestRunner:
             failed=total_failed,
             errors=total_errors,
             mr_summaries=mr_summaries,
+            evidence_ids=saved_ids,
         )
         logger.info(
             f"[BATCH] {operator_name}: "
@@ -293,9 +314,18 @@ class BatchTestRunner:
         backend: Any,
         n_samples: int,
         oracle_results_out: List,
+        evidence_out: Optional[List[EvidencePack]] = None,
+        operator_name: str = "",
+        framework: str = "",
     ) -> MRTestSummary:
-        """对单条 MR 运行 n_samples 次测试，将 (MR, OracleResult) 追加到 oracle_results_out。"""
+        """对单条 MR 运行 n_samples 次测试，将 (MR, OracleResult) 追加到 oracle_results_out。
+
+        Args:
+            evidence_out: 若不为 None，失败时创建 EvidencePack 并追加到此列表
+                          （每条 MR 最多保存 1 个证据包，避免冗余）
+        """
         passed = failed = errors = 0
+        evidence_captured = False  # 每条 MR 只捕获第一个失败
 
         # 编译 transform（与 MRPreChecker 共用静态方法）
         bound_transform = MRPreChecker._bind_transform_code(mr.transform_code, operator_func)
@@ -341,6 +371,25 @@ class BatchTestRunner:
                     logger.debug(
                         f"[BATCH] MR {mr.id[:8]} sample {i+1} FAIL: {oracle_result.detail}"
                     )
+                    # 证据捕获：每条 MR 只保留第一个失败样本
+                    if evidence_out is not None and not evidence_captured:
+                        try:
+                            pack = self.evidence_collector.create(
+                                operator=operator_name,
+                                framework=framework,
+                                mr_id=mr.id,
+                                mr_description=mr.description,
+                                transform_code=mr.transform_code,
+                                oracle_expr=mr.oracle_expr,
+                                input_tensor=x_input if x_input is not None else inputs[0],
+                                actual_diff=oracle_result.actual_diff,
+                                tolerance=oracle_result.tolerance,
+                                detail=oracle_result.detail,
+                            )
+                            evidence_out.append(pack)
+                            evidence_captured = True
+                        except Exception as ev_err:
+                            logger.debug(f"[EVIDENCE] Failed to capture: {ev_err}")
 
             except Exception as e:
                 errors += 1

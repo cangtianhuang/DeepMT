@@ -60,6 +60,9 @@
 | `deepmt test batch` | 批量蜕变测试（RandomGenerator 自动生成输入，从 MR 知识库加载 MR） |
 | `deepmt test mutate` | 变异测试（注入已知错误实现，验证 MR 缺陷检测能力） |
 | `deepmt test report` | 生成测试结果报告（按算子/MR/失败聚合） |
+| `deepmt test open` | 开放测试（FaultyPyTorchPlugin 注入预设缺陷，`DEEPMT_INJECT_FAULTS` 控制） |
+| `deepmt test dedup` | 缺陷线索去重（将证据包聚类为独立缺陷模式） |
+| `deepmt test evidence list/show/script` | 证据包管理（列出/展示/打印复现脚本） |
 | `deepmt test history` | 查看测试历史摘要 |
 | `deepmt test failures` | 查看失败测试用例 |
 | `deepmt health` | 健康检查 |
@@ -75,6 +78,16 @@
 | `core/results_manager.py` | 测试结果持久化（SQLite） |
 | `analysis/mr_verifier.py` | Oracle 验证器 |
 
+### 已完成 Phase D 模块（进行中）
+
+| 模块 | 说明 |
+|------|------|
+| `analysis/report_generator.py` | 报告生成器（ReportGenerator），从 SQLite 汇总测试结果 |
+| `analysis/mutation_tester.py` | 变异测试器（MutationTester + create_mutant_func），5 种变异类型 |
+| `analysis/evidence_collector.py` | 证据包采集器（EvidenceCollector + EvidencePack），含可复现 Python 脚本生成 |
+| `analysis/defect_deduplicator.py` | 缺陷去重器（DefectDeduplicator），按签名聚类证据包 |
+| `plugins/faulty_pytorch_plugin.py` | 含预设缺陷的 PyTorch 插件（FaultyPyTorchPlugin），8 个算子缺陷目录，env var 控制 |
+
 ### 测试体系
 
 ```
@@ -88,13 +101,18 @@ tests/
 │   ├── test_repo.py              14 个（MRRepository）
 │   ├── test_mr_generate.py       18 个（模板/oracle/precheck/import）
 │   ├── test_batch_generate.py    13 个（batch-generate）
-│   └── test_batch_test_runner.py 9 个（BatchTestRunner）
+│   ├── test_batch_test_runner.py 9 个（BatchTestRunner）
+│   ├── test_mutation_tester.py   14 个（MutationTester）
+│   ├── test_report_generator.py  14 个（ReportGenerator）
+│   ├── test_evidence_collector.py 26 个（EvidenceCollector + BatchTestRunner 集成）
+│   ├── test_faulty_plugin.py      22 个（FaultyPyTorchPlugin + backend_override）
+│   └── test_defect_deduplicator.py 26 个（DefectDeduplicator + DefectLead）
 └── integration/
     ├── test_mr_generation.py   需 LLM API
     └── test_web_tools.py       需网络
 ```
 
-**全部 205 个单元测试通过（无 LLM/网络依赖）。**
+**全部 279 个单元测试通过（无 LLM/网络依赖）。**
 
 ---
 
@@ -115,4 +133,4 @@ tests/
 
 ---
 
-*最后更新：2026-04-10（Phase C 完成，test batch 命令上线）*
+*最后更新：2026-04-10（Phase D 进行中：D1~D5 完成，开放测试与缺陷去重上线）*

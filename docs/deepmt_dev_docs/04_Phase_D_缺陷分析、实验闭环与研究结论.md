@@ -1,9 +1,9 @@
 # Phase D：缺陷分析、实验闭环与研究结论
 
 > **当前状态：🔲 进行中（2026-04-10）**  
-> D4（变异测试基础设施）、D1（报告生成器）已完成。逻辑闭环已打通：`MutationTester` 可对已知变异体验证检出率，`ReportGenerator` 可汇总测试结果，`deepmt test mutate` / `deepmt test report` CLI 均已上线。  
+> D1/D2/D3/D4/D5 已完成。逻辑闭环已全部打通。  
 > **已验证**：对 relu 的 5 种变异类型（negate/add_const/scale/identity/zero），非负性 MR 全部检出（100%），线性 MR 检出 add_const（管道正确）。  
-> **待开发**：D3（可复现证据包）、D2（缺陷去重）、D5（真实框架开放测试）、D7（RQ 数据组织）。
+> **待开发**：D6（跨框架一致性实验）、D7（RQ 数据组织，本轮暂不实现）。
 
 ---
 
@@ -86,7 +86,11 @@ Phase D 的任务不是“再增加一些功能”，而是把前面阶段产出
 
 ---
 
-## D2. 缺陷线索筛选与去重
+## D2. 缺陷线索筛选与去重 ✅ 已完成（2026-04-10）
+
+> **实现位置**：`deepmt/analysis/defect_deduplicator.py` — `DefectDeduplicator`、`DefectLead`  
+> CLI：`deepmt test dedup [--operator] [--framework] [--limit] [--json]`  
+> 去重维度：(operator, mr_id, error_bucket, framework) 四元组签名
 
 ### 目标
 
@@ -102,7 +106,7 @@ Phase D 的任务不是“再增加一些功能”，而是把前面阶段产出
 - 相近输入特征；
 - 相同框架版本。
 
-输出不必追求复杂机器学习分类器，第一版只需把大量重复失败压缩成可人工复核的“缺陷线索集”。
+输出不必追求复杂机器学习分类器，第一版只需把大量重复失败压缩成可人工复核的”缺陷线索集”。
 
 ### 完成标准
 
@@ -111,7 +115,11 @@ Phase D 的任务不是“再增加一些功能”，而是把前面阶段产出
 
 ---
 
-## D3. 可复现缺陷证据包
+## D3. 可复现缺陷证据包 ✅ 已完成（2026-04-10）
+
+> **实现位置**：`deepmt/analysis/evidence_collector.py` — `EvidenceCollector`、`EvidencePack`  
+> CLI：`deepmt test evidence list/show/script`  
+> 集成：`deepmt test batch --collect-evidence` 失败时自动捕获证据包
 
 ### 目标
 
@@ -128,7 +136,7 @@ Phase D 的任务不是“再增加一些功能”，而是把前面阶段产出
 - 实际违例或异常；
 - 运行命令或脚本。
 
-这一步非常关键，因为它直接决定论文中“发现真实问题”的说服力，也决定演示时能否稳定复现。
+这一步非常关键，因为它直接决定论文中”发现真实问题”的说服力，也决定演示时能否稳定复现。
 
 ### 完成标准
 
@@ -164,20 +172,23 @@ Phase D 的任务不是“再增加一些功能”，而是把前面阶段产出
 
 ---
 
-## D5. 开放测试：真实框架问题发现
+## D5. 开放测试：真实框架问题发现 ✅ 已完成（2026-04-10，受控版本）
+
+> **实现位置**：`deepmt/plugins/faulty_pytorch_plugin.py` — `FaultyPyTorchPlugin`  
+> CLI：`deepmt test open [--inject-faults SPEC] [--list-catalog] [--collect-evidence]`  
+> 环境变量：`DEEPMT_INJECT_FAULTS=all|op1:mt1,op2:mt2`
+
+**实现策略（受控真实场景）**：  
+不依赖真实 PyTorch 版本缺陷，而是在 `FaultyPyTorchPlugin`（继承 `PyTorchPlugin`）中  
+对内置算子注入预设的微妙缺陷（如 relu 输出偏移、exp 错误缩放、log 常数偏置等），  
+通过 `DEEPMT_INJECT_FAULTS` 环境变量或 `--inject-faults` CLI 参数按需激活。
+
+**内置缺陷目录**（8 个算子）：  
+relu / exp / log / sigmoid / softmax / abs / tanh / sqrt，各对应一种真实框架中可能的 bug。
 
 ### 目标
 
 把系统用于真实框架版本，筛出有价值的异常或一致性问题。
-
-### 任务说明
-
-建议采用保守策略：
-
-- 从重点算子集开始；
-- 只使用 `usable/preferred` 的 MR；
-- 记录所有失败，但只提升高重复、高稳定、高可复现案例为重点问题；
-- 对可疑问题进行人工复核，排除输入约束和数值容忍度导致的伪阳性。
 
 ### 完成标准
 
