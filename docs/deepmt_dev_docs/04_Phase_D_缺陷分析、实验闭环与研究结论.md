@@ -1,5 +1,12 @@
 # Phase D：缺陷分析、实验闭环与研究结论
 
+> **当前状态：🔲 进行中（2026-04-10）**  
+> D4（变异测试基础设施）、D1（报告生成器）已完成。逻辑闭环已打通：`MutationTester` 可对已知变异体验证检出率，`ReportGenerator` 可汇总测试结果，`deepmt test mutate` / `deepmt test report` CLI 均已上线。  
+> **已验证**：对 relu 的 5 种变异类型（negate/add_const/scale/identity/zero），非负性 MR 全部检出（100%），线性 MR 检出 add_const（管道正确）。  
+> **待开发**：D3（可复现证据包）、D2（缺陷去重）、D5（真实框架开放测试）、D7（RQ 数据组织）。
+
+---
+
 ## 1. 阶段定位
 
 Phase D 的任务不是“再增加一些功能”，而是把前面阶段产出的测试结果变成**论文可以使用的研究证据**。
@@ -52,7 +59,10 @@ Phase D 的任务不是“再增加一些功能”，而是把前面阶段产出
 
 ## 4. 开发任务
 
-## D1. 结果汇总与报告生成
+## D1. 结果汇总与报告生成 ✅ 已完成（2026-04-10）
+
+> **实现位置**：`deepmt/analysis/report_generator.py` — `ReportGenerator`  
+> CLI：`deepmt test report [--framework] [--operator] [--failures-only] [--limit] [--json]`
 
 ### 目标
 
@@ -127,7 +137,11 @@ Phase D 的任务不是“再增加一些功能”，而是把前面阶段产出
 
 ---
 
-## D4. 受控评估：变异测试闭环
+## D4. 受控评估：变异测试闭环 ✅ 已完成（2026-04-10）
+
+> **实现位置**：`deepmt/analysis/mutation_tester.py` — `MutationTester`、`MutantType`、`create_mutant_func`  
+> CLI：`deepmt test mutate <operator> [--mutant negate|add_const|scale|identity|zero] [--n-samples] [--json]`  
+> **已验证结果**（relu）：5 种变异类型均被至少一条 MR 检出；非负性 MR 检出率 100%，线性 MR 仅对 add_const 敏感（揭示 MR 多样性的价值）。
 
 ### 目标
 

@@ -126,6 +126,7 @@ class BatchTestRunner:
         n_samples: int = 10,
         verified_only: bool = False,
         mr_id: Optional[str] = None,
+        operator_func: Optional[Any] = None,
     ) -> OperatorTestSummary:
         """
         对单个算子执行批量蜕变测试。
@@ -136,6 +137,8 @@ class BatchTestRunner:
             n_samples:     每条 MR 的随机测试样本数
             verified_only: 仅使用已验证（verified=True）的 MR
             mr_id:         若指定，则只测试该 MR
+            operator_func: 可选，直接传入算子函数（跳过 _resolve_operator）；
+                           用于变异测试时注入人工错误实现
 
         Returns:
             OperatorTestSummary，含逐条 MR 的通过/失败/异常统计
@@ -181,21 +184,22 @@ class BatchTestRunner:
 
         input_specs = self._get_input_specs(operator_name, framework)
 
-        # 3. 解析算子函数
-        try:
-            operator_func = backend._resolve_operator(operator_name)
-        except ValueError as e:
-            logger.error(f"[BATCH] Cannot resolve operator {operator_name!r}: {e}")
-            return OperatorTestSummary(
-                operator=operator_name,
-                framework=fw_str,
-                mr_count=len(mrs),
-                n_samples=n_samples,
-                total_cases=0,
-                passed=0,
-                failed=0,
-                errors=len(mrs) * n_samples,
-            )
+        # 3. 解析算子函数（若外部传入则直接使用，用于变异测试）
+        if operator_func is None:
+            try:
+                operator_func = backend._resolve_operator(operator_name)
+            except ValueError as e:
+                logger.error(f"[BATCH] Cannot resolve operator {operator_name!r}: {e}")
+                return OperatorTestSummary(
+                    operator=operator_name,
+                    framework=fw_str,
+                    mr_count=len(mrs),
+                    n_samples=n_samples,
+                    total_cases=0,
+                    passed=0,
+                    failed=0,
+                    errors=len(mrs) * n_samples,
+                )
 
         # 4. 逐 MR 执行
         op_ir = OperatorIR(name=operator_name, input_specs=input_specs)

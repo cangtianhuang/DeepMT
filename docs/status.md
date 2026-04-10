@@ -58,6 +58,8 @@
 | `deepmt catalog enrich` | 单算子 input_specs 丰富 |
 | `deepmt test operator` | 单算子蜕变测试（手动指定输入） |
 | `deepmt test batch` | 批量蜕变测试（RandomGenerator 自动生成输入，从 MR 知识库加载 MR） |
+| `deepmt test mutate` | 变异测试（注入已知错误实现，验证 MR 缺陷检测能力） |
+| `deepmt test report` | 生成测试结果报告（按算子/MR/失败聚合） |
 | `deepmt test history` | 查看测试历史摘要 |
 | `deepmt test failures` | 查看失败测试用例 |
 | `deepmt health` | 健康检查 |
@@ -92,7 +94,7 @@ tests/
     └── test_web_tools.py       需网络
 ```
 
-**全部 177 个单元测试通过（无 LLM/网络依赖）。**
+**全部 205 个单元测试通过（无 LLM/网络依赖）。**
 
 ---
 
