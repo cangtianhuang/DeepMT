@@ -321,7 +321,10 @@ class OperatorMRGenerator:
                 operator_code = inspect.getsource(operator_func)
                 logger.info("⚡ [GEN] " + "Extracted code from function object using inspect")
             except Exception as e:
-                logger.debug(f"Cannot extract code from function: {e}")
+                logger.warning(
+                    f"⚠️ [WARN] Cannot get source for '{operator_name}' "
+                    f"({type(operator_func).__name__}): {e} — SymPy proof will be skipped"
+                )
 
         # 自动从网络获取信息
         if auto_fetch_info:
@@ -506,7 +509,7 @@ class OperatorMRGenerator:
         """
         verified_mrs: List[MetamorphicRelation] = []
 
-        if use_sympy_proof and operator_code:
+        if use_sympy_proof and (operator_code or operator_func):
             # 转换为SymPy表达式
             sympy_expr = None
             try:
@@ -540,10 +543,18 @@ class OperatorMRGenerator:
                         mr.proven = False
                         verified_mrs.append(mr)
             else:
-                logger.debug("✅ [CHECK] " + "SymPy proof skipped (no code)")
+                logger.warning(
+                    f"⚠️ [WARN] SymPy proof skipped for '{operator_name}': "
+                    "code_to_sympy returned None (C extension or unsupported code format)"
+                )
                 verified_mrs.extend(candidate_mrs)
         else:
             # 不进行证明，直接加入输出
+            if use_sympy_proof and not operator_code and not operator_func:
+                logger.warning(
+                    f"⚠️ [WARN] SymPy proof skipped for '{operator_name}': "
+                    "no source code and no operator function available."
+                )
             verified_mrs.extend(candidate_mrs)
 
         return verified_mrs

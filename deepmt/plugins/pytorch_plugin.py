@@ -82,7 +82,8 @@ class PyTorchPlugin(FrameworkPlugin):
 
     _TORCH_OPS: ClassVar[Dict[str, Any]] = {
         "abs":  torch.abs,
-        "exp":  torch.exp,
+        # oracle_expr 中常出现 exp(1) 这类标量调用，torch.exp 要求 Tensor，故做标量兼容
+        "exp":  lambda x: torch.exp(x if isinstance(x, torch.Tensor) else torch.tensor(float(x))),
         "sqrt": torch.sqrt,
         "log":  torch.log,
         "sin":  torch.sin,
