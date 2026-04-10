@@ -11,7 +11,7 @@ from pathlib import Path
 
 import click
 
-_DEFAULT_LOG_DIR = Path("data/logs")
+_DEFAULT_LOG_DIR = Path(__file__).parents[2] / "data" / "logs"
 
 
 def _parse_date(date_str: str) -> datetime:

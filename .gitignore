@@ -16,7 +16,7 @@ config*.yaml
 
 # ── Runtime data（日志、缓存）────────────────────────────────────────────────────
 data/logs/
-data/web_search_cache/
+data/cache_*/
 
 # ── 用户工作区 MR（生成的 MR 实例，不上传）────────────────────────────────────────
 data/mr_repository/operator/

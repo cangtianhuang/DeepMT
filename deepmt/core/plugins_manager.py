@@ -34,7 +34,7 @@ class PluginsManager:
 
     def __init__(self, plugins_dir: str = None):
         if plugins_dir is None:
-            self.plugins_dir = Path(__file__).resolve().parent.parent / "plugins"
+            self.plugins_dir = Path(__file__).parents[1] / "plugins"
         else:
             self.plugins_dir = Path(plugins_dir)
         self.plugins: Dict[str, Any] = {}

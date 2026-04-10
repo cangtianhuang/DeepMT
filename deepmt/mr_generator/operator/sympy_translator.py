@@ -31,11 +31,11 @@ _KNOWN_SYMPY_EXPRS: Dict[str, Any] = {
     "torch.nn.functional.sigmoid":   sp.Integer(1) / (1 + sp.exp(-_x0)),
 }
 
+_SYMPY_CACHE_DIR = Path(__file__).parents[3] / "data" / "cache_sympy"
+
 
 class SympyTranslator:
     """代码到 SymPy 转换器"""
-
-    _CACHE_DIR = Path(__file__).parents[3] / "data" / "sympy_cache"
 
     def __init__(self, use_llm: bool = True):
         self._use_llm = use_llm
@@ -43,7 +43,7 @@ class SympyTranslator:
         from deepmt.mr_generator.operator.ast_parser import ASTParser
         self.ast_parser = ASTParser()
         self.llm_client = LLMClient()
-        self._CACHE_DIR.mkdir(parents=True, exist_ok=True)
+        _SYMPY_CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
     # ── 主入口 ────────────────────────────────────────────────────────────────
 
@@ -152,7 +152,7 @@ class SympyTranslator:
         return None
 
     def _load_cache(self, key: str) -> Optional[sp.Expr]:
-        path = self._CACHE_DIR / f"{key}.json"
+        path = _SYMPY_CACHE_DIR / f"{key}.json"
         if not path.exists():
             return None
         try:
@@ -164,7 +164,7 @@ class SympyTranslator:
 
     def _save_cache(self, key: str, expr: sp.Expr) -> None:
         try:
-            path = self._CACHE_DIR / f"{key}.json"
+            path = _SYMPY_CACHE_DIR / f"{key}.json"
             path.write_text(json.dumps({"expr_repr": str(expr)}), encoding="utf-8")
             logger.debug(f"Saved SymPy cache: {key} → {expr}")
         except Exception as e:

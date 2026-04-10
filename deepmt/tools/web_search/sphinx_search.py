@@ -13,7 +13,7 @@ import requests
 from deepmt.core.logger import logger
 
 # 缓存目录和过期时间（秒）
-CACHE_DIR = Path("data/web_search_cache")
+CACHE_DIR = Path(__file__).parents[3] / "data" / "cache_web_search"
 CACHE_EXPIRY_SECONDS = 24 * 60 * 60  # 1 day
 
 
@@ -35,7 +35,7 @@ def load_json_cache(path: Path, ttl: float = CACHE_EXPIRY_SECONDS) -> Optional[A
 def save_json_cache(path: Path, data: Any, indent: Optional[int] = None) -> None:
     """将数据写入 JSON 文件缓存（失败时静默忽略）"""
     try:
-        CACHE_DIR.mkdir(parents=True, exist_ok=True)
+        path.parent.mkdir(parents=True, exist_ok=True)
         with path.open("w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=indent)
     except Exception:

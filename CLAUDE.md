@@ -98,7 +98,7 @@ source .venv/bin/activate && PYTHONPATH=$(pwd) python -m pytest tests/
 │   ├── plugins/            #   框架适配器（目前仅 PyTorch 可用）
 │   ├── tools/              #   通用工具
 │   │   ├── llm/            #     LLM 客户端 / OCR
-│   │   └── web_search/     #     搜索、Sphinx 解析、算子文档获取（缓存位于 data/web_search_cache/）
+│   │   └── web_search/     #     搜索、Sphinx 解析、算子文档获取（缓存位于 data/cache_web_search/）
 │   ├── analysis/           #   输入生成、预检、验证（mr_prechecker.py、mr_verifier.py 等）
 │   └── monitoring/         #   健康检查与进度追踪
 ├── tests/                  # 测试用例

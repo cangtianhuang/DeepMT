@@ -13,6 +13,7 @@ deepmt catalog — 算子目录管理子命令组
 
 import json
 import sys
+from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional
 
@@ -821,9 +822,6 @@ def catalog_enrich(operator, framework, llm, dry_run):
     # 写回 YAML（就地更新该条目）
     entry.update(updates)
 
-    from pathlib import Path as _Path
-    from datetime import datetime as _dt
-
     header_lines: List[str] = []
     with yaml_path.open("r", encoding="utf-8") as f:
         for line in f:
@@ -833,7 +831,7 @@ def catalog_enrich(operator, framework, llm, dry_run):
                 continue
             header_lines.append(line.rstrip())
 
-    today = _dt.now().strftime("%Y-%m-%d")
+    today = datetime.now().strftime("%Y-%m-%d")
     with yaml_path.open("w", encoding="utf-8") as f:
         for line in header_lines:
             f.write(line + "\n")
@@ -1025,11 +1023,7 @@ def catalog_import_from_docs(framework, version, replace, no_cache, dry_run, enr
         return
 
     # ── 执行写入 ──
-    from pathlib import Path as _Path
-    from datetime import datetime as _dt
-
-    catalog_dir = _Path(__file__).parents[2] / "data" / "operator_catalog"
-    yaml_path = catalog_dir / f"{framework}.yaml"
+    yaml_path = _CATALOG_DIR / f"{framework}.yaml"
 
     # 读取现有文件头（注释行 + 非 operators 的字段行）
     header_lines: List[str] = []
@@ -1042,7 +1036,7 @@ def catalog_import_from_docs(framework, version, replace, no_cache, dry_run, enr
                     continue
                 header_lines.append(line.rstrip())
 
-    today = _dt.now().strftime("%Y-%m-%d")
+    today = datetime.now().strftime("%Y-%m-%d")
 
     # 构造最终条目列表（统一为 dict 格式）
     if replace:
