@@ -8,8 +8,8 @@
 |------|------|
 | Phase A：算子数据层完善（A1~A6） | ✅ 完成 |
 | Phase B：算子层 MR 生成与知识库（B1~B3） | ✅ 完成 |
-| Phase C：测试执行与跨框架适配 | 🔲 当前目标 |
-| Phase D：缺陷分析与实验闭环 | ⬜ 待开始 |
+| Phase C：测试执行与跨框架适配 | ✅ 完成 |
+| Phase D：缺陷分析与实验闭环 | 🔲 当前目标 |
 | Phase E：演示交付与生产化加固 | ⬜ 待开始 |
 
 ---
@@ -56,28 +56,43 @@
 | `deepmt catalog update-api` | 拉取 PyTorch API 列表 |
 | `deepmt catalog import-api` | 批量导入 API 并丰富 input_specs |
 | `deepmt catalog enrich` | 单算子 input_specs 丰富 |
-| `deepmt test operator` | 单算子蜕变测试 |
+| `deepmt test operator` | 单算子蜕变测试（手动指定输入） |
+| `deepmt test batch` | 批量蜕变测试（RandomGenerator 自动生成输入，从 MR 知识库加载 MR） |
+| `deepmt test history` | 查看测试历史摘要 |
+| `deepmt test failures` | 查看失败测试用例 |
 | `deepmt health` | 健康检查 |
+
+### 已完成 Phase C 模块
+
+| 模块 | 说明 |
+|------|------|
+| `analysis/random_generator.py` | 输入生成器（RandomGenerator），解析 input_specs 生成随机张量 |
+| `plugins/framework_plugin.py` | 框架插件抽象基类（统一执行接口） |
+| `plugins/pytorch_plugin.py` | PyTorch 插件（ir_to_code/allclose/eval_expr/element_compare） |
+| `engine/batch_test_runner.py` | 批量测试执行器（BatchTestRunner，dict kwargs 风格，接入 RandomGenerator） |
+| `core/results_manager.py` | 测试结果持久化（SQLite） |
+| `analysis/mr_verifier.py` | Oracle 验证器 |
 
 ### 测试体系
 
 ```
 tests/
 ├── unit/
-│   ├── test_core.py            6 个（config、framework、IR）
-│   ├── test_parsers.py         13 个（ASTParser + SympyTranslator）
-│   ├── test_prover.py          8 个（SymPyProver，无 LLM 依赖）
-│   ├── test_search.py          搜索工具
-│   ├── test_enricher.py        22 个（OperatorEnricher）
-│   ├── test_repo.py            14 个（MRRepository）
-│   ├── test_mr_generate.py     18 个（模板/oracle/precheck/import）
-│   └── test_batch_generate.py  13 个（batch-generate）
+│   ├── test_core.py              6 个（config、framework、IR）
+│   ├── test_parsers.py           13 个（ASTParser + SympyTranslator）
+│   ├── test_prover.py            8 个（SymPyProver，无 LLM 依赖）
+│   ├── test_search.py            搜索工具
+│   ├── test_enricher.py          22 个（OperatorEnricher）
+│   ├── test_repo.py              14 个（MRRepository）
+│   ├── test_mr_generate.py       18 个（模板/oracle/precheck/import）
+│   ├── test_batch_generate.py    13 个（batch-generate）
+│   └── test_batch_test_runner.py 9 个（BatchTestRunner）
 └── integration/
     ├── test_mr_generation.py   需 LLM API
     └── test_web_tools.py       需网络
 ```
 
-**全部 124 个单元测试通过（无 LLM/网络依赖）。**
+**全部 177 个单元测试通过（无 LLM/网络依赖）。**
 
 ---
 
@@ -98,4 +113,4 @@ tests/
 
 ---
 
-*最后更新：2026-04-09（文件重构同步）*
+*最后更新：2026-04-10（Phase C 完成，test batch 命令上线）*

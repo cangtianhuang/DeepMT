@@ -1,5 +1,12 @@
 # Phase C：测试执行与跨框架适配
 
+> **当前状态：✅ 完成（2026-04-10）**  
+> C1~C5 全部完成。`deepmt test batch` 命令已上线，`RandomGenerator` 已接入测试主链，端到端批量测试链路打通（relu/sigmoid/abs/exp 四个算子端到端验证通过，177 个单元测试全部通过）。  
+> **重要重构说明**：原文档中的 `InputGenerator` 已重构为 `RandomGenerator`（`deepmt/analysis/random_generator.py`）。  
+> 下一阶段：[Phase D](04_Phase_D_缺陷分析、实验闭环与研究结论.md)（待开始）
+
+---
+
 ## 1. 阶段定位
 
 Phase C 是整个项目从“会生成”走向“能发现问题”的分水岭。
@@ -55,17 +62,20 @@ Phase C 是整个项目从“会生成”走向“能发现问题”的分水岭
 
 本阶段结束后，应至少交付：
 
-1. `InputGenerator`；
-2. 统一插件 `invoke` 接口；
-3. 批量测试命令；
-4. 结果存储结构；
-5. 可用于后续复现和分析的失败样本记录。
+1. ✅ `RandomGenerator`（原称 `InputGenerator`）；
+2. ✅ 统一插件 `invoke` 接口（`FrameworkPlugin.ir_to_code` / `execute`）；
+3. 🔲 批量测试命令（`test batch`）；
+4. ✅ 结果存储结构（`ResultsManager` + SQLite）；
+5. ✅ 可用于后续复现和分析的失败样本记录（`test history` / `test failures`）。
 
 ---
 
 ## 5. 开发任务
 
-## C1. 输入生成器落地
+## C1. 输入生成器落地 ✅ 已完成（2026-04-10）
+
+> **实现位置**：`deepmt/analysis/random_generator.py` — `RandomGenerator` 类  
+> **注意**：原规划名称为 `InputGenerator`，已重构为 `RandomGenerator`。已在 `mr_prechecker.py` 中接入使用。
 
 ### 目标
 
@@ -81,20 +91,23 @@ Phase C 是整个项目从“会生成”走向“能发现问题”的分水岭
 - 少量边界值注入；
 - 必填参数自动填充。
 
-建议采用“随机样本 + 少量边界样本”的混合策略，这比纯随机更有利于发现数值问题。
+建议采用”随机样本 + 少量边界样本”的混合策略，这比纯随机更有利于发现数值问题。
 
 ### 完成标准
 
-- 重点算子的 `input_specs` 可被自动转成一批可执行输入；
-- 无需人工为每个算子单独写输入构造函数。
+- ✅ 重点算子的 `input_specs` 可被自动转成一批可执行输入；
+- ✅ 无需人工为每个算子单独写输入构造函数。
 
 ---
 
-## C2. 插件执行接口规范化
+## C2. 插件执行接口规范化 ✅ 已完成（2026-04-10）
+
+> **实现位置**：`deepmt/plugins/framework_plugin.py` — `FrameworkPlugin` 抽象基类；`deepmt/plugins/pytorch_plugin.py` — `PyTorchPlugin`  
+> 接口方法：`ir_to_code` / `execute`（主调用链）、`make_tensor`、`allclose`、`eval_expr`、`element_compare`。
 
 ### 目标
 
-统一不同框架算子的调用方式，让测试引擎只关心“执行算子”，而不关心具体框架实现细节。
+统一不同框架算子的调用方式，让测试引擎只关心”执行算子”，而不关心具体框架实现细节。
 
 ### 任务说明
 
@@ -113,12 +126,16 @@ PyTorch 插件在本阶段要完整实现，重点处理：
 
 ### 完成标准
 
-- 测试引擎能只依赖 `invoke` 而不写框架分支逻辑；
-- PyTorch 插件可稳定服务批量测试。
+- ✅ 测试引擎能只依赖 `ir_to_code`/`execute` 而不写框架分支逻辑；
+- ✅ PyTorch 插件可稳定服务批量测试。
 
 ---
 
-## C3. 批量测试执行器
+## C3. 批量测试执行器 ✅ 已完成（2026-04-10）
+
+> **实现位置**：`deepmt/engine/batch_test_runner.py` — `BatchTestRunner` 类  
+> CLI 命令：`deepmt test batch`，支持 `--operator`、`--framework`、`--category`、`--mr-id`、`--n-samples`、`--verified-only`、`--json`。  
+> **注意**：`BatchTestRunner` 使用 dict kwargs 风格调用算子（与 `MRPreChecker` 一致），这是 MR 知识库中 transform 格式的正确配合方式。原有的 `TestRunner.run_with_mrs()`/`ir_to_code` 路径使用位置参数，与知识库 MR 格式不兼容，仅用于兼容老的 `test operator` 命令。
 
 ### 目标
 
@@ -129,8 +146,8 @@ PyTorch 插件在本阶段要完整实现，重点处理：
 建议测试执行器围绕一条固定主链实现：
 
 1. 选取算子与 MR；
-2. 读取算子输入约束；
-3. 自动生成输入样本；
+2. 读取算子输入约束（`input_specs`）；
+3. 自动生成输入样本（调用 `RandomGenerator`）；
 4. 执行原始测试；
 5. 执行变换后测试；
 6. 验证 oracle；
@@ -147,12 +164,16 @@ PyTorch 插件在本阶段要完整实现，重点处理：
 
 ### 完成标准
 
-- 系统能对一批算子、一批 MR 连续执行测试；
-- 执行结果可以结构化保存，而不是只在终端打印。
+- ✅ 系统能对一批算子、一批 MR 连续执行测试（使用 `RandomGenerator` 自动生成的输入）；
+- ✅ 执行结果可以结构化保存，而不是只在终端打印（`ResultsManager` + SQLite）。
 
 ---
 
-## C4. 结果存储与失败样本沉淀
+## C4. 结果存储与失败样本沉淀 ✅ 已完成（2026-04-10）
+
+> **实现位置**：`deepmt/core/results_manager.py` — `ResultsManager`；SQLite 存储于 `data/defects.db`  
+> CLI 查询：`deepmt test history` / `deepmt test failures`。  
+> 存储字段：`ir_name`、`ir_type`、`framework`、`mr_id`、`mr_description`、`oracle_expr`、`status`、`actual_diff`、`tolerance`、`defect_details`、`timestamp`。
 
 ### 目标
 
@@ -175,16 +196,19 @@ PyTorch 插件在本阶段要完整实现，重点处理：
 
 ### 完成标准
 
-- 对任何失败结果，都能回溯其来源；
-- Phase D 可以直接基于这些结果做统计与分析。
+- ✅ 对任何失败结果，都能回溯其来源（算子、MR、oracle 表达式、差值均已存储）；
+- ✅ Phase D 可以直接基于这些结果做统计与分析。
 
 ---
 
-## C5. 为跨框架一致性测试预留统一执行面
+## C5. 为跨框架一致性测试预留统一执行面 ✅ 已完成（2026-04-10）
+
+> **实现位置**：`deepmt/plugins/framework_plugin.py`（抽象基类）；`deepmt/ir/schema.py`（`OperatorIR` 框架无关）  
+> 容忍度配置：`allclose(atol, rtol)` 参数已统一。其他框架插件只需继承 `FrameworkPlugin` 并实现各抽象方法。
 
 ### 目标
 
-虽然当前主力是 PyTorch，但本阶段必须把“同一 MR 在不同框架上执行”作为未来扩展目标嵌入设计。
+虽然当前主力是 PyTorch，但本阶段必须把”同一 MR 在不同框架上执行”作为未来扩展目标嵌入设计。
 
 ### 任务说明
 
@@ -199,7 +223,7 @@ PyTorch 插件在本阶段要完整实现，重点处理：
 
 ### 完成标准
 
-- Phase C 完成后，引入第二框架时主要是补适配器与映射表，而不是重写执行器。
+- ✅ Phase C 完成后，引入第二框架时主要是补适配器与映射表，而不是重写执行器。
 
 ---
 
@@ -207,13 +231,14 @@ PyTorch 插件在本阶段要完整实现，重点处理：
 
 建议实现顺序：
 
-1. `InputGenerator`；
-2. `invoke` 统一接口；
-3. `test batch` 命令；
-4. 结果存储；
-5. 少量失败复现工具。
+1. ✅ `RandomGenerator`（原 `InputGenerator`）；
+2. ✅ `ir_to_code`/`execute` 统一接口；
+3. 🔲 `test batch` 命令（**当前剩余核心工作**）；
+4. ✅ 结果存储；
+5. ✅ 少量失败复现工具（`test failures`）。
 
-其中最关键的是 **输入生成器 + 批量测试执行器**。如果没有这两项，DeepMT 仍停留在“半自动研究原型”阶段。
+其中最关键的是 **输入生成器 + 批量测试执行器**。如果没有这两项，DeepMT 仍停留在”半自动研究原型”阶段。  
+**已全部完成（2026-04-10）**。`deepmt test batch` 可直接对 MR 知识库中的所有算子执行批量蜕变测试。
 
 ---
 

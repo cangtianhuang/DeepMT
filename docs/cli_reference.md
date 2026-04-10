@@ -586,7 +586,7 @@ deepmt mr stats --json
 
 ### `deepmt test operator <operator>`
 
-对算子运行蜕变测试。若知识库中已有 MR 则直接加载；否则自动生成（需要 LLM 配置）。
+对算子运行蜕变测试。若知识库中已有 MR 则直接加载；否则自动生成（需要 LLM 配置）。输入需手动通过 `--inputs` 指定。
 
 ```
 deepmt test operator <OPERATOR> [OPTIONS]
@@ -605,9 +605,35 @@ deepmt test operator <OPERATOR> [OPTIONS]
 deepmt test operator relu
 deepmt test operator relu --inputs 1.0,-1.0,0.0
 deepmt test operator relu --framework pytorch --json
+```
 
-# 未实现框架（给出提示）
-deepmt test operator relu --framework tensorflow
+---
+
+### `deepmt test batch`
+
+从 MR 知识库批量执行蜕变测试。自动使用 `RandomGenerator` 生成随机输入，无需手动指定。这是推荐的主要测试入口。
+
+```
+deepmt test batch [OPTIONS]
+```
+
+| 选项 | 默认值 | 说明 |
+|------|--------|------|
+| `--framework` | `pytorch` | 目标框架 |
+| `--operator` | （全部） | 指定单个算子名称（如 `torch.nn.functional.relu`） |
+| `--category` | （不过滤） | 按算子目录分类过滤（如 `activation`） |
+| `--mr-id` | （全部） | 指定单条 MR ID |
+| `--n-samples` | `10` | 每条 MR 的随机测试样本数 |
+| `--verified-only` | `False` | 仅使用已验证（`verified=True`）的 MR |
+| `--json` | `False` | 以 JSON 格式输出结果 |
+
+**示例：**
+
+```bash
+deepmt test batch                                       # 测试知识库中所有算子
+deepmt test batch --operator torch.nn.functional.relu   # 测试单个算子
+deepmt test batch --n-samples 20 --verified-only        # 仅用已验证 MR，多样本
+deepmt test batch --category activation --json          # 激活函数类算子，JSON 输出
 ```
 
 ---
