@@ -1,9 +1,9 @@
 # Phase F：软件工程规范化与包发布准备
 
-> **当前状态：✅ P0 + P1 完成（2026-04-11）**  
-> F1~F9 全部完成。377 个单元测试通过。  
-> **已完成**：build-backend 修复、依赖完整化（optional-dependencies 分组）、包数据声明、stub 移除、sys.path 清理、`__version__` 导出、`requirements.txt` 对齐、`client.py` 主链对齐。  
-> **待完成**：F10（文档引用修复，P2）、F11（Web 仪表盘，可选）。
+> **当前状态：✅ P0 + P1 + F10 完成（2026-04-11）**  
+> F1~F10 全部完成。377 个单元测试通过。  
+> **已完成**：build-backend 修复、依赖完整化（optional-dependencies 分组）、包数据声明、stub 移除、sys.path 清理、`__version__` 导出、`requirements.txt` 对齐、`client.py` 主链对齐、文档引用修复（status.md/CLAUDE.md/monitoring/__main__.py/README.md/quick_start.md/cli_reference.md/operator_catalog_design.md）。  
+> **待完成**：F11（Web 仪表盘，可选）。
 
 ---
 
@@ -222,7 +222,7 @@ from deepmt import __version__
 
 ---
 
-### F10. 修复文档中的错误引用 🔲（P2）
+### F10. 修复文档中的错误引用 ✅ 已完成（2026-04-11）
 
 **问题清单**：
 

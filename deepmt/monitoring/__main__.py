@@ -18,9 +18,9 @@ def main():
         print("DeepMT 项目监控工具")
         print()
         print("使用方式:")
-        print("  python -m monitoring check     运行健康检查")
-        print("  python -m monitoring progress  查看开发进度")
-        print("  python -m monitoring all       运行所有检查")
+        print("  python -m deepmt.monitoring check     运行健康检查")
+        print("  python -m deepmt.monitoring progress  查看开发进度")
+        print("  python -m deepmt.monitoring all       运行所有检查")
         return
 
     command = sys.argv[1].lower()

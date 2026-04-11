@@ -11,7 +11,7 @@
 | Phase C：测试执行与跨框架适配 | ✅ 完成 |
 | Phase D：缺陷分析与实验闭环 | ✅ 完成 |
 | Phase E：演示交付与生产化加固 | 🔲 待开始 |
-| Phase F：软件工程规范化与包发布准备（F1~F9） | ✅ P0+P1 完成 |
+| Phase F：软件工程规范化与包发布准备（F1~F10） | ✅ P0+P1+F10 完成 |
 
 ---
 
@@ -29,7 +29,7 @@
 | `mr_generator/operator/ast_parser.py` | Python AST → SymPy |
 | `mr_generator/base/mr_templates.py` + YAML | MR 模板池 |
 | `mr_generator/base/mr_repository.py` | MR 知识库（SQLite，含 `applicable_frameworks` 字段） |
-| `mr_generator/base/knowledge_base.py` + YAML | 三层知识库 |
+| `mr_generator/base/mr_library.py` + YAML | MR 项目库（git 追踪，只读导出已验证 MR） |
 | `mr_generator/base/operator_catalog.py` | 算子目录管理 |
 | `mr_generator/base/operator_enricher.py` | input_specs 自动丰富（inspect + HTML + LLM） |
 
@@ -142,4 +142,4 @@ tests/
 
 ---
 
-*最后更新：2026-04-11（Phase F P0+P1 完成：F1~F9；pyproject.toml 修复、依赖完整化、stub 清理、sys.path 清理、__version__ 导出、client.py 对齐；377 个单元测试通过）*
+*最后更新：2026-04-11（Phase F F10 完成：修复 status.md/CLAUDE.md/monitoring/__main__.py/README.md/quick_start.md/cli_reference.md/operator_catalog_design.md 中的错误文件引用；F11 设计文档已完成，见 docs/f11_web_dashboard_design.md；377 个单元测试通过）*

@@ -88,36 +88,39 @@ failures = client.get_failed_tests(limit=10)
 
 ### 4. MR生成与测试分离（高级用法）
 
+推荐直接通过 CLI 使用完整功能流程：
+
+```bash
+# 步骤1：生成 MR 并保存到仓库
+deepmt mr generate torch.relu --save
+
+# 步骤2：从仓库加载 MR 并批量测试
+deepmt test batch --operator torch.relu --framework pytorch
+
+# 查询测试结果
+deepmt test history
+deepmt test failures
+```
+
+如需通过 Python API 程序化调用：
+
 ```python
 from deepmt import DeepMT
-from mr_generator.operator_mr import OperatorMRGenerator
-from mr_generator.knowledge_base import KnowledgeBase
-from mr_generator.mr_repository import MRRepository
-from ir.converter import IRConverter
-from core.test_runner import TestRunner
-from core.plugins_manager import PluginsManager
-from core.results_manager import ResultsManager
+from deepmt.mr_generator.operator.operator_mr_generator import OperatorMRGenerator
+from deepmt.mr_generator.base.mr_repository import MRRepository
+from deepmt.core.results_manager import ResultsManager
 
-# 步骤1：生成MR并保存
-ir_converter = IRConverter()
-add_ir = ir_converter.from_operator_name("Add", [1.0, 2.0])
-
-kb = KnowledgeBase()
-generator = OperatorMRGenerator(kb)
-mrs = generator.generate(add_ir)
+# 步骤1：生成 MR 并保存
+generator = OperatorMRGenerator()
+mrs = generator.generate("torch.relu", framework="pytorch")
 
 mr_repo = MRRepository()
-mr_repo.save("Add", mrs)  # 保存到知识库
+mr_repo.save("torch.relu", mrs)  # 保存到仓库
 
-# 步骤2：从知识库加载MR并测试
-loaded_mrs = mr_repo.load("Add")
-
-plugins = PluginsManager()
-plugins.load_plugins()
-results_manager = ResultsManager()
-
-test_runner = TestRunner(plugins, results_manager)
-test_runner.run_with_mrs(add_ir, loaded_mrs, "pytorch")
+# 步骤2：通过 DeepMT 客户端批量测试
+client = DeepMT()
+result = client.run_batch_test("torch.relu", framework="pytorch", n_samples=10)
+print(result.summary())
 ```
 
 ---
@@ -225,7 +228,8 @@ TestRunner（使用预生成MR）
 
 ## 📝 更多信息
 
-- 详细文档：`docs/optimization_summary.md`
-- 优化计划：`docs/optimization_plan.md`
-- 使用示例：`examples/user_friendly_example.py`
+- CLI 命令参考：`docs/cli_reference.md`
+- 环境变量说明：`docs/environment_variables.md`
+- 算子层 MR 技术细节：`docs/operator_mr_technical.md`
+- 开发状态与进度：`docs/status.md`
 

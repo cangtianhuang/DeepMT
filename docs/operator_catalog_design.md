@@ -282,7 +282,7 @@ v2.2:                          paddle.nn.Mish:
 
 - **`OperatorMRGenerator`**：在批量模式下，从 `OperatorCatalog` 获取算子列表后循环调用 `generate()`；
 - **`OperatorInfoFetcher`**：以目录中的算子名称作为搜索输入，提高搜索针对性；
-- **`KnowledgeBase`**：结合目录中的算子名称验证 `knowledge_base.yaml` 条目是否仍对应有效算子。
+- **`MRRepository`**：结合目录中的算子名称确认仓库中的 MR 记录是否仍对应有效算子。
 
 ---
 

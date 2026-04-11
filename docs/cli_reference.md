@@ -576,7 +576,7 @@ deepmt mr stats --json
 删除知识库中算子的 MR 记录。
 
 > **状态**：尚未实现。调用后会显示友好提示并以退出码 2 退出。
-> 临时替代方案：直接操作 `data/mr_knowledge_base.db` 文件。
+> 临时替代方案：直接删除 `data/mr_repository/operator/<operator>.yaml` 文件。
 
 ---
 

@@ -36,51 +36,49 @@ DeepMT 针对深度学习框架（PyTorch、TensorFlow、PaddlePaddle）的**测
 
 ```
 DeepMT/
-├── deepmt/                     # CLI 入口（python -m deepmt）
-│   └── commands/               #   mr / test / repo / catalog / data / health
-├── api/                        # 用户 API（DeepMT 主入口）
-├── core/                       # 微内核框架
-│   ├── config_manager.py       #   配置加载与管理
-│   ├── ir_manager.py           #   IR 管理
-│   ├── logger.py               #   日志
-│   ├── plugins_manager.py      #   插件加载
-│   └── results_manager.py      #   结果管理
-├── engine/                     # 测试执行引擎
-│   ├── scheduler.py            #   任务调度
-│   └── test_runner.py          #   测试执行
-├── ir/                         # 统一中间表示
-│   ├── schema.py               #   OperatorIR / MetamorphicRelation 等
-│   └── converter.py            #   IR 转换器
-├── mr_generator/               # MR 生成引擎
-│   ├── operator/               #   算子层（核心）
-│   │   ├── operator_mr_generator.py      # 主生成器（4阶段流水线）
-│   │   ├── operator_llm_mr_generator.py  # LLM 生成
-│   │   ├── sympy_prover.py               # 符号证明
-│   │   ├── sympy_translator.py           # 代码→SymPy
-│   │   └── ast_parser.py                 # AST 解析
-│   ├── model/                  #   模型层（开发中）
-│   ├── application/            #   应用层（开发中）
-│   ├── base/                   #   知识库、模板池、MR 仓库、算子目录
-│   │   ├── mr_repository.py    #     MR 知识库（SQLite）
-│   │   ├── mr_templates.py     #     MR 模板池
-│   │   ├── knowledge_base.py   #     三层知识库
-│   │   └── operator_catalog.py #     算子目录管理
-│   └── config/                 #   模板/知识库 YAML + 算子目录 YAML
-├── tools/                      # 通用工具
-│   ├── llm/                    #   LLM 客户端 / OCR
-│   ├── agent/                  #   CrawlAgent（ReAct）+ TaskRunner + ToolRegistry
-│   │   └── tasks/              #     任务规格 YAML
-│   └── web_search/             #   搜索、Sphinx 解析、算子文档获取
-├── plugins/                    # 框架适配器（PyTorch 可用）
-├── analysis/                   # 输入生成、预检、验证（mr_prechecker.py、mr_verifier.py 等）
-├── monitoring/                 # 健康检查与进度追踪
+├── deepmt/                     # 主包（CLI 入口 + 所有核心模块）
+│   ├── __init__.py             #   公共 API（导出 DeepMT, TestResult, __version__）
+│   ├── __main__.py             #   python -m deepmt 入口
+│   ├── cli.py                  #   CLI 命令组
+│   ├── client.py               #   DeepMT / TestResult 高层 API
+│   ├── commands/               #   CLI 子命令实现（mr / test / repo / catalog / data / health）
+│   ├── core/                   #   微内核框架
+│   │   ├── config_manager.py   #     配置加载与管理
+│   │   ├── ir_manager.py       #     IR 管理
+│   │   ├── logger.py           #     日志
+│   │   ├── plugins_manager.py  #     插件加载
+│   │   └── results_manager.py  #     结果管理
+│   ├── engine/                 #   测试执行引擎
+│   │   ├── scheduler.py        #     任务调度
+│   │   └── batch_test_runner.py #    批量测试执行器
+│   ├── ir/                     #   统一中间表示
+│   │   └── schema.py           #     OperatorIR / MetamorphicRelation 等
+│   ├── mr_generator/           #   MR 生成引擎
+│   │   ├── operator/           #     算子层（核心）
+│   │   │   ├── operator_mr_generator.py      # 主生成器（4阶段流水线）
+│   │   │   ├── operator_llm_mr_generator.py  # LLM 生成
+│   │   │   ├── sympy_prover.py               # 符号证明
+│   │   │   ├── sympy_translator.py           # 代码→SymPy
+│   │   │   └── ast_parser.py                 # AST 解析
+│   │   ├── model/              #     模型层（开发中）
+│   │   ├── application/        #     应用层（开发中）
+│   │   └── base/               #     模板池、MR 仓库、MR 库、算子目录
+│   │       ├── mr_repository.py    #   MR 用户工作区仓库（YAML per operator）
+│   │       ├── mr_library.py       #   MR 项目库（git 追踪，已验证 MR）
+│   │       ├── mr_templates.py     #   MR 模板池
+│   │       └── operator_catalog.py #   算子目录管理
+│   ├── tools/                  #   通用工具
+│   │   ├── llm/                #     LLM 客户端
+│   │   └── web_search/         #     搜索、Sphinx 解析、算子文档获取
+│   ├── plugins/                #   框架适配器（PyTorch 可用）
+│   ├── analysis/               #   输入生成、预检、验证
+│   └── monitoring/             #   健康检查与进度追踪
 ├── tests/                      # 测试用例
 │   ├── unit/                   #   单元测试
 │   └── integration/            #   集成测试
-├── examples/                   # 示例脚本
 ├── demo/                       # 快速演示
 ├── docs/                       # 开发文档
-├── data/                       # 数据（日志、SQLite）
+├── data/                       # 运行时数据（日志、SQLite、MR YAML）
 ├── config.yaml                 # 运行配置
 └── pyproject.toml
 ```
@@ -100,21 +98,21 @@ python -m deepmt health check
 ### Python API
 
 ```python
-from api.deepmt import DeepMT
+from deepmt import DeepMT
 
-deepmt = DeepMT()
-result = deepmt.test_operator("torch.add", framework="pytorch", num_tests=10)
+client = DeepMT()
+history = client.get_test_history()
+failed = client.get_failed_tests()
 ```
 
 ### 直接调用 MR 生成器
 
 ```python
-from mr_generator.operator.operator_mr_generator import OperatorMRGenerator
+from deepmt.mr_generator.operator.operator_mr_generator import OperatorMRGenerator
 
 generator = OperatorMRGenerator()
 mrs = generator.generate(
-    operator_ir=relu_ir,
-    operator_func=torch.nn.functional.relu,
+    operator_name="torch.relu",
     framework="pytorch",
     sources=["llm", "template"],
     use_precheck=True,
