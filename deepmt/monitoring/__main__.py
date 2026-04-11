@@ -2,17 +2,12 @@
 监控模块命令行入口
 
 使用方式:
-    python -m monitoring check     # 运行健康检查
-    python -m monitoring progress  # 查看开发进度
-    python -m monitoring all       # 运行所有检查
+    python -m deepmt.monitoring check     # 运行健康检查
+    python -m deepmt.monitoring progress  # 查看开发进度
+    python -m deepmt.monitoring all       # 运行所有检查
 """
 
 import sys
-from pathlib import Path
-
-# 添加项目根目录到路径
-project_root = Path(__file__).parent.parent
-sys.path.insert(0, str(project_root))
 
 from deepmt.monitoring.health_checker import HealthChecker
 from deepmt.monitoring.progress_tracker import ProgressTracker

@@ -1,11 +1,10 @@
 """
-MR生成器模块
-包含算子层、模型层、应用层的MR生成功能
+MR 生成器模块。
+
+当前仅算子层（OperatorMRGenerator）完整实现。
+模型层与应用层为占位 stub，尚未实现，不对外导出。
 """
 
-# 导入各层的生成器
 from deepmt.mr_generator.operator import OperatorMRGenerator
-from deepmt.mr_generator.model import ModelMRGenerator
-from deepmt.mr_generator.application import ApplicationMRGenerator
 
-__all__ = ["OperatorMRGenerator", "ModelMRGenerator", "ApplicationMRGenerator"]
+__all__ = ["OperatorMRGenerator"]

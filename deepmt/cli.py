@@ -13,16 +13,9 @@ DeepMT 顶层 CLI 入口
     health   系统健康检查
 """
 
-import sys
-from pathlib import Path
-
 import click
 
-# 确保项目根目录在 sys.path 中
-_project_root = Path(__file__).parent.parent
-if str(_project_root) not in sys.path:
-    sys.path.insert(0, str(_project_root))
-
+from deepmt import __version__
 from deepmt.commands.mr import mr
 from deepmt.commands.test import test
 from deepmt.commands.repo import repo
@@ -34,7 +27,7 @@ CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"], max_content_width=10
 
 
 @click.group(context_settings=CONTEXT_SETTINGS)
-@click.version_option("0.1.0", "-V", "--version", prog_name="deepmt")
+@click.version_option(__version__, "-V", "--version", prog_name="deepmt")
 def cli():
     """DeepMT — 深度学习框架蜕变关系自动生成与分层测试系统。
 

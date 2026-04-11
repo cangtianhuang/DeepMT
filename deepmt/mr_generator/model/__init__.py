@@ -1,7 +1,6 @@
 """
-模型层MR生成模块
+模型层 MR 生成模块（尚未实现）。
+ModelMRGenerator 为占位 stub，暂不对外导出。
 """
 
-from deepmt.mr_generator.model.model_mr import ModelMRGenerator
-
-__all__ = ["ModelMRGenerator"]
+__all__ = []

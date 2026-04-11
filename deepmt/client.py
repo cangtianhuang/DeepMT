@@ -1,20 +1,21 @@
 """
-DeepMT 主API类
-用户友好的接口，隐藏IR和内部实现细节
+DeepMT 主 API 类
+
+面向 Python 程序化调用的高层接口，行为与 CLI 主链对齐：
+  - MR 生成：OperatorMRGenerator（四阶段流水线）
+  - 测试执行：BatchTestRunner + RandomGenerator（从 input_specs 自动生成输入）
+  - 结果查询：ResultsManager
+
+注意：模型层（ModelMR）与应用层（AppMR）尚未实现，不在此 API 中暴露。
 """
 
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
-from deepmt.core.ir_manager import IRManager
 from deepmt.core.logger import logger
 from deepmt.core.plugins_manager import FrameworkType
 from deepmt.core.results_manager import ResultsManager
-from deepmt.engine.scheduler import TaskScheduler
-from deepmt.engine.test_runner import TestRunner
-from deepmt.ir.schema import ApplicationIR, ModelIR, OperatorIR
 from deepmt.mr_generator.base.mr_repository import MRRepository
-from deepmt.mr_generator.operator.operator_mr_generator import OperatorMRGenerator
 
 
 class TestResult:
@@ -39,7 +40,6 @@ class TestResult:
         self.details = details or []
 
     def summary(self) -> str:
-        """返回测试摘要字符串"""
         lines = [
             "=" * 60,
             "DeepMT 测试结果",
@@ -55,7 +55,6 @@ class TestResult:
         return "\n".join(lines)
 
     def to_dict(self) -> Dict[str, Any]:
-        """转换为字典"""
         return {
             "name": self.name,
             "framework": self.framework,
@@ -69,212 +68,127 @@ class TestResult:
 
 class DeepMT:
     """
-    DeepMT 主API类
+    DeepMT 主 API 类
 
-    用户友好的接口，隐藏IR和内部实现细节
+    面向程序化调用的接口，封装批量测试和结果查询。
+    推荐通过 CLI 使用全部功能（`deepmt test batch`、`deepmt mr generate` 等）；
+    此类提供的是对核心主链的 Python 包装，适合脚本集成和自动化场景。
 
     示例:
         >>> from deepmt import DeepMT
         >>> client = DeepMT()
-        >>> result = client.test_operator("Add", [1.0, 2.0], "pytorch")
-        >>> print(result.summary())
+        >>> results = client.get_test_history()
+        >>> failed = client.get_failed_tests()
     """
 
-    def __init__(self, db_path: str = "data/defects.db", log_level: str = "INFO"):
+    def __init__(
+        self,
+        db_path: str = "data/defects.db",
+        mr_repo_dir: str = "data/mr_repository/operator",
+    ):
         """
-        初始化DeepMT客户端
+        初始化 DeepMT 客户端。
 
         Args:
-            db_path: 数据库路径
-            log_level: 日志级别
+            db_path:     测试结果数据库路径（相对于当前工作目录）
+            mr_repo_dir: MR 知识库目录路径
         """
         logger.info("Initializing DeepMT client")
-
-        self.ir_manager = IRManager()
         self.results_manager = ResultsManager(db_path=db_path)
+        self.mr_repository = MRRepository(repo_dir=mr_repo_dir)
 
-        # MR生成器（延迟初始化）
-        self._mr_generator = None
-
-        # MR知识库（可选，用于MR重用）
-        self.mr_repository = MRRepository()
-
-    def test_operator(
+    def run_batch_test(
         self,
-        name: str,
-        inputs: List[Any],
+        operator_name: str,
         framework: FrameworkType = "pytorch",
-        properties: Optional[Dict[str, Any]] = None,
+        n_samples: int = 10,
+        verified_only: bool = True,
     ) -> TestResult:
         """
-        测试算子
+        对单个算子运行批量蜕变测试（与 `deepmt test batch` CLI 行为对齐）。
+
+        前提：MR 知识库中已有该算子的 MR（通过 `deepmt mr generate` 生成）；
+        算子已有 input_specs（通过 `deepmt catalog enrich` 丰富）。
 
         Args:
-            name: 算子名称（如 "Add", "Multiply"）
-            inputs: 输入值列表
-            framework: 目标框架（"pytorch", "tensorflow", "paddlepaddle"）
-            properties: 算子属性（可选，会自动推断）
+            operator_name: 算子全限定名，如 "torch.nn.functional.relu"
+            framework:     目标框架
+            n_samples:     每条 MR 的随机输入样本数
+            verified_only: 是否只使用已验证的 MR
 
         Returns:
-            TestResult对象
-
-        示例:
-            >>> client = DeepMT()
-            >>> result = client.test_operator("Add", [1.0, 2.0], "pytorch")
-            >>> print(result.summary())
+            TestResult 对象
         """
         import time
+        from deepmt.ir.schema import OperatorIR
+        from deepmt.mr_generator.base.operator_catalog import OperatorCatalog
+        from deepmt.analysis.random_generator import RandomGenerator
+        from deepmt.engine.batch_test_runner import BatchTestRunner
 
         start_time = time.time()
+        logger.info(f"Running batch test: {operator_name} on {framework}")
 
-        logger.info(f"Testing operator: {name} on {framework}")
-
-        try:
-            # 1. 创建 OperatorIR
-            operator_ir = OperatorIR(
-                name=name, inputs=inputs, outputs=[], properties=properties or {}
+        mrs = self.mr_repository.load(operator_name, verified_only=verified_only)
+        if not mrs:
+            raise ValueError(
+                f"No MRs found for '{operator_name}' in repository. "
+                f"Run `deepmt mr generate {operator_name} --save` first."
             )
 
-            # 2. 尝试从知识库加载MR，如果没有则生成
-            mrs = None
-            if self.mr_repository.exists(operator_ir.name):
-                logger.info(
-                    f"Loading MRs from knowledge base for {operator_ir.name}"
-                )
-                mrs = self.mr_repository.load(operator_ir.name)
-            else:
-                logger.info(f"Generating MRs for {operator_ir.name}")
-                if self._mr_generator is None:
-                    self._mr_generator = OperatorMRGenerator()
-                mrs = self._mr_generator.generate(operator_ir, framework)
-                # 保存到知识库以便后续重用
-                self.mr_repository.save(operator_ir.name, mrs)
+        catalog = OperatorCatalog()
+        op_entry = catalog.get(operator_name, framework=framework)
+        input_specs = op_entry.get("input_specs", []) if op_entry else []
 
-            # 3. 使用TestRunner执行测试（MR生成与测试分离）
-            test_runner = TestRunner(results_manager=self.results_manager)
-            test_runner.run_with_mrs(operator_ir, mrs, framework)
+        operator_ir = OperatorIR(name=operator_name, input_specs=input_specs)
+        generator = RandomGenerator(n_samples=n_samples)
+        runner = BatchTestRunner(
+            results_manager=self.results_manager,
+            input_generator=generator,
+        )
 
-            # 4. 获取结果
-            duration = time.time() - start_time
-            summary_data = self.results_manager.get_summary(operator_ir.name)
+        runner.run(operator_ir, mrs, framework=framework)
 
-            if summary_data:
-                item = summary_data[0]
-                result = TestResult(
-                    name=item["ir_name"],
-                    framework=framework,
-                    total_tests=item["total_tests"],
-                    passed_tests=item["passed_tests"],
-                    failed_tests=item["failed_tests"],
-                    duration=duration,
-                )
-            else:
-                result = TestResult(
-                    name=name,
-                    framework=framework,
-                    total_tests=0,
-                    passed_tests=0,
-                    failed_tests=0,
-                    duration=duration,
-                )
-
-            return result
-
-        except Exception as e:
-            logger.error(f"Error testing operator: {e}")
-            raise
-
-    def test_operators(
-        self, operators: List[Dict[str, Any]], framework: FrameworkType = "pytorch"
-    ) -> List[TestResult]:
-        """
-        批量测试多个算子
-
-        Args:
-            operators: 算子列表，每个元素为 {"name": str, "inputs": List}
-            framework: 目标框架（"pytorch", "tensorflow", "paddlepaddle"）
-
-        Returns:
-            TestResult列表
-
-        示例:
-            >>> operators = [
-            ...     {"name": "Add", "inputs": [1.0, 2.0]},
-            ...     {"name": "Multiply", "inputs": [3.0, 4.0]}
-            ... ]
-            >>> results = client.test_operators(operators, "pytorch")
-            >>> for r in results:
-            ...     print(r.summary())
-        """
-        results = []
-        for op in operators:
-            result = self.test_operator(
-                name=op["name"],
-                inputs=op["inputs"],
+        duration = time.time() - start_time
+        summary_rows = self.results_manager.get_summary(operator_name)
+        if summary_rows:
+            row = summary_rows[0]
+            return TestResult(
+                name=row["ir_name"],
                 framework=framework,
-                properties=op.get("properties"),
+                total_tests=row["total_tests"],
+                passed_tests=row["passed_tests"],
+                failed_tests=row["failed_tests"],
+                duration=duration,
             )
-            results.append(result)
-        return results
-
-    def test_from_config(self, config_path: Union[str, Path]) -> List[TestResult]:
-        """
-        从配置文件运行测试
-
-        Args:
-            config_path: 配置文件路径（YAML格式）
-
-        Returns:
-            TestResult列表
-        """
-        import yaml
-
-        config_path = Path(config_path)
-        if not config_path.exists():
-            raise FileNotFoundError(f"Config file not found: {config_path}")
-
-        with open(config_path, "r", encoding="utf-8") as f:
-            config = yaml.safe_load(f)
-
-        results = []
-        for test_config in config.get("tests", []):
-            test_type = test_config.get("type", "operator")
-            # 从配置文件读取框架名称，将由 test_operator 进行验证
-            config_framework = test_config.get("framework", "pytorch")
-
-            if test_type == "operator":
-                result = self.test_operator(
-                    name=test_config["name"],
-                    inputs=test_config["inputs"],
-                    framework=config_framework,
-                    properties=test_config.get("properties"),
-                )
-                results.append(result)
-            else:
-                logger.warning(f"Unsupported test type: {test_type}")
-
-        return results
+        return TestResult(
+            name=operator_name,
+            framework=framework,
+            total_tests=0,
+            passed_tests=0,
+            failed_tests=0,
+            duration=duration,
+        )
 
     def get_test_history(self, name: Optional[str] = None) -> List[Dict[str, Any]]:
         """
-        获取测试历史
+        获取测试历史摘要。
 
         Args:
-            name: 算子名称（可选，None表示获取所有）
+            name: 算子名称（None 表示全部）
 
         Returns:
-            测试历史列表
+            摘要列表，每项含 ir_name / total_tests / passed_tests / failed_tests
         """
         return self.results_manager.get_summary(name)
 
     def get_failed_tests(self, limit: int = 100) -> List[Dict[str, Any]]:
         """
-        获取失败的测试用例
+        获取失败测试用例列表。
 
         Args:
-            limit: 返回数量限制
+            limit: 返回数量上限
 
         Returns:
-            失败测试列表
+            失败用例列表
         """
         return self.results_manager.get_failed_tests(limit)
