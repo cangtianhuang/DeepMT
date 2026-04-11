@@ -1,0 +1,328 @@
+{% extends "base.html" %}
+
+{% block title %}总览 — DeepMT Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+
+  <!-- ── 页面标题 ────────────────────────────────────────────────────────── -->
+  <div class="d-flex justify-content-between align-items-start mb-4">
+    <div>
+      <h4 class="fw-bold mb-1">系统总览</h4>
+      <p class="text-muted mb-0" style="font-size:.875rem;">
+        RQ1–RQ4 关键指标 &nbsp;·&nbsp; MR 自动生成 · 缺陷检测 · 跨框架一致性 · 覆盖度
+      </p>
+    </div>
+    <button class="btn btn-sm btn-outline-secondary" onclick="location.reload()">
+      <i class="bi bi-arrow-clockwise me-1"></i>刷新
+    </button>
+  </div>
+
+  <!-- ── KPI 卡片 ───────────────────────────────────────────────────────── -->
+  <div class="row g-3 mb-4" id="kpi-row">
+    <!-- RQ1 -->
+    <div class="col-6 col-xl-3">
+      <div class="card h-100">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start">
+            <div class="flex-grow-1">
+              <div class="mb-2">
+                <span class="badge text-bg-primary" style="font-size:.68rem;">RQ1</span>
+              </div>
+              <div class="kpi-value text-primary" id="kpi-rq1-value">—</div>
+              <div class="fw-semibold mt-1">MR 自动生成</div>
+              <div class="kpi-sub" id="kpi-rq1-sub">已生成 · 验证率</div>
+            </div>
+            <i class="bi bi-magic fs-1 text-primary opacity-15"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RQ2 -->
+    <div class="col-6 col-xl-3">
+      <div class="card h-100">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start">
+            <div class="flex-grow-1">
+              <div class="mb-2">
+                <span class="badge text-bg-danger" style="font-size:.68rem;">RQ2</span>
+              </div>
+              <div class="kpi-value text-danger" id="kpi-rq2-value">—</div>
+              <div class="fw-semibold mt-1">缺陷检测</div>
+              <div class="kpi-sub" id="kpi-rq2-sub">通过率 · 证据包</div>
+            </div>
+            <i class="bi bi-bug-fill fs-1 text-danger opacity-15"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RQ3 -->
+    <div class="col-6 col-xl-3">
+      <div class="card h-100">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start">
+            <div class="flex-grow-1">
+              <div class="mb-2">
+                <span class="badge text-bg-success" style="font-size:.68rem;">RQ3</span>
+              </div>
+              <div class="kpi-value text-success" id="kpi-rq3-value">—</div>
+              <div class="fw-semibold mt-1">跨框架一致性</div>
+              <div class="kpi-sub" id="kpi-rq3-sub">一致率</div>
+            </div>
+            <i class="bi bi-arrow-left-right fs-1 text-success opacity-15"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RQ4 -->
+    <div class="col-6 col-xl-3">
+      <div class="card h-100">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start">
+            <div class="flex-grow-1">
+              <div class="mb-2">
+                <span class="badge text-bg-warning text-dark" style="font-size:.68rem;">RQ4</span>
+              </div>
+              <div class="kpi-value text-warning" id="kpi-rq4-value">—</div>
+              <div class="fw-semibold mt-1">覆盖算子数</div>
+              <div class="kpi-sub" id="kpi-rq4-sub">算子 · MR 密度</div>
+            </div>
+            <i class="bi bi-layers-fill fs-1 text-warning opacity-15"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 图表区 ──────────────────────────────────────────────────────────── -->
+  <div class="row g-3 mb-4">
+    <!-- MR 分类分布 -->
+    <div class="col-lg-5">
+      <div class="card h-100">
+        <div class="card-header d-flex align-items-center gap-2">
+          <i class="bi bi-pie-chart-fill text-primary"></i>
+          <span class="fw-semibold">MR 分类分布</span>
+          <span class="badge text-bg-secondary ms-auto" style="font-size:.65rem;">RQ1</span>
+        </div>
+        <div class="card-body d-flex align-items-center justify-content-center"
+             style="min-height: 240px;">
+          <canvas id="chart-category" style="max-height:220px;"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- 算子测试概况 -->
+    <div class="col-lg-7">
+      <div class="card h-100">
+        <div class="card-header d-flex align-items-center gap-2">
+          <i class="bi bi-bar-chart-fill text-primary"></i>
+          <span class="fw-semibold">算子测试概况</span>
+          <span class="badge text-bg-secondary ms-auto" style="font-size:.65rem;">RQ2</span>
+        </div>
+        <div class="card-body d-flex align-items-center justify-content-center"
+             style="min-height: 240px;">
+          <canvas id="chart-operators" style="max-height:220px;"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 最近测试摘要 ────────────────────────────────────────────────────── -->
+  <div class="card">
+    <div class="card-header d-flex align-items-center gap-2">
+      <i class="bi bi-clock-history text-primary"></i>
+      <span class="fw-semibold">最近测试摘要</span>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="table-light">
+            <tr>
+              <th class="ps-3">算子</th>
+              <th>框架</th>
+              <th>测试数</th>
+              <th>通过</th>
+              <th>失败</th>
+              <th>通过率</th>
+              <th>更新时间</th>
+            </tr>
+          </thead>
+          <tbody id="summary-tbody">
+            <tr>
+              <td colspan="7">
+                <div class="empty-state py-4">
+                  <i class="bi bi-hourglass-split"></i>
+                  <div>加载中…</div>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="/static/chart.umd.min.js"></script>
+<script>
+// ── 加载 KPI 数据 ──────────────────────────────────────────────────────────
+async function loadSummary() {
+  try {
+    const resp = await fetch('/api/summary');
+    const json = await resp.json();
+    if (!json.data) return;
+    const { rq1, rq2, rq3, rq4 } = json.data;
+
+    // RQ1
+    if (rq1 && !rq1.error) {
+      document.getElementById('kpi-rq1-value').textContent = rq1.total_mr_count ?? '—';
+      document.getElementById('kpi-rq1-sub').textContent =
+        `验证率 ${rq1.verification_rate != null ? (rq1.verification_rate * 100).toFixed(1) + '%' : '—'}  ·  ${rq1.operators_with_mr ?? 0} 个算子`;
+    }
+
+    // RQ2
+    if (rq2 && !rq2.error) {
+      const rate = rq2.overall_pass_rate != null
+        ? (rq2.overall_pass_rate * 100).toFixed(1) + '%' : '—';
+      document.getElementById('kpi-rq2-value').textContent = rate;
+      document.getElementById('kpi-rq2-sub').textContent =
+        `${rq2.total_test_cases ?? 0} 条用例  ·  ${rq2.evidence_pack_count ?? 0} 个证据包`;
+    }
+
+    // RQ3
+    if (rq3 && !rq3.error) {
+      const cr = rq3.overall_consistency_rate != null
+        ? (rq3.overall_consistency_rate * 100).toFixed(1) + '%' : '—';
+      document.getElementById('kpi-rq3-value').textContent = cr;
+      document.getElementById('kpi-rq3-sub').textContent =
+        `${rq3.operators_compared ?? 0} 个算子  ·  ${rq3.cross_session_count ?? 0} 次实验`;
+    }
+
+    // RQ4
+    if (rq4 && !rq4.error) {
+      document.getElementById('kpi-rq4-value').textContent = rq4.operators_covered ?? '—';
+      document.getElementById('kpi-rq4-sub').textContent =
+        `平均 ${rq4.avg_mrs_per_operator ?? 0} MR/算子  ·  密度 ${rq4.test_density ?? 0}`;
+    }
+
+    // 分类分布饼图
+    if (rq1 && rq1.category_distribution) {
+      renderCategoryChart(rq1.category_distribution);
+    }
+  } catch (e) {
+    console.warn('KPI 加载失败:', e);
+  }
+}
+
+// ── 加载测试摘要表格 ─────────────────────────────────────────────────────────
+async function loadTestResults() {
+  try {
+    const resp = await fetch('/api/test-results');
+    const json = await resp.json();
+    const rows = json.data;
+    const tbody = document.getElementById('summary-tbody');
+
+    if (!rows || rows.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="7">
+        <div class="empty-state py-4">
+          <i class="bi bi-database-x"></i>
+          <div>暂无测试数据，请先运行 <code>deepmt test batch</code></div>
+        </div></td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = rows.map(r => {
+      const rate = r.total_tests > 0
+        ? ((r.passed_tests / r.total_tests) * 100).toFixed(1) : '0.0';
+      const color = parseFloat(rate) >= 90 ? 'success'
+                  : parseFloat(rate) >= 70 ? 'warning' : 'danger';
+      return `<tr onclick="location.href='/tests'" style="cursor:pointer;">
+        <td class="ps-3 fw-semibold"><code>${r.ir_name}</code></td>
+        <td><span class="badge text-bg-primary" style="font-size:.7rem;">${r.framework || 'pytorch'}</span></td>
+        <td>${r.total_tests}</td>
+        <td class="text-success">${r.passed_tests}</td>
+        <td class="text-danger">${r.failed_tests}</td>
+        <td>
+          <div class="d-flex align-items-center gap-2">
+            <div class="progress flex-grow-1" style="height:6px; min-width:60px;">
+              <div class="progress-bar bg-${color}" style="width:${rate}%"></div>
+            </div>
+            <span class="text-${color} fw-semibold" style="font-size:.8rem;min-width:3rem;">${rate}%</span>
+          </div>
+        </td>
+        <td class="text-muted" style="font-size:.8rem;">${r.last_updated || '—'}</td>
+      </tr>`;
+    }).join('');
+
+    // 算子测试柱图
+    renderOperatorChart(rows);
+  } catch (e) {
+    console.warn('测试摘要加载失败:', e);
+  }
+}
+
+// ── 图表：MR 分类分布（环形饼图）────────────────────────────────────────────
+function renderCategoryChart(dist) {
+  const labels = Object.keys(dist);
+  const values = Object.values(dist);
+  if (labels.length === 0) return;
+
+  const palette = ['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#f97316'];
+  new Chart(document.getElementById('chart-category'), {
+    type: 'doughnut',
+    data: {
+      labels,
+      datasets: [{
+        data: values,
+        backgroundColor: palette.slice(0, labels.length),
+        borderWidth: 2,
+        borderColor: '#fff',
+      }]
+    },
+    options: {
+      plugins: {
+        legend: { position: 'right', labels: { font: { size: 12 }, padding: 12 } }
+      },
+      cutout: '60%',
+    }
+  });
+}
+
+// ── 图表：算子测试概况（水平分段柱图）───────────────────────────────────────
+function renderOperatorChart(rows) {
+  const labels = rows.map(r => r.ir_name.replace(/torch\.nn\.functional\./, ''));
+  const passed = rows.map(r => r.passed_tests);
+  const failed = rows.map(r => r.failed_tests);
+  if (labels.length === 0) return;
+
+  new Chart(document.getElementById('chart-operators'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label: '通过', data: passed, backgroundColor: '#10b981', borderRadius: 3, stack: 's' },
+        { label: '失败', data: failed, backgroundColor: '#ef4444', borderRadius: 3, stack: 's' },
+      ]
+    },
+    options: {
+      indexAxis: 'y',
+      plugins: { legend: { position: 'top', labels: { font: { size: 12 } } } },
+      scales: {
+        x: { stacked: true, grid: { display: false } },
+        y: { stacked: true, ticks: { font: { size: 11 } } }
+      },
+    }
+  });
+}
+
+// 页面加载后触发
+loadSummary();
+loadTestResults();
+</script>
+{% endblock %}

@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}DeepMT Dashboard{% endblock %}</title>
+
+  <!-- Bootstrap 5 CSS (本地，离线可用) -->
+  <link rel="stylesheet" href="/static/bootstrap.min.css">
+  <!-- Bootstrap Icons (本地) -->
+  <link rel="stylesheet" href="/static/bootstrap-icons.min.css">
+
+  <style>
+    /* ── 全局 ─────────────────────────────────────────── */
+    :root {
+      --deepmt-primary: #0d6efd;
+      --deepmt-sidebar-w: 0px;   /* 当前无侧栏，预留 */
+    }
+    body {
+      background-color: #f4f6fb;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                   "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei",
+                   sans-serif;
+    }
+
+    /* ── 导航栏 ───────────────────────────────────────── */
+    .navbar-brand .brand-text { font-weight: 700; letter-spacing: .02em; }
+    .navbar .nav-link { font-size: .9rem; padding: .4rem .75rem; }
+    .navbar .nav-link.active {
+      color: #fff !important;
+      background-color: rgba(255,255,255,.12);
+      border-radius: .35rem;
+    }
+    .navbar .nav-link:hover:not(.active) { color: rgba(255,255,255,.85) !important; }
+
+    /* ── 页面主体 ─────────────────────────────────────── */
+    .page-content {
+      padding-top: 64px;   /* 让内容区不被固定导航栏遮挡 */
+      min-height: calc(100vh - 64px - 52px);
+    }
+
+    /* ── 卡片 ─────────────────────────────────────────── */
+    .card {
+      border: 1px solid rgba(0,0,0,.06);
+      box-shadow: 0 1px 6px rgba(0,0,0,.06);
+      border-radius: .6rem;
+    }
+    .card-header {
+      background: transparent;
+      border-bottom: 1px solid rgba(0,0,0,.06);
+      padding: .75rem 1rem;
+      font-size: .875rem;
+    }
+
+    /* ── KPI 卡片 ─────────────────────────────────────── */
+    .kpi-value {
+      font-size: 2rem;
+      font-weight: 700;
+      line-height: 1.1;
+    }
+    .kpi-sub { font-size: .78rem; color: #6c757d; }
+
+    /* ── 代码块 ───────────────────────────────────────── */
+    .code-block {
+      background: #1e1e2e;
+      color: #cdd6f4;
+      border-radius: .5rem;
+      padding: 1rem 1.1rem;
+      font-size: .82rem;
+      line-height: 1.6;
+      overflow-x: auto;
+      white-space: pre;
+    }
+
+    /* ── 徽章 ─────────────────────────────────────────── */
+    .badge-verified   { background-color: #198754 !important; }
+    .badge-checked    { background-color: #0d6efd !important; }
+    .badge-unverified { background-color: #6c757d !important; }
+    .badge-llm        { background-color: #7c3aed !important; }
+    .badge-template   { background-color: #0891b2 !important; }
+    .badge-manual     { background-color: #b45309 !important; }
+
+    /* ── 表格 ─────────────────────────────────────────── */
+    .table th {
+      font-size: .8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      color: #6c757d;
+      border-top: none;
+      white-space: nowrap;
+    }
+    .table td { font-size: .875rem; vertical-align: middle; }
+    .table-hover tbody tr:hover { background-color: rgba(13,110,253,.04); cursor: pointer; }
+
+    /* ── 空状态提示 ────────────────────────────────────── */
+    .empty-state {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: #adb5bd;
+    }
+    .empty-state .bi { font-size: 2.5rem; display: block; margin-bottom: .75rem; }
+
+    /* ── 其他 ─────────────────────────────────────────── */
+    code { font-size: .82em; background: #eef1f8; padding: .1em .35em; border-radius: .25rem; }
+  </style>
+
+  {% block extra_head %}{% endblock %}
+</head>
+
+<body>
+
+<!-- ═══════════════════ 顶部导航栏 ═════════════════════════════════════════ -->
+<nav class="navbar navbar-expand-lg navbar-dark fixed-top"
+     style="background: linear-gradient(135deg, #0f2044 0%, #1a3a6b 100%);
+            box-shadow: 0 2px 8px rgba(0,0,0,.25);">
+  <div class="container-fluid px-4">
+
+    <!-- 品牌 Logo -->
+    <a class="navbar-brand d-flex align-items-center gap-2 py-1" href="/">
+      <span style="background:linear-gradient(135deg,#4e9af1,#2563eb);
+                   border-radius:.4rem; padding:.3rem .45rem; line-height:1;">
+        <i class="bi bi-layers-fill text-white" style="font-size:1.1rem;"></i>
+      </span>
+      <span class="brand-text">DeepMT</span>
+      <span class="badge text-bg-secondary fw-normal ms-1"
+            style="font-size:.62rem; opacity:.85;">v{{ version }}</span>
+    </a>
+
+    <!-- 折叠按钮（小屏） -->
+    <button class="navbar-toggler border-0" type="button"
+            data-bs-toggle="collapse" data-bs-target="#navbarMain"
+            aria-controls="navbarMain" aria-expanded="false">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <!-- 导航链接 -->
+    <div class="collapse navbar-collapse" id="navbarMain">
+      <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-3 gap-1">
+        <li class="nav-item">
+          <a class="nav-link d-flex align-items-center gap-1
+                    {% if active_page == 'overview' %}active{% endif %}"
+             href="/">
+            <i class="bi bi-grid-1x2-fill"></i>
+            <span>总览</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link d-flex align-items-center gap-1
+                    {% if active_page == 'mr_repo' %}active{% endif %}"
+             href="/mr">
+            <i class="bi bi-database-fill"></i>
+            <span>MR 知识库</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link d-flex align-items-center gap-1
+                    {% if active_page == 'test_results' %}active{% endif %}"
+             href="/tests">
+            <i class="bi bi-clipboard2-check-fill"></i>
+            <span>测试结果</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link d-flex align-items-center gap-1
+                    {% if active_page == 'cross_framework' %}active{% endif %}"
+             href="/cross">
+            <i class="bi bi-arrow-left-right"></i>
+            <span>跨框架</span>
+          </a>
+        </li>
+      </ul>
+
+      <!-- 右侧工具栏 -->
+      <div class="d-flex align-items-center gap-3">
+        <span class="d-none d-lg-flex align-items-center gap-1 text-white-50"
+              style="font-size:.78rem;">
+          <span class="badge rounded-pill bg-success" style="width:8px;height:8px;padding:0;"></span>
+          已连接
+        </span>
+        <a href="/api/docs" target="_blank"
+           class="btn btn-sm btn-outline-light py-0 px-2"
+           style="font-size:.8rem; opacity:.7;">
+          <i class="bi bi-code-slash me-1"></i>API
+        </a>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- ═══════════════════ 主内容区 ══════════════════════════════════════════ -->
+<main class="page-content">
+  {% block content %}{% endblock %}
+</main>
+
+<!-- ═══════════════════ 页脚 ═══════════════════════════════════════════════ -->
+<footer class="bg-white border-top py-3 mt-4">
+  <div class="container-fluid px-4">
+    <div class="row align-items-center">
+      <div class="col text-muted" style="font-size:.8rem;">
+        <i class="bi bi-layers-fill me-1" style="color:#2563eb;"></i>
+        <strong>DeepMT</strong> v{{ version }} &nbsp;·&nbsp;
+        面向深度学习框架的蜕变关系自动生成与分层测试体系
+      </div>
+      <div class="col-auto text-muted" style="font-size:.78rem;">
+        数据目录：<code>data/</code>
+        &nbsp;·&nbsp;
+        <a href="/api/docs" target="_blank" class="text-decoration-none text-muted">API 文档</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<!-- ═══════════════════ 脚本 ═══════════════════════════════════════════════ -->
+<script src="/static/bootstrap.bundle.min.js"></script>
+{% block extra_scripts %}{% endblock %}
+
+</body>
+</html>

@@ -40,8 +40,14 @@ web-search = [
 sympy = [
     "sympy>=1.9.0",
 ]
+ui = [
+    "fastapi>=0.110.0",
+    "uvicorn[standard]>=0.27.0",
+    "jinja2>=3.1.0",
+    "python-multipart>=0.0.9",
+]
 all = [
-    "deepmt[llm,web-search,sympy]",
+    "deepmt[llm,web-search,sympy,ui]",
 ]
 
 [project.scripts]
@@ -54,6 +60,13 @@ include = ["deepmt*"]
 [tool.setuptools.package-data]
 "deepmt.plugins" = ["*.yaml"]
 "deepmt.mr_generator.base" = ["*.yaml"]
+"deepmt.ui" = ["templates/**/*.html", "static/**/*", "static/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[dependency-groups]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+]

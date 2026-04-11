@@ -11,6 +11,7 @@ DeepMT 顶层 CLI 入口
     catalog  算子目录浏览与查询
     data     数据目录管理
     health   系统健康检查
+    ui       Web 仪表盘服务器管理
 """
 
 import click
@@ -22,6 +23,7 @@ from deepmt.commands.repo import repo
 from deepmt.commands.health import health
 from deepmt.commands.catalog import catalog
 from deepmt.commands.data import data
+from deepmt.commands.ui import ui
 
 CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"], max_content_width=100)
 
@@ -39,6 +41,7 @@ def cli():
       catalog  算子目录浏览与跨框架查询
       data     数据目录管理（日志清理等）
       health   系统健康检查
+      ui       Web 仪表盘（deepmt ui start）
 
     \b
     快速开始:
@@ -61,3 +64,4 @@ cli.add_command(repo)
 cli.add_command(health)
 cli.add_command(catalog)
 cli.add_command(data)
+cli.add_command(ui)
