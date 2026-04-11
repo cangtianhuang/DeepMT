@@ -719,6 +719,65 @@ deepmt test failures --json
 
 ---
 
+### `deepmt test cross <operator>`
+
+跨框架一致性测试，对比 PyTorch 与 NumPy 在同一批 MR 上的行为差异。
+
+```
+deepmt test cross <OPERATOR> [OPTIONS]
+```
+
+| 选项 | 默认值 | 说明 |
+|------|--------|------|
+| `--framework1` | `pytorch` | 第一框架 |
+| `--framework2` | `numpy` | 第二框架（NumPy 参考后端）|
+| `--n-samples` | `10` | 每条 MR 的随机样本数 |
+| `--verified-only` | `False` | 仅使用已验证 MR |
+| `--save` | `False` | 将结果持久化到 `data/cross_results/` |
+| `--json` | `False` | 以 JSON 格式输出 |
+
+**示例：**
+
+```bash
+deepmt test cross torch.nn.functional.relu --save
+deepmt test cross torch.exp --n-samples 30 --json
+deepmt test cross torch.tanh --verified-only --save --json
+```
+
+---
+
+### `deepmt test experiment`
+
+收集全链路实验数据，映射到论文 RQ1-RQ4，生成结构化报告。
+
+```
+deepmt test experiment [OPTIONS]
+```
+
+| 选项 | 默认值 | 说明 |
+|------|--------|------|
+| `--rq` | `all` | 仅收集指定研究问题（`1`/`2`/`3`/`4`/`all`）|
+| `--json` | `False` | 以 JSON 格式输出（可重定向到文件）|
+
+**RQ 映射：**
+
+| RQ | 数据来源 | 关键指标 |
+|----|---------|---------|
+| RQ1 | MRRepository | MR 总数、验证率、分类分布、每算子平均 MR 数 |
+| RQ2 | ResultsManager + EvidenceCollector | 通过率、失败分布、证据包数量 |
+| RQ3 | CrossFrameworkTester 持久化结果 | 一致率、输出差值、不一致 MR 数 |
+| RQ4 | RQ1/RQ2 派生 | 覆盖算子数、用例密度、自动化范围 |
+
+**示例：**
+
+```bash
+deepmt test experiment                             # 全部 RQ 文本报告
+deepmt test experiment --rq 2                      # 仅 RQ2（缺陷检测）
+deepmt test experiment --json > experiment_data.json  # 导出 JSON 用于论文
+```
+
+---
+
 ## `deepmt repo` — MR 知识库管理
 
 ### `deepmt repo list`

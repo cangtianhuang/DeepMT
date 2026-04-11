@@ -17,12 +17,12 @@ DeepMT（Deep Metamorphic Testing）是面向深度学习框架（PyTorch、Tens
 | Phase A：算子数据层完善         | ✅ 完成         | `docs/deepmt_dev_docs/01_Phase_A_算子数据层完善.md`               |
 | Phase B：算子层 MR 生成与知识库 | ✅ 完成         | `docs/deepmt_dev_docs/02_Phase_B_算子层MR生成与知识库.md`         |
 | Phase C：测试执行与跨框架适配   | ✅ 完成         | `docs/deepmt_dev_docs/03_Phase_C_测试执行与跨框架适配.md`         |
-| Phase D：缺陷分析与实验闭环     | 🔲 **当前目标** | `docs/deepmt_dev_docs/04_Phase_D_缺陷分析、实验闭环与研究结论.md` |
-| Phase E：演示交付与生产化加固   | ⬜ 待开始       | `docs/deepmt_dev_docs/05_Phase_E_演示交付与生产化加固.md`         |
+| Phase D：缺陷分析与实验闭环     | ✅ 完成         | `docs/deepmt_dev_docs/04_Phase_D_缺陷分析、实验闭环与研究结论.md` |
+| Phase E：演示交付与生产化加固   | 🔲 **当前目标** | `docs/deepmt_dev_docs/05_Phase_E_演示交付与生产化加固.md`         |
 
-**当前主链：** 算子目录 → MR 生成 → 批量测试 → **结果报告与缺陷分析（Phase D）** → 缺陷证据包
+**当前主链：** 算子目录 → MR 生成 → 批量测试 → 缺陷分析 → **演示交付与生产化加固（Phase E）**
 
-已完成：A1~A6（算子目录与 input_specs）、B1~B3（MR 知识库与批量生成）、C1~C5（RandomGenerator + BatchTestRunner + test batch 命令）。全量单元测试 177 个通过。
+已完成：A1~A6（算子目录与 input_specs）、B1~B3（MR 知识库与批量生成）、C1~C5（RandomGenerator + BatchTestRunner + test batch 命令）、D1~D7（报告生成、变异测试、证据包、跨框架一致性、RQ1-RQ4 数据组织）。全量单元测试 377 个通过。
 
 ## 环境与运行
 

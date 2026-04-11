@@ -9,6 +9,8 @@ deepmt test — 测试执行子命令组
     report        生成测试结果报告
     dedup         缺陷线索去重（将失败证据包聚类为独立缺陷线索）
     evidence      证据包管理（list / show / script）
+    cross         跨框架一致性测试（D6，对比两个框架在等价算子上的行为）
+    experiment    论文实验数据汇总（D7，RQ1-RQ4 数据组织）
     from-config   从 YAML 配置文件批量测试
     history       查看测试历史
     failures      查看失败的测试用例
@@ -712,6 +714,171 @@ def evidence_script(evidence_id):
             sys.exit(1)
 
         click.echo(pack.reproduce_script)
+
+    except Exception as e:
+        click.echo(click.style(f"错误: {e}", fg="red"), err=True)
+        sys.exit(1)
+
+
+# ── cross ─────────────────────────────────────────────────────────────────────
+
+_CROSS_FRAMEWORKS = ["pytorch", "numpy"]
+
+
+@test.command("cross")
+@click.argument("operator")
+@click.option(
+    "--framework1",
+    default="pytorch",
+    show_default=True,
+    help="第一框架（主框架）",
+)
+@click.option(
+    "--framework2",
+    default="numpy",
+    show_default=True,
+    help="第二框架（参考框架，默认 numpy）",
+)
+@click.option("--n-samples", default=20, show_default=True, type=int, help="每条 MR 的测试样本数")
+@click.option("--verified-only", is_flag=True, default=False, help="仅使用已验证的 MR")
+@click.option("--save", is_flag=True, default=False, help="将结果保存到 data/cross_results/")
+@click.option("--json", "as_json", is_flag=True, default=False, help="以 JSON 格式输出")
+def test_cross(operator, framework1, framework2, n_samples, verified_only, save, as_json):
+    """跨框架一致性测试：对比两框架在等价算子上的 MR 结论是否一致。
+
+    默认以 pytorch 为主框架，numpy 为参考框架。
+    一致性指：两框架对同一输入同一 MR，结论相同（both pass 或 both fail）。
+
+    \b
+    示例:
+      deepmt test cross torch.nn.functional.relu
+      deepmt test cross torch.exp --n-samples 30 --save
+      deepmt test cross torch.tanh --framework1 pytorch --framework2 numpy --json
+    """
+    try:
+        from deepmt.analysis.cross_framework_tester import CrossFrameworkTester
+
+        tester = CrossFrameworkTester()
+        session = tester.compare_operator(
+            operator_name=operator,
+            framework1=framework1,
+            framework2=framework2,
+            n_samples=n_samples,
+            verified_only=verified_only,
+        )
+
+        if save:
+            path = tester.save(session)
+            click.echo(f"已保存: {path}")
+
+        if as_json:
+            click.echo(json.dumps(session.to_dict(), ensure_ascii=False, indent=2))
+            return
+
+        # 文本输出
+        click.echo(f"\n跨框架一致性测试 — {operator}")
+        click.echo(f"  {framework1} vs {framework2}  |  n_samples={n_samples}")
+        click.echo("─" * 72)
+        click.echo(
+            f"  MR 数: {session.mr_count}"
+            f"  整体一致率: {session.overall_consistency_rate:.1%}"
+            f"  输出最大差: {session.output_max_diff:.4g}"
+        )
+        click.echo("─" * 72)
+        for r in session.mr_results:
+            mark = (
+                click.style("≈", fg="green") if r.consistency_rate >= 0.9
+                else click.style("!", fg="yellow") if r.inconsistent_cases > 0
+                else click.style("≠", fg="red")
+            )
+            click.echo(
+                f"  [{mark}] {r.mr_description[:50]}"
+                f"  consistency={r.consistency_rate:.0%}"
+                f"  f1_pass={r.f1_pass_rate:.0%}"
+                f"  f2_pass={r.f2_pass_rate:.0%}"
+                f"  diff={r.output_max_diff:.3g}"
+            )
+            if r.inconsistent_cases > 0:
+                click.echo(
+                    f"      不一致样本: {r.inconsistent_cases}/{r.total_valid}"
+                    f"  (仅f1通过={r.only_f1_pass}, 仅f2通过={r.only_f2_pass})"
+                )
+        click.echo("─" * 72)
+        click.echo(
+            f"  ≈ 高度一致（≥90%）  ! 存在不一致  ≠ 低一致率"
+        )
+
+    except Exception as e:
+        click.echo(click.style(f"错误: {e}", fg="red"), err=True)
+        import traceback
+        traceback.print_exc(file=sys.stderr)
+        sys.exit(1)
+
+
+# ── experiment ────────────────────────────────────────────────────────────────
+
+
+@test.command("experiment")
+@click.option(
+    "--rq",
+    default="all",
+    type=click.Choice(["1", "2", "3", "4", "all"], case_sensitive=False),
+    show_default=True,
+    help="收集指定 RQ 的数据（1/2/3/4/all）",
+)
+@click.option("--json", "as_json", is_flag=True, default=False, help="以 JSON 格式输出")
+def test_experiment(rq, as_json):
+    """论文实验数据汇总：将系统产出映射到 RQ1-RQ4。
+
+    \b
+    RQ1 — MR 生成质量（总数、验证率、分类分布）
+    RQ2 — 缺陷检测能力（通过率、失败分布、证据包数）
+    RQ3 — 跨框架一致性（一致率、输出差、不一致案例）
+    RQ4 — 覆盖度与自动化程度
+
+    \b
+    示例:
+      deepmt test experiment
+      deepmt test experiment --rq 2
+      deepmt test experiment --json > experiment_data.json
+    """
+    try:
+        from deepmt.analysis.experiment_organizer import ExperimentOrganizer
+
+        org = ExperimentOrganizer()
+
+        if rq == "all":
+            data = org.collect_all()
+            if as_json:
+                click.echo(json.dumps(data, ensure_ascii=False, indent=2))
+            else:
+                click.echo(org.format_text(data))
+        else:
+            fn = {
+                "1": org.collect_rq1,
+                "2": org.collect_rq2,
+                "3": org.collect_rq3,
+                "4": org.collect_rq4,
+            }[rq]
+            result = fn()
+            if as_json:
+                click.echo(json.dumps(result, ensure_ascii=False, indent=2))
+            else:
+                title = {
+                    "1": "RQ1 — MR 生成质量",
+                    "2": "RQ2 — 缺陷检测能力",
+                    "3": "RQ3 — 跨框架一致性",
+                    "4": "RQ4 — 覆盖度与自动化",
+                }[rq]
+                click.echo(f"\n{title}")
+                click.echo("─" * 60)
+                for k, v in result.items():
+                    if isinstance(v, dict):
+                        click.echo(f"  {k}:")
+                        for kk, vv in v.items():
+                            click.echo(f"    {kk}: {vv}")
+                    else:
+                        click.echo(f"  {k}: {v}")
 
     except Exception as e:
         click.echo(click.style(f"错误: {e}", fg="red"), err=True)

@@ -9,8 +9,8 @@
 | Phase A：算子数据层完善（A1~A6） | ✅ 完成 |
 | Phase B：算子层 MR 生成与知识库（B1~B3） | ✅ 完成 |
 | Phase C：测试执行与跨框架适配 | ✅ 完成 |
-| Phase D：缺陷分析与实验闭环 | 🔲 当前目标 |
-| Phase E：演示交付与生产化加固 | ⬜ 待开始 |
+| Phase D：缺陷分析与实验闭环 | ✅ 完成 |
+| Phase E：演示交付与生产化加固 | 🔲 当前目标 |
 
 ---
 
@@ -65,6 +65,8 @@
 | `deepmt test evidence list/show/script` | 证据包管理（列出/展示/打印复现脚本） |
 | `deepmt test history` | 查看测试历史摘要 |
 | `deepmt test failures` | 查看失败测试用例 |
+| `deepmt test cross` | 跨框架一致性测试（PyTorch vs NumPy，MR 级统计，支持持久化） |
+| `deepmt test experiment` | 实验数据收集（RQ1-RQ4 结构化报告，支持 JSON 导出） |
 | `deepmt health` | 健康检查 |
 
 ### 已完成 Phase C 模块
@@ -78,7 +80,7 @@
 | `core/results_manager.py` | 测试结果持久化（SQLite） |
 | `analysis/mr_verifier.py` | Oracle 验证器 |
 
-### 已完成 Phase D 模块（进行中）
+### 已完成 Phase D 模块
 
 | 模块 | 说明 |
 |------|------|
@@ -87,6 +89,9 @@
 | `analysis/evidence_collector.py` | 证据包采集器（EvidenceCollector + EvidencePack），含可复现 Python 脚本生成 |
 | `analysis/defect_deduplicator.py` | 缺陷去重器（DefectDeduplicator），按签名聚类证据包 |
 | `plugins/faulty_pytorch_plugin.py` | 含预设缺陷的 PyTorch 插件（FaultyPyTorchPlugin），8 个算子缺陷目录，env var 控制 |
+| `plugins/numpy_plugin.py` | NumPy 参考后端（NumpyPlugin），25+ 算子等价映射表，用于跨框架一致性测试 |
+| `analysis/cross_framework_tester.py` | 跨框架一致性测试器（CrossFrameworkTester + CrossConsistencyResult + CrossSessionResult），结果持久化到 `data/cross_results/` |
+| `analysis/experiment_organizer.py` | 实验数据组织器（ExperimentOrganizer），收集 RQ1-RQ4 数据，生成可 JSON 导出的结构化报告 |
 
 ### 测试体系
 
@@ -106,13 +111,16 @@ tests/
 │   ├── test_report_generator.py  14 个（ReportGenerator）
 │   ├── test_evidence_collector.py 26 个（EvidenceCollector + BatchTestRunner 集成）
 │   ├── test_faulty_plugin.py      22 个（FaultyPyTorchPlugin + backend_override）
-│   └── test_defect_deduplicator.py 26 个（DefectDeduplicator + DefectLead）
+│   ├── test_defect_deduplicator.py 26 个（DefectDeduplicator + DefectLead）
+│   ├── test_numpy_plugin.py       30 个（NumpyPlugin 数值正确性与接口）
+│   ├── test_cross_framework_tester.py 23 个（CrossConsistencyResult / CrossFrameworkTester）
+│   └── test_experiment_organizer.py   16 个（ExperimentOrganizer RQ1-RQ4）
 └── integration/
     ├── test_mr_generation.py   需 LLM API
     └── test_web_tools.py       需网络
 ```
 
-**全部 279 个单元测试通过（无 LLM/网络依赖）。**
+**全部 377 个单元测试通过（无 LLM/网络依赖）。**
 
 ---
 
@@ -133,4 +141,4 @@ tests/
 
 ---
 
-*最后更新：2026-04-10（Phase D 进行中：D1~D5 完成，开放测试与缺陷去重上线）*
+*最后更新：2026-04-11（Phase D 全部完成：D1~D7，377 个单元测试通过；Phase E 为当前目标）*

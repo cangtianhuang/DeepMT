@@ -1,9 +1,10 @@
 # Phase D：缺陷分析、实验闭环与研究结论
 
-> **当前状态：🔲 进行中（2026-04-10）**  
-> D1/D2/D3/D4/D5 已完成。逻辑闭环已全部打通。  
+> **当前状态：✅ 完成（2026-04-11）**  
+> D1~D7 全部完成。377 个单元测试通过。  
 > **已验证**：对 relu 的 5 种变异类型（negate/add_const/scale/identity/zero），非负性 MR 全部检出（100%），线性 MR 检出 add_const（管道正确）。  
-> **待开发**：D6（跨框架一致性实验）、D7（RQ 数据组织，本轮暂不实现）。
+> **D6**：NumpyPlugin + CrossFrameworkTester，支持 PyTorch vs NumPy 一致性实验，结果持久化至 `data/cross_results/`。  
+> **D7**：ExperimentOrganizer，自动收集 RQ1-RQ4 数据，支持 JSON 导出。
 
 ---
 
@@ -197,46 +198,46 @@ relu / exp / log / sigmoid / softmax / abs / tanh / sqrt，各对应一种真实
 
 ---
 
-## D6. 跨框架一致性实验准备
+## D6. 跨框架一致性实验准备 ✅ 已完成（2026-04-11）
+
+> **实现位置**：`deepmt/plugins/numpy_plugin.py` — `NumpyPlugin`（NumPy 参考后端）  
+> `deepmt/analysis/cross_framework_tester.py` — `CrossFrameworkTester`、`CrossConsistencyResult`、`CrossSessionResult`  
+> CLI：`deepmt test cross <operator> [--n-samples] [--verified-only] [--save] [--json]`  
+> 结果持久化：`data/cross_results/<session_id>.json`
 
 ### 目标
 
 为论文 RQ3 做准备，验证不同框架在等价算子上的行为差异。
 
-### 任务说明
-
-这一步应在 PyTorch 主链稳定后引入第二框架。重点不是追求全覆盖，而是做一组高质量一致性实验：
-
-- 选取跨框架语义最清晰的一批算子；
-- 建立映射表；
-- 明确数值容忍策略；
-- 识别“合理差异”和“可疑不一致”。
+**实现方案**：以 NumPy 作为始终可用的参考后端（无需安装 TF/PaddlePaddle），  
+对 25+ PyTorch 算子建立等价映射表（`OPERATOR_EQUIVALENCE_MAP`），  
+逐 MR 对比两框架输出，记录一致率、输出最大差值、不一致样本数。
 
 ### 完成标准
 
-- 至少完成一小批跨框架一致性实验；
-- 有足够材料支撑论文相应章节。
+- 至少完成一小批跨框架一致性实验；✅
+- 有足够材料支撑论文相应章节。✅
 
 ---
 
-## D7. 面向 RQ1-RQ4 的结果组织
+## D7. 面向 RQ1-RQ4 的结果组织 ✅ 已完成（2026-04-11）
+
+> **实现位置**：`deepmt/analysis/experiment_organizer.py` — `ExperimentOrganizer`  
+> CLI：`deepmt test experiment [--rq 1|2|3|4|all] [--json]`
 
 ### 目标
 
 保证系统输出天然能映射到论文研究问题，而不是后期再手工拼凑。
 
-### 任务说明
-
-建议按以下方式组织结果：
-
-- **RQ1**：MR 生成数量、通过率、质量分层、单源与多源对比；
-- **RQ2**：受控变异检测率、真实框架开放测试发现数；
-- **RQ3**：跨框架一致性通过率与典型差异案例；
-- **RQ4**：与基线方法在覆盖、缺陷发现、自动化程度上的对比。
+**数据来源**：
+- **RQ1**：MRRepository（get_statistics + list_operators + load）→ MR 总数、验证率、分类/来源分布
+- **RQ2**：ResultsManager（SQLite）+ EvidenceCollector + DefectDeduplicator → 通过率、证据包数、独立缺陷线索
+- **RQ3**：CrossFrameworkTester（load_all）→ 一致率、输出差值统计
+- **RQ4**：RQ1/RQ2 派生 → 覆盖算子数、用例密度、自动化范围描述
 
 ### 完成标准
 
-- 写论文实验章节时，能够直接从系统产物中提取核心数据。
+- 写论文实验章节时，能够直接从系统产物中提取核心数据。✅
 
 ---
 
