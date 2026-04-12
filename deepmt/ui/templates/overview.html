@@ -8,7 +8,7 @@
   <div class="d-flex justify-content-between align-items-start page-hd">
     <div>
       <h4>系统总览</h4>
-      <p>RQ1–RQ4 关键指标 &nbsp;·&nbsp; MR 自动生成 · 缺陷检测 · 跨框架一致性 · 覆盖度</p>
+      <p>MR 自动生成 &nbsp;·&nbsp; 缺陷检测 &nbsp;·&nbsp; 跨框架一致性 &nbsp;·&nbsp; 覆盖度</p>
     </div>
     <button class="btn btn-sm btn-outline-secondary" onclick="location.reload()">
       <i class="bi bi-arrow-clockwise me-1"></i>刷新
@@ -18,10 +18,8 @@
   <!-- ── KPI Cards ───────────────────────────────────────────────────── -->
   <div class="row g-3 mb-4">
 
-    <!-- RQ1 -->
     <div class="col-6 col-xl-3 anim-up d1">
       <div class="card kpi-card" style="--kpi-c: var(--c-rq1);">
-        <div class="kpi-rq-badge">RQ1</div>
         <div class="kpi-num" id="kpi-rq1-value">—</div>
         <div class="kpi-title">MR 自动生成</div>
         <div class="kpi-sub" id="kpi-rq1-sub">已生成 · 验证率</div>
@@ -29,10 +27,8 @@
       </div>
     </div>
 
-    <!-- RQ2 -->
     <div class="col-6 col-xl-3 anim-up d2">
       <div class="card kpi-card" style="--kpi-c: var(--c-rq2);">
-        <div class="kpi-rq-badge">RQ2</div>
         <div class="kpi-num" id="kpi-rq2-value">—</div>
         <div class="kpi-title">缺陷检测</div>
         <div class="kpi-sub" id="kpi-rq2-sub">通过率 · 证据包</div>
@@ -40,10 +36,8 @@
       </div>
     </div>
 
-    <!-- RQ3 -->
     <div class="col-6 col-xl-3 anim-up d3">
       <div class="card kpi-card" style="--kpi-c: var(--c-rq3);">
-        <div class="kpi-rq-badge">RQ3</div>
         <div class="kpi-num" id="kpi-rq3-value">—</div>
         <div class="kpi-title">跨框架一致性</div>
         <div class="kpi-sub" id="kpi-rq3-sub">一致率</div>
@@ -51,10 +45,8 @@
       </div>
     </div>
 
-    <!-- RQ4 -->
     <div class="col-6 col-xl-3 anim-up d4">
       <div class="card kpi-card" style="--kpi-c: var(--c-rq4);">
-        <div class="kpi-rq-badge">RQ4</div>
         <div class="kpi-num" id="kpi-rq4-value">—</div>
         <div class="kpi-title">覆盖算子数</div>
         <div class="kpi-sub" id="kpi-rq4-sub">算子 · MR 密度</div>
@@ -70,7 +62,6 @@
         <div class="card-header d-flex align-items-center gap-2">
           <i class="bi bi-pie-chart-fill" style="color:var(--c-rq1);"></i>
           <span class="fw-semibold">MR 分类分布</span>
-          <span class="ms-auto" style="font-size:.62rem; color:var(--text-dim);">RQ1</span>
         </div>
         <div class="card-body d-flex align-items-center justify-content-center"
              style="min-height:230px;">
@@ -84,7 +75,6 @@
         <div class="card-header d-flex align-items-center gap-2">
           <i class="bi bi-bar-chart-fill" style="color:var(--c-rq2);"></i>
           <span class="fw-semibold">算子测试概况</span>
-          <span class="ms-auto" style="font-size:.62rem; color:var(--text-dim);">RQ2</span>
         </div>
         <div class="card-body d-flex align-items-center justify-content-center"
              style="min-height:230px;">
