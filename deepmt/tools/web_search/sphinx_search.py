@@ -13,7 +13,7 @@ import requests
 from deepmt.core.logger import logger
 
 # 缓存目录和过期时间（秒）
-CACHE_DIR = Path(__file__).parents[3] / "data" / "cache_web_search"
+CACHE_DIR = Path(__file__).parents[3] / "data" / "cache" / "web_search"
 CACHE_EXPIRY_SECONDS = 24 * 60 * 60  # 1 day
 
 

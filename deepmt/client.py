@@ -83,8 +83,8 @@ class DeepMT:
 
     def __init__(
         self,
-        db_path: str = "data/defects.db",
-        mr_repo_dir: str = "data/mr_repository/operator",
+        db_path: str = "data/results/defects.db",
+        mr_repo_dir: str = "data/knowledge/mr_repository/operator",
     ):
         """
         初始化 DeepMT 客户端。

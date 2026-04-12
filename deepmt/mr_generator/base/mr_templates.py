@@ -36,7 +36,7 @@ class MRTemplatePool:
     def __init__(self, config_path: Optional[str] = None):
         if config_path is None:
             project_root = Path(__file__).parents[3]
-            self.config_path = project_root / "data" / "mr_repository" / "mr_templates.yaml"
+            self.config_path = project_root / "data" / "knowledge" / "mr_repository" / "mr_templates.yaml"
         else:
             self.config_path = Path(config_path)
 

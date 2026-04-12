@@ -9,7 +9,7 @@
 数据流：
   BatchTestRunner（发现失败）
     → EvidencePack（捕获失败快照）
-    → EvidenceCollector.save()（写入 data/evidence/<id>.json）
+    → EvidenceCollector.save()（写入 data/results/evidence/<id>.json）
     → deepmt test evidence list/show（查看）
 
 EvidencePack 包含：
@@ -231,7 +231,7 @@ class EvidenceCollector:
     证据包的保存与查询器。
 
     每个证据包存为独立的 JSON 文件：
-        data/evidence/<evidence_id>.json
+        data/results/evidence/<evidence_id>.json
 
     用法示例：
         collector = EvidenceCollector()
@@ -250,7 +250,7 @@ class EvidenceCollector:
         collector.save(pack)
     """
 
-    DEFAULT_DIR = Path("data/evidence")
+    DEFAULT_DIR = Path("data/results/evidence")
 
     def __init__(self, evidence_dir: Optional[str] = None):
         self.evidence_dir = Path(evidence_dir) if evidence_dir else self.DEFAULT_DIR

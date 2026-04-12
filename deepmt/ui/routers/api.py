@@ -292,7 +292,7 @@ async def api_evidence_script(evidence_id: str):
 @router.get("/cross-framework", summary="跨框架实验会话列表")
 async def api_cross_framework():
     """
-    加载 data/cross_results/ 下所有会话 JSON，返回摘要列表（不含 mr_results 详情）。
+    加载 data/results/cross_framework/ 下所有会话 JSON，返回摘要列表（不含 mr_results 详情）。
     缓存 60 秒。
     """
     def _load():

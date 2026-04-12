@@ -16,6 +16,21 @@ operator_mr_mapping:
     - logarithm_rule
     - identity
 
+  torch.nn.functional.relu:
+    - relu_positive_homogeneity
+    - relu_nonnegative
+
+  torch.nn.functional.sigmoid:
+    - sigmoid_complement
+    - sigmoid_monotone_scale
+
+  torch.exp:
+    - exp_additive
+    - exp_positive
+
+  torch.abs:
+    - abs_even_symmetry
+
 # MR模板定义
 templates:
   commutative:
@@ -193,3 +208,59 @@ templates:
     oracle_expr: "orig == trans"
     min_inputs: 1
     max_inputs: null  # None表示无限制
+
+  relu_positive_homogeneity:
+    name: "relu_positive_homogeneity"
+    description: "ReLU正齐次性: ReLU(2.0*x) == 2.0*ReLU(x)"
+    transform_code: "lambda k: {**k, 'input': 2.0 * k['input']}"
+    oracle_expr: "trans == 2.0 * orig"
+    category: "linearity"
+    min_inputs: 1
+
+  relu_nonnegative:
+    name: "relu_nonnegative"
+    description: "ReLU非负性: ReLU(x) + ReLU(-x) == |x|"
+    transform_code: "lambda k: {**k, 'input': -k['input']}"
+    oracle_expr: "orig + trans == abs(x)"
+    category: "invariance"
+    min_inputs: 1
+
+  sigmoid_complement:
+    name: "sigmoid_complement"
+    description: "Sigmoid互补性: sigmoid(-x) == 1 - sigmoid(x)"
+    transform_code: "lambda k: {**k, 'input': -k['input']}"
+    oracle_expr: "trans == 1.0 - orig"
+    category: "symmetry"
+    min_inputs: 1
+
+  sigmoid_monotone_scale:
+    name: "sigmoid_monotone_scale"
+    description: "Sigmoid单调性: x+1 后输出增大"
+    transform_code: "lambda k: {**k, 'input': k['input'] + 1.0}"
+    oracle_expr: "all(trans >= orig)"
+    category: "symmetry"
+    min_inputs: 1
+
+  exp_additive:
+    name: "exp_additive"
+    description: "指数加法性: exp(x+1) == exp(x) * exp(1)"
+    transform_code: "lambda k: {**k, 'input': k['input'] + 1.0}"
+    oracle_expr: "trans == orig * exp(1)"
+    category: "linearity"
+    min_inputs: 1
+
+  exp_positive:
+    name: "exp_positive"
+    description: "指数正值性: exp(x) > 0 对所有x成立"
+    transform_code: "lambda k: {**k, 'input': k['input'] + 1.0}"
+    oracle_expr: "all(orig > 0)"
+    category: "boundary"
+    min_inputs: 1
+
+  abs_even_symmetry:
+    name: "abs_even_symmetry"
+    description: "绝对值偶函数性: abs(-x) == abs(x)"
+    transform_code: "lambda k: {**k, 'input': -k['input']}"
+    oracle_expr: "trans == orig"
+    category: "symmetry"
+    min_inputs: 1

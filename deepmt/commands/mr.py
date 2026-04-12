@@ -542,7 +542,7 @@ def mr_delete(operator, yes):
     """
     not_implemented_error(
         "deepmt mr delete",
-        "MR 删除功能尚未实现。如需清理，可直接删除 data/mr_repository/operator/<operator>.yaml 文件。",
+        "MR 删除功能尚未实现。如需清理，可直接删除 data/knowledge/mr_repository/operator/<operator>.yaml 文件。",
     )
 
 

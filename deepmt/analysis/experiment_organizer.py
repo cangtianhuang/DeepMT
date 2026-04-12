@@ -11,10 +11,10 @@ RQ 映射：
   RQ4 — 与基线对比：覆盖度、自动化程度、用例密度（来源：综合统计）
 
 数据来源汇总：
-  MRRepository → data/mr_repository/operator/*.yaml（含 applicable_frameworks、verified 字段）
-  ResultsManager → data/defects.db（test_results 表）
-  EvidenceCollector → data/evidence/*.json
-  CrossFrameworkTester → data/cross_results/*.json
+  MRRepository → data/knowledge/mr_repository/operator/*.yaml（含 applicable_frameworks、verified 字段）
+  ResultsManager → data/results/defects.db（test_results 表）
+  EvidenceCollector → data/results/evidence/*.json
+  CrossFrameworkTester → data/results/cross_framework/*.json
 
 输出格式：
   dict（可 JSON 序列化）或终端可读文本

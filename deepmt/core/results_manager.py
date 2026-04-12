@@ -22,7 +22,7 @@ from deepmt.ir.schema import MetamorphicRelation, OracleResult
 class ResultsManager:
     """结果管理器：持久化 MR 测试结果"""
 
-    def __init__(self, db_path: str = "data/defects.db"):
+    def __init__(self, db_path: str = "data/results/defects.db"):
         self.db_path = Path(db_path)
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
         self._init_database()

@@ -31,7 +31,7 @@ _KNOWN_SYMPY_EXPRS: Dict[str, Any] = {
     "torch.nn.functional.sigmoid":   sp.Integer(1) / (1 + sp.exp(-_x0)),
 }
 
-_SYMPY_CACHE_DIR = Path(__file__).parents[3] / "data" / "cache_sympy"
+_SYMPY_CACHE_DIR = Path(__file__).parents[3] / "data" / "cache" / "sympy"
 
 
 class SympyTranslator:

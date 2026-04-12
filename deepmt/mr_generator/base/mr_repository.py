@@ -1,7 +1,7 @@
 """MR 用户工作区仓库：以 YAML 文件持久化存储蜕变关系（每算子一文件）。
 
 存储结构：
-    data/mr_repository/operator/<operator_name>.yaml
+    data/knowledge/mr_repository/operator/<operator_name>.yaml
 
 每个文件格式：
     operator: torch.add
@@ -34,7 +34,7 @@ from deepmt.ir.schema import MetamorphicRelation
 class MRRepository:
     """用户工作区 MR 仓库：每个算子的 MR 列表存为独立 YAML 文件。"""
 
-    def __init__(self, repo_dir: str = "data/mr_repository/operator"):
+    def __init__(self, repo_dir: str = "data/knowledge/mr_repository/operator"):
         self.repo_dir = Path(repo_dir)
         self.repo_dir.mkdir(parents=True, exist_ok=True)
         logger.info(f"📦 [REPO] MR repository at: {self.repo_dir}")

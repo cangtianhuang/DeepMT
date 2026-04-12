@@ -137,7 +137,7 @@ def test_operator(operator, framework, inputs, generate, as_json):
     default=False,
     help="仅使用已通过验证（verified=True）的 MR",
 )
-@click.option("--collect-evidence", is_flag=True, default=False, help="失败时捕获可复现证据包并保存到 data/evidence/")
+@click.option("--collect-evidence", is_flag=True, default=False, help="失败时捕获可复现证据包并保存到 data/results/evidence/")
 @click.option("--json", "as_json", is_flag=True, default=False, help="以 JSON 格式输出结果")
 def test_batch(framework, operator, category, mr_id, n_samples, verified_only, collect_evidence, as_json):
     """从 MR 知识库批量执行蜕变测试（自动生成输入）。
@@ -566,7 +566,7 @@ def test_report(framework, operator, failures_only, limit, as_json):
 def test_dedup(operator, framework, limit, as_json):
     """缺陷线索去重：将失败证据包聚类为独立缺陷模式。
 
-    从 data/evidence/ 读取已保存的证据包，按（算子 × MR × 错误类型）签名聚类，
+    从 data/results/evidence/ 读取已保存的证据包，按（算子 × MR × 错误类型）签名聚类，
     将大量重复失败压缩为可人工复核的缺陷线索集。
 
     前提：先运行 deepmt test batch --collect-evidence 或 deepmt test open --collect-evidence
@@ -741,7 +741,7 @@ _CROSS_FRAMEWORKS = ["pytorch", "numpy"]
 )
 @click.option("--n-samples", default=20, show_default=True, type=int, help="每条 MR 的测试样本数")
 @click.option("--verified-only", is_flag=True, default=False, help="仅使用已验证的 MR")
-@click.option("--save", is_flag=True, default=False, help="将结果保存到 data/cross_results/")
+@click.option("--save", is_flag=True, default=False, help="将结果保存到 data/results/cross_framework/")
 @click.option("--json", "as_json", is_flag=True, default=False, help="以 JSON 格式输出")
 def test_cross(operator, framework1, framework2, n_samples, verified_only, save, as_json):
     """跨框架一致性测试：对比两框架在等价算子上的 MR 结论是否一致。

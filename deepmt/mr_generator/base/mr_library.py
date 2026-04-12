@@ -1,7 +1,7 @@
 """MR 项目库：以单一 YAML 文件存储经过验证的 MR，由 git 追踪。
 
 存储结构：
-    data/mr_library/operator/operator.yaml
+    data/knowledge/mr_library/operator/operator.yaml
 
 文件格式（以算子名为键的 mapping）：
     torch.add:
@@ -32,7 +32,7 @@ _DEFAULT_TOLERANCE = 1e-6
 class MRLibrary:
     """项目级 MR 库：只存储 verified=True 的 MR，YAML 格式干净，由 git 追踪。"""
 
-    def __init__(self, layer: str = "operator", library_dir: str = "data/mr_library"):
+    def __init__(self, layer: str = "operator", library_dir: str = "data/knowledge/mr_library"):
         self.layer = layer
         self.library_dir = Path(library_dir)
         self._yaml_path = self.library_dir / layer / f"{layer}.yaml"

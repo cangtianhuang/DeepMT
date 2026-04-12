@@ -5,7 +5,7 @@
 每个算子条目含框架版本信息（since / deprecated / removed），
 支持按框架、版本、分类进行过滤查询。
 
-目录数据来源：data/operator_catalog/<framework>.yaml
+目录数据来源：data/knowledge/operator_catalog/<framework>.yaml
 """
 
 from pathlib import Path
@@ -145,8 +145,8 @@ class OperatorCatalog:
         ok = catalog.is_available("paddlepaddle", "paddle.nn.ReLU", version="2.0")
     """
 
-    # 目录 YAML 文件所在目录（项目根目录下 data/operator_catalog/）
-    _CATALOG_DIR = Path(__file__).parents[3] / "data" / "operator_catalog"
+    # 目录 YAML 文件所在目录（项目根目录下 data/knowledge/operator_catalog/）
+    _CATALOG_DIR = Path(__file__).parents[3] / "data" / "knowledge" / "operator_catalog"
 
     # 框架名称 -> YAML 文件名（不含后缀）
     _FRAMEWORK_FILES: Dict[str, str] = {

@@ -16,10 +16,10 @@ config*.yaml
 
 # ── Runtime data（日志、缓存）────────────────────────────────────────────────────
 data/logs/
-data/cache_*/
+data/cache/
 
 # ── 用户工作区 MR（生成的 MR 实例，不上传）────────────────────────────────────────
-data/mr_repository/operator/
+data/knowledge/mr_repository/operator/
 
 # ── OS / Editor ───────────────────────────────────────────────────────────────
 .DS_Store

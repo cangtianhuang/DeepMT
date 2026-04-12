@@ -14,7 +14,7 @@
   CrossFrameworkTester.compare_operator(op, f1, f2)
     → CrossConsistencyResult（每条 MR 一个）
     → CrossSessionResult（一次对比实验的完整记录）
-    → 可选：save() 持久化到 data/cross_results/<session_id>.json
+    → 可选：save() 持久化到 data/results/cross_framework/<session_id>.json
 
 框架支持：
   - "pytorch"：PyTorchPlugin（主链）
@@ -206,7 +206,7 @@ class CrossFrameworkTester:
         deepmt test cross torch.exp --framework1 pytorch --framework2 numpy --n-samples 30
     """
 
-    DEFAULT_RESULTS_DIR = Path("data/cross_results")
+    DEFAULT_RESULTS_DIR = Path("data/results/cross_framework")
     OUTPUT_CLOSE_THRESHOLD = 1e-3  # 输出差 < 此阈值视为"数值接近"
 
     def __init__(
