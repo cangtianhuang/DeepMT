@@ -24,7 +24,6 @@ DeepMT 黄金演示路径（Golden Demo Path）
 等价 CLI 命令序列见：docs/demo_golden_path.md
 """
 
-import json
 import tempfile
 from pathlib import Path
 

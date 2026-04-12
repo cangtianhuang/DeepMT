@@ -2,199 +2,143 @@
 
 ## 一、配置文件
 
-项目使用 `config.yaml` 进行配置管理。首次使用前，请配置以下内容：
+项目使用 `config.yaml` 进行集中配置管理。
 
-### 1.1 LLM配置（必需）
+### 查找优先级
 
-LLM现在是MR自动生成的必需组件。请配置API密钥：
+系统按以下顺序查找配置文件（先找到即使用）：
+
+1. 环境变量 `DEEPMT_CONFIG_PATH` 指定的路径
+2. 当前工作目录的 `config.yaml`
+3. 项目根目录的 `config.yaml`
+4. 用户配置目录 `~/.config/deepmt/config.yaml`
+
+### 配置项说明
 
 ```yaml
+# config.yaml 完整示例
+
+# LLM 配置（MR 自动生成时需要）
 llm:
-  provider: "openai"
-  api_key: "your-api-key-here"  # 请填入您的OpenAI API密钥
-  model: "gpt-4"
-  temperature: 0.7
-  max_tokens: 2000
-```
+  provider: "openai"           # openai 或兼容 OpenAI API 的服务
+  api_key: "sk-..."            # 也可通过 OPENAI_API_KEY 环境变量设置
+  model_base: "gpt-4o-mini"   # 基础推理模型（MR 候选生成）
+  model_max: "gpt-4o"         # 高级模型（形式化验证辅助，可留空）
+  url: ""                      # 自定义 API 端点（留空则使用 OpenAI 默认）
+  temperature: 0.2
 
-**获取API密钥**：
-1. 访问 https://platform.openai.com/api-keys
-2. 创建新的API密钥
-3. 将密钥填入 `config.yaml` 的 `llm.api_key` 字段
-
-**或者使用环境变量**：
-```bash
-export OPENAI_API_KEY="your-api-key-here"
-```
-
-### 1.2 网络搜索配置
-
-网络搜索工具用于自动获取算子信息：
-
-```yaml
-web_search:
-  enabled: true
-  sources:
-    - "pytorch_docs"  # PyTorch官方文档
-    - "github"  # GitHub仓库
-    - "stackoverflow"  # Stack Overflow
-    - "blogs"  # 技术博客
-  max_results: 5
-  timeout: 10
-```
-
-### 1.3 MR生成配置
-
-```yaml
-mr_generation:
-  sources:
-    - llm  # LLM猜想（主要来源）
-    - template  # 模板池（辅助来源）
-  use_precheck: true  # 快速筛选
-  use_sympy_proof: true  # SymPy验证
+# OCR 配置（可选，用于算子文档图片识别）
+ocr:
+  enabled: false
+  api_key: ""
+  url: ""
 ```
 
 ---
 
-## 二、快速开始
+## 二、环境变量
 
-### 2.1 配置API密钥
+| 变量名 | 默认值 | 说明 |
+|--------|--------|------|
+| `OPENAI_API_KEY` | — | OpenAI 或兼容服务的 API 密钥 |
+| `DEEPMT_CONFIG_PATH` | — | 指定配置文件路径或目录 |
+| `DEEPMT_LOG_LEVEL` | `INFO` | 终端日志级别（DEBUG/INFO/WARNING/ERROR） |
+| `DEEPMT_LOG_CONSOLE_STYLE` | `colored` | 终端日志格式（`colored` / `file`） |
+| `DEEPMT_LOG_DIR` | `data/logs` | 日志文件存储目录 |
+| `DEEPMT_INJECT_FAULTS` | — | 缺陷注入规格（`all` 或 `op:mutant,...`） |
 
-编辑 `config.yaml`，填入您的OpenAI API密钥：
+详细说明见 [`docs/environment_variables.md`](docs/environment_variables.md)。
 
-```yaml
-llm:
-  api_key: "sk-..."  # 您的API密钥
-```
+---
 
-### 2.2 运行ReLU测试
+## 三、快速启动
+
+### 3.1 安装
 
 ```bash
-python examples/test_relu_mr.py
+# 完整安装（含 UI、LLM、SymPy）
+pip install -e ".[all]"
+
+# 或分开安装
+pip install -e ".[llm]"       # 仅 LLM 依赖
+pip install -e ".[ui]"        # 仅 Web 仪表盘依赖
+pip install -e ".[sympy]"     # 仅 SymPy 依赖
 ```
 
-这将：
-1. 自动从网络搜索ReLU算子的信息
-2. 使用LLM将代码转换为SymPy表达式
-3. 自动推导MR
-4. 使用SymPy进行形式化证明
+### 3.2 配置 API 密钥
 
----
-
-## 三、功能说明
-
-### 3.1 自动算子信息获取
-
-系统会自动从以下源搜索算子信息：
-- **PyTorch官方文档**：获取官方文档和API说明
-- **GitHub仓库**：获取源代码实现
-- **Stack Overflow**：获取使用示例和常见问题
-- **技术博客**：获取详细解释和教程
-
-### 3.2 MR自动生成流程
-
-```
-算子名称（如 "ReLU"）
-    ↓
-[网络搜索] 获取代码、文档、示例
-    ↓
-[LLM猜想] 理解算子语义，生成MR猜想
-    ↓
-[模板池] 补充常见数学变换模板
-    ↓
-[快速筛选] 用随机数快速验证
-    ↓
-[SymPy验证] 形式化验证
-    ↓
-最终MR列表（标记 verified=True/False）
-```
-
----
-
-## 四、故障排除
-
-### 4.1 API密钥错误
-
-**错误**：`ValueError: LLM API key is required!`
-
-**解决**：
-1. 检查 `config.yaml` 中的 `llm.api_key` 是否设置
-2. 或设置环境变量 `OPENAI_API_KEY`
-3. 确保API密钥有效
-
-### 4.2 网络搜索失败
-
-**错误**：`No search results found`
-
-**解决**：
-1. 检查网络连接
-2. 检查 `web_search.enabled` 是否为 `true`
-3. 尝试手动提供 `operator_code` 和 `operator_doc`
-
-### 4.3 依赖缺失
-
-**错误**：`ModuleNotFoundError`
-
-**解决**：
 ```bash
-pip install -r requirements.txt
+# 方式一：环境变量（推荐，不写入磁盘）
+export OPENAI_API_KEY="sk-..."
+
+# 方式二：配置文件
+cp config.yaml.example config.yaml  # 若有示例文件
+# 编辑 config.yaml，填入 llm.api_key
+```
+
+### 3.3 验证安装
+
+```bash
+deepmt health check
+```
+
+### 3.4 运行演示（无需 LLM）
+
+```bash
+# 运行黄金演示路径（使用预生成的 MR，约 30 秒完成）
+PYTHONPATH=$(pwd) python demo/golden_path.py
 ```
 
 ---
 
-## 五、示例
+## 四、数据目录结构
 
-### 5.1 基本使用
-
-```python
-from ir.schema import OperatorIR
-from mr_generator.operator.operator_mr import OperatorMRGenerator
-import torch.nn.functional as F
-
-# 创建算子IR
-relu_ir = OperatorIR(name="ReLU", inputs=[-1.0, 0.0, 1.0], outputs=[], properties={})
-
-# 创建生成器
-generator = OperatorMRGenerator()
-
-# 生成MR（自动从网络获取信息）
-mrs = generator.generate(
-    operator_ir=relu_ir,
-    operator_func=F.relu,
-    auto_fetch_info=True,
-    framework="pytorch",
-    sources=["llm", "template"],  # LLM猜想 + 模板池
-    use_precheck=True,
-    use_sympy_proof=True,
-)
 ```
-
-### 5.2 手动提供代码
-
-```python
-mrs = generator.generate(
-    operator_ir=operator_ir,
-    operator_code="def relu(x): return max(0, x)",
-    operator_doc="ReLU activation function",
-    auto_fetch_info=False  # 不使用网络搜索
-)
+data/
+├── logs/                          # 日志文件（按日期轮转，保留 14 天）
+│   └── deepmt_YYYYMMDD.log
+├── knowledge/
+│   ├── mr_repository/operator/   # MR 知识库（每算子一个 YAML 文件）
+│   ├── mr_library/                # MR 项目库（只读导出）
+│   └── operator_catalog/          # 算子目录（pytorch/tensorflow/paddlepaddle）
+├── results/
+│   ├── evidence/                  # 缺陷证据包（JSON，含可复现脚本）
+│   └── cross_framework/           # 跨框架一致性测试结果
+└── cache/
+    ├── web_search/                # 网络搜索结果缓存
+    └── sympy/                     # SymPy 验证缓存
 ```
 
 ---
 
-## 六、注意事项
+## 五、CLI 快速参考
 
-1. **API成本**：LLM调用会产生费用，请注意使用量
-2. **网络依赖**：自动获取算子信息需要网络连接
-3. **搜索限制**：某些网站可能有访问频率限制
-4. **隐私**：API密钥请妥善保管，不要提交到版本控制系统
+```bash
+# 核心工作流
+deepmt mr generate torch.nn.functional.relu --save        # 单算子生成 MR
+deepmt mr batch-generate --framework pytorch               # 批量生成
+deepmt test batch --framework pytorch                      # 批量测试
+deepmt test open --inject-faults all --collect-evidence    # 缺陷检测
+deepmt test report                                         # 查看报告
+deepmt test evidence list                                  # 查看证据包
+deepmt ui start                                            # 启动 Web 仪表盘
+
+# 管理
+deepmt repo stats                                          # MR 知识库统计
+deepmt catalog list --framework pytorch                    # 算子目录
+deepmt health check                                        # 系统健康检查
+```
+
+完整 CLI 参考见 [`docs/cli_reference.md`](docs/cli_reference.md)。
 
 ---
 
-## 七、支持
+## 六、故障排除
 
-如有问题，请查看：
-- 日志文件：`data/logs/deepmt.log`
-- 文档：`docs/` 目录
-- 示例：`examples/` 目录
-
+| 问题 | 解决方法 |
+|------|---------|
+| `deepmt: command not found` | `pip install -e ".[all]"` 并激活 venv |
+| `LLM API key is required` | 设置 `OPENAI_API_KEY` 或在 `config.yaml` 填写 `llm.api_key` |
+| MR 生成失败 | 检查网络连接；运行 `deepmt health check` 查看详情 |
+| 批量测试无结果 | 运行 `deepmt repo stats` 确认知识库不为空 |
+| Web 仪表盘无法启动 | 确认已安装 UI 依赖：`pip install -e ".[ui]"` |
