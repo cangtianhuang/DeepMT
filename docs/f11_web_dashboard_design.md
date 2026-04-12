@@ -1,6 +1,6 @@
 # F11 Web 仪表盘设计思路与开发规划
 
-> **状态**：阶段1完成（2026-04-12）；阶段2（数据 API）待实现  
+> **状态**：全部完成（2026-04-12）：阶段1骨架 ✅ 阶段2数据API ✅ 阶段3页面 ✅ 阶段4收尾 ✅  
 > **适用场景**：论文答辩演示、导师汇报、日常实验数据浏览  
 > **范围**：只读仪表盘，不实现表单化 MR 生成（保留在 CLI）
 
@@ -441,25 +441,25 @@ CLI 入口：`deepmt ui --port 8080`
   F11-5. ✅ 静态资源本地化（bootstrap.min.css/bootstrap.bundle.min.js/
             bootstrap-icons.min.css/fonts/bootstrap-icons.woff2/chart.umd.min.js）
 
-阶段 2：数据 API 层（~1.5h）
-  F11-6. /api/summary（RQ1-RQ4）
-  F11-7. /api/mr-repository + /api/mr-repository/{operator}
-  F11-8. /api/test-results + /api/test-results/failed
-  F11-9. /api/evidence + /api/evidence/{id}/script
-  F11-10. /api/cross-framework + /api/cross-framework/{session_id}
+阶段 2：数据 API 层（✅ 完成）
+  F11-6.  ✅ /api/summary（RQ1-RQ4）
+  F11-7.  ✅ /api/mr-repository + /api/mr-repository/{operator}
+  F11-8.  ✅ /api/test-results + /api/test-results/failed
+  F11-9.  ✅ /api/evidence + /api/evidence/{id}/script
+  F11-10. ✅ /api/cross-framework + /api/cross-framework/{session_id}
 
-阶段 3：页面实现（~4h）
-  F11-11. 总览页（overview.html + 4 KPI 卡片 + 2 图表）
-  F11-12. MR 知识库页（mr_repo.html + 筛选 + 表格）
-  F11-13. 单算子详情页（mr_detail.html + MR 卡片列表）
-  F11-14. 测试结果页（test_results.html + 柱图 + 证据包）
-  F11-15. 跨框架一致性页（cross_framework.html + 分组柱图）
+阶段 3：页面实现（✅ 完成）
+  F11-11. ✅ 总览页（overview.html + 4 KPI 卡片 + 2 图表）
+  F11-12. ✅ MR 知识库页（mr_repo.html + 筛选 + 表格）
+  F11-13. ✅ 单算子详情页（mr_detail.html + MR 卡片列表）
+  F11-14. ✅ 测试结果页（test_results.html + 柱图 + 证据包）
+  F11-15. ✅ 跨框架一致性页（cross_framework.html + 分组柱图）
 
-阶段 4：收尾与测试（~1h）
-  F11-16. 空数据状态处理（各页面 fallback 提示）
-  F11-17. 添加单元测试（API 端点返回正确结构）
-  F11-18. 更新 docs/cli_reference.md（新增 deepmt ui 命令）
-  F11-19. 更新 docs/status.md
+阶段 4：收尾与测试（✅ 完成）
+  F11-16. ✅ 空数据状态处理（各页面 fallback 提示）
+  F11-17. ✅ 添加单元测试（27 个 API 端点测试，tests/unit/test_ui_api.py）
+  F11-18. ✅ 更新 docs/cli_reference.md（新增 deepmt ui 命令）
+  F11-19. ✅ 更新 docs/status.md
 ```
 
 ### 8.2 完成标准

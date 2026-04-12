@@ -28,6 +28,7 @@ PYTHONPATH=/home/lhy/DeepMT python -m deepmt <command> [options]
 | `catalog` | 算子目录浏览、跨框架查询、批量导入 | ✅ 已实现 |
 | `data` | 数据目录管理（日志清理等） | ✅ 已实现 |
 | `health` | 系统健康检查与进度 | ✅ 已实现 |
+| `ui` | Web 仪表盘服务器 | ✅ 已实现 |
 
 ---
 
@@ -914,6 +915,51 @@ deepmt health all
 
 ---
 
+## `deepmt ui` — Web 仪表盘
+
+启动基于 FastAPI + Bootstrap 5 的只读 Web 仪表盘，可在浏览器中可视化查看实验数据。
+
+**安装依赖（首次）：**
+
+```bash
+pip install -e ".[ui]"
+```
+
+### `deepmt ui start`
+
+启动仪表盘服务器。
+
+```bash
+deepmt ui start [OPTIONS]
+```
+
+| 选项 | 默认值 | 说明 |
+|------|--------|------|
+| `--port, -p` | `8080` | 监听端口 |
+| `--host` | `127.0.0.1` | 监听地址（`0.0.0.0` 可局域网访问）|
+
+**示例：**
+
+```bash
+deepmt ui start                        # 默认 http://127.0.0.1:8080
+deepmt ui start --port 9090            # 自定义端口
+deepmt ui start --host 0.0.0.0 -p 80  # 局域网访问
+```
+
+**页面说明：**
+
+| 路径 | 说明 |
+|------|------|
+| `/` | 总览页（RQ1-RQ4 KPI 卡片 + 图表） |
+| `/mr` | MR 知识库（算子列表、分布图、筛选） |
+| `/mr/<operator>` | 单算子 MR 详情（transform_code / oracle_expr）|
+| `/tests` | 测试结果（通过率图、失败用例、证据包） |
+| `/cross` | 跨框架一致性（会话列表、一致率图表） |
+| `/api/docs` | OpenAPI 交互文档 |
+| `/api/**` | JSON 数据接口（供外部脚本调用） |
+
+---
+
 ## 未实现功能速查
 
 以下功能调用后会给出友好错误提示（退出码 2），**不会崩溃**：
@@ -980,4 +1026,11 @@ deepmt test failures
 
 ```bash
 deepmt mr generate relu --sources llm,template --precheck --sympy --save
+```
+
+### 7. 启动 Web 仪表盘（可视化查看实验数据）
+
+```bash
+deepmt ui start
+# 浏览器访问 http://127.0.0.1:8080
 ```

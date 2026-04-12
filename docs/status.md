@@ -11,7 +11,7 @@
 | Phase C：测试执行与跨框架适配 | ✅ 完成 |
 | Phase D：缺陷分析与实验闭环 | ✅ 完成 |
 | Phase E：演示交付与生产化加固 | 🔲 待开始 |
-| Phase F：软件工程规范化与包发布准备（F1~F11阶段1） | ✅ F1~F10完成；F11阶段1骨架完成 |
+| Phase F：软件工程规范化与包发布准备（F1~F11） | ✅ F1~F11全部完成 |
 
 ---
 
@@ -94,6 +94,23 @@
 | `analysis/cross_framework_tester.py` | 跨框架一致性测试器（CrossFrameworkTester + CrossConsistencyResult + CrossSessionResult），结果持久化到 `data/cross_results/` |
 | `analysis/experiment_organizer.py` | 实验数据组织器（ExperimentOrganizer），收集 RQ1-RQ4 数据，生成可 JSON 导出的结构化报告 |
 
+### 已完成 Phase F-F11 模块（Web 仪表盘）
+
+| 模块 | 说明 |
+|------|------|
+| `ui/app.py` | FastAPI 应用实例，挂载所有路由与静态文件 |
+| `ui/server.py` | uvicorn 启动封装（`deepmt ui start` 调用） |
+| `ui/templating.py` | 共享 Jinja2 模板引擎（全局注入版本号） |
+| `ui/dependencies.py` | `lru_cache` 数据源单例（供路由复用） |
+| `ui/routers/overview.py` | `GET /` — 总览页 |
+| `ui/routers/mr_repo.py` | `GET /mr` + `GET /mr/{operator}` — MR 知识库页 |
+| `ui/routers/test_results.py` | `GET /tests` — 测试结果页 |
+| `ui/routers/cross_framework.py` | `GET /cross` — 跨框架一致性页 |
+| `ui/routers/api.py` | `GET /api/**` — JSON 数据 API（10 个端点，TTL 缓存） |
+| `ui/templates/*.html` | 6 个 Jinja2 模板（base + 5 页面，Chart.js + Bootstrap 5） |
+| `ui/static/` | 本地化静态资源（Bootstrap 5.3.3 / Icons 1.11.3 / Chart.js 4.4.2），离线可用 |
+| `commands/ui.py` | `deepmt ui start` CLI 命令 |
+
 ### 测试体系
 
 ```
@@ -115,13 +132,14 @@ tests/
 │   ├── test_defect_deduplicator.py 26 个（DefectDeduplicator + DefectLead）
 │   ├── test_numpy_plugin.py       30 个（NumpyPlugin 数值正确性与接口）
 │   ├── test_cross_framework_tester.py 23 个（CrossConsistencyResult / CrossFrameworkTester）
-│   └── test_experiment_organizer.py   16 个（ExperimentOrganizer RQ1-RQ4）
+│   ├── test_experiment_organizer.py   16 个（ExperimentOrganizer RQ1-RQ4）
+│   └── test_ui_api.py                 27 个（Web 仪表盘 JSON API 端点，mock 数据源）
 └── integration/
     ├── test_mr_generation.py   需 LLM API
     └── test_web_tools.py       需网络
 ```
 
-**全部 377 个单元测试通过（无 LLM/网络依赖）。**
+**全部 369 个单元测试通过（无 LLM/网络依赖）。**
 
 ---
 
@@ -142,4 +160,4 @@ tests/
 
 ---
 
-*最后更新：2026-04-11（Phase F F10 完成：修复 status.md/CLAUDE.md/monitoring/__main__.py/README.md/quick_start.md/cli_reference.md/operator_catalog_design.md 中的错误文件引用；F11 设计文档已完成，见 docs/f11_web_dashboard_design.md；377 个单元测试通过）*
+*最后更新：2026-04-12（Phase F F11 全部完成：Web 仪表盘（FastAPI+Bootstrap5+Chart.js）骨架搭建、数据 API 层（10 个端点）、5 个页面模板、静态资源本地化、CLI 命令 `deepmt ui start`、27 个 API 单元测试；369 个单元测试通过）*
