@@ -10,7 +10,7 @@
 | Phase B：算子层 MR 生成与知识库（B1~B3） | ✅ 完成 |
 | Phase C：测试执行与跨框架适配 | ✅ 完成 |
 | Phase D：缺陷分析与实验闭环 | ✅ 完成 |
-| Phase E：演示交付与生产化加固 | 🔲 待开始 |
+| Phase E：演示交付与生产化加固 | 🔄 进行中（E1 已完成） |
 | Phase F：软件工程规范化与包发布准备（F1~F11） | ✅ F1~F11全部完成 |
 
 ---
@@ -160,4 +160,4 @@ tests/
 
 ---
 
-*最后更新：2026-04-12（Phase F F11 全部完成：Web 仪表盘（FastAPI+Bootstrap5+Chart.js）骨架搭建、数据 API 层（10 个端点）、5 个页面模板、静态资源本地化、CLI 命令 `deepmt ui start`、27 个 API 单元测试；369 个单元测试通过）*
+*最后更新：2026-04-12（Phase E1 完成：黄金演示路径 `demo/golden_path.py` + `docs/demo_golden_path.md`；修复 3 处 API 调用错误（FaultyPyTorchPlugin 构造参数、ReportGenerator summary 字段名、EvidencePack 字段名）；369 个单元测试通过）*
