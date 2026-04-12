@@ -1,17 +1,19 @@
 {% extends "base.html" %}
-
 {% block title %}测试结果 — DeepMT Dashboard{% endblock %}
 
 {% block content %}
-<div class="container-fluid px-4 py-4">
+<div class="page-wrap">
 
-  <!-- ── 页面标题 ──────────────────────────────────────────────────────── -->
-  <div class="d-flex justify-content-between align-items-start mb-4">
+  <!-- ── Header ──────────────────────────────────────────────────────── -->
+  <div class="page-hd d-flex justify-content-between align-items-start">
     <div>
-      <h4 class="fw-bold mb-1">测试结果</h4>
-      <p class="text-muted mb-0" style="font-size:.875rem;">
+      <h4>测试结果</h4>
+      <p>
         缺陷检测能力 · 通过率分布 · 证据包管理
-        <span class="badge text-bg-danger ms-2" style="font-size:.68rem;">RQ2</span>
+        <span class="ms-2" style="font-size:.65rem; color:var(--c-rq2);
+              background:var(--danger-dim); border:1px solid rgba(255,69,69,.2);
+              border-radius:4px; padding:1px 7px; font-weight:700;
+              letter-spacing:.05em; text-transform:uppercase;">RQ2</span>
       </p>
     </div>
     <button class="btn btn-sm btn-outline-secondary" onclick="location.reload()">
@@ -19,67 +21,61 @@
     </button>
   </div>
 
-  <!-- ── 统计卡片 ──────────────────────────────────────────────────────── -->
+  <!-- ── Stats ───────────────────────────────────────────────────────── -->
   <div class="row g-3 mb-4">
-    <div class="col-6 col-md-3">
-      <div class="card text-center">
-        <div class="card-body py-3">
-          <div class="kpi-value text-primary" id="stat-total-cases">—</div>
-          <div class="kpi-sub">总测试用例</div>
-        </div>
+    <div class="col-6 col-md-3 anim-up d1">
+      <div class="card kpi-card text-center" style="--kpi-c: var(--c-rq1);">
+        <div class="kpi-num" id="stat-total-cases">—</div>
+        <div class="kpi-sub mt-2">总测试用例</div>
       </div>
     </div>
-    <div class="col-6 col-md-3">
-      <div class="card text-center">
-        <div class="card-body py-3">
-          <div class="kpi-value text-success" id="stat-pass-rate">—</div>
-          <div class="kpi-sub">整体通过率</div>
-        </div>
+    <div class="col-6 col-md-3 anim-up d2">
+      <div class="card kpi-card text-center" style="--kpi-c: var(--success);">
+        <div class="kpi-num" id="stat-pass-rate">—</div>
+        <div class="kpi-sub mt-2">整体通过率</div>
       </div>
     </div>
-    <div class="col-6 col-md-3">
-      <div class="card text-center">
-        <div class="card-body py-3">
-          <div class="kpi-value text-danger" id="stat-failed">—</div>
-          <div class="kpi-sub">失败用例数</div>
-        </div>
+    <div class="col-6 col-md-3 anim-up d3">
+      <div class="card kpi-card text-center" style="--kpi-c: var(--c-rq2);">
+        <div class="kpi-num" id="stat-failed">—</div>
+        <div class="kpi-sub mt-2">失败用例数</div>
       </div>
     </div>
-    <div class="col-6 col-md-3">
-      <div class="card text-center">
-        <div class="card-body py-3">
-          <div class="kpi-value text-warning" id="stat-evidence">—</div>
-          <div class="kpi-sub">证据包</div>
-        </div>
+    <div class="col-6 col-md-3 anim-up d4">
+      <div class="card kpi-card text-center" style="--kpi-c: var(--warning);">
+        <div class="kpi-num" id="stat-evidence">—</div>
+        <div class="kpi-sub mt-2">证据包</div>
       </div>
     </div>
   </div>
 
-  <!-- ── 算子通过率图 ──────────────────────────────────────────────────── -->
-  <div class="card mb-4">
+  <!-- ── Pass-rate chart ─────────────────────────────────────────────── -->
+  <div class="card mb-4 anim-up d2">
     <div class="card-header d-flex align-items-center gap-2">
-      <i class="bi bi-bar-chart-fill text-danger"></i>
+      <i class="bi bi-bar-chart-fill" style="color:var(--c-rq2);"></i>
       <span class="fw-semibold">各算子测试通过率</span>
     </div>
-    <div class="card-body" style="min-height: 200px;">
-      <canvas id="chart-pass-rate" style="max-height:250px;"></canvas>
+    <div class="card-body" style="min-height:200px;">
+      <canvas id="chart-pass-rate" style="max-height:260px;"></canvas>
     </div>
   </div>
 
-  <!-- ── 失败用例 & 证据包（两列） ─────────────────────────────────────── -->
+  <!-- ── Failures & Evidence ─────────────────────────────────────────── -->
   <div class="row g-3">
-    <!-- 失败用例列表 -->
-    <div class="col-lg-7">
+
+    <!-- Failure list -->
+    <div class="col-lg-7 anim-up d3">
       <div class="card h-100">
         <div class="card-header d-flex align-items-center gap-2">
-          <i class="bi bi-x-circle-fill text-danger"></i>
+          <i class="bi bi-x-circle-fill" style="color:var(--danger);"></i>
           <span class="fw-semibold">失败用例</span>
-          <span class="badge text-bg-danger ms-auto" id="fail-count" style="font-size:.7rem;"></span>
+          <span id="fail-count" class="ms-auto"
+                style="font-size:.68rem; color:var(--danger);"></span>
         </div>
         <div class="card-body p-0">
-          <div class="table-responsive" style="max-height:380px;overflow-y:auto;">
+          <div class="table-responsive" style="max-height:360px;overflow-y:auto;">
             <table class="table table-hover mb-0">
-              <thead class="table-light sticky-top">
+              <thead>
                 <tr>
                   <th class="ps-3">算子</th>
                   <th>MR 描述</th>
@@ -89,7 +85,7 @@
               </thead>
               <tbody id="fail-tbody">
                 <tr><td colspan="4">
-                  <div class="empty-state py-4">
+                  <div class="empty-state">
                     <i class="bi bi-hourglass-split"></i>
                     <div>加载中…</div>
                   </div>
@@ -101,18 +97,18 @@
       </div>
     </div>
 
-    <!-- 证据包列表 -->
-    <div class="col-lg-5">
+    <!-- Evidence packs -->
+    <div class="col-lg-5 anim-up d4">
       <div class="card h-100">
         <div class="card-header d-flex align-items-center gap-2">
-          <i class="bi bi-folder2-open text-warning"></i>
+          <i class="bi bi-folder2-open" style="color:var(--warning);"></i>
           <span class="fw-semibold">证据包</span>
-          <span class="badge text-bg-warning text-dark ms-auto" id="evidence-count"
-                style="font-size:.7rem;"></span>
+          <span id="evidence-count" class="ms-auto"
+                style="font-size:.68rem; color:var(--warning);"></span>
         </div>
         <div id="evidence-list" class="card-body p-0"
-             style="max-height:380px;overflow-y:auto;">
-          <div class="empty-state py-4">
+             style="max-height:360px;overflow-y:auto;">
+          <div class="empty-state">
             <i class="bi bi-hourglass-split"></i>
             <div>加载中…</div>
           </div>
@@ -121,26 +117,30 @@
     </div>
   </div>
 
-</div>
+</div><!-- /page-wrap -->
 
-<!-- ── 复现脚本模态框 ────────────────────────────────────────────────────── -->
+<!-- ── Reproduce Script Modal ──────────────────────────────────────────── -->
 <div class="modal fade" id="scriptModal" tabindex="-1">
   <div class="modal-dialog modal-lg modal-dialog-scrollable">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">
-          <i class="bi bi-code-slash me-2 text-primary"></i>Python 复现脚本
+        <h5 class="modal-title" style="font-size:.95rem; color:var(--text-bright);">
+          <i class="bi bi-code-slash me-2" style="color:var(--primary);"></i>Python 复现脚本
         </h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body p-0">
-        <pre class="code-block m-0 rounded-0" id="script-content" style="min-height:200px;">加载中…</pre>
+        <pre class="code-block m-0 rounded-0"
+             id="script-content"
+             style="min-height:200px; border-radius:0; border:none;
+                    border-top:1px solid var(--border);">加载中…</pre>
       </div>
-      <div class="modal-footer">
+      <div class="modal-footer gap-2">
         <button class="btn btn-sm btn-outline-secondary" onclick="copyScript()">
           <i class="bi bi-clipboard me-1"></i>复制
         </button>
-        <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">关闭</button>
+        <button type="button" class="btn btn-sm btn-outline-secondary"
+                data-bs-dismiss="modal">关闭</button>
       </div>
     </div>
   </div>
@@ -150,76 +150,95 @@
 {% block extra_scripts %}
 <script src="/static/chart.umd.min.js"></script>
 <script>
+Chart.defaults.color       = '#4d6480';
+Chart.defaults.borderColor = 'rgba(61,127,255,.12)';
+Chart.defaults.font.family = 'var(--font-ui, system-ui)';
+
 let _scriptModal;
 
 async function loadData() {
-  // 加载摘要
+  // Summary stats
   try {
     const r = await fetch('/api/test-results');
     const j = await r.json();
     const rows = j.data || [];
-    const total = rows.reduce((a, b) => a + (b.total_tests || 0), 0);
+    const total  = rows.reduce((a, b) => a + (b.total_tests  || 0), 0);
     const passed = rows.reduce((a, b) => a + (b.passed_tests || 0), 0);
     const failed = total - passed;
 
-    document.getElementById('stat-total-cases').textContent = total;
-    document.getElementById('stat-pass-rate').textContent =
-      total > 0 ? (passed / total * 100).toFixed(1) + '%' : '—';
-    document.getElementById('stat-failed').textContent = failed;
+    countUp(document.getElementById('stat-total-cases'), total);
+    countUp(document.getElementById('stat-pass-rate'),
+            total > 0 ? (passed / total * 100).toFixed(1) : null, '%');
+    countUp(document.getElementById('stat-failed'), failed);
 
     if (rows.length) renderPassRateChart(rows);
   } catch(e) { console.warn(e); }
 
-  // 加载失败用例
+  // Failed tests
   try {
     const r = await fetch('/api/test-results/failed');
     const j = await r.json();
     const rows = j.data || [];
-    document.getElementById('fail-count').textContent = rows.length;
+    document.getElementById('fail-count').textContent = rows.length + ' 条';
     const tbody = document.getElementById('fail-tbody');
     if (!rows.length) {
       tbody.innerHTML = `<tr><td colspan="4">
-        <div class="empty-state py-3">
-          <i class="bi bi-check-circle text-success"></i>
-          <div class="text-success">暂无失败用例</div>
+        <div class="empty-state">
+          <i class="bi bi-check-circle" style="color:var(--success);"></i>
+          <div style="color:var(--success);">暂无失败用例</div>
         </div></td></tr>`;
     } else {
       tbody.innerHTML = rows.map(r => `<tr>
-        <td class="ps-3"><code style="font-size:.78rem;">${r.ir_name || '—'}</code></td>
-        <td style="font-size:.8rem;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"
-            title="${escHtml(r.mr_description || '')}">${r.mr_description || '—'}</td>
-        <td class="text-danger" style="font-size:.8rem;">${r.actual_diff != null ? r.actual_diff.toExponential(2) : '—'}</td>
-        <td class="text-muted" style="font-size:.75rem;">${(r.timestamp || '').slice(0,16)}</td>
+        <td class="ps-3">
+          <code style="font-size:.78rem;">${escHtml(r.ir_name || '—')}</code>
+        </td>
+        <td style="font-size:.78rem; max-width:200px; overflow:hidden;
+                   text-overflow:ellipsis; white-space:nowrap;
+                   color:var(--text-dim);"
+            title="${escHtml(r.mr_description || '')}">
+          ${escHtml(r.mr_description || '—')}
+        </td>
+        <td style="font-family:var(--font-mono); font-size:.78rem; color:var(--danger);">
+          ${r.actual_diff != null ? r.actual_diff.toExponential(2) : '—'}
+        </td>
+        <td style="font-size:.72rem; color:var(--text-dim);">
+          ${(r.timestamp || '').slice(0,16)}
+        </td>
       </tr>`).join('');
     }
   } catch(e) { console.warn(e); }
 
-  // 加载证据包
+  // Evidence packs
   try {
     const r = await fetch('/api/evidence');
     const j = await r.json();
     const packs = j.data || [];
-    document.getElementById('evidence-count').textContent = packs.length;
-    document.getElementById('stat-evidence').textContent = packs.length;
+    document.getElementById('evidence-count').textContent = packs.length + ' 个';
+    countUp(document.getElementById('stat-evidence'), packs.length);
 
     const container = document.getElementById('evidence-list');
     if (!packs.length) {
-      container.innerHTML = `<div class="empty-state py-4">
+      container.innerHTML = `<div class="empty-state">
         <i class="bi bi-folder-x"></i>
         <div>暂无证据包</div>
       </div>`;
     } else {
       container.innerHTML = `<ul class="list-group list-group-flush">` +
         packs.slice(0, 50).map(p => `
-        <li class="list-group-item list-group-item-action d-flex justify-content-between align-items-start py-2 px-3">
-          <div style="min-width:0;">
-            <div class="fw-semibold" style="font-size:.82rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
-              <code>${p.id || '—'}</code>
+        <li class="list-group-item list-group-item-action
+                   d-flex justify-content-between align-items-start py-2 px-3">
+          <div style="min-width:0; flex:1;">
+            <div style="font-family:var(--font-mono); font-size:.75rem;
+                        font-weight:600; color:var(--text-code);
+                        overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+              ${escHtml(p.id || '—')}
             </div>
-            <div class="text-muted" style="font-size:.75rem;">${p.operator || ''}</div>
+            <div style="font-size:.72rem; color:var(--text-dim); margin-top:1px;">
+              ${escHtml(p.operator || '')}
+            </div>
           </div>
           <button class="btn btn-sm btn-outline-warning py-0 px-2 ms-2 flex-shrink-0"
-                  style="font-size:.75rem;"
+                  style="font-size:.72rem;"
                   onclick="showScript('${escHtml(p.id || '')}')">
             <i class="bi bi-code me-1"></i>脚本
           </button>
@@ -230,48 +249,71 @@ async function loadData() {
 
 function renderPassRateChart(rows) {
   const labels = rows.map(r => r.ir_name.replace(/torch\.nn\.functional\./, ''));
-  const rates  = rows.map(r => r.total_tests > 0 ? (r.passed_tests / r.total_tests * 100) : 0);
+  const rates  = rows.map(r => r.total_tests > 0
+    ? (r.passed_tests / r.total_tests * 100) : 0);
+
   new Chart(document.getElementById('chart-pass-rate'), {
     type: 'bar',
     data: {
       labels,
       datasets: [{
-        label: '通过率 (%)',
-        data: rates,
-        backgroundColor: rates.map(v => v >= 90 ? '#10b981' : v >= 70 ? '#f59e0b' : '#ef4444'),
+        label: '通过率 (%)', data: rates,
+        backgroundColor: rates.map(v =>
+          v >= 90 ? 'rgba(0,200,150,.75)'
+        : v >= 70 ? 'rgba(255,171,0,.75)'
+        :           'rgba(255,69,69,.75)'),
         borderRadius: 4,
       }]
     },
     options: {
       indexAxis: 'y',
-      plugins: { legend: { display: false } },
-      scales: {
-        x: { min: 0, max: 100, ticks: { callback: v => v + '%' }, grid: { display: false } },
-        y: { ticks: { font: { size: 11 } } },
+      plugins: {
+        legend: { display:false },
+        tooltip: {
+          backgroundColor:'#111a2e', borderColor:'rgba(61,127,255,.25)',
+          borderWidth:1, titleColor:'#bfd0e8', bodyColor:'#4d6480', padding:10,
+          callbacks: { label: ctx => ` ${ctx.raw.toFixed(1)}%` }
+        }
       },
+      scales: {
+        x: {
+          min:0, max:100,
+          grid:{ color:'rgba(61,127,255,.08)' },
+          ticks:{ color:'#4d6480', callback: v => v + '%' }
+        },
+        y: {
+          grid:{display:false},
+          ticks:{ color:'#bfd0e8', font:{size:11} }
+        }
+      }
     }
   });
 }
 
 async function showScript(id) {
-  if (!_scriptModal) _scriptModal = new bootstrap.Modal(document.getElementById('scriptModal'));
+  if (!_scriptModal)
+    _scriptModal = new bootstrap.Modal(document.getElementById('scriptModal'));
   document.getElementById('script-content').textContent = '加载中…';
   _scriptModal.show();
   try {
     const r = await fetch('/api/evidence/' + encodeURIComponent(id) + '/script');
     const j = await r.json();
-    document.getElementById('script-content').textContent = j.data?.script || '（脚本为空）';
+    document.getElementById('script-content').textContent =
+      j.data?.script || '（脚本为空）';
   } catch(e) {
     document.getElementById('script-content').textContent = '加载失败：' + e.message;
   }
 }
 
 function copyScript() {
-  navigator.clipboard.writeText(document.getElementById('script-content').textContent);
+  navigator.clipboard?.writeText(
+    document.getElementById('script-content').textContent);
 }
 
 function escHtml(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
 loadData();

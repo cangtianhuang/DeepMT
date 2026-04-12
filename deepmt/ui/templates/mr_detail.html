@@ -1,28 +1,33 @@
 {% extends "base.html" %}
-
 {% block title %}{{ operator_name }} — MR 详情 — DeepMT Dashboard{% endblock %}
 
 {% block content %}
-<div class="container-fluid px-4 py-4">
+<div class="page-wrap">
 
-  <!-- ── 页面标题 ──────────────────────────────────────────────────────── -->
-  <div class="mb-4">
-    <a href="/mr" class="btn btn-sm btn-outline-secondary mb-3">
+  <!-- ── Back + Header ───────────────────────────────────────────────── -->
+  <div class="mb-4 anim-up">
+    <a href="/mr" class="btn btn-sm btn-outline-secondary mb-3"
+       style="font-size:.78rem;">
       <i class="bi bi-arrow-left me-1"></i>返回知识库
     </a>
-    <h4 class="fw-bold mb-1">
-      <i class="bi bi-database-fill me-2 text-primary"></i>
-      <code>{{ operator_name }}</code>
+    <h4 style="font-size:1.3rem; font-weight:700; color:var(--text-bright);
+               letter-spacing:-.02em; margin:0 0 .2rem;">
+      <i class="bi bi-database-fill me-2" style="color:var(--primary);"></i>
+      <code style="font-size:1rem; background:transparent; border:none;
+                   color:var(--text-bright); padding:0;">{{ operator_name }}</code>
     </h4>
-    <p class="text-muted mb-0" style="font-size:.875rem;">
+    <p style="font-size:.78rem; color:var(--text-dim); margin:0;">
       蜕变关系详情
-      <span class="badge text-bg-primary ms-2" style="font-size:.68rem;">RQ1</span>
+      <span class="ms-2" style="font-size:.62rem; color:var(--c-rq1);
+            background:var(--primary-dim); border:1px solid rgba(61,127,255,.2);
+            border-radius:4px; padding:1px 7px; font-weight:700;
+            letter-spacing:.05em; text-transform:uppercase;">RQ1</span>
     </p>
   </div>
 
-  <!-- ── MR 卡片列表 ──────────────────────────────────────────────────── -->
+  <!-- ── MR Card List ────────────────────────────────────────────────── -->
   <div id="mr-list">
-    <div class="empty-state py-5">
+    <div class="empty-state">
       <i class="bi bi-hourglass-split"></i>
       <div>加载中…</div>
     </div>
@@ -39,11 +44,11 @@ async function loadMRs() {
   try {
     const resp = await fetch('/api/mr-repository/' + encodeURIComponent(OP));
     const json = await resp.json();
-    const mrs = json.data;
+    const mrs  = json.data;
     const container = document.getElementById('mr-list');
 
     if (!mrs || mrs.length === 0) {
-      container.innerHTML = `<div class="empty-state py-5">
+      container.innerHTML = `<div class="empty-state" style="padding:4rem;">
         <i class="bi bi-database-x"></i>
         <div>该算子暂无 MR 记录</div>
       </div>`;
@@ -52,67 +57,112 @@ async function loadMRs() {
 
     container.innerHTML = mrs.map((mr, i) => {
       const verifiedBadge = mr.verified
-        ? '<span class="badge badge-verified me-1">已验证</span>'
+        ? `<span class="badge badge-verified">
+             <i class="bi bi-check-circle-fill me-1"></i>已验证</span>`
         : mr.checked
-          ? '<span class="badge badge-checked me-1">预检通过</span>'
-          : '<span class="badge badge-unverified me-1">未验证</span>';
+          ? `<span class="badge badge-checked">
+               <i class="bi bi-shield-check me-1"></i>预检通过</span>`
+          : `<span class="badge badge-unverified">
+               <i class="bi bi-question-circle me-1"></i>未验证</span>`;
 
       const srcBadge = mr.source
-        ? `<span class="badge ${mr.source === 'llm' ? 'badge-llm' : mr.source === 'template' ? 'badge-template' : 'badge-manual'} me-1">${mr.source}</span>`
+        ? `<span class="badge ${mr.source==='llm' ? 'badge-llm'
+            : mr.source==='template' ? 'badge-template' : 'badge-manual'}">
+           ${mr.source}</span>`
         : '';
 
       const catBadge = mr.category
-        ? `<span class="badge text-bg-light text-dark border me-1" style="font-size:.7rem;">${mr.category}</span>`
+        ? `<span class="badge badge-unverified">${mr.category}</span>`
         : '';
 
-      return `
-      <div class="card mb-3">
+      return `<div class="card mb-3 anim-up" style="animation-delay:${i*0.04}s;">
+        <!-- Card header -->
         <div class="card-header d-flex align-items-center gap-2 flex-wrap">
-          <span class="fw-semibold text-muted" style="font-size:.8rem;">#${i + 1}</span>
-          <span class="fw-semibold flex-grow-1">${mr.description || '（无描述）'}</span>
-          <div>${verifiedBadge}${srcBadge}${catBadge}</div>
+          <span style="font-family:var(--font-mono); font-size:.72rem;
+                       color:var(--text-dim); min-width:1.8rem;">#${i+1}</span>
+          <span class="fw-semibold flex-grow-1" style="color:var(--text-bright); font-size:.88rem;">
+            ${escHtml(mr.description || '（无描述）')}
+          </span>
+          <div class="d-flex gap-1 flex-wrap">${verifiedBadge}${srcBadge}${catBadge}</div>
         </div>
+
+        <!-- Code / Oracle split -->
         <div class="card-body">
           <div class="row g-3">
             <div class="col-md-6">
-              <div class="small text-muted fw-semibold mb-1">
-                <i class="bi bi-arrow-right-circle me-1"></i>输入变换 <code>transform_code</code>
+              <div style="font-size:.7rem; font-weight:700; letter-spacing:.06em;
+                          text-transform:uppercase; color:var(--text-dim); margin-bottom:.45rem;">
+                <i class="bi bi-arrow-right-circle me-1" style="color:var(--primary);"></i>
+                输入变换 <code style="font-size:.7rem;">transform_code</code>
               </div>
               <pre class="code-block">${escHtml(mr.transform_code || '—')}</pre>
             </div>
             <div class="col-md-6">
-              <div class="small text-muted fw-semibold mb-1">
-                <i class="bi bi-check2-circle me-1"></i>Oracle 表达式 <code>oracle_expr</code>
+              <div style="font-size:.7rem; font-weight:700; letter-spacing:.06em;
+                          text-transform:uppercase; color:var(--text-dim); margin-bottom:.45rem;">
+                <i class="bi bi-check2-circle me-1" style="color:var(--success);"></i>
+                Oracle 表达式 <code style="font-size:.7rem;">oracle_expr</code>
               </div>
               <pre class="code-block">${escHtml(mr.oracle_expr || '—')}</pre>
             </div>
           </div>
+
           ${mr.analysis ? `
           <div class="mt-3">
-            <button class="btn btn-sm btn-link p-0 text-muted" type="button"
-                    data-bs-toggle="collapse" data-bs-target="#analysis-${i}">
+            <button class="btn btn-sm btn-link p-0 text-decoration-none"
+                    style="font-size:.75rem; color:var(--text-dim);"
+                    type="button"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#analysis-${i}">
               <i class="bi bi-chevron-down me-1"></i>查看分析备注
             </button>
             <div class="collapse mt-2" id="analysis-${i}">
-              <div class="alert alert-light border mb-0" style="font-size:.85rem;">${escHtml(mr.analysis)}</div>
+              <div class="alert-light border rounded p-3"
+                   style="font-size:.82rem; line-height:1.6; border-color:var(--border) !important;">
+                ${escHtml(mr.analysis)}
+              </div>
             </div>
           </div>` : ''}
         </div>
-        <div class="card-footer text-muted d-flex gap-3" style="font-size:.78rem;">
-          <span><i class="bi bi-hash me-1"></i>${mr.id || '—'}</span>
-          <span><i class="bi bi-bullseye me-1"></i>tolerance: ${mr.tolerance ?? '1e-6'}</span>
-          ${mr.applicable_frameworks ? `<span><i class="bi bi-layers me-1"></i>${mr.applicable_frameworks.join(', ')}</span>` : ''}
+
+        <!-- Card footer: metadata -->
+        <div class="card-footer d-flex gap-4"
+             style="font-size:.73rem; color:var(--text-dim);
+                    background:var(--surface-2); border-top:1px solid var(--border);">
+          <span>
+            <i class="bi bi-hash me-1" style="color:var(--primary);"></i>
+            <code style="font-size:.73rem;">${escHtml(mr.id || '—')}</code>
+          </span>
+          <span>
+            <i class="bi bi-bullseye me-1" style="color:var(--warning);"></i>
+            tolerance: ${mr.tolerance ?? '1e-6'}
+          </span>
+          ${mr.applicable_frameworks ? `
+          <span>
+            <i class="bi bi-layers me-1" style="color:var(--info);"></i>
+            ${mr.applicable_frameworks.join(', ')}
+          </span>` : ''}
+          ${mr.proven ? `
+          <span style="color:var(--success);">
+            <i class="bi bi-award-fill me-1"></i>符号证明
+          </span>` : ''}
         </div>
       </div>`;
     }).join('');
+
   } catch (e) {
-    document.getElementById('mr-list').innerHTML = `<div class="alert alert-warning">加载失败：${e.message}</div>`;
+    document.getElementById('mr-list').innerHTML =
+      `<div class="alert" style="background:var(--danger-dim);border:1px solid rgba(255,69,69,.25);
+            color:var(--danger); border-radius:var(--radius);">
+         <i class="bi bi-exclamation-triangle-fill me-2"></i>加载失败：${escHtml(e.message)}
+       </div>`;
   }
 }
 
 function escHtml(s) {
   return String(s)
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
 loadMRs();

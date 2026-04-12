@@ -1,17 +1,19 @@
 {% extends "base.html" %}
-
 {% block title %}跨框架一致性 — DeepMT Dashboard{% endblock %}
 
 {% block content %}
-<div class="container-fluid px-4 py-4">
+<div class="page-wrap">
 
-  <!-- ── 页面标题 ──────────────────────────────────────────────────────── -->
-  <div class="d-flex justify-content-between align-items-start mb-4">
+  <!-- ── Header ──────────────────────────────────────────────────────── -->
+  <div class="page-hd d-flex justify-content-between align-items-start">
     <div>
-      <h4 class="fw-bold mb-1">跨框架一致性</h4>
-      <p class="text-muted mb-0" style="font-size:.875rem;">
+      <h4>跨框架一致性</h4>
+      <p>
         多框架执行等价算子的行为一致性验证
-        <span class="badge text-bg-success ms-2" style="font-size:.68rem;">RQ3</span>
+        <span class="ms-2" style="font-size:.65rem; color:var(--c-rq3);
+              background:var(--success-dim); border:1px solid rgba(0,200,150,.2);
+              border-radius:4px; padding:1px 7px; font-weight:700;
+              letter-spacing:.05em; text-transform:uppercase;">RQ3</span>
       </p>
     </div>
     <button class="btn btn-sm btn-outline-secondary" onclick="location.reload()">
@@ -19,38 +21,32 @@
     </button>
   </div>
 
-  <!-- ── 统计卡片 ──────────────────────────────────────────────────────── -->
+  <!-- ── Stats ───────────────────────────────────────────────────────── -->
   <div class="row g-3 mb-4">
-    <div class="col-6 col-md-4">
-      <div class="card text-center">
-        <div class="card-body py-3">
-          <div class="kpi-value text-success" id="stat-consistency">—</div>
-          <div class="kpi-sub">整体一致率</div>
-        </div>
+    <div class="col-6 col-md-4 anim-up d1">
+      <div class="card kpi-card text-center" style="--kpi-c: var(--c-rq3);">
+        <div class="kpi-num" id="stat-consistency">—</div>
+        <div class="kpi-sub mt-2">整体一致率</div>
       </div>
     </div>
-    <div class="col-6 col-md-4">
-      <div class="card text-center">
-        <div class="card-body py-3">
-          <div class="kpi-value text-primary" id="stat-operators">—</div>
-          <div class="kpi-sub">对比算子数</div>
-        </div>
+    <div class="col-6 col-md-4 anim-up d2">
+      <div class="card kpi-card text-center" style="--kpi-c: var(--c-rq1);">
+        <div class="kpi-num" id="stat-operators">—</div>
+        <div class="kpi-sub mt-2">对比算子数</div>
       </div>
     </div>
-    <div class="col-6 col-md-4">
-      <div class="card text-center">
-        <div class="card-body py-3">
-          <div class="kpi-value text-info" id="stat-sessions">—</div>
-          <div class="kpi-sub">实验次数</div>
-        </div>
+    <div class="col-6 col-md-4 anim-up d3">
+      <div class="card kpi-card text-center" style="--kpi-c: var(--info);">
+        <div class="kpi-num" id="stat-sessions">—</div>
+        <div class="kpi-sub mt-2">实验次数</div>
       </div>
     </div>
   </div>
 
-  <!-- ── 一致率图表 ────────────────────────────────────────────────────── -->
-  <div class="card mb-4">
+  <!-- ── Consistency Chart ───────────────────────────────────────────── -->
+  <div class="card mb-4 anim-up d2">
     <div class="card-header d-flex align-items-center gap-2">
-      <i class="bi bi-bar-chart-fill text-success"></i>
+      <i class="bi bi-bar-chart-fill" style="color:var(--c-rq3);"></i>
       <span class="fw-semibold">各算子跨框架一致率</span>
     </div>
     <div class="card-body" id="chart-container" style="min-height:180px;">
@@ -58,17 +54,18 @@
     </div>
   </div>
 
-  <!-- ── 会话列表 ──────────────────────────────────────────────────────── -->
-  <div class="card">
+  <!-- ── Session Table ───────────────────────────────────────────────── -->
+  <div class="card anim-up d3">
     <div class="card-header d-flex align-items-center gap-2">
-      <i class="bi bi-table text-success"></i>
+      <i class="bi bi-table" style="color:var(--c-rq3);"></i>
       <span class="fw-semibold">实验会话列表</span>
-      <span class="badge text-bg-secondary ms-auto" id="session-count" style="font-size:.7rem;"></span>
+      <span id="session-count" class="ms-auto"
+            style="font-size:.68rem; color:var(--text-dim);"></span>
     </div>
     <div class="card-body p-0">
       <div class="table-responsive">
         <table class="table table-hover mb-0">
-          <thead class="table-light">
+          <thead>
             <tr>
               <th class="ps-3">算子</th>
               <th>框架对</th>
@@ -80,7 +77,7 @@
           </thead>
           <tbody id="session-tbody">
             <tr><td colspan="6">
-              <div class="empty-state py-4">
+              <div class="empty-state">
                 <i class="bi bi-hourglass-split"></i>
                 <div>加载中…</div>
               </div>
@@ -91,23 +88,41 @@
     </div>
   </div>
 
-  <!-- ── 空状态提示 ────────────────────────────────────────────────────── -->
-  <div id="no-data" style="display:none;">
-    <div class="empty-state py-5">
-      <i class="bi bi-arrow-left-right" style="font-size:3rem;"></i>
-      <div class="mt-2 fw-semibold">暂无跨框架实验记录</div>
-      <div class="text-muted mt-1" style="font-size:.875rem;">
-        请运行：<code>deepmt test cross &lt;operator&gt; --framework1 pytorch --framework2 numpy</code>
+  <!-- ── Empty state (shown when no data) ──────────────────────────── -->
+  <div id="no-data" style="display:none;" class="anim-up">
+    <div class="card mt-3">
+      <div class="card-body">
+        <div class="empty-state" style="padding:3.5rem 1.5rem;">
+          <i class="bi bi-arrow-left-right" style="font-size:2.8rem; margin-bottom:.75rem;
+             display:block; opacity:.3; color:var(--c-rq3);"></i>
+          <div style="font-size:.95rem; font-weight:600;
+                      color:var(--text); margin-bottom:.4rem;">
+            暂无跨框架实验记录
+          </div>
+          <div style="font-size:.82rem; color:var(--text-dim); max-width:480px;">
+            运行以下命令生成数据：
+          </div>
+          <code style="display:inline-block; margin-top:.75rem; font-size:.8rem;
+                       background:var(--surface-2); border:1px solid var(--border);
+                       border-radius:var(--radius-sm); padding:.4rem .9rem;
+                       color:var(--text-code);">
+            deepmt test cross &lt;operator&gt; --framework1 pytorch --framework2 numpy
+          </code>
+        </div>
       </div>
     </div>
   </div>
 
-</div>
+</div><!-- /page-wrap -->
 {% endblock %}
 
 {% block extra_scripts %}
 <script src="/static/chart.umd.min.js"></script>
 <script>
+Chart.defaults.color       = '#4d6480';
+Chart.defaults.borderColor = 'rgba(61,127,255,.12)';
+Chart.defaults.font.family = 'var(--font-ui, system-ui)';
+
 async function loadData() {
   try {
     const resp = await fetch('/api/cross-framework');
@@ -119,56 +134,76 @@ async function loadData() {
       document.getElementById('chart-container').style.display = 'none';
       document.getElementById('no-data').style.display = 'block';
       document.getElementById('session-tbody').innerHTML = `<tr><td colspan="6">
-        <div class="empty-state py-3 text-muted" style="font-size:.875rem;">
-          暂无数据
+        <div class="empty-state" style="padding:1.5rem;">
+          <div style="color:var(--text-dim); font-size:.82rem;">暂无数据</div>
         </div></td></tr>`;
       return;
     }
 
-    // 统计卡片
-    const totalConsistency = sessions.reduce((a, s) => a + (s.overall_consistency_rate || 0), 0);
-    const avgConsistency = totalConsistency / sessions.length;
+    // Stats
+    const avgCR = sessions.reduce((a,s) => a + (s.overall_consistency_rate||0), 0)
+                  / sessions.length;
     const ops = new Set(sessions.map(s => s.operator)).size;
 
-    document.getElementById('stat-consistency').textContent =
-      (avgConsistency * 100).toFixed(1) + '%';
-    document.getElementById('stat-operators').textContent = ops;
-    document.getElementById('stat-sessions').textContent = sessions.length;
+    countUp(document.getElementById('stat-consistency'),
+            (avgCR * 100).toFixed(1), '%');
+    countUp(document.getElementById('stat-operators'), ops);
+    countUp(document.getElementById('stat-sessions'), sessions.length);
 
-    // 图表
     renderChart(sessions);
 
-    // 表格
+    // Table
     const tbody = document.getElementById('session-tbody');
     tbody.innerHTML = sessions.map(s => {
       const rate = (s.overall_consistency_rate * 100).toFixed(1);
-      const color = parseFloat(rate) >= 95 ? 'success' : parseFloat(rate) >= 85 ? 'warning' : 'danger';
+      const col  = parseFloat(rate) >= 95 ? 'var(--success)'
+                 : parseFloat(rate) >= 85 ? 'var(--warning)'
+                 :                          'var(--danger)';
+      const fw1short = s.framework1;
+      const fw2short = s.framework2;
       return `<tr>
-        <td class="ps-3"><code style="font-size:.8rem;">${s.operator}</code></td>
+        <td class="ps-3">
+          <code style="font-size:.8rem;">${s.operator}</code>
+        </td>
         <td>
-          <span class="badge text-bg-light text-dark border" style="font-size:.72rem;">
-            ${s.framework1} <i class="bi bi-arrow-left-right mx-1"></i> ${s.framework2}
+          <span style="font-size:.72rem; color:var(--text-dim);
+                       background:var(--surface-2); border:1px solid var(--border);
+                       border-radius:4px; padding:2px 8px; white-space:nowrap;">
+            ${fw1short}
+            <i class="bi bi-arrow-left-right mx-1" style="font-size:.65rem;"></i>
+            ${fw2short}
           </span>
         </td>
         <td>
           <div class="d-flex align-items-center gap-2">
-            <div class="progress flex-grow-1" style="height:6px;min-width:60px;">
-              <div class="progress-bar bg-${color}" style="width:${rate}%"></div>
+            <div class="progress flex-grow-1" style="height:5px; min-width:56px;">
+              <div class="progress-bar" style="width:${rate}%; background:${col};"></div>
             </div>
-            <span class="text-${color} fw-semibold" style="font-size:.8rem;">${rate}%</span>
+            <span style="font-size:.78rem; font-weight:700;
+                         font-variant-numeric:tabular-nums;
+                         color:${col}; min-width:3rem;">${rate}%</span>
           </div>
         </td>
-        <td class="font-monospace" style="font-size:.8rem;">
+        <td style="font-family:var(--font-mono); font-size:.78rem; color:var(--text-dim);">
           ${s.output_max_diff != null ? s.output_max_diff.toExponential(3) : '—'}
         </td>
         <td>
           ${s.inconsistent_mr_count > 0
-            ? `<span class="badge text-bg-danger">${s.inconsistent_mr_count}</span>`
-            : `<span class="badge text-bg-success">0</span>`}
+            ? `<span style="background:var(--danger-dim); color:var(--danger);
+                     border:1px solid rgba(255,69,69,.25);
+                     border-radius:4px; padding:1px 8px; font-size:.75rem;
+                     font-weight:600;">${s.inconsistent_mr_count}</span>`
+            : `<span style="background:var(--success-dim); color:var(--success);
+                     border:1px solid rgba(0,200,150,.25);
+                     border-radius:4px; padding:1px 8px; font-size:.75rem;
+                     font-weight:600;">0</span>`}
         </td>
-        <td class="text-muted" style="font-size:.78rem;">${(s.timestamp || '').slice(0,16)}</td>
+        <td style="font-size:.75rem; color:var(--text-dim);">
+          ${(s.timestamp || '').slice(0,16)}
+        </td>
       </tr>`;
     }).join('');
+
   } catch(e) {
     console.warn('加载失败:', e);
     document.getElementById('no-data').style.display = 'block';
@@ -176,7 +211,7 @@ async function loadData() {
 }
 
 function renderChart(sessions) {
-  // 按算子聚合一致率
+  // Aggregate by operator (average consistency)
   const byOp = {};
   sessions.forEach(s => {
     if (!byOp[s.operator]) byOp[s.operator] = [];
@@ -185,26 +220,42 @@ function renderChart(sessions) {
   const labels = Object.keys(byOp);
   const rates  = labels.map(op => {
     const arr = byOp[op];
-    return arr.reduce((a, b) => a + b, 0) / arr.length * 100;
+    return arr.reduce((a,b) => a+b, 0) / arr.length * 100;
   });
 
   new Chart(document.getElementById('chart-consistency'), {
     type: 'bar',
     data: {
-      labels: labels.map(l => l.replace(/torch\.nn\.functional\./, '')),
+      labels: labels.map(l => l.replace(/torch\.nn\.functional\./,'')),
       datasets: [{
-        label: '一致率 (%)',
-        data: rates,
-        backgroundColor: rates.map(v => v >= 95 ? '#10b981' : v >= 85 ? '#f59e0b' : '#ef4444'),
-        borderRadius: 4,
+        label: '一致率 (%)', data: rates,
+        backgroundColor: rates.map(v =>
+          v >= 95 ? 'rgba(0,200,150,.75)'
+        : v >= 85 ? 'rgba(255,171,0,.75)'
+        :           'rgba(255,69,69,.75)'),
+        borderRadius: 5,
       }]
     },
     options: {
-      plugins: { legend: { display: false } },
-      scales: {
-        y: { min: 0, max: 100, ticks: { callback: v => v + '%' }, grid: { color: '#eee' } },
-        x: { ticks: { font: { size: 11 } } }
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor:'#111a2e', borderColor:'rgba(61,127,255,.25)',
+          borderWidth:1, titleColor:'#bfd0e8', bodyColor:'#4d6480', padding:10,
+          callbacks: { label: ctx => ` ${ctx.raw.toFixed(1)}%` }
+        }
       },
+      scales: {
+        y: {
+          min:0, max:100,
+          grid:{ color:'rgba(61,127,255,.08)' },
+          ticks:{ color:'#4d6480', callback: v => v+'%' }
+        },
+        x: {
+          grid:{ display:false },
+          ticks:{ color:'#bfd0e8', font:{size:11} }
+        }
+      }
     }
   });
 }

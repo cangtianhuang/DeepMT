@@ -1,186 +1,453 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-bs-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}DeepMT Dashboard{% endblock %}</title>
-
-  <!-- Bootstrap 5 CSS (本地，离线可用) -->
   <link rel="stylesheet" href="/static/bootstrap.min.css">
-  <!-- Bootstrap Icons (本地) -->
   <link rel="stylesheet" href="/static/bootstrap-icons.min.css">
 
   <style>
-    /* ── 全局 ─────────────────────────────────────────── */
+    /* ═══════════════════════════════════════════════════════════════════
+       DeepMT Dashboard  ·  Deep Space Research Lab Theme
+       ═══════════════════════════════════════════════════════════════════ */
+
     :root {
-      --deepmt-primary: #0d6efd;
-      --deepmt-sidebar-w: 0px;   /* 当前无侧栏，预留 */
+      --bg:           #07090f;
+      --surface:      #0c1220;
+      --surface-2:    #111a2e;
+      --surface-3:    #182038;
+      --border:       rgba(61, 127, 255, 0.14);
+      --border-bright:rgba(61, 127, 255, 0.32);
+
+      --primary:      #3d7fff;
+      --primary-dim:  rgba(61, 127, 255, 0.10);
+      --primary-glow: rgba(61, 127, 255, 0.22);
+      --accent:       #00d4ff;
+
+      --c-rq1:        #3d7fff;  /* blue   — MR generation */
+      --c-rq2:        #ff4545;  /* red    — defect detect */
+      --c-rq3:        #00c896;  /* teal   — cross-fw      */
+      --c-rq4:        #ffab00;  /* amber  — coverage      */
+
+      --success:      #00c896;
+      --success-dim:  rgba(0,200,150,.10);
+      --danger:       #ff4545;
+      --danger-dim:   rgba(255,69,69,.10);
+      --warning:      #ffab00;
+      --warning-dim:  rgba(255,171,0,.10);
+      --info:         #00d4ff;
+      --info-dim:     rgba(0,212,255,.10);
+
+      --text:         #bfd0e8;
+      --text-dim:     #4d6480;
+      --text-bright:  #e8f0fb;
+      --text-code:    #7ec8f4;
+
+      --font-ui:   -apple-system, "PingFang SC", "Microsoft YaHei UI",
+                   "Segoe UI", "Noto Sans SC", sans-serif;
+      --font-mono: "JetBrains Mono", "Fira Code", "Cascadia Code",
+                   "Consolas", monospace;
+
+      --radius:    10px;
+      --radius-sm:  6px;
+      --radius-lg: 14px;
+      --nav-h:     58px;
+
+      --shadow:    0 4px 24px rgba(0,0,0,.40);
+      --glow:      0 0 18px rgba(61,127,255,.14);
+      --transition:all .2s cubic-bezier(.4,0,.2,1);
     }
+
+    /* ── Reset ─────────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
     body {
-      background-color: #f4f6fb;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-                   "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei",
-                   sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: var(--font-ui);
+      font-size: 14px;
+      line-height: 1.6;
+      min-height: 100vh;
     }
 
-    /* ── 导航栏 ───────────────────────────────────────── */
-    .navbar-brand .brand-text { font-weight: 700; letter-spacing: .02em; }
-    .navbar .nav-link { font-size: .9rem; padding: .4rem .75rem; }
+    /* Subtle grid texture — gives a scientific-instrument feel */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image:
+        linear-gradient(rgba(61,127,255,.022) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(61,127,255,.022) 1px, transparent 1px);
+      background-size: 48px 48px;
+      pointer-events: none; z-index: 0;
+    }
+    nav, main, footer { position: relative; z-index: 1; }
+
+    /* ── Scrollbar ─────────────────────────────────────────────────── */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--surface-3); border-radius: 99px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--border-bright); }
+
+    /* ── Navbar ────────────────────────────────────────────────────── */
+    .navbar {
+      height: var(--nav-h);
+      background: rgba(7,9,15,.92) !important;
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border-bottom: 1px solid var(--border);
+      box-shadow: 0 1px 0 rgba(61,127,255,.07), 0 4px 28px rgba(0,0,0,.45);
+    }
+
+    .brand-icon {
+      width: 30px; height: 30px; flex-shrink: 0;
+      background: linear-gradient(135deg, #1d4ed8, #3d7fff);
+      border-radius: var(--radius-sm);
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 0 14px rgba(61,127,255,.38);
+    }
+    .brand-name {
+      font-size: .95rem; font-weight: 700;
+      color: var(--text-bright); letter-spacing: -.01em;
+    }
+    .brand-ver {
+      font-family: var(--font-mono); font-size: .6rem;
+      color: var(--text-dim); background: var(--surface-2);
+      border: 1px solid var(--border); border-radius: 4px;
+      padding: 1px 6px; letter-spacing: .01em;
+    }
+
+    .navbar .nav-link {
+      font-size: .82rem; color: var(--text-dim) !important;
+      padding: .28rem .7rem; border-radius: var(--radius-sm);
+      transition: var(--transition);
+      display: flex; align-items: center; gap: 5px;
+      border: 1px solid transparent;
+    }
+    .navbar .nav-link:hover {
+      color: var(--text) !important; background: var(--surface-2);
+      border-color: var(--border);
+    }
     .navbar .nav-link.active {
-      color: #fff !important;
-      background-color: rgba(255,255,255,.12);
-      border-radius: .35rem;
+      color: var(--primary) !important;
+      background: var(--primary-dim);
+      border-color: rgba(61,127,255,.22);
     }
-    .navbar .nav-link:hover:not(.active) { color: rgba(255,255,255,.85) !important; }
+    .navbar .nav-link .bi { font-size: .88rem; }
 
-    /* ── 页面主体 ─────────────────────────────────────── */
+    .status-pip {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--success);
+      box-shadow: 0 0 6px var(--success);
+      animation: pip-blink 2.4s ease-in-out infinite;
+    }
+    @keyframes pip-blink {
+      0%,100%{ opacity:1; box-shadow:0 0 6px var(--success); }
+      50%    { opacity:.65; box-shadow:0 0 12px var(--success); }
+    }
+
+    /* ── Page layout ───────────────────────────────────────────────── */
     .page-content {
-      padding-top: 64px;   /* 让内容区不被固定导航栏遮挡 */
-      min-height: calc(100vh - 64px - 52px);
+      padding-top: var(--nav-h);
+      min-height: calc(100vh - var(--nav-h) - 48px);
+    }
+    .page-wrap { padding: 1.5rem; }
+
+    /* ── Page header ───────────────────────────────────────────────── */
+    .page-hd { margin-bottom: 1.4rem; }
+    .page-hd h4 {
+      font-size: 1.3rem; font-weight: 700; letter-spacing: -.025em;
+      color: var(--text-bright); margin: 0 0 .2rem;
+    }
+    .page-hd p {
+      font-size: .78rem; color: var(--text-dim); margin: 0;
     }
 
-    /* ── 卡片 ─────────────────────────────────────────── */
+    /* ── Cards ─────────────────────────────────────────────────────── */
     .card {
-      border: 1px solid rgba(0,0,0,.06);
-      box-shadow: 0 1px 6px rgba(0,0,0,.06);
-      border-radius: .6rem;
+      background: var(--surface) !important;
+      border: 1px solid var(--border) !important;
+      border-radius: var(--radius) !important;
+      box-shadow: var(--shadow);
+      transition: var(--transition);
+    }
+    .card:hover {
+      border-color: var(--border-bright) !important;
+      box-shadow: var(--shadow), var(--glow);
     }
     .card-header {
-      background: transparent;
-      border-bottom: 1px solid rgba(0,0,0,.06);
-      padding: .75rem 1rem;
-      font-size: .875rem;
+      background: var(--surface-2) !important;
+      border-bottom: 1px solid var(--border) !important;
+      padding: .65rem 1rem; font-size: .8rem;
     }
+    .card-body { padding: 1rem; }
 
-    /* ── KPI 卡片 ─────────────────────────────────────── */
-    .kpi-value {
-      font-size: 2rem;
-      font-weight: 700;
-      line-height: 1.1;
+    /* ── KPI cards ─────────────────────────────────────────────────── */
+    .kpi-card {
+      position: relative; overflow: hidden;
+      padding: 1.1rem 1.1rem 1rem;
     }
-    .kpi-sub { font-size: .78rem; color: #6c757d; }
-
-    /* ── 代码块 ───────────────────────────────────────── */
-    .code-block {
-      background: #1e1e2e;
-      color: #cdd6f4;
-      border-radius: .5rem;
-      padding: 1rem 1.1rem;
-      font-size: .82rem;
-      line-height: 1.6;
-      overflow-x: auto;
-      white-space: pre;
+    .kpi-card::before {           /* colored top stripe */
+      content: ''; position: absolute;
+      top: 0; left: 0; right: 0; height: 2px;
+      background: var(--kpi-c, var(--primary));
     }
-
-    /* ── 徽章 ─────────────────────────────────────────── */
-    .badge-verified   { background-color: #198754 !important; }
-    .badge-checked    { background-color: #0d6efd !important; }
-    .badge-unverified { background-color: #6c757d !important; }
-    .badge-llm        { background-color: #7c3aed !important; }
-    .badge-template   { background-color: #0891b2 !important; }
-    .badge-manual     { background-color: #b45309 !important; }
-
-    /* ── 表格 ─────────────────────────────────────────── */
-    .table th {
-      font-size: .8rem;
-      font-weight: 600;
+    .kpi-card::after {            /* ambient color splash */
+      content: ''; position: absolute;
+      top: -20px; right: -20px;
+      width: 90px; height: 90px;
+      border-radius: 50%;
+      background: radial-gradient(
+        circle, var(--kpi-c, var(--primary)) 0%, transparent 70%);
+      opacity: .07; pointer-events: none;
+    }
+    .kpi-rq-badge {
+      display: inline-block;
+      font-size: .6rem; font-weight: 700; letter-spacing: .07em;
       text-transform: uppercase;
-      letter-spacing: .04em;
-      color: #6c757d;
-      border-top: none;
-      white-space: nowrap;
+      color: var(--kpi-c, var(--primary));
+      background: rgba(255,255,255,.04);
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 4px; padding: 1px 7px;
+      margin-bottom: .55rem;
     }
-    .table td { font-size: .875rem; vertical-align: middle; }
-    .table-hover tbody tr:hover { background-color: rgba(13,110,253,.04); cursor: pointer; }
+    .kpi-num {
+      font-size: 2.1rem; font-weight: 800;
+      line-height: 1; letter-spacing: -.04em;
+      color: var(--kpi-c, var(--primary));
+      font-variant-numeric: tabular-nums;
+      min-height: 2.1rem;
+    }
+    .kpi-title {
+      font-size: .8rem; font-weight: 600;
+      color: var(--text); margin-top: .4rem;
+    }
+    .kpi-sub { font-size: .72rem; color: var(--text-dim); margin-top: .15rem; }
+    .kpi-icon {
+      position: absolute; right: 1rem; top: 50%;
+      transform: translateY(-50%);
+      font-size: 2rem; color: var(--kpi-c, var(--primary));
+      opacity: .08; pointer-events: none;
+    }
 
-    /* ── 空状态提示 ────────────────────────────────────── */
+    /* ── Section header ────────────────────────────────────────────── */
+    .sec-hd {
+      font-size: .68rem; font-weight: 700; letter-spacing: .1em;
+      text-transform: uppercase; color: var(--text-dim);
+      display: flex; align-items: center; gap: .5rem;
+      margin-bottom: .8rem;
+    }
+    .sec-hd::after {
+      content: ''; flex: 1; height: 1px; background: var(--border);
+    }
+
+    /* ── Tables ────────────────────────────────────────────────────── */
+    .table {
+      --bs-table-bg: transparent;
+      --bs-table-hover-bg: rgba(61,127,255,.05);
+      color: var(--text); margin-bottom: 0;
+    }
+    .table th {
+      font-size: .7rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .07em;
+      color: var(--text-dim); border-color: var(--border);
+      padding: .6rem 1rem; white-space: nowrap;
+      background: var(--surface-2);
+    }
+    .table td {
+      font-size: .84rem; color: var(--text);
+      border-color: rgba(61,127,255,.07);
+      padding: .6rem 1rem; vertical-align: middle;
+    }
+    .table-hover tbody tr { cursor: pointer; transition: var(--transition); }
+
+    /* ── Code ──────────────────────────────────────────────────────── */
+    .code-block {
+      background: #040608; color: var(--text-code);
+      border: 1px solid rgba(61,127,255,.14);
+      border-radius: var(--radius-sm);
+      padding: .85rem 1rem;
+      font-family: var(--font-mono); font-size: .79rem;
+      line-height: 1.65; overflow-x: auto; white-space: pre;
+      box-shadow: inset 0 1px 6px rgba(0,0,0,.5);
+    }
+    code {
+      font-family: var(--font-mono); font-size: .82em;
+      background: rgba(61,127,255,.09);
+      color: #7ec8f4;
+      padding: .1em .38em; border-radius: 4px;
+      border: 1px solid rgba(61,127,255,.14);
+    }
+
+    /* ── Badges ────────────────────────────────────────────────────── */
+    .badge { font-weight: 500; letter-spacing: .02em; }
+    .badge-verified   { background:rgba(0,200,150,.14);  color:#00e8b0; border:1px solid rgba(0,200,150,.3);  }
+    .badge-checked    { background:rgba(0,212,255,.14);  color:#4dd8f8; border:1px solid rgba(0,212,255,.3);  }
+    .badge-unverified { background:rgba(77,100,128,.12); color:#4d6480; border:1px solid rgba(77,100,128,.2); }
+    .badge-llm        { background:rgba(139,92,246,.18); color:#c4b5fd; border:1px solid rgba(139,92,246,.3); }
+    .badge-template   { background:rgba(0,176,255,.14);  color:#48caff; border:1px solid rgba(0,176,255,.28); }
+    .badge-manual     { background:rgba(255,171,0,.14);  color:#ffd060; border:1px solid rgba(255,171,0,.28); }
+
+    /* ── Empty state ───────────────────────────────────────────────── */
     .empty-state {
-      text-align: center;
-      padding: 3rem 1rem;
-      color: #adb5bd;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 2.5rem 1.5rem; color: var(--text-dim); text-align: center;
     }
-    .empty-state .bi { font-size: 2.5rem; display: block; margin-bottom: .75rem; }
+    .empty-state .bi { font-size: 2.4rem; display: block; margin-bottom: .6rem; opacity: .35; }
+    .empty-state > div { font-size: .83rem; }
 
-    /* ── 其他 ─────────────────────────────────────────── */
-    code { font-size: .82em; background: #eef1f8; padding: .1em .35em; border-radius: .25rem; }
+    /* ── Progress ──────────────────────────────────────────────────── */
+    .progress { background: var(--surface-3); border-radius: 99px; }
+    .progress-bar { border-radius: 99px; }
+
+    /* ── Form controls ─────────────────────────────────────────────── */
+    .form-select, .form-control {
+      background: var(--surface-2); border-color: var(--border);
+      color: var(--text); font-size: .81rem;
+    }
+    .form-select:focus, .form-control:focus {
+      background: var(--surface-2); border-color: var(--primary);
+      color: var(--text-bright);
+      box-shadow: 0 0 0 3px rgba(61,127,255,.12);
+    }
+    .form-check-input { background-color: var(--surface-3); border-color: var(--border-bright); }
+    .form-check-input:checked { background-color: var(--primary); border-color: var(--primary); }
+    .form-check-label { font-size: .81rem; color: var(--text-dim); }
+
+    /* ── Buttons ───────────────────────────────────────────────────── */
+    .btn-outline-secondary {
+      border-color: var(--border-bright); color: var(--text-dim);
+    }
+    .btn-outline-secondary:hover {
+      background: var(--surface-2); border-color: var(--border-bright); color: var(--text);
+    }
+    .btn-outline-primary {
+      border-color: rgba(61,127,255,.38); color: var(--primary);
+    }
+    .btn-outline-primary:hover {
+      background: var(--primary-dim); border-color: var(--primary); color: var(--primary);
+    }
+    .btn-outline-light { border-color: var(--border); color: var(--text-dim); }
+    .btn-outline-light:hover { background: var(--surface-2); color: var(--text); }
+    .btn-outline-warning { border-color: rgba(255,171,0,.35); color: var(--warning); }
+    .btn-outline-warning:hover { background: var(--warning-dim); border-color: var(--warning); color: var(--warning); }
+
+    /* ── Modals ────────────────────────────────────────────────────── */
+    .modal-content {
+      background: var(--surface) !important;
+      border: 1px solid var(--border-bright);
+      border-radius: var(--radius-lg);
+      box-shadow: 0 24px 64px rgba(0,0,0,.65);
+    }
+    .modal-header { border-bottom: 1px solid var(--border); padding: 1rem 1.25rem; }
+    .modal-footer { border-top: 1px solid var(--border); }
+    .modal-backdrop.show { opacity: .72; background: #000; }
+    .btn-close { filter: invert(1) brightness(.5); }
+
+    /* ── List group ────────────────────────────────────────────────── */
+    .list-group-item {
+      background: transparent; border-color: var(--border);
+      color: var(--text);
+    }
+    .list-group-item-action:hover {
+      background: var(--primary-dim); color: var(--text-bright);
+    }
+
+    /* ── Alert ─────────────────────────────────────────────────────── */
+    .alert-light {
+      background: var(--surface-2);
+      border-color: var(--border);
+      color: var(--text);
+    }
+
+    /* ── Footer ────────────────────────────────────────────────────── */
+    footer {
+      background: var(--surface) !important;
+      border-top: 1px solid var(--border) !important;
+      padding: .7rem 0;
+    }
+    .footer-txt { font-size: .74rem; color: var(--text-dim); }
+
+    /* ── Animations ────────────────────────────────────────────────── */
+    @keyframes fadeSlideUp {
+      from { opacity:0; transform:translateY(10px); }
+      to   { opacity:1; transform:translateY(0); }
+    }
+    @keyframes fadeIn {
+      from { opacity:0; } to { opacity:1; }
+    }
+    .anim-up { animation: fadeSlideUp .38s cubic-bezier(.4,0,.2,1) both; }
+    .d1 { animation-delay:.04s; }
+    .d2 { animation-delay:.08s; }
+    .d3 { animation-delay:.12s; }
+    .d4 { animation-delay:.16s; }
+    .d5 { animation-delay:.20s; }
+
+    /* ── Responsive ────────────────────────────────────────────────── */
+    @media (max-width: 768px) {
+      .kpi-num { font-size: 1.6rem; }
+      .page-hd h4 { font-size: 1.1rem; }
+      .page-wrap { padding: 1rem; }
+    }
   </style>
-
   {% block extra_head %}{% endblock %}
 </head>
 
 <body>
 
-<!-- ═══════════════════ 顶部导航栏 ═════════════════════════════════════════ -->
-<nav class="navbar navbar-expand-lg navbar-dark fixed-top"
-     style="background: linear-gradient(135deg, #0f2044 0%, #1a3a6b 100%);
-            box-shadow: 0 2px 8px rgba(0,0,0,.25);">
+<!-- ════════════════════════ Navbar ══════════════════════════════════════ -->
+<nav class="navbar navbar-expand-lg fixed-top">
   <div class="container-fluid px-4">
 
-    <!-- 品牌 Logo -->
-    <a class="navbar-brand d-flex align-items-center gap-2 py-1" href="/">
-      <span style="background:linear-gradient(135deg,#4e9af1,#2563eb);
-                   border-radius:.4rem; padding:.3rem .45rem; line-height:1;">
-        <i class="bi bi-layers-fill text-white" style="font-size:1.1rem;"></i>
-      </span>
-      <span class="brand-text">DeepMT</span>
-      <span class="badge text-bg-secondary fw-normal ms-1"
-            style="font-size:.62rem; opacity:.85;">v{{ version }}</span>
+    <a class="navbar-brand d-flex align-items-center gap-2 py-1 text-decoration-none" href="/">
+      <div class="brand-icon">
+        <i class="bi bi-layers-fill text-white" style="font-size:.9rem;"></i>
+      </div>
+      <span class="brand-name">DeepMT</span>
+      <span class="brand-ver">v{{ version }}</span>
     </a>
 
-    <!-- 折叠按钮（小屏） -->
-    <button class="navbar-toggler border-0" type="button"
-            data-bs-toggle="collapse" data-bs-target="#navbarMain"
-            aria-controls="navbarMain" aria-expanded="false">
-      <span class="navbar-toggler-icon"></span>
+    <button class="navbar-toggler border-0 p-1" type="button"
+            data-bs-toggle="collapse" data-bs-target="#navMain"
+            style="color:var(--text-dim);">
+      <i class="bi bi-list" style="font-size:1.25rem;"></i>
     </button>
 
-    <!-- 导航链接 -->
-    <div class="collapse navbar-collapse" id="navbarMain">
-      <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-3 gap-1">
+    <div class="collapse navbar-collapse" id="navMain">
+      <ul class="navbar-nav ms-4 me-auto gap-1">
         <li class="nav-item">
-          <a class="nav-link d-flex align-items-center gap-1
-                    {% if active_page == 'overview' %}active{% endif %}"
-             href="/">
-            <i class="bi bi-grid-1x2-fill"></i>
-            <span>总览</span>
+          <a class="nav-link {% if active_page=='overview' %}active{% endif %}" href="/">
+            <i class="bi bi-grid-1x2-fill"></i><span>总览</span>
           </a>
         </li>
         <li class="nav-item">
-          <a class="nav-link d-flex align-items-center gap-1
-                    {% if active_page == 'mr_repo' %}active{% endif %}"
-             href="/mr">
-            <i class="bi bi-database-fill"></i>
-            <span>MR 知识库</span>
+          <a class="nav-link {% if active_page=='mr_repo' %}active{% endif %}" href="/mr">
+            <i class="bi bi-database-fill"></i><span>MR 知识库</span>
           </a>
         </li>
         <li class="nav-item">
-          <a class="nav-link d-flex align-items-center gap-1
-                    {% if active_page == 'test_results' %}active{% endif %}"
-             href="/tests">
-            <i class="bi bi-clipboard2-check-fill"></i>
-            <span>测试结果</span>
+          <a class="nav-link {% if active_page=='test_results' %}active{% endif %}" href="/tests">
+            <i class="bi bi-clipboard2-check-fill"></i><span>测试结果</span>
           </a>
         </li>
         <li class="nav-item">
-          <a class="nav-link d-flex align-items-center gap-1
-                    {% if active_page == 'cross_framework' %}active{% endif %}"
-             href="/cross">
-            <i class="bi bi-arrow-left-right"></i>
-            <span>跨框架</span>
+          <a class="nav-link {% if active_page=='cross_framework' %}active{% endif %}" href="/cross">
+            <i class="bi bi-arrow-left-right"></i><span>跨框架</span>
           </a>
         </li>
       </ul>
 
-      <!-- 右侧工具栏 -->
       <div class="d-flex align-items-center gap-3">
-        <span class="d-none d-lg-flex align-items-center gap-1 text-white-50"
-              style="font-size:.78rem;">
-          <span class="badge rounded-pill bg-success" style="width:8px;height:8px;padding:0;"></span>
+        <div class="d-none d-lg-flex align-items-center gap-2"
+             style="font-size:.73rem; color:var(--text-dim);">
+          <div class="status-pip"></div>
           已连接
-        </span>
+        </div>
         <a href="/api/docs" target="_blank"
-           class="btn btn-sm btn-outline-light py-0 px-2"
-           style="font-size:.8rem; opacity:.7;">
+           class="btn btn-sm btn-outline-light py-1 px-2"
+           style="font-size:.72rem;">
           <i class="bi bi-code-slash me-1"></i>API
         </a>
       </div>
@@ -188,31 +455,56 @@
   </div>
 </nav>
 
-<!-- ═══════════════════ 主内容区 ══════════════════════════════════════════ -->
+<!-- ════════════════════════ Content ═════════════════════════════════════ -->
 <main class="page-content">
   {% block content %}{% endblock %}
 </main>
 
-<!-- ═══════════════════ 页脚 ═══════════════════════════════════════════════ -->
-<footer class="bg-white border-top py-3 mt-4">
+<!-- ════════════════════════ Footer ══════════════════════════════════════ -->
+<footer>
   <div class="container-fluid px-4">
-    <div class="row align-items-center">
-      <div class="col text-muted" style="font-size:.8rem;">
-        <i class="bi bi-layers-fill me-1" style="color:#2563eb;"></i>
-        <strong>DeepMT</strong> v{{ version }} &nbsp;·&nbsp;
-        面向深度学习框架的蜕变关系自动生成与分层测试体系
-      </div>
-      <div class="col-auto text-muted" style="font-size:.78rem;">
+    <div class="d-flex justify-content-between align-items-center">
+      <span class="footer-txt">
+        <i class="bi bi-layers-fill me-1" style="color:var(--primary);"></i>
+        <strong style="color:var(--text);">DeepMT</strong> v{{ version }}
+        &ensp;·&ensp;面向深度学习框架的蜕变关系自动生成与分层测试体系
+      </span>
+      <span class="footer-txt d-none d-md-block">
         数据目录：<code>data/</code>
-        &nbsp;·&nbsp;
-        <a href="/api/docs" target="_blank" class="text-decoration-none text-muted">API 文档</a>
-      </div>
+        &ensp;·&ensp;
+        <a href="/api/docs" target="_blank" style="color:var(--text-dim);text-decoration:none;">
+          API 文档
+        </a>
+      </span>
     </div>
   </div>
 </footer>
 
-<!-- ═══════════════════ 脚本 ═══════════════════════════════════════════════ -->
+<!-- Scripts -->
 <script src="/static/bootstrap.bundle.min.js"></script>
+
+<!-- Global utility: animated counter for KPI values -->
+<script>
+function countUp(el, rawVal, suffix) {
+  if (rawVal === null || rawVal === undefined) { el.textContent = '—'; return; }
+  const s = String(rawVal);
+  if (s === '—' || isNaN(parseFloat(s))) { el.textContent = s + (suffix||''); return; }
+  const end = parseFloat(s);
+  const isFloat = s.includes('.');
+  const dec = isFloat ? (s.split('.')[1]||'').length : 0;
+  const dur = 550;
+  const t0 = performance.now();
+  function tick(now) {
+    const p = Math.min((now - t0) / dur, 1);
+    const e = 1 - Math.pow(1 - p, 2.8);
+    const v = e * end;
+    el.textContent = (isFloat ? v.toFixed(dec) : Math.round(v)) + (suffix||'');
+    if (p < 1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+</script>
+
 {% block extra_scripts %}{% endblock %}
 
 </body>
