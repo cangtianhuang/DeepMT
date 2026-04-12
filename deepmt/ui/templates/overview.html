@@ -4,22 +4,35 @@
 {% block content %}
 <div class="page-wrap">
 
-  <!-- ── Header ──────────────────────────────────────────────────────── -->
-  <div class="d-flex justify-content-between align-items-start page-hd">
-    <div>
-      <h4>系统总览</h4>
-      <p>MR 自动生成 &nbsp;·&nbsp; 缺陷检测 &nbsp;·&nbsp; 跨框架一致性 &nbsp;·&nbsp; 覆盖度</p>
+  <!-- ── Hero Section ────────────────────────────────────────────────── -->
+  <div class="anim-up" style="padding: 0.5rem 0 1.5rem;">
+    <!-- Title row: heading left, status badge right -->
+    <div class="d-flex justify-content-between align-items-start gap-3 mb-2">
+      <h1 style="font-size:2.0rem; font-weight:800; letter-spacing:-.04em;
+                 color:var(--text-bright); line-height:1.2; margin:0;">
+        深度学习框架
+        <span class="grad-text">蜕变关系</span>
+        自动测试体系
+      </h1>
+      <!-- Status indicator (right side) -->
+      <div class="d-none d-md-flex align-items-center gap-2 flex-shrink-0 mt-1"
+           style="font-size:.7rem; color:var(--text-dim); white-space:nowrap;
+                  background:var(--surface-2); border:1px solid var(--border);
+                  border-radius:99px; padding:.3rem .85rem;">
+        <span class="status-pip"></span>实验仪表盘在线
+      </div>
     </div>
-    <button class="btn btn-sm btn-outline-secondary" onclick="location.reload()">
-      <i class="bi bi-arrow-clockwise me-1"></i>刷新
-    </button>
+    <p style="font-size:.83rem; color:var(--text-dim); margin:0;">
+      MR 自动生成 &ensp;·&ensp; 缺陷检测 &ensp;·&ensp; 跨框架验证 &ensp;·&ensp; 覆盖分析
+    </p>
   </div>
 
   <!-- ── KPI Cards ───────────────────────────────────────────────────── -->
   <div class="row g-3 mb-4">
 
     <div class="col-6 col-xl-3 anim-up d1">
-      <div class="card kpi-card" style="--kpi-c: var(--c-rq1);">
+      <div class="card kpi-card"
+           style="--kpi-c:var(--c-rq1); --kpi-glow:var(--c-rq1-glow);">
         <div class="kpi-num" id="kpi-rq1-value">—</div>
         <div class="kpi-title">MR 自动生成</div>
         <div class="kpi-sub" id="kpi-rq1-sub">已生成 · 验证率</div>
@@ -28,7 +41,8 @@
     </div>
 
     <div class="col-6 col-xl-3 anim-up d2">
-      <div class="card kpi-card" style="--kpi-c: var(--c-rq2);">
+      <div class="card kpi-card"
+           style="--kpi-c:var(--c-rq2); --kpi-glow:var(--c-rq2-glow);">
         <div class="kpi-num" id="kpi-rq2-value">—</div>
         <div class="kpi-title">缺陷检测</div>
         <div class="kpi-sub" id="kpi-rq2-sub">通过率 · 证据包</div>
@@ -37,7 +51,8 @@
     </div>
 
     <div class="col-6 col-xl-3 anim-up d3">
-      <div class="card kpi-card" style="--kpi-c: var(--c-rq3);">
+      <div class="card kpi-card"
+           style="--kpi-c:var(--c-rq3); --kpi-glow:var(--c-rq3-glow);">
         <div class="kpi-num" id="kpi-rq3-value">—</div>
         <div class="kpi-title">跨框架一致性</div>
         <div class="kpi-sub" id="kpi-rq3-sub">一致率</div>
@@ -46,7 +61,8 @@
     </div>
 
     <div class="col-6 col-xl-3 anim-up d4">
-      <div class="card kpi-card" style="--kpi-c: var(--c-rq4);">
+      <div class="card kpi-card"
+           style="--kpi-c:var(--c-rq4); --kpi-glow:var(--c-rq4-glow);">
         <div class="kpi-num" id="kpi-rq4-value">—</div>
         <div class="kpi-title">覆盖算子数</div>
         <div class="kpi-sub" id="kpi-rq4-sub">算子 · MR 密度</div>
@@ -57,28 +73,29 @@
 
   <!-- ── Charts ──────────────────────────────────────────────────────── -->
   <div class="row g-3 mb-4">
+
+    <!-- MR 分类分布（donut）-->
     <div class="col-lg-5 anim-up d2">
-      <div class="card h-100">
+      <div class="card">
         <div class="card-header d-flex align-items-center gap-2">
           <i class="bi bi-pie-chart-fill" style="color:var(--c-rq1);"></i>
           <span class="fw-semibold">MR 分类分布</span>
         </div>
-        <div class="card-body d-flex align-items-center justify-content-center"
-             style="min-height:230px;">
-          <canvas id="chart-category" style="max-height:210px;"></canvas>
+        <div class="card-body" style="padding:1rem;">
+          <canvas id="chart-category"></canvas>
         </div>
       </div>
     </div>
 
+    <!-- 算子测试概况（stacked bar）-->
     <div class="col-lg-7 anim-up d3">
-      <div class="card h-100">
+      <div class="card">
         <div class="card-header d-flex align-items-center gap-2">
           <i class="bi bi-bar-chart-fill" style="color:var(--c-rq2);"></i>
           <span class="fw-semibold">算子测试概况</span>
         </div>
-        <div class="card-body d-flex align-items-center justify-content-center"
-             style="min-height:230px;">
-          <canvas id="chart-operators" style="max-height:210px;"></canvas>
+        <div class="card-body" style="padding:1rem;">
+          <canvas id="chart-operators"></canvas>
         </div>
       </div>
     </div>
@@ -89,13 +106,17 @@
     <div class="card-header d-flex align-items-center gap-2">
       <i class="bi bi-clock-history" style="color:var(--primary);"></i>
       <span class="fw-semibold">最近测试摘要</span>
+      <button class="btn btn-sm btn-outline-secondary ms-auto py-0 px-2"
+              style="font-size:.72rem;" onclick="location.reload()">
+        <i class="bi bi-arrow-clockwise me-1"></i>刷新
+      </button>
     </div>
     <div class="card-body p-0">
       <div class="table-responsive">
         <table class="table table-hover mb-0">
           <thead>
             <tr>
-              <th class="ps-3">算子</th>
+              <th class="ps-4">算子</th>
               <th>框架</th>
               <th>测试数</th>
               <th>通过</th>
@@ -106,9 +127,10 @@
           </thead>
           <tbody id="summary-tbody">
             <tr><td colspan="7">
-              <div class="empty-state">
-                <i class="bi bi-hourglass-split"></i>
-                <div>加载中…</div>
+              <div class="py-3 px-4">
+                <div class="skeleton mb-2"></div>
+                <div class="skeleton mb-2" style="width:75%;"></div>
+                <div class="skeleton" style="width:55%;"></div>
               </div>
             </td></tr>
           </tbody>
@@ -121,15 +143,8 @@
 {% endblock %}
 
 {% block extra_scripts %}
-<script src="/static/chart.umd.min.js"></script>
 <script>
-// ── Chart.js dark theme defaults ──────────────────────────────────────
-Chart.defaults.color          = '#4d6480';
-Chart.defaults.borderColor    = 'rgba(61,127,255,.12)';
-Chart.defaults.font.family    = 'var(--font-ui, system-ui)';
-Chart.defaults.font.size      = 12;
-
-// ── Load KPI data ─────────────────────────────────────────────────────
+// ── Load KPI data ──────────────────────────────────────────────────────
 async function loadSummary() {
   try {
     const resp = await fetch('/api/summary');
@@ -142,39 +157,35 @@ async function loadSummary() {
       document.getElementById('kpi-rq1-sub').textContent =
         `验证率 ${rq1.verification_rate != null
           ? (rq1.verification_rate * 100).toFixed(1) + '%' : '—'
-        }  ·  ${rq1.operators_with_mr ?? 0} 个算子`;
+        } · ${rq1.operators_with_mr ?? 0} 个算子`;
     }
-
     if (rq2 && !rq2.error) {
       const rate = rq2.overall_pass_rate != null
         ? (rq2.overall_pass_rate * 100).toFixed(1) : null;
-      countUp(document.getElementById('kpi-rq2-value'),
-              rate, '%');
+      countUp(document.getElementById('kpi-rq2-value'), rate, '%');
       document.getElementById('kpi-rq2-sub').textContent =
-        `${rq2.total_test_cases ?? 0} 条用例  ·  ${rq2.evidence_pack_count ?? 0} 个证据包`;
+        `${rq2.total_test_cases ?? 0} 条用例 · ${rq2.evidence_pack_count ?? 0} 个证据包`;
     }
-
     if (rq3 && !rq3.error) {
       const cr = rq3.overall_consistency_rate != null
         ? (rq3.overall_consistency_rate * 100).toFixed(1) : null;
       countUp(document.getElementById('kpi-rq3-value'), cr, '%');
       document.getElementById('kpi-rq3-sub').textContent =
-        `${rq3.operators_compared ?? 0} 个算子  ·  ${rq3.cross_session_count ?? 0} 次实验`;
+        `${rq3.operators_compared ?? 0} 个算子 · ${rq3.cross_session_count ?? 0} 次实验`;
     }
-
     if (rq4 && !rq4.error) {
       countUp(document.getElementById('kpi-rq4-value'), rq4.operators_covered);
       document.getElementById('kpi-rq4-sub').textContent =
-        `平均 ${rq4.avg_mrs_per_operator ?? 0} MR/算子  ·  密度 ${rq4.test_density ?? 0}`;
+        `平均 ${rq4.avg_mrs_per_operator ?? 0} MR/算子 · 密度 ${rq4.test_density ?? 0}`;
     }
 
-    if (rq1 && rq1.category_distribution) {
+    if (rq1?.category_distribution) {
       renderCategoryChart(rq1.category_distribution);
     }
   } catch (e) { console.warn('KPI 加载失败:', e); }
 }
 
-// ── Load operator test table ──────────────────────────────────────────
+// ── Load operator test table ───────────────────────────────────────────
 async function loadTestResults() {
   try {
     const resp = await fetch('/api/test-results');
@@ -191,32 +202,39 @@ async function loadTestResults() {
       return;
     }
 
-    tbody.innerHTML = rows.map(r => {
-      const pct  = r.total_tests > 0
-        ? (r.passed_tests / r.total_tests * 100) : 0;
+    tbody.innerHTML = rows.map((r, i) => {
+      const pct  = r.total_tests > 0 ? (r.passed_tests / r.total_tests * 100) : 0;
       const pctS = pct.toFixed(1);
       const col  = pct >= 90 ? 'var(--success)' : pct >= 70 ? 'var(--warning)' : 'var(--danger)';
-      return `<tr onclick="location.href='/tests'" style="cursor:pointer;">
-        <td class="ps-3">
-          <code style="font-size:.8rem;">${r.ir_name}</code>
+      const glow = pct >= 90 ? 'var(--success-glow)' : pct >= 70 ? 'var(--warning-glow)' : 'var(--danger-glow)';
+      return `<tr onclick="location.href='/tests'" style="cursor:pointer;
+                  animation:revealUp .35s both; animation-delay:${i * 0.04}s;">
+        <td class="ps-4">
+          <code style="font-size:.8rem; font-weight:600;">${r.ir_name}</code>
         </td>
         <td>
-          <span class="badge" style="background:var(--primary-dim);color:var(--primary);
-            border:1px solid rgba(61,127,255,.22);font-size:.68rem;">${r.framework||'pytorch'}</span>
+          <span class="badge badge-template" style="font-size:.68rem;">
+            ${r.framework || 'pytorch'}
+          </span>
         </td>
-        <td>${r.total_tests}</td>
-        <td style="color:var(--success);">${r.passed_tests}</td>
-        <td style="color:${r.failed_tests>0?'var(--danger)':'var(--text-dim)'};">${r.failed_tests}</td>
+        <td style="font-variant-numeric:tabular-nums;">${r.total_tests}</td>
+        <td style="color:var(--success); font-weight:600;">${r.passed_tests}</td>
+        <td style="color:${r.failed_tests > 0 ? 'var(--danger)' : 'var(--text-dim)'};">
+          ${r.failed_tests}
+        </td>
         <td>
           <div class="d-flex align-items-center gap-2">
-            <div class="progress flex-grow-1" style="height:5px;min-width:56px;">
-              <div class="progress-bar" style="width:${pctS}%;background:${col};"></div>
+            <div class="progress flex-grow-1" style="height:5px; min-width:56px;">
+              <div class="progress-bar"
+                   style="width:${pctS}%;
+                          background:linear-gradient(90deg,${col},${glow});
+                          box-shadow:0 0 6px ${glow};"></div>
             </div>
-            <span style="font-size:.75rem;color:${col};min-width:3rem;
-                         font-weight:700;font-variant-numeric:tabular-nums;">${pctS}%</span>
+            <span style="font-size:.75rem; color:${col}; min-width:3rem;
+                         font-weight:700; font-variant-numeric:tabular-nums;">${pctS}%</span>
           </div>
         </td>
-        <td style="font-size:.75rem;color:var(--text-dim);">${r.last_updated || '—'}</td>
+        <td style="font-size:.75rem; color:var(--text-dim);">${r.last_updated || '—'}</td>
       </tr>`;
     }).join('');
 
@@ -224,15 +242,38 @@ async function loadTestResults() {
   } catch (e) { console.warn('测试摘要加载失败:', e); }
 }
 
-// ── Chart: MR category donut ──────────────────────────────────────────
+// ── Chart: MR category donut (with canvas center-text plugin) ──────────
 function renderCategoryChart(dist) {
   const labels = Object.keys(dist);
   const values = Object.values(dist);
   if (!labels.length) return;
 
   const palette = [
-    '#3d7fff','#00c896','#ff4545','#ffab00','#a78bfa','#00d4ff','#f97316'
+    '#4d8bff','#00e5b0','#ff5252','#ffcc00','#a855f7','#00e5ff','#f97316','#ec4899'
   ];
+  const total = values.reduce((a, b) => a + b, 0);
+
+  // Center-text drawn directly on the canvas via a Chart.js plugin
+  const centerTextPlugin = {
+    id: 'centerText',
+    beforeDraw(chart) {
+      const { ctx, chartArea } = chart;
+      if (!chartArea) return;
+      const cx = (chartArea.left + chartArea.right)  / 2;
+      const cy = (chartArea.top  + chartArea.bottom) / 2;
+      ctx.save();
+      ctx.textAlign    = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.font         = 'bold 26px var(--font-ui, system-ui)';
+      ctx.fillStyle    = '#f0f6ff';
+      ctx.fillText(total, cx, cy - 9);
+      ctx.font      = '11px var(--font-ui, system-ui)';
+      ctx.fillStyle = '#3d5570';
+      ctx.fillText('MR 总数', cx, cy + 12);
+      ctx.restore();
+    }
+  };
+
   new Chart(document.getElementById('chart-category'), {
     type: 'doughnut',
     data: {
@@ -241,39 +282,35 @@ function renderCategoryChart(dist) {
         data: values,
         backgroundColor: palette.slice(0, labels.length),
         borderWidth: 2,
-        borderColor: '#0c1220',
-        hoverBorderColor: '#0c1220',
-        hoverOffset: 4,
+        borderColor: '#080d18',
+        hoverBorderColor: '#080d18',
+        hoverOffset: 6,
       }]
     },
     options: {
+      responsive: true,
+      aspectRatio: 1.9,
       plugins: {
         legend: {
           position: 'right',
           labels: {
-            color: '#4d6480', font: { size: 11 }, padding: 12,
+            color: '#3d5570', font: { size: 11 }, padding: 14,
             boxWidth: 10, boxHeight: 10,
           }
         },
-        tooltip: {
-          backgroundColor: '#111a2e',
-          borderColor: 'rgba(61,127,255,.25)',
-          borderWidth: 1,
-          titleColor: '#bfd0e8',
-          bodyColor: '#4d6480',
-          padding: 10,
-        }
+        tooltip: { ...TOOLTIP_CFG },
       },
-      cutout: '62%',
-    }
+      cutout: '65%',
+    },
+    plugins: [centerTextPlugin],
   });
 }
 
-// ── Chart: operator stacked bar ───────────────────────────────────────
+// ── Chart: operator stacked bar ────────────────────────────────────────
 function renderOperatorChart(rows) {
-  const labels  = rows.map(r => r.ir_name.replace(/torch\.nn\.functional\./, ''));
-  const passed  = rows.map(r => r.passed_tests);
-  const failed  = rows.map(r => r.failed_tests);
+  const labels = rows.map(r => r.ir_name.replace(/torch\.nn\.functional\./, ''));
+  const passed = rows.map(r => r.passed_tests);
+  const failed = rows.map(r => r.failed_tests);
   if (!labels.length) return;
 
   new Chart(document.getElementById('chart-operators'), {
@@ -282,37 +319,42 @@ function renderOperatorChart(rows) {
       labels,
       datasets: [
         {
-          label: '通过', data: passed,
-          backgroundColor: 'rgba(0,200,150,.7)',
-          borderRadius: 3, stack: 's',
+          label: '通过',
+          data: passed,
+          backgroundColor: 'rgba(0,229,176,.72)',   // 固定色，避免 scriptable 首帧失效
+          borderRadius: 3,
+          stack: 's',
         },
         {
-          label: '失败', data: failed,
-          backgroundColor: 'rgba(255,69,69,.7)',
-          borderRadius: 3, stack: 's',
+          label: '失败',
+          data: failed,
+          backgroundColor: 'rgba(255,82,82,.72)',
+          borderRadius: 3,
+          stack: 's',
         },
       ]
     },
     options: {
+      responsive: true,
+      aspectRatio: 2.8,
       indexAxis: 'y',
       plugins: {
-        legend: { position: 'top', labels: { color:'#4d6480', font:{size:11} } },
-        tooltip: {
-          backgroundColor:'#111a2e',
-          borderColor:'rgba(61,127,255,.25)', borderWidth:1,
-          titleColor:'#bfd0e8', bodyColor:'#4d6480', padding:10,
-        }
+        legend: {
+          position: 'top',
+          labels: { color: '#3d5570', font: { size: 11 }, boxWidth: 10, boxHeight: 10 }
+        },
+        tooltip: { ...TOOLTIP_CFG },
       },
       scales: {
         x: {
           stacked: true,
-          grid: { color:'rgba(61,127,255,.08)' },
-          ticks: { color:'#4d6480' }
+          grid: { color: 'rgba(77,139,255,.07)' },
+          ticks: { color: '#3d5570' },
         },
         y: {
           stacked: true,
           grid: { display: false },
-          ticks: { color:'#bfd0e8', font:{size:11} }
+          ticks: { color: '#c8daf0', font: { size: 11 } },
         }
       },
     }

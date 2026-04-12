@@ -1,6 +1,16 @@
 {% extends "base.html" %}
 {% block title %}跨框架一致性 — DeepMT Dashboard{% endblock %}
 
+{% block extra_head %}
+<style>
+  :root {
+    --page-accent:     #00e5b0;
+    --page-accent-dim: rgba(0,229,176,.12);
+    --page-accent-glow:rgba(0,229,176,.38);
+  }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="page-wrap">
 
@@ -18,19 +28,22 @@
   <!-- ── Stats ───────────────────────────────────────────────────────── -->
   <div class="row g-3 mb-4">
     <div class="col-6 col-md-4 anim-up d1">
-      <div class="card kpi-card text-center" style="--kpi-c: var(--c-rq3);">
+      <div class="card kpi-card text-center"
+           style="--kpi-c:var(--c-rq3); --kpi-glow:var(--c-rq3-glow);">
         <div class="kpi-num" id="stat-consistency">—</div>
         <div class="kpi-sub mt-2">整体一致率</div>
       </div>
     </div>
     <div class="col-6 col-md-4 anim-up d2">
-      <div class="card kpi-card text-center" style="--kpi-c: var(--c-rq1);">
+      <div class="card kpi-card text-center"
+           style="--kpi-c:var(--c-rq1); --kpi-glow:var(--c-rq1-glow);">
         <div class="kpi-num" id="stat-operators">—</div>
         <div class="kpi-sub mt-2">对比算子数</div>
       </div>
     </div>
     <div class="col-6 col-md-4 anim-up d3">
-      <div class="card kpi-card text-center" style="--kpi-c: var(--info);">
+      <div class="card kpi-card text-center"
+           style="--kpi-c:var(--info); --kpi-glow:var(--info-glow);">
         <div class="kpi-num" id="stat-sessions">—</div>
         <div class="kpi-sub mt-2">实验次数</div>
       </div>
@@ -38,30 +51,44 @@
   </div>
 
   <!-- ── Consistency Chart ───────────────────────────────────────────── -->
-  <div class="card mb-4 anim-up d2">
+  <div class="card mb-4 anim-up d2" id="chart-card">
     <div class="card-header d-flex align-items-center gap-2">
-      <i class="bi bi-bar-chart-fill" style="color:var(--c-rq3);"></i>
+      <i class="bi bi-bar-chart-fill" style="color:var(--c-rq3);
+         text-shadow:0 0 12px var(--c-rq3-glow);"></i>
       <span class="fw-semibold">各算子跨框架一致率</span>
+      <div class="d-flex gap-3 ms-auto" style="font-size:.7rem; color:var(--text-dim);">
+        <span>
+          <span style="display:inline-block;width:10px;height:10px;border-radius:2px;
+                 background:var(--c-rq3);margin-right:4px;"></span>≥ 95%
+        </span>
+        <span>
+          <span style="display:inline-block;width:10px;height:10px;border-radius:2px;
+                 background:var(--warning);margin-right:4px;"></span>≥ 85%
+        </span>
+        <span>
+          <span style="display:inline-block;width:10px;height:10px;border-radius:2px;
+                 background:var(--danger);margin-right:4px;"></span>&lt; 85%
+        </span>
+      </div>
     </div>
-    <div class="card-body" id="chart-container" style="min-height:180px;">
-      <canvas id="chart-consistency" style="max-height:260px;"></canvas>
+    <div class="card-body" id="chart-container" style="padding:1rem;">
+      <canvas id="chart-consistency"></canvas>
     </div>
   </div>
 
   <!-- ── Session Table ───────────────────────────────────────────────── -->
-  <div class="card anim-up d3">
+  <div class="card anim-up d3" id="table-card">
     <div class="card-header d-flex align-items-center gap-2">
       <i class="bi bi-table" style="color:var(--c-rq3);"></i>
       <span class="fw-semibold">实验会话列表</span>
-      <span id="session-count" class="ms-auto"
-            style="font-size:.68rem; color:var(--text-dim);"></span>
+      <span id="session-count" class="ms-auto badge badge-unverified"></span>
     </div>
     <div class="card-body p-0">
       <div class="table-responsive">
         <table class="table table-hover mb-0">
           <thead>
             <tr>
-              <th class="ps-3">算子</th>
+              <th class="ps-4">算子</th>
               <th>框架对</th>
               <th>一致率</th>
               <th>最大输出差值</th>
@@ -71,9 +98,10 @@
           </thead>
           <tbody id="session-tbody">
             <tr><td colspan="6">
-              <div class="empty-state">
-                <i class="bi bi-hourglass-split"></i>
-                <div>加载中…</div>
+              <div class="py-3 px-4">
+                <div class="skeleton mb-2"></div>
+                <div class="skeleton mb-2" style="width:75%;"></div>
+                <div class="skeleton" style="width:55%;"></div>
               </div>
             </td></tr>
           </tbody>
@@ -82,24 +110,35 @@
     </div>
   </div>
 
-  <!-- ── Empty state (shown when no data) ──────────────────────────── -->
-  <div id="no-data" style="display:none;" class="anim-up">
-    <div class="card mt-3">
-      <div class="card-body">
-        <div class="empty-state" style="padding:3.5rem 1.5rem;">
-          <i class="bi bi-arrow-left-right" style="font-size:2.8rem; margin-bottom:.75rem;
-             display:block; opacity:.3; color:var(--c-rq3);"></i>
-          <div style="font-size:.95rem; font-weight:600;
-                      color:var(--text); margin-bottom:.4rem;">
-            暂无跨框架实验记录
-          </div>
-          <div style="font-size:.82rem; color:var(--text-dim); max-width:480px;">
-            运行以下命令生成数据：
-          </div>
-          <code style="display:inline-block; margin-top:.75rem; font-size:.8rem;
-                       background:var(--surface-2); border:1px solid var(--border);
-                       border-radius:var(--radius-sm); padding:.4rem .9rem;
-                       color:var(--text-code);">
+  <!-- ── Enhanced empty state ───────────────────────────────────────── -->
+  <div id="no-data" style="display:none;" class="anim-up mt-4">
+    <div class="card" style="border:1px solid rgba(0,229,176,.18) !important;
+         box-shadow:0 0 40px rgba(0,229,176,.06) !important;">
+      <div class="card-body" style="padding:3.5rem 2rem; text-align:center;">
+
+        <!-- SVG illustration -->
+        <svg width="72" height="72" viewBox="0 0 72 72" fill="none"
+             xmlns="http://www.w3.org/2000/svg" style="margin-bottom:1.2rem; opacity:.4;">
+          <circle cx="20" cy="36" r="12" stroke="var(--c-rq3)" stroke-width="2"/>
+          <circle cx="52" cy="36" r="12" stroke="var(--c-rq1)" stroke-width="2"/>
+          <path d="M32 36 L40 36" stroke="var(--text-dim)" stroke-width="2"
+                stroke-dasharray="3,3"/>
+          <path d="M28 29 L44 29" stroke="var(--c-rq3)" stroke-width="1.5" opacity=".4"/>
+          <path d="M28 43 L44 43" stroke="var(--c-rq1)" stroke-width="1.5" opacity=".4"/>
+        </svg>
+
+        <div style="font-size:1.05rem; font-weight:700; color:var(--text-bright);
+                    margin-bottom:.5rem;">
+          暂无跨框架实验记录
+        </div>
+        <div style="font-size:.84rem; color:var(--text-dim); margin-bottom:1.2rem;">
+          运行以下命令生成跨框架一致性数据
+        </div>
+        <div class="code-block-wrap d-inline-block">
+          <code style="display:block; background:var(--surface-2);
+                       border:1px solid var(--border); border-left:3px solid var(--c-rq3);
+                       border-radius:var(--radius-sm); padding:.6rem 1.2rem;
+                       font-size:.82rem; color:var(--text-code);">
             deepmt test cross &lt;operator&gt; --framework1 pytorch --framework2 numpy
           </code>
         </div>
@@ -111,12 +150,7 @@
 {% endblock %}
 
 {% block extra_scripts %}
-<script src="/static/chart.umd.min.js"></script>
 <script>
-Chart.defaults.color       = '#4d6480';
-Chart.defaults.borderColor = 'rgba(61,127,255,.12)';
-Chart.defaults.font.family = 'var(--font-ui, system-ui)';
-
 async function loadData() {
   try {
     const resp = await fetch('/api/cross-framework');
@@ -125,81 +159,85 @@ async function loadData() {
     document.getElementById('session-count').textContent = sessions.length + ' 条';
 
     if (!sessions.length) {
-      document.getElementById('chart-container').style.display = 'none';
+      document.getElementById('chart-card').style.display = 'none';
+      document.getElementById('table-card').style.display = 'none';
       document.getElementById('no-data').style.display = 'block';
-      document.getElementById('session-tbody').innerHTML = `<tr><td colspan="6">
-        <div class="empty-state" style="padding:1.5rem;">
-          <div style="color:var(--text-dim); font-size:.82rem;">暂无数据</div>
-        </div></td></tr>`;
       return;
     }
 
     // Stats
-    const avgCR = sessions.reduce((a,s) => a + (s.overall_consistency_rate||0), 0)
+    const avgCR = sessions.reduce((a, s) => a + (s.overall_consistency_rate || 0), 0)
                   / sessions.length;
     const ops = new Set(sessions.map(s => s.operator)).size;
 
     countUp(document.getElementById('stat-consistency'),
             (avgCR * 100).toFixed(1), '%');
     countUp(document.getElementById('stat-operators'), ops);
-    countUp(document.getElementById('stat-sessions'), sessions.length);
+    countUp(document.getElementById('stat-sessions'),  sessions.length);
 
     renderChart(sessions);
 
     // Table
     const tbody = document.getElementById('session-tbody');
-    tbody.innerHTML = sessions.map(s => {
+    tbody.innerHTML = sessions.map((s, i) => {
       const rate = (s.overall_consistency_rate * 100).toFixed(1);
-      const col  = parseFloat(rate) >= 95 ? 'var(--success)'
+      const col  = parseFloat(rate) >= 95 ? 'var(--c-rq3)'
                  : parseFloat(rate) >= 85 ? 'var(--warning)'
                  :                          'var(--danger)';
-      const fw1short = s.framework1;
-      const fw2short = s.framework2;
-      return `<tr>
-        <td class="ps-3">
-          <code style="font-size:.8rem;">${s.operator}</code>
+      const glow = parseFloat(rate) >= 95 ? 'var(--c-rq3-glow)'
+                 : parseFloat(rate) >= 85 ? 'var(--warning-glow)'
+                 :                          'var(--danger-glow)';
+
+      const inconsistentBadge = s.inconsistent_mr_count > 0
+        ? `<span style="background:var(--danger-dim); color:var(--danger);
+               border:1px solid rgba(255,82,82,.28); border-radius:99px;
+               padding:1px 10px; font-size:.74rem; font-weight:700;
+               box-shadow:0 0 8px var(--danger-glow);">
+               ${s.inconsistent_mr_count}</span>`
+        : `<span style="background:var(--success-dim); color:var(--success);
+               border:1px solid rgba(0,229,176,.25); border-radius:99px;
+               padding:1px 10px; font-size:.74rem; font-weight:700;">0</span>`;
+
+      return `<tr style="animation:revealUp .32s both; animation-delay:${i * 0.035}s;">
+        <td class="ps-4">
+          <code style="font-size:.8rem; font-weight:600;">${escHtml(s.operator)}</code>
         </td>
         <td>
-          <span style="font-size:.72rem; color:var(--text-dim);
-                       background:var(--surface-2); border:1px solid var(--border);
-                       border-radius:4px; padding:2px 8px; white-space:nowrap;">
-            ${fw1short}
-            <i class="bi bi-arrow-left-right mx-1" style="font-size:.65rem;"></i>
-            ${fw2short}
+          <span class="badge badge-template"
+                style="font-size:.69rem; border-radius:99px; padding:.3em .75em;">
+            ${escHtml(s.framework1)}
+            <i class="bi bi-arrow-left-right mx-1" style="font-size:.6rem;"></i>
+            ${escHtml(s.framework2)}
           </span>
         </td>
         <td>
           <div class="d-flex align-items-center gap-2">
-            <div class="progress flex-grow-1" style="height:5px; min-width:56px;">
-              <div class="progress-bar" style="width:${rate}%; background:${col};"></div>
+            <div class="progress flex-grow-1" style="height:5px; min-width:60px;">
+              <div class="progress-bar"
+                   style="width:${rate}%;
+                          background:linear-gradient(90deg,${col},${glow});
+                          box-shadow:0 0 6px ${glow};"></div>
             </div>
             <span style="font-size:.78rem; font-weight:700;
                          font-variant-numeric:tabular-nums;
-                         color:${col}; min-width:3rem;">${rate}%</span>
+                         color:${col}; min-width:3.2rem;
+                         text-shadow:0 0 10px ${glow};">${rate}%</span>
           </div>
         </td>
         <td style="font-family:var(--font-mono); font-size:.78rem; color:var(--text-dim);">
           ${s.output_max_diff != null ? s.output_max_diff.toExponential(3) : '—'}
         </td>
-        <td>
-          ${s.inconsistent_mr_count > 0
-            ? `<span style="background:var(--danger-dim); color:var(--danger);
-                     border:1px solid rgba(255,69,69,.25);
-                     border-radius:4px; padding:1px 8px; font-size:.75rem;
-                     font-weight:600;">${s.inconsistent_mr_count}</span>`
-            : `<span style="background:var(--success-dim); color:var(--success);
-                     border:1px solid rgba(0,200,150,.25);
-                     border-radius:4px; padding:1px 8px; font-size:.75rem;
-                     font-weight:600;">0</span>`}
-        </td>
+        <td>${inconsistentBadge}</td>
         <td style="font-size:.75rem; color:var(--text-dim);">
-          ${(s.timestamp || '').slice(0,16)}
+          ${(s.timestamp || '').slice(0, 16)}
         </td>
       </tr>`;
     }).join('');
 
   } catch(e) {
     console.warn('加载失败:', e);
+    document.getElementById('chart-card').style.display = 'none';
+    document.getElementById('table-card').style.display = 'none';
     document.getElementById('no-data').style.display = 'block';
   }
 }
@@ -208,50 +246,76 @@ function renderChart(sessions) {
   // Aggregate by operator (average consistency)
   const byOp = {};
   sessions.forEach(s => {
-    if (!byOp[s.operator]) byOp[s.operator] = [];
-    byOp[s.operator].push(s.overall_consistency_rate);
+    (byOp[s.operator] = byOp[s.operator] || []).push(s.overall_consistency_rate);
   });
   const labels = Object.keys(byOp);
   const rates  = labels.map(op => {
     const arr = byOp[op];
-    return arr.reduce((a,b) => a+b, 0) / arr.length * 100;
+    return arr.reduce((a, b) => a + b, 0) / arr.length * 100;
   });
 
   new Chart(document.getElementById('chart-consistency'), {
     type: 'bar',
     data: {
-      labels: labels.map(l => l.replace(/torch\.nn\.functional\./,'')),
+      labels: labels.map(l => l.replace(/torch\.nn\.functional\./, '')),
       datasets: [{
-        label: '一致率 (%)', data: rates,
+        label: '一致率 (%)',
+        data: rates,
         backgroundColor: rates.map(v =>
-          v >= 95 ? 'rgba(0,200,150,.75)'
-        : v >= 85 ? 'rgba(255,171,0,.75)'
-        :           'rgba(255,69,69,.75)'),
-        borderRadius: 5,
+          v >= 95 ? 'rgba(0,229,176,.75)' :
+          v >= 85 ? 'rgba(255,204,0,.75)' :
+                    'rgba(255,82,82,.75)'),
+        borderRadius: 6,
       }]
     },
     options: {
+      responsive: true,
+      aspectRatio: 3,
       plugins: {
         legend: { display: false },
         tooltip: {
-          backgroundColor:'#111a2e', borderColor:'rgba(61,127,255,.25)',
-          borderWidth:1, titleColor:'#bfd0e8', bodyColor:'#4d6480', padding:10,
+          ...TOOLTIP_CFG,
           callbacks: { label: ctx => ` ${ctx.raw.toFixed(1)}%` }
-        }
+        },
       },
       scales: {
         y: {
-          min:0, max:100,
-          grid:{ color:'rgba(61,127,255,.08)' },
-          ticks:{ color:'#4d6480', callback: v => v+'%' }
+          min: 0, max: 100,
+          grid: { color: 'rgba(77,139,255,.07)' },
+          ticks: { color: '#3d5570', callback: v => v + '%' }
         },
         x: {
-          grid:{ display:false },
-          ticks:{ color:'#bfd0e8', font:{size:11} }
+          grid: { display: false },
+          ticks: { color: '#c8daf0', font: { size: 11 } }
         }
+      },
+    },
+    plugins: [{
+      id: 'refLines',
+      afterDraw(chart) {
+        const { ctx, chartArea, scales } = chart;
+        if (!chartArea) return;
+        [[95, 'rgba(0,229,176,.35)'], [85, 'rgba(255,204,0,.28)']].forEach(([val, col]) => {
+          const y = scales.y.getPixelForValue(val);
+          ctx.save();
+          ctx.setLineDash([4, 4]);
+          ctx.strokeStyle = col;
+          ctx.lineWidth   = 1;
+          ctx.beginPath();
+          ctx.moveTo(chartArea.left,  y);
+          ctx.lineTo(chartArea.right, y);
+          ctx.stroke();
+          ctx.restore();
+        });
       }
-    }
+    }]
   });
+}
+
+function escHtml(s) {
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
 loadData();

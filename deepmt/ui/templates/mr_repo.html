@@ -1,56 +1,96 @@
 {% extends "base.html" %}
 {% block title %}MR 知识库 — DeepMT Dashboard{% endblock %}
 
+{% block extra_head %}
+<style>
+  :root {
+    --page-accent:     #a855f7;
+    --page-accent-dim: rgba(168,85,247,.12);
+    --page-accent-glow:rgba(168,85,247,.35);
+  }
+
+  /* Filter pill group */
+  .filter-pill {
+    display: inline-flex; align-items: center; gap: .4rem;
+    padding: .28rem .75rem; border-radius: 99px; font-size: .78rem;
+    background: var(--surface-2); border: 1px solid var(--border);
+    color: var(--text-dim); cursor: pointer;
+    transition: var(--transition);
+    white-space: nowrap;
+  }
+  .filter-pill:hover {
+    border-color: var(--page-accent);
+    color: var(--text-bright);
+  }
+  .filter-pill select, .filter-pill input[type="checkbox"] {
+    background: transparent; border: none; outline: none;
+    color: inherit; font-size: inherit; cursor: pointer;
+    padding: 0; margin: 0;
+  }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="page-wrap">
 
   <!-- ── Header ──────────────────────────────────────────────────────── -->
-  <div class="page-hd d-flex justify-content-between align-items-start">
-    <div>
-      <h4>MR 知识库</h4>
-      <p>算子列表 · MR 统计 · 来源与分类分布</p>
-    </div>
+  <div class="page-hd">
+    <h4>MR 知识库</h4>
+    <p>算子列表 &ensp;·&ensp; MR 统计 &ensp;·&ensp; 来源与分类分布</p>
   </div>
 
   <!-- ── Filter Bar ──────────────────────────────────────────────────── -->
   <div class="card mb-3 anim-up d1">
-    <div class="card-body py-2">
-      <div class="row g-2 align-items-center">
-        <div class="col-auto">
-          <select class="form-select form-select-sm" id="filter-framework" style="min-width:116px;">
+    <div class="card-body py-2 px-3">
+      <div class="d-flex flex-wrap gap-2 align-items-center">
+
+        <label class="filter-pill">
+          <i class="bi bi-layers" style="color:var(--page-accent); font-size:.8rem;"></i>
+          <select id="filter-framework" onchange="applyFilters()">
             <option value="">全部框架</option>
             <option value="pytorch">PyTorch</option>
             <option value="numpy">NumPy</option>
           </select>
-        </div>
-        <div class="col-auto">
-          <select class="form-select form-select-sm" id="filter-category" style="min-width:128px;">
+        </label>
+
+        <label class="filter-pill">
+          <i class="bi bi-tag" style="color:var(--c-rq1); font-size:.8rem;"></i>
+          <select id="filter-category" onchange="applyFilters()">
             <option value="">全部类别</option>
           </select>
-        </div>
-        <div class="col-auto">
-          <select class="form-select form-select-sm" id="filter-source" style="min-width:108px;">
+        </label>
+
+        <label class="filter-pill">
+          <i class="bi bi-cpu" style="color:var(--c-rq4); font-size:.8rem;"></i>
+          <select id="filter-source" onchange="applyFilters()">
             <option value="">全部来源</option>
             <option value="llm">LLM</option>
             <option value="template">模板</option>
             <option value="manual">手动</option>
           </select>
-        </div>
-        <div class="col-auto">
-          <div class="form-check mb-0 mt-1">
-            <input class="form-check-input" type="checkbox" id="filter-verified">
-            <label class="form-check-label" for="filter-verified">仅已验证</label>
+        </label>
+
+        <label class="filter-pill" style="gap:.5rem;">
+          <input type="checkbox" id="filter-verified" onchange="applyFilters()">
+          <i class="bi bi-check-circle" style="color:var(--success); font-size:.8rem;"></i>
+          仅已验证
+        </label>
+
+        <div class="flex-grow-1" style="min-width:160px; max-width:280px;">
+          <div style="position:relative;">
+            <i class="bi bi-search" style="position:absolute; left:.65rem; top:50%;
+               transform:translateY(-50%); color:var(--text-dim); font-size:.78rem;"></i>
+            <input type="text" class="form-control form-control-sm"
+                   id="filter-search" placeholder="搜索算子名称…"
+                   oninput="applyFilters()"
+                   style="padding-left:2rem; border-radius:99px;">
           </div>
         </div>
-        <div class="col">
-          <input type="text" class="form-control form-control-sm" id="filter-search"
-                 placeholder="搜索算子名称…">
-        </div>
-        <div class="col-auto">
-          <button class="btn btn-sm btn-outline-secondary" onclick="clearFilters()">
-            <i class="bi bi-x-circle me-1"></i>清除
-          </button>
-        </div>
+
+        <button class="btn btn-sm btn-outline-secondary py-1 px-3" onclick="clearFilters()"
+                style="border-radius:99px; font-size:.76rem;">
+          <i class="bi bi-x-circle me-1"></i>清除
+        </button>
       </div>
     </div>
   </div>
@@ -58,25 +98,29 @@
   <!-- ── Stats ───────────────────────────────────────────────────────── -->
   <div class="row g-3 mb-4">
     <div class="col-6 col-md-3 anim-up d1">
-      <div class="card kpi-card text-center" style="--kpi-c: var(--c-rq1);">
+      <div class="card kpi-card text-center"
+           style="--kpi-c:var(--page-accent); --kpi-glow:var(--page-accent-glow);">
         <div class="kpi-num" id="stat-total">—</div>
         <div class="kpi-sub mt-2">MR 总数</div>
       </div>
     </div>
     <div class="col-6 col-md-3 anim-up d2">
-      <div class="card kpi-card text-center" style="--kpi-c: var(--success);">
+      <div class="card kpi-card text-center"
+           style="--kpi-c:var(--success); --kpi-glow:var(--success-glow);">
         <div class="kpi-num" id="stat-verified-rate">—</div>
         <div class="kpi-sub mt-2">验证率</div>
       </div>
     </div>
     <div class="col-6 col-md-3 anim-up d3">
-      <div class="card kpi-card text-center" style="--kpi-c: var(--info);">
+      <div class="card kpi-card text-center"
+           style="--kpi-c:var(--info); --kpi-glow:var(--info-glow);">
         <div class="kpi-num" id="stat-operators">—</div>
         <div class="kpi-sub mt-2">覆盖算子</div>
       </div>
     </div>
     <div class="col-6 col-md-3 anim-up d4">
-      <div class="card kpi-card text-center" style="--kpi-c: var(--warning);">
+      <div class="card kpi-card text-center"
+           style="--kpi-c:var(--warning); --kpi-glow:var(--warning-glow);">
         <div class="kpi-num" id="stat-avg">—</div>
         <div class="kpi-sub mt-2">平均 MR/算子</div>
       </div>
@@ -86,26 +130,26 @@
   <!-- ── Charts ──────────────────────────────────────────────────────── -->
   <div class="row g-3 mb-4">
     <div class="col-md-5 anim-up d2">
-      <div class="card h-100">
+      <div class="card">
         <div class="card-header d-flex align-items-center gap-2">
-          <i class="bi bi-pie-chart-fill" style="color:var(--primary);"></i>
+          <i class="bi bi-pie-chart-fill" style="color:var(--page-accent);
+             text-shadow:0 0 10px var(--page-accent-glow);"></i>
           <span class="fw-semibold">来源分布</span>
         </div>
-        <div class="card-body d-flex align-items-center justify-content-center"
-             style="min-height:195px;">
-          <canvas id="chart-source" style="max-height:175px;"></canvas>
+        <div class="card-body" style="padding:1rem;">
+          <canvas id="chart-source"></canvas>
         </div>
       </div>
     </div>
     <div class="col-md-7 anim-up d3">
-      <div class="card h-100">
+      <div class="card">
         <div class="card-header d-flex align-items-center gap-2">
-          <i class="bi bi-bar-chart-fill" style="color:var(--primary);"></i>
+          <i class="bi bi-bar-chart-fill" style="color:var(--page-accent);
+             text-shadow:0 0 10px var(--page-accent-glow);"></i>
           <span class="fw-semibold">分类分布</span>
         </div>
-        <div class="card-body d-flex align-items-center justify-content-center"
-             style="min-height:195px;">
-          <canvas id="chart-cat" style="max-height:175px;"></canvas>
+        <div class="card-body" style="padding:1rem;">
+          <canvas id="chart-cat"></canvas>
         </div>
       </div>
     </div>
@@ -114,17 +158,16 @@
   <!-- ── Operator Table ──────────────────────────────────────────────── -->
   <div class="card anim-up d4">
     <div class="card-header d-flex align-items-center gap-2">
-      <i class="bi bi-table" style="color:var(--primary);"></i>
+      <i class="bi bi-table" style="color:var(--page-accent);"></i>
       <span class="fw-semibold">算子列表</span>
-      <span id="table-count" class="ms-auto"
-            style="font-size:.68rem; color:var(--text-dim);"></span>
+      <span id="table-count" class="ms-auto badge badge-unverified"></span>
     </div>
     <div class="card-body p-0">
       <div class="table-responsive">
         <table class="table table-hover mb-0">
           <thead>
             <tr>
-              <th class="ps-3">算子名称</th>
+              <th class="ps-4">算子名称</th>
               <th>MR 总数</th>
               <th>已验证</th>
               <th>类别</th>
@@ -134,9 +177,10 @@
           </thead>
           <tbody id="mr-tbody">
             <tr><td colspan="6">
-              <div class="empty-state">
-                <i class="bi bi-hourglass-split"></i>
-                <div>加载中…</div>
+              <div class="py-3 px-4">
+                <div class="skeleton mb-2"></div>
+                <div class="skeleton mb-2" style="width:70%;"></div>
+                <div class="skeleton" style="width:50%;"></div>
               </div>
             </td></tr>
           </tbody>
@@ -149,13 +193,7 @@
 {% endblock %}
 
 {% block extra_scripts %}
-<script src="/static/chart.umd.min.js"></script>
 <script>
-Chart.defaults.color       = '#4d6480';
-Chart.defaults.borderColor = 'rgba(61,127,255,.12)';
-Chart.defaults.font.family = 'var(--font-ui, system-ui)';
-Chart.defaults.font.size   = 12;
-
 let _allOperators = [];
 let _srcChart, _catChart;
 
@@ -169,8 +207,8 @@ async function loadData() {
 
     countUp(document.getElementById('stat-total'),        d.total_mr_count);
     countUp(document.getElementById('stat-verified-rate'),
-            d.verification_rate != null
-              ? (d.verification_rate * 100).toFixed(1) : null, '%');
+      d.verification_rate != null
+        ? (d.verification_rate * 100).toFixed(1) : null, '%');
     countUp(document.getElementById('stat-operators'),    d.operators_with_mr);
     countUp(document.getElementById('stat-avg'),          d.avg_mr_per_operator);
 
@@ -194,38 +232,47 @@ function showEmpty() {
   document.getElementById('mr-tbody').innerHTML = `<tr><td colspan="6">
     <div class="empty-state">
       <i class="bi bi-database-x"></i>
-      <div>暂无 MR 数据，请先运行 <code>deepmt mr generate &lt;operator&gt; --save</code></div>
+      <div>暂无 MR 数据，请先运行
+        <code>deepmt mr generate &lt;operator&gt; --save</code>
+      </div>
     </div></td></tr>`;
 }
 
 function renderTable(ops) {
-  const tbody = document.getElementById('mr-tbody');
-  document.getElementById('table-count').textContent = ops.length + ' 个算子';
+  const countEl = document.getElementById('table-count');
+  countEl.textContent = ops.length + ' 个算子';
   if (!ops.length) { showEmpty(); return; }
 
-  tbody.innerHTML = ops.map(op => {
-    const cats = (op.categories||[]).map(c =>
-      `<span class="badge badge-unverified me-1" style="font-size:.65rem;">${c}</span>`
+  const tbody = document.getElementById('mr-tbody');
+  tbody.innerHTML = ops.map((op, i) => {
+    const cats = (op.categories || []).map(c =>
+      `<span class="badge badge-unverified me-1" style="font-size:.64rem;">${c}</span>`
     ).join('');
-    const srcs = (op.sources||[]).map(s => {
-      const cls = s==='llm' ? 'badge-llm' : s==='template' ? 'badge-template' : 'badge-manual';
-      return `<span class="badge ${cls} me-1" style="font-size:.65rem;">${s}</span>`;
+    const srcs = (op.sources || []).map(s => {
+      const cls = s === 'llm' ? 'badge-llm'
+                : s === 'template' ? 'badge-template' : 'badge-manual';
+      return `<span class="badge ${cls} me-1" style="font-size:.64rem;">${s}</span>`;
     }).join('');
-    const vBadge = op.verified_count > 0
-      ? `<span class="badge badge-verified">${op.verified_count}</span>`
-      : `<span class="badge badge-unverified">0</span>`;
-    return `<tr>
-      <td class="ps-3">
-        <code style="font-size:.82rem;font-weight:600;">${op.operator_name}</code>
+    const vNum = op.verified_count ?? 0;
+    const vBadge = vNum > 0
+      ? `<span class="badge badge-verified" style="font-size:.73rem;">${vNum}</span>`
+      : `<span class="badge badge-unverified" style="font-size:.73rem;">0</span>`;
+
+    return `<tr style="animation:revealUp .35s both; animation-delay:${i * 0.03}s;">
+      <td class="ps-4">
+        <code style="font-size:.82rem; font-weight:700;">${op.operator_name}</code>
       </td>
-      <td style="font-variant-numeric:tabular-nums;">${op.total_count ?? 0}</td>
+      <td style="font-variant-numeric:tabular-nums; font-weight:600;">
+        ${op.total_count ?? 0}
+      </td>
       <td>${vBadge}</td>
       <td>${cats || '<span style="color:var(--text-dim);">—</span>'}</td>
       <td>${srcs || '<span style="color:var(--text-dim);">—</span>'}</td>
       <td>
         <a href="/mr/${encodeURIComponent(op.operator_name)}"
-           class="btn btn-sm btn-outline-primary py-0 px-2" style="font-size:.75rem;">
-          <i class="bi bi-eye me-1"></i>详情
+           class="btn btn-sm btn-outline-primary py-0 px-2"
+           style="font-size:.74rem; border-radius:99px;">
+          <i class="bi bi-arrow-right-circle me-1"></i>详情
         </a>
       </td>
     </tr>`;
@@ -240,9 +287,9 @@ function applyFilters() {
   const q   = document.getElementById('filter-search').value.toLowerCase();
 
   const filtered = _allOperators.filter(op => {
-    if (fw  && !(op.frameworks||[]).some(f => f.toLowerCase().includes(fw)))  return false;
-    if (cat && !(op.categories||[]).some(c => c.toLowerCase().includes(cat))) return false;
-    if (src && !(op.sources||[]).some(s => s.toLowerCase().includes(src)))    return false;
+    if (fw  && !(op.frameworks  || []).some(f => f.toLowerCase().includes(fw)))  return false;
+    if (cat && !(op.categories  || []).some(c => c.toLowerCase().includes(cat))) return false;
+    if (src && !(op.sources     || []).some(s => s.toLowerCase().includes(src))) return false;
     if (vfy && !(op.verified_count > 0)) return false;
     if (q   && !op.operator_name.toLowerCase().includes(q)) return false;
     return true;
@@ -251,41 +298,43 @@ function applyFilters() {
 }
 
 function clearFilters() {
-  ['filter-framework','filter-category','filter-source','filter-search']
-    .forEach(id => document.getElementById(id).value = '');
+  ['filter-framework', 'filter-category', 'filter-source', 'filter-search']
+    .forEach(id => { document.getElementById(id).value = ''; });
   document.getElementById('filter-verified').checked = false;
   renderTable(_allOperators);
 }
 
-['filter-framework','filter-category','filter-source'].forEach(id =>
-  document.getElementById(id).addEventListener('change', applyFilters));
-document.getElementById('filter-verified').addEventListener('change', applyFilters);
-document.getElementById('filter-search').addEventListener('input', applyFilters);
-
-const _tooltipCfg = {
-  backgroundColor:'#111a2e', borderColor:'rgba(61,127,255,.25)',
-  borderWidth:1, titleColor:'#bfd0e8', bodyColor:'#4d6480', padding:10
-};
-
 function renderSrcChart(dist) {
   const labels = Object.keys(dist), values = Object.values(dist);
-  const colors = { llm:'#a78bfa', template:'#48caff', manual:'#ffd060', unknown:'#4d6480' };
+  const colorMap = {
+    llm:      '#a855f7',
+    template: '#4d8bff',
+    manual:   '#ffcc00',
+    unknown:  '#3d5570',
+  };
   if (_srcChart) _srcChart.destroy();
   _srcChart = new Chart(document.getElementById('chart-source'), {
-    type: 'pie',
+    type: 'doughnut',
     data: {
       labels,
       datasets: [{
         data: values,
-        backgroundColor: labels.map(l => colors[l]||'#4d6480'),
-        borderWidth: 2, borderColor: '#111a2e', hoverOffset: 4,
+        backgroundColor: labels.map(l => colorMap[l] || '#3d5570'),
+        borderWidth: 2, borderColor: '#080d18', hoverOffset: 6,
       }]
     },
     options: {
+      responsive: true,
+      aspectRatio: 2,
       plugins: {
-        legend: { position:'bottom', labels:{ color:'#4d6480', font:{size:11}, padding:10, boxWidth:10, boxHeight:10 } },
-        tooltip: _tooltipCfg,
-      }
+        legend: {
+          position: 'bottom',
+          labels: { color: '#3d5570', font: { size: 11 }, padding: 12,
+                    boxWidth: 10, boxHeight: 10 }
+        },
+        tooltip: { ...TOOLTIP_CFG },
+      },
+      cutout: '60%',
     }
   });
 }
@@ -297,14 +346,29 @@ function renderCatChart(dist) {
     type: 'bar',
     data: {
       labels,
-      datasets: [{ data:values, backgroundColor:'rgba(61,127,255,.65)', borderRadius:4 }]
+      datasets: [{
+        data: values,
+        backgroundColor: 'rgba(168,85,247,.68)',
+        borderRadius: 5,
+      }]
     },
     options: {
+      responsive: true,
+      aspectRatio: 3,
       indexAxis: 'y',
-      plugins: { legend:{display:false}, tooltip:_tooltipCfg },
+      plugins: {
+        legend: { display: false },
+        tooltip: { ...TOOLTIP_CFG },
+      },
       scales: {
-        x: { grid:{color:'rgba(61,127,255,.08)'}, ticks:{color:'#4d6480'} },
-        y: { grid:{display:false}, ticks:{color:'#bfd0e8', font:{size:11}} }
+        x: {
+          grid: { color: 'rgba(77,139,255,.07)' },
+          ticks: { color: '#3d5570' }
+        },
+        y: {
+          grid: { display: false },
+          ticks: { color: '#c8daf0', font: { size: 11 } }
+        }
       }
     }
   });
