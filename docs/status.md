@@ -10,7 +10,7 @@
 | Phase B：算子层 MR 生成与知识库（B1~B3） | ✅ 完成 |
 | Phase C：测试执行与跨框架适配 | ✅ 完成 |
 | Phase D：缺陷分析与实验闭环 | ✅ 完成 |
-| Phase E：演示交付与生产化加固 | 🔄 进行中（E1~E3 已完成） |
+| Phase E：演示交付与生产化加固 | ✅ 完成（E1~E6 全部完成） |
 | Phase F：软件工程规范化与包发布准备（F1~F11） | ✅ F1~F11全部完成 |
 
 ---
@@ -160,4 +160,4 @@ tests/
 
 ---
 
-*最后更新：2026-04-12（Phase E1~E3 完成：E1 黄金演示路径；E2 重写 README_CONFIG.md（修正旧 API 引用）；E3 修复 health_checker（22/22→38/38 通过）、实现 DEEPMT_LOG_CONSOLE_STYLE 环境变量；新增 test_health_checker.py（16 个测试）；385 个单元测试通过）*
+*最后更新：2026-04-13（Phase E 全部完成（E1~E6）：E4 补充完整双语 README（英文主页 + 中文版 README_CN.md）、GPU-capable Dockerfile；E5 新增 .github/workflows/ci.yml（GitHub Actions，三个 Job：Unit Tests × Python 3.10/3.11/3.12 矩阵 + CLI Health Check + Import Check）；E6 声明生产化最低边界达成（批量测试/历史对比/适配器扩展/报告输出全部已实现）；385 个单元测试通过）*

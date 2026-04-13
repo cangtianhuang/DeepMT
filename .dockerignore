@@ -1,0 +1,10 @@
+.venv
+.git
+__pycache__
+*.pyc
+*.pyo
+*.egg-info
+.pytest_cache
+data/logs
+data/cache
+config.yaml

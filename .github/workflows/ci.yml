@@ -1,0 +1,149 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Unit Tests (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+
+      - name: Create virtual environment
+        run: uv venv .venv
+
+      - name: Install PyTorch CPU-only
+        # Install CPU wheels first to avoid downloading large GPU packages
+        run: |
+          uv pip install --python .venv/bin/python \
+            torch --index-url https://download.pytorch.org/whl/cpu
+
+      - name: Install DeepMT with all extras
+        run: |
+          uv pip install --python .venv/bin/python \
+            -e ".[all]" pytest pytest-cov
+
+      - name: Run unit tests
+        env:
+          PYTHONPATH: ${{ github.workspace }}
+          DEEPMT_LOG_LEVEL: WARNING
+          DEEPMT_LOG_CONSOLE_STYLE: file
+        run: |
+          .venv/bin/python -m pytest tests/unit/ \
+            -v \
+            --tb=short \
+            --cov=deepmt \
+            --cov-report=term-missing \
+            --cov-report=xml \
+            -q
+
+      - name: Upload coverage report
+        if: matrix.python-version == '3.11'
+        uses: codecov/codecov-action@v4
+        with:
+          files: coverage.xml
+          fail_ci_if_error: false
+
+  health-check:
+    name: CLI Health Check
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+
+      - name: Create virtual environment
+        run: uv venv .venv
+
+      - name: Install PyTorch CPU-only
+        run: |
+          uv pip install --python .venv/bin/python \
+            torch --index-url https://download.pytorch.org/whl/cpu
+
+      - name: Install DeepMT
+        run: uv pip install --python .venv/bin/python -e ".[all]"
+
+      - name: Verify CLI entry point
+        run: .venv/bin/deepmt --help
+
+      - name: Run health check
+        env:
+          PYTHONPATH: ${{ github.workspace }}
+          DEEPMT_LOG_CONSOLE_STYLE: file
+        run: .venv/bin/deepmt health check
+
+  lint:
+    name: Import Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+
+      - name: Create virtual environment
+        run: uv venv .venv
+
+      - name: Install PyTorch CPU-only
+        run: |
+          uv pip install --python .venv/bin/python \
+            torch --index-url https://download.pytorch.org/whl/cpu
+
+      - name: Install DeepMT
+        run: uv pip install --python .venv/bin/python -e ".[all]"
+
+      - name: Check core imports
+        env:
+          PYTHONPATH: ${{ github.workspace }}
+        run: |
+          .venv/bin/python -c "import deepmt; print('deepmt OK')"
+          .venv/bin/python -c "from deepmt import DeepMT, TestResult; print('public API OK')"
+          .venv/bin/python -c "from deepmt.ir.schema import OperatorIR, MetamorphicRelation; print('schema OK')"
+          .venv/bin/python -c "from deepmt.mr_generator.base.mr_repository import MRRepository; print('MRRepository OK')"
+          .venv/bin/python -c "from deepmt.engine.batch_test_runner import BatchTestRunner; print('BatchTestRunner OK')"
+          .venv/bin/python -c "from deepmt.plugins.pytorch_plugin import PyTorchPlugin; print('PyTorchPlugin OK')"
