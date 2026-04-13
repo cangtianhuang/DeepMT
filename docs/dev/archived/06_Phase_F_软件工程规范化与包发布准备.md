@@ -1,9 +1,7 @@
 # Phase F：软件工程规范化与包发布准备
 
-> **当前状态：✅ P0 + P1 + F10 完成（2026-04-11）**  
-> F1~F10 全部完成。377 个单元测试通过。  
-> **已完成**：build-backend 修复、依赖完整化（optional-dependencies 分组）、包数据声明、stub 移除、sys.path 清理、`__version__` 导出、`requirements.txt` 对齐、`client.py` 主链对齐、文档引用修复（status.md/CLAUDE.md/monitoring/__main__.py/README.md/quick_start.md/cli_reference.md/operator_catalog_design.md）。  
-> **待完成**：F11（Web 仪表盘，可选）。
+> **当前状态：✅ F1~F11 全部完成（2026-04-13）**  
+> 385 个单元测试通过。
 
 ---
 
@@ -236,7 +234,7 @@ from deepmt import __version__
 
 ---
 
-### F11. 轻量 Web 仪表盘（可选，服务 Phase E 演示） 🔲（P2）
+### F11. 轻量 Web 仪表盘（可选，服务 Phase E 演示） ✅ 已完成（2026-04-13）
 
 **背景**：论文答辩和演示场景中，RQ1-RQ4 数据的可视化呈现（图表、统计摘要）比纯文本 CLI 输出更具说服力。
 

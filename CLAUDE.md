@@ -12,18 +12,24 @@ DeepMT（Deep Metamorphic Testing）是面向深度学习框架（PyTorch、Tens
 > 入口：`docs/dev/status.md` → 对应阶段文档。  
 > 执行规范：`docs/dev/agent_rules.md`
 
-| 阶段                            | 状态           | 文档                                                              |
-| ------------------------------- | -------------- | ----------------------------------------------------------------- |
-| Phase A：算子数据层完善         | ✅ 完成         | `docs/dev/01_Phase_A_算子数据层完善.md`               |
-| Phase B：算子层 MR 生成与知识库 | ✅ 完成         | `docs/dev/02_Phase_B_算子层MR生成与知识库.md`         |
-| Phase C：测试执行与跨框架适配   | ✅ 完成         | `docs/dev/03_Phase_C_测试执行与跨框架适配.md`         |
-| Phase D：缺陷分析与实验闭环     | ✅ 完成         | `docs/dev/04_Phase_D_缺陷分析、实验闭环与研究结论.md` |
-| Phase E：演示交付与生产化加固   | ✅ 完成         | `docs/dev/05_Phase_E_演示交付与生产化加固.md`         |
-| Phase F：软件工程规范化          | ✅ F1~F11 完成  | `docs/dev/07_Phase_F_软件工程规范化与包发布准备.md`   |
+| 阶段                                  | 状态     | 文档                                                          |
+| ------------------------------------- | -------- | ------------------------------------------------------------- |
+| Phase A：算子数据层完善               | ✅ 完成   | `docs/dev/achived/01_Phase_A_算子数据层完善.md`               |
+| Phase B：算子层 MR 生成与知识库       | ✅ 完成   | `docs/dev/achived/02_Phase_B_算子层MR生成与知识库.md`         |
+| Phase C：测试执行与跨框架适配         | ✅ 完成   | `docs/dev/achived/03_Phase_C_测试执行与跨框架适配.md`         |
+| Phase D：缺陷分析与实验闭环           | ✅ 完成   | `docs/dev/achived/04_Phase_D_缺陷分析、实验闭环与研究结论.md` |
+| Phase E：演示交付与生产化加固         | ✅ 完成   | `docs/dev/achived/05_Phase_E_演示交付与生产化加固.md`         |
+| Phase F：软件工程规范化               | ✅ 完成   | `docs/dev/achived/06_Phase_F_软件工程规范化与包发布准备.md`   |
+| Phase G：统一IR与三层对象建模         | ⬜ 未开始 | `docs/dev/07_Phase_G_统一IR与三层对象建模.md`                 |
+| Phase H：第二框架落地与真实跨框架适配 | ⬜ 未开始 | `docs/dev/08_Phase_H_第二框架落地与真实跨框架适配.md`         |
+| Phase I：模型层MR自动生成引擎         | ⬜ 未开始 | `docs/dev/09_Phase_I_模型层MR自动生成引擎.md`                 |
+| Phase J：应用层语义MR生成与验证       | ⬜ 未开始 | `docs/dev/10_Phase_J_应用层语义MR生成与验证.md`               |
+| Phase K：全层MR质量保障与知识库治理   | ⬜ 未开始 | `docs/dev/11_Phase_K_全层MR质量保障与统一知识库治理.md`       |
+| Phase L：论文实验基准与自动化数据生产 | ⬜ 未开始 | `docs/dev/12_Phase_L_论文实验基准与自动化数据生产线.md`       |
+| Phase M：真实缺陷挖掘与案例沉淀       | ⬜ 未开始 | `docs/dev/13_Phase_M_真实缺陷挖掘与案例沉淀.md`               |
+| Phase N：论文交付收口与复现资产封装   | ⬜ 未开始 | `docs/dev/14_Phase_N_论文交付收口与复现资产封装.md`           |
 
-**当前主链：** 算子目录 → MR 生成 → 批量测试 → 缺陷分析 → **演示交付与生产化加固（Phase E）**
-
-已完成：A1~A6（算子目录与 input_specs）、B1~B3（MR 知识库与批量生成）、C1~C5（RandomGenerator + BatchTestRunner + test batch 命令）、D1~D7（报告生成、变异测试、证据包、跨框架一致性、RQ1-RQ4 数据组织）、E1~E6（黄金演示路径、配置整理、日志可观察性、双语 README + GPU Dockerfile、GitHub Actions CI、生产化边界声明）、F1~F11（pyproject.toml 规范化、依赖完整化、stub 清理、版本导出、API 对齐、文档引用修复、Web 仪表盘）。全量单元测试 385 个通过。
+**当前主链：** A~F 已完成 → **下一步：统一IR与三层对象建模（Phase G）**
 
 ## 环境与运行
 
@@ -37,16 +43,16 @@ source .venv/bin/activate && PYTHONPATH=$(pwd) python -m pytest tests/
 
 ## 文档
 
-| 文件                              | 内容               |
-| --------------------------------- | ------------------ |
-| `docs/dev/status.md`              | 已完成模块清单     |
-| `docs/dev/agent_rules.md`         | 编码智能体执行规范 |
-| `docs/dev/`                       | 各阶段规划文档     |
-| `docs/cli_reference.md`           | CLI 命令参考       |
-| `docs/environment_variables.md`   | 环境变量说明       |
-| `docs/tech/operator_catalog.md`   | 算子目录设计       |
-| `docs/tech/operator_mr.md`        | 算子层 MR 技术细节 |
-| `docs/quick_start.md`             | 快速上手           |
+| 文件                            | 内容               |
+| ------------------------------- | ------------------ |
+| `docs/dev/status.md`            | 已完成模块清单     |
+| `docs/dev/agent_rules.md`       | 编码智能体执行规范 |
+| `docs/dev/`                     | 各阶段规划文档     |
+| `docs/cli_reference.md`         | CLI 命令参考       |
+| `docs/environment_variables.md` | 环境变量说明       |
+| `docs/tech/operator_catalog.md` | 算子目录设计       |
+| `docs/tech/operator_mr.md`      | 算子层 MR 技术细节 |
+| `docs/quick_start.md`           | 快速上手           |
 
 ## 架构概览
 
