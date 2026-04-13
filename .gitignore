@@ -18,6 +18,12 @@ config*.yaml
 data/logs/
 data/cache/
 
+# ── Phase L 实验运行产物（运行时生成，不上传）─────────────────────────────────────
+data/experiments/runs/
+data/experiments/exports/
+data/experiments/figures/
+data/experiments/case_studies/
+
 # ── 用户工作区 MR（生成的 MR 实例，不上传）────────────────────────────────────────
 data/knowledge/mr_repository/operator/
 

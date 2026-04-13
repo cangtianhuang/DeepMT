@@ -24,6 +24,7 @@ from deepmt.commands.health import health
 from deepmt.commands.catalog import catalog
 from deepmt.commands.data import data
 from deepmt.commands.ui import ui
+from deepmt.commands.experiment import experiment
 
 CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"], max_content_width=100)
 
@@ -35,13 +36,14 @@ def cli():
 
     \b
     命令组:
-      mr       MR 生成与管理（算子层）
-      test     测试执行
-      repo     MR 知识库管理
-      catalog  算子目录浏览与跨框架查询
-      data     数据目录管理（日志清理等）
-      health   系统健康检查
-      ui       Web 仪表盘（deepmt ui start）
+      mr          MR 生成与管理（算子层）
+      test        测试执行
+      repo        MR 知识库管理
+      catalog     算子目录浏览与跨框架查询
+      data        数据目录管理（日志清理等）
+      health      系统健康检查
+      ui          Web 仪表盘（deepmt ui start）
+      experiment  论文实验基准与数据生产（Phase L）
 
     \b
     快速开始:
@@ -65,3 +67,4 @@ cli.add_command(health)
 cli.add_command(catalog)
 cli.add_command(data)
 cli.add_command(ui)
+cli.add_command(experiment)

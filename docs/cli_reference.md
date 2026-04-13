@@ -20,15 +20,16 @@ PYTHONPATH=/home/lhy/DeepMT python -m deepmt <command> [options]
 
 ## 命令组总览
 
-| 命令组    | 说明                               | 实现状态                                         |
-| --------- | ---------------------------------- | ------------------------------------------------ |
-| `mr`      | MR 生成与管理（算子层）            | ✅ 已实现                                         |
-| `test`    | 测试执行                           | ✅ 已实现（pytorch 完整，tensorflow/paddle 占位） |
-| `repo`    | MR 知识库管理                      | ✅ 已实现                                         |
-| `catalog` | 算子目录浏览、跨框架查询、批量导入 | ✅ 已实现                                         |
-| `data`    | 数据目录管理（日志清理等）         | ✅ 已实现                                         |
-| `health`  | 系统健康检查与进度                 | ✅ 已实现                                         |
-| `ui`      | Web 仪表盘服务器                   | ✅ 已实现                                         |
+| 命令组       | 说明                               | 实现状态                                         |
+| ------------ | ---------------------------------- | ------------------------------------------------ |
+| `mr`         | MR 生成与管理（算子层）            | ✅ 已实现                                         |
+| `test`       | 测试执行                           | ✅ 已实现（pytorch 完整，tensorflow/paddle 占位） |
+| `repo`       | MR 知识库管理                      | ✅ 已实现                                         |
+| `catalog`    | 算子目录浏览、跨框架查询、批量导入 | ✅ 已实现                                         |
+| `data`       | 数据目录管理（日志清理等）         | ✅ 已实现                                         |
+| `health`     | 系统健康检查与进度                 | ✅ 已实现                                         |
+| `ui`         | Web 仪表盘服务器                   | ✅ 已实现                                         |
+| `experiment` | 论文实验基准与自动化数据生产       | ✅ 已实现（Phase L）                              |
 
 > **注意**：模型层和应用层 MR 生成目前通过 Python API 使用（`ModelMRGenerator`、`ApplicationMRGenerator`），CLI 的 `mr generate --layer model/application` 入口仍在开发中。
 
@@ -933,13 +934,13 @@ deepmt repo retire ResNet50 --layer model --id <MR_ID>
 deepmt repo filter [OPTIONS]
 ```
 
-| 选项               | 默认值     | 说明                                                |
-| ------------------ | ---------- | --------------------------------------------------- |
-| `--layer`          | —（全部）  | 按层次过滤（`operator`/`model`/`application`）      |
-| `--min-quality`    | `checked`  | 最低质量等级（`candidate`/`checked`/`proven`/`curated`） |
-| `--framework`      | —          | 按框架过滤                                          |
-| `--exclude-retired`| `True`     | 排除已退役 MR（默认排除）                           |
-| `--json`           | `False`    | 以 JSON 格式输出                                    |
+| 选项                | 默认值    | 说明                                                     |
+| ------------------- | --------- | -------------------------------------------------------- |
+| `--layer`           | —（全部） | 按层次过滤（`operator`/`model`/`application`）           |
+| `--min-quality`     | `checked` | 最低质量等级（`candidate`/`checked`/`proven`/`curated`） |
+| `--framework`       | —         | 按框架过滤                                               |
+| `--exclude-retired` | `True`    | 排除已退役 MR（默认排除）                                |
+| `--json`            | `False`   | 以 JSON 格式输出                                         |
 
 **示例：**
 
@@ -960,11 +961,11 @@ deepmt repo filter --layer model --min-quality candidate
 deepmt repo audit [OPTIONS]
 ```
 
-| 选项              | 默认值  | 说明                                              |
-| ----------------- | ------- | ------------------------------------------------- |
-| `--layer`         | —（全部）| 只审计指定层                                      |
-| `--pending-review`| `False` | 输出待复核清单（质量低于 proven 的 MR 汇总）      |
-| `--json`          | `False` | 以 JSON 格式输出                                  |
+| 选项               | 默认值    | 说明                                         |
+| ------------------ | --------- | -------------------------------------------- |
+| `--layer`          | —（全部） | 只审计指定层                                 |
+| `--pending-review` | `False`   | 输出待复核清单（质量低于 proven 的 MR 汇总） |
+| `--json`           | `False`   | 以 JSON 格式输出                             |
 
 **审计报告包含：**
 - 全库 MR 总数（按层、按质量等级分布）
@@ -1160,3 +1161,76 @@ deepmt mr generate relu --sources llm,template --precheck --sympy --save
 deepmt ui start
 # 浏览器访问 http://127.0.0.1:8080
 ```
+
+---
+
+## `deepmt experiment` — 论文实验基准与数据生产（Phase L）
+
+子命令总览：
+
+| 子命令      | 说明                                             |
+| ----------- | ------------------------------------------------ |
+| `run`       | 创建实验运行清单（记录 seed / benchmark / 环境） |
+| `collect`   | 收集 RQ1-RQ4 当前统计数据并打印                  |
+| `export`    | 将统计数据导出为 JSON / CSV / Markdown           |
+| `list`      | 列出历史实验运行清单                             |
+| `show`      | 查看单条运行清单详情                             |
+| `benchmark` | 查看固化的论文实验 benchmark 清单                |
+| `case`      | Case Study 管理（list / show / export）          |
+| `env`       | 查看运行环境与框架版本矩阵                       |
+
+### 快速示例
+
+```bash
+# 创建运行清单（记录当前环境与 benchmark）
+deepmt experiment run
+
+# 收集 RQ1-RQ4 统计数据
+deepmt experiment collect
+
+# 导出论文图表与表格（JSON + CSV + Markdown）
+deepmt experiment export --format all
+
+# 同时导出 ASCII 图表
+deepmt experiment export --figures --ascii-only
+
+# 查看 benchmark 清单
+deepmt experiment benchmark
+deepmt experiment benchmark --layer operator
+
+# 查看环境信息
+deepmt experiment env
+
+# Case Study 管理
+deepmt experiment case list
+deepmt experiment case export
+```
+
+### `deepmt experiment run`
+
+```
+deepmt experiment run [OPTIONS]
+```
+
+| 选项       | 默认值  | 说明                               |
+| ---------- | ------- | ---------------------------------- |
+| `--rq`     | 全部    | 目标 RQ（可多次指定，如 --rq rq1） |
+| `--seed`   | `42`    | 随机种子                           |
+| `--notes`  | 空      | 附加备注                           |
+| `--no-env` | `False` | 跳过环境快照（加速）               |
+| `--json`   | `False` | 以 JSON 格式输出                   |
+
+### `deepmt experiment export`
+
+```
+deepmt experiment export [OPTIONS]
+```
+
+| 选项           | 默认值                     | 说明                                  |
+| -------------- | -------------------------- | ------------------------------------- |
+| `--format`     | `all`                      | 格式：json / csv / markdown / all     |
+| `--output`     | `data/experiments/exports` | 导出目录                              |
+| `--rq`         | 全部                       | 目标 RQ                               |
+| `--run-id`     | 无                         | 关联的 RunManifest ID                 |
+| `--figures`    | `False`                    | 同时导出图表                          |
+| `--ascii-only` | `False`                    | 图表只生成 ASCII（不依赖 matplotlib） |
