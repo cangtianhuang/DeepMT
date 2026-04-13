@@ -8,18 +8,18 @@ DeepMT（Deep Metamorphic Testing）是面向深度学习框架（PyTorch、Tens
 
 ## 当前阶段与下一步
 
-> **在开始任何“阶段开发”任务前，必须先阅读 `docs/deepmt_dev_docs/` 中的规划文档。“代码修复”任务不必查阅。**  
-> 入口：`docs/deepmt_dev_docs/README.md` → `00_开发总览与执行原则.md` → 对应阶段文档。  
-> 执行规范：`docs/deepmt_dev_docs/06_编码智能体执行规范.md`
+> **在开始任何”阶段开发”任务前，必须先阅读 `docs/dev/` 中的规划文档。”代码修复”任务不必查阅。**  
+> 入口：`docs/dev/status.md` → 对应阶段文档。  
+> 执行规范：`docs/dev/agent_rules.md`
 
 | 阶段                            | 状态           | 文档                                                              |
 | ------------------------------- | -------------- | ----------------------------------------------------------------- |
-| Phase A：算子数据层完善         | ✅ 完成         | `docs/deepmt_dev_docs/01_Phase_A_算子数据层完善.md`               |
-| Phase B：算子层 MR 生成与知识库 | ✅ 完成         | `docs/deepmt_dev_docs/02_Phase_B_算子层MR生成与知识库.md`         |
-| Phase C：测试执行与跨框架适配   | ✅ 完成         | `docs/deepmt_dev_docs/03_Phase_C_测试执行与跨框架适配.md`         |
-| Phase D：缺陷分析与实验闭环     | ✅ 完成         | `docs/deepmt_dev_docs/04_Phase_D_缺陷分析、实验闭环与研究结论.md` |
-| Phase E：演示交付与生产化加固   | ✅ 完成         | `docs/deepmt_dev_docs/05_Phase_E_演示交付与生产化加固.md`         |
-| Phase F：软件工程规范化          | ✅ F1~F11 完成  | `docs/deepmt_dev_docs/07_Phase_F_软件工程规范化与包发布准备.md`   |
+| Phase A：算子数据层完善         | ✅ 完成         | `docs/dev/01_Phase_A_算子数据层完善.md`               |
+| Phase B：算子层 MR 生成与知识库 | ✅ 完成         | `docs/dev/02_Phase_B_算子层MR生成与知识库.md`         |
+| Phase C：测试执行与跨框架适配   | ✅ 完成         | `docs/dev/03_Phase_C_测试执行与跨框架适配.md`         |
+| Phase D：缺陷分析与实验闭环     | ✅ 完成         | `docs/dev/04_Phase_D_缺陷分析、实验闭环与研究结论.md` |
+| Phase E：演示交付与生产化加固   | ✅ 完成         | `docs/dev/05_Phase_E_演示交付与生产化加固.md`         |
+| Phase F：软件工程规范化          | ✅ F1~F11 完成  | `docs/dev/07_Phase_F_软件工程规范化与包发布准备.md`   |
 
 **当前主链：** 算子目录 → MR 生成 → 批量测试 → 缺陷分析 → **演示交付与生产化加固（Phase E）**
 
@@ -39,12 +39,13 @@ source .venv/bin/activate && PYTHONPATH=$(pwd) python -m pytest tests/
 
 | 文件                              | 内容               |
 | --------------------------------- | ------------------ |
-| `docs/deepmt_dev_docs/`           | 主规划文档         |
-| `docs/status.md`                  | 已完成模块清单     |
+| `docs/dev/status.md`              | 已完成模块清单     |
+| `docs/dev/agent_rules.md`         | 编码智能体执行规范 |
+| `docs/dev/`                       | 各阶段规划文档     |
 | `docs/cli_reference.md`           | CLI 命令参考       |
 | `docs/environment_variables.md`   | 环境变量说明       |
-| `docs/operator_catalog_design.md` | 算子目录设计       |
-| `docs/operator_mr_technical.md`   | 算子层 MR 技术细节 |
+| `docs/tech/operator_catalog.md`   | 算子目录设计       |
+| `docs/tech/operator_mr.md`        | 算子层 MR 技术细节 |
 | `docs/quick_start.md`             | 快速上手           |
 
 ## 架构概览
@@ -114,8 +115,8 @@ source .venv/bin/activate && PYTHONPATH=$(pwd) python -m pytest tests/
 每次完成功能开发后，必须同步更新以下内容：
 
 1. **文档同步**
-   - 修改了开发进度、模块状态、架构设计 → 更新 `docs/status.md`（已完成模块列表）
-   - 完成某阶段中的关键任务 → 在对应 `docs/deepmt_dev_docs/0X_Phase_*.md` 中标记完成状态
+   - 修改了开发进度、模块状态、架构设计 → 更新 `docs/dev/status.md`（已完成模块列表）
+   - 完成某阶段中的关键任务 → 在对应 `docs/dev/0X_Phase_*.md` 中标记完成状态
    - 新增或修改了 CLI 命令（含命令名、选项、行为）→ 更新 `docs/cli_reference.md`
 
 2. **依赖同步**

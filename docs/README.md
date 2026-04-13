@@ -43,41 +43,17 @@ DeepMT/
 │   ├── client.py               #   DeepMT / TestResult 高层 API
 │   ├── commands/               #   CLI 子命令实现（mr / test / repo / catalog / data / health）
 │   ├── core/                   #   微内核框架
-│   │   ├── config_manager.py   #     配置加载与管理
-│   │   ├── ir_manager.py       #     IR 管理
-│   │   ├── logger.py           #     日志
-│   │   ├── plugins_manager.py  #     插件加载
-│   │   └── results_manager.py  #     结果管理
 │   ├── engine/                 #   测试执行引擎
-│   │   ├── scheduler.py        #     任务调度
-│   │   └── batch_test_runner.py #    批量测试执行器
 │   ├── ir/                     #   统一中间表示
-│   │   └── schema.py           #     OperatorIR / MetamorphicRelation 等
 │   ├── mr_generator/           #   MR 生成引擎
-│   │   ├── operator/           #     算子层（核心）
-│   │   │   ├── operator_mr_generator.py      # 主生成器（4阶段流水线）
-│   │   │   ├── operator_llm_mr_generator.py  # LLM 生成
-│   │   │   ├── sympy_prover.py               # 符号证明
-│   │   │   ├── sympy_translator.py           # 代码→SymPy
-│   │   │   └── ast_parser.py                 # AST 解析
-│   │   ├── model/              #     模型层（开发中）
-│   │   ├── application/        #     应用层（开发中）
-│   │   └── base/               #     模板池、MR 仓库、MR 库、算子目录
-│   │       ├── mr_repository.py    #   MR 用户工作区仓库（YAML per operator）
-│   │       ├── mr_library.py       #   MR 项目库（git 追踪，已验证 MR）
-│   │       ├── mr_templates.py     #   MR 模板池
-│   │       └── operator_catalog.py #   算子目录管理
-│   ├── tools/                  #   通用工具
-│   │   ├── llm/                #     LLM 客户端
-│   │   └── web_search/         #     搜索、Sphinx 解析、算子文档获取
+│   ├── tools/                  #   通用工具（LLM / 网络搜索）
 │   ├── plugins/                #   框架适配器（PyTorch 可用）
-│   ├── analysis/               #   输入生成、预检、验证
-│   └── monitoring/             #   健康检查与进度追踪
-├── tests/                      # 测试用例
-│   ├── unit/                   #   单元测试
-│   └── integration/            #   集成测试
-├── demo/                       # 快速演示
-├── docs/                       # 开发文档
+│   ├── analysis/               #   输入生成、预检、验证、报告
+│   ├── monitoring/             #   健康检查与进度追踪
+│   └── ui/                     #   Web 仪表盘（FastAPI + Jinja2）
+├── tests/                      # 测试用例（unit/ + integration/）
+├── demo/                       # 快速演示脚本
+├── docs/                       # 开发文档（见下方索引）
 ├── data/                       # 运行时数据（日志、SQLite、MR YAML）
 ├── config.yaml                 # 运行配置
 └── pyproject.toml
@@ -90,9 +66,10 @@ DeepMT/
 ### CLI
 
 ```bash
-python -m deepmt mr generate --operator torch.relu --framework pytorch
-python -m deepmt catalog list --framework pytorch
-python -m deepmt health check
+deepmt mr generate torch.relu --framework pytorch --save
+deepmt test batch --operator torch.relu --framework pytorch
+deepmt test report
+deepmt ui start
 ```
 
 ### Python API
@@ -101,24 +78,11 @@ python -m deepmt health check
 from deepmt import DeepMT
 
 client = DeepMT()
-history = client.get_test_history()
-failed = client.get_failed_tests()
+result = client.run_batch_test("torch.relu", framework="pytorch", n_samples=10)
+print(result.summary())
 ```
 
-### 直接调用 MR 生成器
-
-```python
-from deepmt.mr_generator.operator.operator_mr_generator import OperatorMRGenerator
-
-generator = OperatorMRGenerator()
-mrs = generator.generate(
-    operator_name="torch.relu",
-    framework="pytorch",
-    sources=["llm", "template"],
-    use_precheck=True,
-    use_sympy_proof=True,
-)
-```
+详见 `docs/quick_start.md`。
 
 ---
 
@@ -133,14 +97,6 @@ llm:
   model: "gpt-4"
   url: "https://api.openai.com/v1/"
 
-agent:
-  enabled: false           # 是否启用 CrawlAgent 自动获取算子文档
-  max_steps: 10
-  cache_ttl_days: 7
-
-web_search:
-  enabled: true
-
 mr_generation:
   use_llm: true
   use_template_pool: true
@@ -148,35 +104,53 @@ mr_generation:
   use_sympy_proof: true
 ```
 
-环境变量：`OPENAI_API_KEY`、`DEEPMT_LOG_LEVEL`、`DEEPMT_LOG_DIR`。
+环境变量：`OPENAI_API_KEY`、`DEEPMT_LOG_LEVEL`、`DEEPMT_LOG_DIR`。详见 `docs/environment_variables.md`。
 
 ---
 
 ## 六、开发状态
 
-详见 `docs/status.md`。
+所有阶段（Phase A–F）均已完成，385 个单元测试通过。详见 `docs/dev/status.md`。
 
-| 层次     | 状态         |
-|--------|------------|
-| 算子层 MR 生成 | ✅ 完成       |
-| CrawlAgent  | ✅ 完成       |
-| CLI         | ✅ 完成       |
-| 模型层 MR 生成 | 🚧 进行中（30%）|
-| 应用层 MR 生成 | 📋 计划中      |
-| 缺陷报告增强   | 📋 计划中      |
+| 层次           | 状态              |
+|----------------|-------------------|
+| 算子层 MR 生成  | ✅ 完成            |
+| 批量测试执行    | ✅ 完成            |
+| 缺陷分析报告    | ✅ 完成            |
+| 跨框架一致性    | ✅ 完成（PyTorch vs NumPy）|
+| Web 仪表盘      | ✅ 完成            |
+| 模型层 MR 生成  | 🚧 接口占位，未实现 |
+| 应用层 MR 生成  | 📋 计划中          |
 
 ---
 
-## 七、参考文档
+## 七、文档索引
+
+### 用户文档
 
 | 文件 | 内容 |
 |------|------|
-| `docs/status.md` | 开发状态与下一步 |
-| `docs/agent_crawler_plan.md` | CrawlAgent 设计 |
+| `docs/quick_start.md` | 快速上手（安装、CLI、Python API） |
+| `docs/cli_reference.md` | CLI 完整命令参考 |
 | `docs/environment_variables.md` | 环境变量说明 |
-| `docs/operator_mr_technical.md` | 算子 MR 技术细节 |
-| `docs/quick_start.md` | 快速上手 |
+| `docs/demo_golden_path.md` | 答辩/演示用黄金演示路径 |
+
+### 技术设计
+
+| 文件 | 内容 |
+|------|------|
+| `docs/tech/operator_catalog.md` | 算子目录设计与 YAML 规范 |
+| `docs/tech/operator_mr.md` | 算子层 MR 生成与测试技术细节 |
+| `docs/tech/web_dashboard.md` | Web 仪表盘技术设计 |
+
+### 开发文档
+
+| 文件 | 内容 |
+|------|------|
+| `docs/dev/status.md` | 开发状态、已完成模块、架构约定 |
+| `docs/dev/agent_rules.md` | 编码智能体执行规范与开发原则 |
+| `docs/dev/01_Phase_A_*.md` ~ `07_Phase_F_*.md` | 各阶段详细规划文档 |
 
 ---
 
-*最后更新：2026-04-09*
+*最后更新：2026-04-13*
