@@ -1,6 +1,9 @@
-"""
-模型层 MR 生成模块（尚未实现）。
-ModelMRGenerator 为占位 stub，暂不对外导出。
-"""
+"""模型层 MR 生成模块（Phase I 实现）。"""
 
-__all__ = []
+from deepmt.mr_generator.model.model_mr_generator import ModelMRGenerator
+from deepmt.mr_generator.model.transform_strategy import (
+    TransformStrategy,
+    TransformStrategyLibrary,
+)
+
+__all__ = ["ModelMRGenerator", "TransformStrategy", "TransformStrategyLibrary"]

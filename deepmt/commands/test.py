@@ -1018,3 +1018,132 @@ def test_failures(limit, as_json):
     except Exception as e:
         click.echo(click.style(f"错误: {e}", fg="red"), err=True)
         sys.exit(1)
+
+
+# ── model ──────────────────────────────────────────────────────────────────────
+
+@test.command("model")
+@click.argument("model_name", required=False, default=None)
+@click.option(
+    "--framework",
+    default="pytorch",
+    type=click.Choice(["pytorch"], case_sensitive=False),
+    show_default=True,
+    help="目标框架（当前仅支持 pytorch）",
+)
+@click.option("--n-samples", default=10, show_default=True, type=int, help="每条 MR 的测试样本数")
+@click.option("--max-mrs", default=None, type=int, help="每个模型最多使用的 MR 数量")
+@click.option("--batch-size", default=4, show_default=True, type=int, help="每次推理的 batch 大小")
+@click.option("--all", "run_all", is_flag=True, default=False, help="测试所有基准模型")
+@click.option("--list", "list_models", is_flag=True, default=False, help="列出可用的基准模型")
+@click.option("--json", "as_json", is_flag=True, default=False, help="以 JSON 格式输出结果")
+def test_model(model_name, framework, n_samples, max_mrs, batch_size, run_all, list_models, as_json):
+    """模型层蜕变测试：对基准模型自动生成并执行 MR 测试。
+
+    基于结构分析自动生成模型层蜕变关系，无需 LLM。
+    支持 MLP、CNN、RNN、Transformer 四类基准模型。
+
+    \b
+    示例:
+      deepmt test model --list                          # 列出可用基准模型
+      deepmt test model SimpleMLP                       # 测试 SimpleMLP
+      deepmt test model SimpleCNN --n-samples 20
+      deepmt test model --all                           # 测试所有基准模型
+      deepmt test model SimpleMLP --json
+    """
+    try:
+        from deepmt.benchmarks.models import ModelBenchmarkRegistry
+        from deepmt.engine.model_test_runner import ModelTestRunner
+
+        registry = ModelBenchmarkRegistry()
+
+        if list_models:
+            names = registry.names(framework=framework)
+            click.echo(f"可用基准模型（框架={framework}，共 {len(names)} 个）:")
+            for n in names:
+                ir = registry.get(n, with_instance=False)
+                click.echo(
+                    f"  {n:<20} type={ir.model_type:<12} "
+                    f"input={ir.input_shape}  classes={ir.num_classes}"
+                )
+            return
+
+        runner = ModelTestRunner()
+
+        if run_all:
+            summaries = runner.run_all(
+                framework=framework,
+                n_samples=n_samples,
+                max_mrs=max_mrs,
+                batch_size=batch_size,
+            )
+            if as_json:
+                click.echo(json.dumps(
+                    [s.to_dict() for s in summaries], ensure_ascii=False, indent=2
+                ))
+                return
+            total_cases = sum(s.total_cases for s in summaries)
+            total_passed = sum(s.passed for s in summaries)
+            click.echo(f"\n模型层批量测试结果（{len(summaries)} 个模型）")
+            click.echo("─" * 60)
+            for s in summaries:
+                status = click.style("PASS", fg="green") if s.failed == 0 else click.style("FAIL", fg="red")
+                click.echo(
+                    f"  [{status}] {s.model_name:<20} "
+                    f"MRs={s.mr_count}  "
+                    f"{s.passed}/{s.total_cases} ({s.pass_rate:.0%})"
+                )
+            click.echo("─" * 60)
+            overall_rate = total_passed / total_cases if total_cases > 0 else 0.0
+            click.echo(
+                f"  汇总: {total_passed}/{total_cases} passed ({overall_rate:.1%})"
+            )
+            return
+
+        if model_name is None:
+            click.echo(
+                click.style(
+                    "请指定模型名称（如 SimpleMLP），或使用 --all 测试所有模型，"
+                    "或使用 --list 列出可用模型。",
+                    fg="yellow",
+                ),
+                err=True,
+            )
+            sys.exit(1)
+
+        summary = runner.run_model(
+            model_name,
+            n_samples=n_samples,
+            max_mrs=max_mrs,
+            batch_size=batch_size,
+        )
+
+        if as_json:
+            click.echo(json.dumps(summary.to_dict(), ensure_ascii=False, indent=2))
+            return
+
+        status_str = click.style("PASS", fg="green") if summary.failed == 0 else click.style("FAIL", fg="red")
+        click.echo(f"\n模型层测试结果 [{status_str}]")
+        click.echo("─" * 60)
+        click.echo(f"  模型:    {summary.model_name}  ({summary.model_type})")
+        click.echo(f"  框架:    {summary.framework}")
+        click.echo(f"  MR 数:   {summary.mr_count}")
+        click.echo(f"  样本数:  {summary.n_samples}")
+        click.echo(f"  结果:    {summary.passed}/{summary.total_cases} passed  "
+                   f"errors={summary.errors}  pass_rate={summary.pass_rate:.1%}")
+        if summary.mr_summaries:
+            click.echo(f"\n  逐 MR 统计:")
+            for m in summary.mr_summaries:
+                flag = "✓" if m.failed == 0 else "✗"
+                click.echo(
+                    f"    [{flag}] {m.description[:55]:<55}  "
+                    f"{m.passed}/{m.total} ({m.pass_rate:.0%})"
+                )
+        if summary.failure_cases:
+            click.echo(f"\n  失败案例（前 {len(summary.failure_cases)} 个）:")
+            for fc in summary.failure_cases[:5]:
+                click.echo(f"    sample#{fc['sample_idx']+1}: {fc['detail'][:80]}")
+
+    except Exception as e:
+        click.echo(click.style(f"错误: {e}", fg="red"), err=True)
+        sys.exit(1)

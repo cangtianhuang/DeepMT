@@ -22,14 +22,14 @@ DeepMT（Deep Metamorphic Testing）是面向深度学习框架（PyTorch、Tens
 | Phase F：软件工程规范化               | ✅ 完成   | `docs/dev/achived/06_Phase_F_软件工程规范化与包发布准备.md`   |
 | Phase G：统一IR与三层对象建模         | ✅ 完成   | `docs/dev/archived/07_Phase_G_统一IR与三层对象建模.md`         |
 | Phase H：第二框架落地与真实跨框架适配 | ✅ 完成   | `docs/dev/archived/08_Phase_H_第二框架落地与真实跨框架适配.md` |
-| Phase I：模型层MR自动生成引擎         | ⬜ 未开始 | `docs/dev/09_Phase_I_模型层MR自动生成引擎.md`                 |
+| Phase I：模型层MR自动生成引擎         | ✅ 完成   | `docs/dev/archived/09_Phase_I_模型层MR自动生成引擎.md`         |
 | Phase J：应用层语义MR生成与验证       | ⬜ 未开始 | `docs/dev/10_Phase_J_应用层语义MR生成与验证.md`               |
 | Phase K：全层MR质量保障与知识库治理   | ⬜ 未开始 | `docs/dev/11_Phase_K_全层MR质量保障与统一知识库治理.md`       |
 | Phase L：论文实验基准与自动化数据生产 | ⬜ 未开始 | `docs/dev/12_Phase_L_论文实验基准与自动化数据生产线.md`       |
 | Phase M：真实缺陷挖掘与案例沉淀       | ⬜ 未开始 | `docs/dev/13_Phase_M_真实缺陷挖掘与案例沉淀.md`               |
 | Phase N：论文交付收口与复现资产封装   | ⬜ 未开始 | `docs/dev/14_Phase_N_论文交付收口与复现资产封装.md`           |
 
-**当前主链：** A~H 已完成 → **下一步：模型层MR自动生成引擎（Phase I）**
+**当前主链：** A~I 已完成 → **下一步：应用层语义MR生成与验证（Phase J）**
 
 ## 环境与运行
 
@@ -143,7 +143,10 @@ source .venv/bin/activate && PYTHONPATH=$(pwd) python -m pytest tests/
    - 重命名函数/类/CLI 命令、修改接口签名、调整数据结构时，必须**彻底清理**：删除旧名称、更新所有调用点、移除兼容性代码
    - 禁止保留废弃别名、`_deprecated_` 包装、兼容性注释（如 `# kept for backward compat`）等过渡代码
 
-6. **插件职责边界（反复违规，强制记忆）**
+6. **禁止自主提交代码**
+   - 未经用户明确要求，**禁止执行 `git commit` / `git add`**；用户自行审查并提交
+
+7. **插件职责边界（反复违规，强制记忆）**
    - `FrameworkPlugin` / `FrameworkAdapter` 只提供**基础、框架专属**的原语接口：
      - ✅ 合法：`make_tensor(shape, dtype, value_range)`、`allclose`、`to_numpy`、`get_shape`、`_execute_operator`
      - ❌ 禁止：任何需要解析项目自定义数据格式（`input_specs`、MR 结构、YAML 字段）的逻辑

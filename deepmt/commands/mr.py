@@ -569,3 +569,94 @@ def mr_promote(operator, layer):
         click.echo(click.style(f"已迁移 {count} 个 MR 到项目库", fg="green"))
     else:
         click.echo(click.style("没有 verified=True 的 MR 可迁移", fg="yellow"))
+
+
+# ── model-generate ────────────────────────────────────────────────────────────
+
+@mr.command("model-generate")
+@click.argument("model_name", required=False, default=None)
+@click.option(
+    "--framework",
+    default="pytorch",
+    type=click.Choice(["pytorch"], case_sensitive=False),
+    show_default=True,
+    help="目标框架",
+)
+@click.option("--max-mrs", default=None, type=int, help="每个模型最多生成的 MR 数量")
+@click.option("--all", "gen_all", is_flag=True, default=False, help="为所有基准模型生成 MR")
+@click.option("--json", "as_json", is_flag=True, default=False, help="以 JSON 格式输出")
+def mr_model_generate(model_name, framework, max_mrs, gen_all, as_json):
+    """为模型层基准对象生成蜕变关系（基于结构分析，无需 LLM）。
+
+    系统自动分析模型结构，根据模型类型（MLP/CNN/RNN/Transformer）
+    选择适用的变换策略，生成对应的模型层 MR 列表。
+
+    \b
+    示例:
+      deepmt mr model-generate SimpleMLP              # 为 SimpleMLP 生成 MR
+      deepmt mr model-generate --all                  # 为所有基准模型生成 MR
+      deepmt mr model-generate SimpleCNN --max-mrs 5
+      deepmt mr model-generate SimpleMLP --json
+    """
+    try:
+        from deepmt.benchmarks.models import ModelBenchmarkRegistry
+        from deepmt.mr_generator.model import ModelMRGenerator
+
+        registry = ModelBenchmarkRegistry()
+        generator = ModelMRGenerator()
+
+        if gen_all:
+            names = registry.names(framework=framework)
+        elif model_name:
+            names = [model_name]
+        else:
+            click.echo(
+                click.style(
+                    "请指定模型名称，或使用 --all 为所有基准模型生成 MR。",
+                    fg="yellow",
+                ),
+                err=True,
+            )
+            sys.exit(1)
+
+        all_results = {}
+        for name in names:
+            model_ir = registry.get(name, with_instance=True)
+            if model_ir is None:
+                click.echo(click.style(f"未找到模型: {name!r}", fg="yellow"), err=True)
+                continue
+            mrs = generator.generate(model_ir, max_per_model=max_mrs)
+            all_results[name] = mrs
+            if not as_json:
+                click.echo(f"\n{name} ({model_ir.model_type})  — {len(mrs)} MRs 生成")
+                for mr in mrs:
+                    click.echo(
+                        f"  [{mr.id[:8]}] {mr.description[:65]}"
+                    )
+                    click.echo(
+                        f"           transform: {mr.transform_code[:55]}"
+                    )
+                    click.echo(
+                        f"           oracle:    {mr.oracle_expr}"
+                    )
+
+        if as_json:
+            output = {
+                name: [
+                    {
+                        "id": mr.id,
+                        "description": mr.description,
+                        "transform_code": mr.transform_code,
+                        "oracle_expr": mr.oracle_expr,
+                        "category": mr.category,
+                        "subject_name": mr.subject_name,
+                    }
+                    for mr in mrs
+                ]
+                for name, mrs in all_results.items()
+            }
+            click.echo(json.dumps(output, ensure_ascii=False, indent=2))
+
+    except Exception as e:
+        click.echo(click.style(f"错误: {e}", fg="red"), err=True)
+        sys.exit(1)

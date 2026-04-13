@@ -48,19 +48,37 @@ class OperatorIR(TestSubject):
     input_specs: Optional[List[Dict[str, Any]]] = None
 
 
-# ── 模型层 IR（占位，Phase I 完善）─────────────────────────────────────────────
+# ── 模型层 IR（Phase I 完善）──────────────────────────────────────────────────
 
 
 @dataclass
 class ModelIR(TestSubject):
-    """模型被测对象描述（开发中）。
+    """模型被测对象描述。
 
     继承 TestSubject，subject_type 固定为 "model"。
+
+    Attributes:
+        model_type:      模型结构类型，如 "mlp"、"cnn"、"rnn"、"transformer"
+        task_type:       任务类型，如 "classification"、"regression"、"embedding"
+        input_shape:     单样本输入形状，如 (3, 224, 224)
+        output_shape:    单样本输出形状，如 (10,)
+        num_classes:     分类任务的类别数；非分类任务为 None
+        layers:          层描述列表（由 GraphAnalyzer 填充）
+        connections:     层连接关系列表（由 GraphAnalyzer 填充）
+        analysis_summary: 结构分析摘要（由 GraphAnalyzer 填充）
+        model_instance:  运行时 PyTorch/框架模型对象（不序列化）
     """
 
     subject_type: SubjectType = "model"
+    model_type: str = ""
+    task_type: str = ""
+    input_shape: Optional[tuple] = None
+    output_shape: Optional[tuple] = None
+    num_classes: Optional[int] = None
     layers: List[Any] = field(default_factory=list)
     connections: List[Any] = field(default_factory=list)
+    analysis_summary: Dict[str, Any] = field(default_factory=dict)
+    model_instance: Optional[Any] = field(default=None, repr=False, compare=False)
 
 
 # ── 应用层 IR（占位，Phase J 完善）──────────────────────────────────────────────
