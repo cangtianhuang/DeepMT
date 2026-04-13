@@ -81,20 +81,33 @@ class ModelIR(TestSubject):
     model_instance: Optional[Any] = field(default=None, repr=False, compare=False)
 
 
-# ── 应用层 IR（占位，Phase J 完善）──────────────────────────────────────────────
+# ── 应用层 IR（Phase J 完善）────────────────────────────────────────────────────
 
 
 @dataclass
 class ApplicationIR(TestSubject):
-    """应用被测对象描述（开发中）。
+    """应用被测对象描述。
 
     继承 TestSubject，subject_type 固定为 "application"。
+
+    Attributes:
+        task_type:         应用任务类型，如 "image_classification"、"text_sentiment"
+        domain:            领域，如 "computer_vision"、"nlp"、"general"
+        input_description: 输入格式描述（自然语言），如 "RGB 图像 numpy array (H, W, 3)"
+        output_description: 输出格式描述（自然语言），如 "整数类别标签"
+        sample_inputs:     用于验证的样例输入列表（dict 格式，含 'input'/'text' 等键）
+        sample_labels:     样例输入的预期标签或输出
+        context_snippets:  领域知识片段，为 LLM 提示提供背景（由 AppContextBuilder 填充）
     """
 
     subject_type: SubjectType = "application"
-    purpose: str = ""
-    input_format: str = ""
-    output_format: str = ""
+    task_type: str = ""
+    domain: str = ""
+    input_description: str = ""
+    output_description: str = ""
+    sample_inputs: List[Any] = field(default_factory=list)
+    sample_labels: List[Any] = field(default_factory=list)
+    context_snippets: List[str] = field(default_factory=list)
 
 
 # ── MR：统一关系表达 ──────────────────────────────────────────────────────────

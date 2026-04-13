@@ -112,22 +112,36 @@ class TestModelIR:
         assert b.layers == []
 
 
-# ── ApplicationIR 占位字段 ────────────────────────────────────────────────────
+# ── ApplicationIR 字段（Phase J 完善）───────────────────────────────────────
 
 
 class TestApplicationIR:
-    def test_purpose_default_empty(self):
+    def test_task_type_default_empty(self):
         a = ApplicationIR(name="App")
-        assert a.purpose == ""
+        assert a.task_type == ""
 
-    def test_input_output_format(self):
+    def test_domain_default_empty(self):
+        a = ApplicationIR(name="App")
+        assert a.domain == ""
+
+    def test_input_output_description(self):
         a = ApplicationIR(
             name="App",
-            input_format="image/224x224",
-            output_format="json/labels",
+            input_description="image/224x224",
+            output_description="json/labels",
         )
-        assert a.input_format == "image/224x224"
-        assert a.output_format == "json/labels"
+        assert a.input_description == "image/224x224"
+        assert a.output_description == "json/labels"
+
+    def test_sample_inputs_default_empty(self):
+        a = ApplicationIR(name="App")
+        assert a.sample_inputs == []
+        assert a.sample_labels == []
+        assert a.context_snippets == []
+
+    def test_subject_type_is_application(self):
+        a = ApplicationIR(name="App")
+        assert a.subject_type == "application"
 
 
 # ── MetamorphicRelation 新字段 ────────────────────────────────────────────────

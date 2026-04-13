@@ -1,6 +1,5 @@
-"""
-应用层 MR 生成模块（尚未实现）。
-ApplicationMRGenerator 为占位 stub，暂不对外导出。
-"""
+"""应用层 MR 生成模块（Phase J）。"""
 
-__all__ = []
+from deepmt.mr_generator.application.app_mr import ApplicationMRGenerator
+
+__all__ = ["ApplicationMRGenerator"]
