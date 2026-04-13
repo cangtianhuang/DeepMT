@@ -1,8 +1,8 @@
 <div align="center">
 
-<img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=600&size=28&pause=1000&color=4F9BF7&center=true&vCenter=true&width=700&lines=DeepMT+%F0%9F%94%AC;%E8%87%AA%E5%8A%A8%E7%94%9F%E6%88%90%E8%9C%95%E5%8F%98%E5%85%B3%E7%B3%BB;%E5%8F%91%E7%8E%B0+PyTorch+%2F+TF+%2F+Paddle+%E4%B8%AD%E7%9A%84%E7%BC%BA%E9%99%B7;%E6%B2%A1%E6%9C%89+Oracle%3F+%E4%B8%8D%E6%80%95%EF%BC%81" alt="Typing SVG" />
+[![Header](https://capsule-render.vercel.app/api?type=waving&color=0:0f2744,50:1a4b8a,100:4F9BF7&height=220&section=header&text=DeepMT&fontSize=96&fontColor=ffffff&animation=fadeIn&fontAlignY=42&desc=%E9%9D%A2%E5%90%91%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0%E6%A1%86%E6%9E%B6%E7%9A%84%E8%9C%95%E5%8F%98%E6%B5%8B%E8%AF%95%E7%B3%BB%E7%BB%9F&descAlignY=62&descSize=18&descColor=c8e0ff)](https://github.com/cangtianhuang/DeepMT)
 
-**面向深度学习框架的蜕变测试系统**
+<img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=500&size=17&pause=1200&color=4F9BF7&center=true&vCenter=true&width=640&lines=%E8%87%AA%E5%8A%A8%E7%94%9F%E6%88%90%E8%9C%95%E5%8F%98%E5%85%B3%E7%B3%BB;%E5%8F%91%E7%8E%B0+PyTorch+%2F+TensorFlow+%2F+PaddlePaddle+%E7%BC%BA%E9%99%B7;%E6%B2%A1%E6%9C%89+Oracle%EF%BC%9F+%E4%B8%8D%E6%80%95%EF%BC%81;%E7%AC%A6%E5%8F%B7%E8%AF%81%E6%98%8E+%2B+LLM+%E7%8C%9C%E6%83%B3+%2B+%E6%89%B9%E9%87%8F%E6%B5%8B%E8%AF%95%E3%80%82" alt="Typing SVG" />
 
 <table border="0" width="100%">
 <tr>
@@ -303,4 +303,8 @@ python -m pytest tests/unit/ --cov=deepmt --cov-report=html
 <div align="center">
 <br>
 <sub>⭐ 如果 DeepMT 对您的研究有帮助，欢迎点个 Star，让更多人发现它！</sub>
+<br><br>
+
+[![Footer](https://capsule-render.vercel.app/api?type=waving&color=0:4F9BF7,50:1a4b8a,100:0f2744&height=120&section=footer)](https://github.com/cangtianhuang/DeepMT)
+
 </div>

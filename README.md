@@ -1,8 +1,8 @@
 <div align="center">
 
-<img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=600&size=28&pause=1000&color=4F9BF7&center=true&vCenter=true&width=700&lines=DeepMT+%F0%9F%94%AC;Auto-generate+Metamorphic+Relations;Catch+Bugs+in+PyTorch+%2F+TF+%2F+PaddlePaddle;No+Oracle%3F+No+Problem." alt="Typing SVG" />
+[![Header](https://capsule-render.vercel.app/api?type=waving&color=0:0f2744,50:1a4b8a,100:4F9BF7&height=220&section=header&text=DeepMT&fontSize=96&fontColor=ffffff&animation=fadeIn&fontAlignY=42&desc=Deep%20Metamorphic%20Testing%20for%20Deep%20Learning%20Frameworks&descAlignY=62&descSize=18&descColor=c8e0ff)](https://github.com/cangtianhuang/DeepMT)
 
-**Deep Metamorphic Testing for Deep Learning Frameworks**
+<img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=500&size=17&pause=1200&color=4F9BF7&center=true&vCenter=true&width=640&lines=Auto-generate+Metamorphic+Relations;Catch+Bugs+in+PyTorch+%2F+TensorFlow+%2F+PaddlePaddle;No+Oracle%3F+No+Problem.;Symbolic+Proof+%2B+LLM+Hypothesis+%2B+Batch+Testing." alt="Typing SVG" />
 
 <table border="0" width="100%">
 <tr>
@@ -305,4 +305,8 @@ python -m pytest tests/unit/ --cov=deepmt --cov-report=html
 <div align="center">
 <br>
 <sub>⭐ If DeepMT helps your research, a star keeps the project visible — thank you!</sub>
+<br><br>
+
+[![Footer](https://capsule-render.vercel.app/api?type=waving&color=0:4F9BF7,50:1a4b8a,100:0f2744&height=120&section=footer)](https://github.com/cangtianhuang/DeepMT)
+
 </div>
