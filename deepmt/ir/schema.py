@@ -1,10 +1,45 @@
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Literal, Optional
+
+# ── 层次与生命周期常量 ─────────────────────────────────────────────────────────
+SubjectType = Literal["operator", "model", "application"]
+LifecycleState = Literal["pending", "checked", "proven", "retired"]
+
+
+# ── 统一被测主体基类 ──────────────────────────────────────────────────────────
 
 
 @dataclass
-class OperatorIR:
+class TestSubject:
+    """三层被测对象的统一抽象基类。
+
+    所有被测对象（算子、模型、应用）共享本基类字段。
+    子类通过 subject_type 声明自身层次；通过 metadata 扩展层特有信息。
+
+    Attributes:
+        name:         唯一标识名称（如 "torch.add"、"ResNet50"）
+        subject_type: 层次类型（"operator" / "model" / "application"）
+        framework:    适用框架；None 表示框架无关
+        metadata:     层次专属的键值扩展（不影响基类接口）
+    """
+
     name: str
+    subject_type: SubjectType = "operator"
+    framework: Optional[str] = None
+    metadata: Dict[str, Any] = field(default_factory=dict)
+
+
+# ── 算子层 IR ────────────────────────────────────────────────────────────────
+
+
+@dataclass
+class OperatorIR(TestSubject):
+    """算子被测对象描述。
+
+    继承 TestSubject，subject_type 固定为 "operator"。
+    """
+
+    subject_type: SubjectType = "operator"
     inputs: Optional[List[Any]] = None
     outputs: Optional[List[Any]] = None
     properties: Optional[Dict[str, Any]] = None
@@ -13,19 +48,38 @@ class OperatorIR:
     input_specs: Optional[List[Dict[str, Any]]] = None
 
 
-@dataclass
-class ModelIR:
-    name: str
-    layers: list
-    connections: list
+# ── 模型层 IR（占位，Phase I 完善）─────────────────────────────────────────────
 
 
 @dataclass
-class ApplicationIR:
-    name: str
-    purpose: str
-    input_format: str
-    output_format: str
+class ModelIR(TestSubject):
+    """模型被测对象描述（开发中）。
+
+    继承 TestSubject，subject_type 固定为 "model"。
+    """
+
+    subject_type: SubjectType = "model"
+    layers: List[Any] = field(default_factory=list)
+    connections: List[Any] = field(default_factory=list)
+
+
+# ── 应用层 IR（占位，Phase J 完善）──────────────────────────────────────────────
+
+
+@dataclass
+class ApplicationIR(TestSubject):
+    """应用被测对象描述（开发中）。
+
+    继承 TestSubject，subject_type 固定为 "application"。
+    """
+
+    subject_type: SubjectType = "application"
+    purpose: str = ""
+    input_format: str = ""
+    output_format: str = ""
+
+
+# ── MR：统一关系表达 ──────────────────────────────────────────────────────────
 
 
 @dataclass
@@ -46,11 +100,23 @@ class MetamorphicRelation:
             "orig == trans"
             "trans == 2 * orig"
             "trans == -orig"
+
+    lifecycle_state（生命周期）
+        统一状态流转入口，替代原先分散的 checked/proven/verified 判断：
+        - "pending":  已录入，未经任何验证
+        - "checked":  数值 precheck 通过（checked=True）
+        - "proven":   SymPy 符号证明通过（proven=True），或人工确认
+        - "retired":  已废弃，不参与测试
+        旧字段 checked / proven / verified 保留用于向后兼容。
     """
 
     # ── 核心标识 ────────────────────────────────────────────────────────────
     id: str
     description: str
+
+    # ── 所属主体（G 阶段新增）────────────────────────────────────────────────
+    subject_name: str = ""          # 关联的被测主体名称（如 "torch.add"）
+    subject_type: SubjectType = "operator"  # 关联的被测层次
 
     # ── 变换定义 ─────────────────────────────────────────────────────────────
     transform_code: str = ""
@@ -63,7 +129,10 @@ class MetamorphicRelation:
     source: str = ""  # "llm" | "template" | "manual"
     applicable_frameworks: Optional[List[str]] = None  # None = 通用
 
-    # ── 验证状态 ──────────────────────────────────────────────────────────────
+    # ── 生命周期（G 阶段新增统一入口）───────────────────────────────────────────
+    lifecycle_state: LifecycleState = "pending"
+
+    # ── 验证状态（保留，兼容旧逻辑）──────────────────────────────────────────────
     checked: Optional[bool] = None  # 数值 precheck 通过
     proven: Optional[bool] = None  # SymPy 符号证明通过
     verified: bool = False  # True iff checked=True AND proven=True，或人工确认
@@ -73,6 +142,21 @@ class MetamorphicRelation:
 
     # ── 运行时专用（永不序列化）──────────────────────────────────────────────
     transform: Optional[Callable] = field(default=None, repr=False, compare=False)
+
+    def sync_lifecycle(self) -> None:
+        """根据 checked / proven / verified 同步 lifecycle_state。
+
+        用于从旧数据迁移或在验证流水线中保持状态一致。
+        """
+        if self.verified or self.proven:
+            self.lifecycle_state = "proven"
+        elif self.checked:
+            self.lifecycle_state = "checked"
+        else:
+            self.lifecycle_state = "pending"
+
+
+# ── Oracle 评估结果 ───────────────────────────────────────────────────────────
 
 
 @dataclass
