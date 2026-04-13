@@ -12,24 +12,24 @@ DeepMT（Deep Metamorphic Testing）是面向深度学习框架（PyTorch、Tens
 > 入口：`docs/dev/status.md` → 对应阶段文档。  
 > 执行规范：`docs/dev/agent_rules.md`
 
-| 阶段                                  | 状态     | 文档                                                          |
-| ------------------------------------- | -------- | ------------------------------------------------------------- |
-| Phase A：算子数据层完善               | ✅ 完成   | `docs/dev/achived/01_Phase_A_算子数据层完善.md`               |
-| Phase B：算子层 MR 生成与知识库       | ✅ 完成   | `docs/dev/achived/02_Phase_B_算子层MR生成与知识库.md`         |
-| Phase C：测试执行与跨框架适配         | ✅ 完成   | `docs/dev/achived/03_Phase_C_测试执行与跨框架适配.md`         |
-| Phase D：缺陷分析与实验闭环           | ✅ 完成   | `docs/dev/achived/04_Phase_D_缺陷分析、实验闭环与研究结论.md` |
-| Phase E：演示交付与生产化加固         | ✅ 完成   | `docs/dev/achived/05_Phase_E_演示交付与生产化加固.md`         |
-| Phase F：软件工程规范化               | ✅ 完成   | `docs/dev/achived/06_Phase_F_软件工程规范化与包发布准备.md`   |
+| 阶段                                  | 状态     | 文档                                                           |
+| ------------------------------------- | -------- | -------------------------------------------------------------- |
+| Phase A：算子数据层完善               | ✅ 完成   | `docs/dev/achived/01_Phase_A_算子数据层完善.md`                |
+| Phase B：算子层 MR 生成与知识库       | ✅ 完成   | `docs/dev/achived/02_Phase_B_算子层MR生成与知识库.md`          |
+| Phase C：测试执行与跨框架适配         | ✅ 完成   | `docs/dev/achived/03_Phase_C_测试执行与跨框架适配.md`          |
+| Phase D：缺陷分析与实验闭环           | ✅ 完成   | `docs/dev/achived/04_Phase_D_缺陷分析、实验闭环与研究结论.md`  |
+| Phase E：演示交付与生产化加固         | ✅ 完成   | `docs/dev/achived/05_Phase_E_演示交付与生产化加固.md`          |
+| Phase F：软件工程规范化               | ✅ 完成   | `docs/dev/achived/06_Phase_F_软件工程规范化与包发布准备.md`    |
 | Phase G：统一IR与三层对象建模         | ✅ 完成   | `docs/dev/archived/07_Phase_G_统一IR与三层对象建模.md`         |
 | Phase H：第二框架落地与真实跨框架适配 | ✅ 完成   | `docs/dev/archived/08_Phase_H_第二框架落地与真实跨框架适配.md` |
 | Phase I：模型层MR自动生成引擎         | ✅ 完成   | `docs/dev/archived/09_Phase_I_模型层MR自动生成引擎.md`         |
-| Phase J：应用层语义MR生成与验证       | ⬜ 未开始 | `docs/dev/10_Phase_J_应用层语义MR生成与验证.md`               |
-| Phase K：全层MR质量保障与知识库治理   | ⬜ 未开始 | `docs/dev/11_Phase_K_全层MR质量保障与统一知识库治理.md`       |
-| Phase L：论文实验基准与自动化数据生产 | ⬜ 未开始 | `docs/dev/12_Phase_L_论文实验基准与自动化数据生产线.md`       |
-| Phase M：真实缺陷挖掘与案例沉淀       | ⬜ 未开始 | `docs/dev/13_Phase_M_真实缺陷挖掘与案例沉淀.md`               |
-| Phase N：论文交付收口与复现资产封装   | ⬜ 未开始 | `docs/dev/14_Phase_N_论文交付收口与复现资产封装.md`           |
+| Phase J：应用层语义MR生成与验证       | ✅ 完成   | `docs/dev/archived/10_Phase_J_应用层语义MR生成与验证.md`       |
+| Phase K：全层MR质量保障与知识库治理   | ⬜ 未开始 | `docs/dev/11_Phase_K_全层MR质量保障与统一知识库治理.md`        |
+| Phase L：论文实验基准与自动化数据生产 | ⬜ 未开始 | `docs/dev/12_Phase_L_论文实验基准与自动化数据生产线.md`        |
+| Phase M：真实缺陷挖掘与案例沉淀       | ⬜ 未开始 | `docs/dev/13_Phase_M_真实缺陷挖掘与案例沉淀.md`                |
+| Phase N：论文交付收口与复现资产封装   | ⬜ 未开始 | `docs/dev/14_Phase_N_论文交付收口与复现资产封装.md`            |
 
-**当前主链：** A~I 已完成 → **下一步：应用层语义MR生成与验证（Phase J）**
+**当前主链：** A~J 已完成 → **下一步：全层MR质量保障与统一知识库治理（Phase K）**
 
 ## 环境与运行
 
@@ -68,7 +68,17 @@ source .venv/bin/activate && PYTHONPATH=$(pwd) python -m pytest tests/
 ### 核心数据结构（`deepmt/ir/schema.py`）
 
 - `OperatorIR`：算子描述（名称、输入、输出、属性）
-- `MetamorphicRelation`：MR 对象，包含 `transform_code`（输入变换 lambda）、`oracle_expr`（输出关系表达式，使用变量 `orig`/`trans`/`x`）、`verified`、`category`
+- `ModelIR`：模型描述（model_type、task_type、input_shape、model_instance 等）
+- `ApplicationIR`：应用描述（task_type、domain、sample_inputs、sample_labels 等）
+- `MetamorphicRelation`：MR 对象，包含 `transform_code`（输入变换 lambda）、`oracle_expr`（输出关系表达式）、`layer`（算子/模型/应用）、`lifecycle_state`、`source`
+
+### 三层 MR 生成概览
+
+| 层次   | 生成器                                     | 特点                                            |
+| ------ | ------------------------------------------ | ----------------------------------------------- |
+| 算子层 | `OperatorMRGenerator`（四阶段流水线）      | LLM 猜想 + 模板池 + 数值预检 + SymPy 证明       |
+| 模型层 | `ModelMRGenerator`（模板驱动）             | 结构分析（GraphAnalyzer）→ 策略库选择 → 生成 MR |
+| 应用层 | `ApplicationMRGenerator`（LLM + 模板回退） | 场景注册 → 上下文构建 → LLM/模板生成 → 语义验证 |
 
 ## 项目地图
 
@@ -90,28 +100,46 @@ source .venv/bin/activate && PYTHONPATH=$(pwd) python -m pytest tests/
 │   │   ├── scheduler.py        #   任务调度
 │   │   └── test_runner.py      #   测试执行（使用已生成的 MR）
 │   ├── ir/                 #   统一中间表示
-│   │   └── schema.py           #   IR 与 MR 数据结构
+│   │   └── schema.py           #   三层 IR（OperatorIR/ModelIR/ApplicationIR）+ MR 数据结构
 │   ├── mr_generator/       #   MR 生成引擎
-│   │   ├── operator/           #   算子层（核心）
-│   │   │   ├── operator_mr_generator.py  #   主生成器（generate/verify 流水线）
+│   │   ├── operator/           #   算子层（四阶段流水线）
+│   │   │   ├── operator_mr_generator.py  #   主生成器
 │   │   │   ├── operator_llm_mr_generator.py  # LLM 生成
 │   │   │   ├── sympy_prover.py               # 符号证明
 │   │   │   ├── sympy_translator.py           # 代码→SymPy
 │   │   │   └── ast_parser.py                 # AST 解析
-│   │   ├── model/              #   模型层（开发中）
-│   │   ├── application/        #   应用层（开发中）
+│   │   ├── model/              #   模型层（Phase I）
+│   │   │   ├── model_mr_generator.py         # 模板驱动生成器
+│   │   │   └── transform_strategy.py         # 策略库
+│   │   ├── application/        #   应用层（Phase J）
+│   │   │   ├── app_mr.py                     # ApplicationMRGenerator
+│   │   │   ├── app_context_builder.py        # 知识上下文构建
+│   │   │   └── app_llm_mr_generator.py       # LLM 候选生成
 │   │   ├── base/               #   知识库、模板池、MR 仓库
 │   │   └── config/             #   模板/知识库 YAML + 算子目录
-│   ├── plugins/            #   框架适配器（目前仅 PyTorch 可用）
+│   ├── model/              #   模型结构分析（GraphAnalyzer）
+│   ├── application/        #   应用层场景描述（ApplicationScenario）
+│   ├── benchmarks/         #   基准对象注册表
+│   │   ├── models/             #   ModelBenchmarkRegistry + 预置 PyTorch 模型
+│   │   └── applications/       #   ApplicationBenchmarkRegistry（图像分类/文本情感）
+│   ├── plugins/            #   框架适配器（PyTorch 完整，NumPy/Paddle 部分）
 │   ├── tools/              #   通用工具
 │   │   ├── llm/            #     LLM 客户端 / OCR
-│   │   └── web_search/     #     搜索、Sphinx 解析、算子文档获取（缓存位于 data/cache_web_search/）
-│   ├── analysis/           #   输入生成、预检、验证（mr_prechecker.py、mr_verifier.py 等）
+│   │   └── web_search/     #     搜索、Sphinx 解析、算子文档获取
+│   ├── analysis/           #   分析与验证模块
+│   │   ├── mr_prechecker.py        # 算子层数值预检
+│   │   ├── mr_verifier.py          # 算子层 oracle 验证
+│   │   ├── model_verifier.py       # 模型层 oracle 验证
+│   │   ├── semantic_mr_validator.py # 应用层语义验证（Phase J）
+│   │   ├── application_reporter.py # 应用层报告生成（Phase J）
+│   │   ├── report_generator.py     # 算子层报告
+│   │   ├── cross_framework_tester.py # 跨框架一致性
+│   │   └── experiment_organizer.py   # 实验组织与 RQ 统计
 │   └── monitoring/         #   健康检查与进度追踪
-├── tests/                  # 测试用例
+├── tests/                  # 测试用例（unit/ + integration/）
 ├── demo/                   # 快速演示
 ├── docs/                   # 开发文档
-├── data/                   # 数据（日志、SQLite 数据库）
+├── data/                   # 数据（日志、SQLite、MR YAML）
 ├── config.yaml             # 运行配置
 └── pyproject.toml          # 项目元数据
 ```
