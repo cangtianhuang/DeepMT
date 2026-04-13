@@ -13,10 +13,18 @@ def not_implemented_error(feature: str, hint: str = ""):
     sys.exit(2)
 
 
-def get_repo(repo_dir: str = "data/knowledge/mr_repository/operator"):
-    """获取 MRRepository 实例（用户工作区）。"""
+def get_repo(
+    layer: str = "operator",
+    repo_dir: str = "data/knowledge/mr_repository",
+):
+    """获取 MRRepository 实例（用户工作区）。
+
+    Args:
+        layer:    MR 层次（"operator" | "model" | "application"）
+        repo_dir: 仓库根目录（层目录在其子目录中）
+    """
     from deepmt.mr_generator.base.mr_repository import MRRepository
-    return MRRepository(repo_dir=repo_dir)
+    return MRRepository(layer=layer, repo_dir=repo_dir)
 
 
 def get_library(layer: str = "operator", library_dir: str = "data/knowledge/mr_library"):

@@ -3,7 +3,7 @@ from typing import Any, Callable, Dict, List, Literal, Optional
 
 # ── 层次与生命周期常量 ─────────────────────────────────────────────────────────
 SubjectType = Literal["operator", "model", "application"]
-LifecycleState = Literal["pending", "checked", "proven", "retired"]
+LifecycleState = Literal["pending", "checked", "proven", "curated", "retired"]
 
 
 # ── 统一被测主体基类 ──────────────────────────────────────────────────────────
@@ -168,6 +168,10 @@ class MetamorphicRelation:
     proven: Optional[bool] = None  # SymPy 符号证明通过
     verified: bool = False  # True iff checked=True AND proven=True，或人工确认
 
+    # ── 来源溯源（K3 新增）────────────────────────────────────────────────────
+    provenance: Dict[str, Any] = field(default_factory=dict)
+    # 推荐键：created_at, generator_id, generator_version, source_detail, prompt_hash
+
     # ── 用户工作区噪音字段（项目库不序列化）──────────────────────────────────
     analysis: str = ""
 
@@ -179,12 +183,36 @@ class MetamorphicRelation:
 
         用于从旧数据迁移或在验证流水线中保持状态一致。
         """
+        if self.lifecycle_state == "curated":
+            return  # 人工策展状态不自动降级
+        if self.lifecycle_state == "retired":
+            return  # 已归档状态不自动修改
         if self.verified or self.proven:
             self.lifecycle_state = "proven"
         elif self.checked:
             self.lifecycle_state = "checked"
         else:
             self.lifecycle_state = "pending"
+
+    @property
+    def quality_level(self) -> str:
+        """返回统一质量级别字符串。
+
+        映射：
+            retired  → "retired"
+            curated  → "curated"
+            proven   → "proven"
+            checked  → "checked"
+            pending  → "candidate"
+        """
+        _map = {
+            "retired": "retired",
+            "curated": "curated",
+            "proven": "proven",
+            "checked": "checked",
+            "pending": "candidate",
+        }
+        return _map.get(self.lifecycle_state, "candidate")
 
 
 # ── Oracle 评估结果 ───────────────────────────────────────────────────────────

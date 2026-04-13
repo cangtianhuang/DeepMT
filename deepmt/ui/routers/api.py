@@ -99,7 +99,7 @@ async def api_mr_repository():
     """
     def _load():
         try:
-            repo = MRRepository()
+            repo = MRRepository(layer="operator")
             operators_raw = repo.list_operators()
 
             total_mrs = 0
@@ -168,7 +168,7 @@ async def api_mr_detail(operator_name: str):
     不缓存（单算子查询成本低）。
     """
     try:
-        repo = MRRepository()
+        repo = MRRepository(layer="operator")
         mrs = repo.load(operator_name)
         data = [
             {
@@ -180,11 +180,14 @@ async def api_mr_detail(operator_name: str):
                 "source": mr.source,
                 "tolerance": mr.tolerance,
                 "layer": mr.layer,
+                "lifecycle_state": mr.lifecycle_state,
+                "quality_level": mr.quality_level,
                 "applicable_frameworks": mr.applicable_frameworks,
                 "verified": mr.verified,
                 "checked": mr.checked,
                 "proven": mr.proven,
                 "analysis": mr.analysis,
+                "provenance": mr.provenance,
             }
             for mr in mrs
         ]
@@ -338,5 +341,100 @@ async def api_cross_session(session_id: str):
         data = session.to_dict()
         # 补充每条 MR 的通过率字段（to_dict 已包含，但做二次确认）
         return _ok(data)
+    except Exception as e:
+        return _err(str(e))
+
+
+# ── K6: 跨层质量视图 ───────────────────────────────────────────────────────────
+
+
+@router.get("/mr-quality", summary="跨层 MR 质量统计视图")
+async def api_mr_quality():
+    """
+    汇总三层（operator/model/application）MR 仓库的质量分布、来源分布与异常项。
+    缓存 60 秒。
+
+    返回字段:
+        total_mrs          — 全库 MR 总数
+        quality_distribution — 质量等级分布（curated/proven/checked/candidate/retired）
+        source_distribution  — 来源分布（llm/template/manual/unknown）
+        by_layer           — 各层统计
+        anomalies          — 异常告警列表
+    """
+    def _load():
+        try:
+            from deepmt.analysis.repo_audit import RepoAuditor
+            auditor = RepoAuditor()
+            report = auditor.run_audit()
+            return {
+                "total_mrs": report.total_mrs,
+                "total_retired": report.total_retired,
+                "total_duplicate_groups": report.total_duplicate_groups,
+                "quality_distribution": report.quality_distribution(),
+                "source_distribution": report.source_distribution(),
+                "anomalies": report.anomalies(),
+                "by_layer": {
+                    lyr: {
+                        "total": s.total,
+                        "by_quality": s.by_quality,
+                        "by_source": s.by_source,
+                        "retired": s.retired,
+                        "no_oracle": s.no_oracle,
+                        "no_provenance": s.no_provenance,
+                    }
+                    for lyr, s in report.layers.items()
+                },
+            }
+        except Exception as e:
+            return {"error": str(e)}
+
+    return _ok(_cached("mr_quality", 60, _load))
+
+
+@router.get("/mr-quality/filter", summary="按质量等级筛选 MR")
+async def api_mr_quality_filter(
+    min_quality: str = "checked",
+    layer: Optional[str] = None,
+    exclude_retired: bool = True,
+):
+    """
+    按质量等级筛选 MR，返回满足条件的关系列表。
+
+    Query params:
+        min_quality     — 最低质量等级（candidate/checked/proven/curated）
+        layer           — 可选层次过滤（operator/model/application）
+        exclude_retired — 是否排除已退役 MR（默认 True）
+    """
+    try:
+        from deepmt.mr_governance.quality import QualityLevel, filter_by_quality
+
+        _ql_map = {
+            "candidate": "pending", "checked": "checked",
+            "proven": "proven", "curated": "curated", "retired": "retired",
+        }
+        min_ql = QualityLevel.from_lifecycle(_ql_map.get(min_quality, "pending"))
+        target_layers = [layer] if layer else ["operator", "model", "application"]
+
+        result = []
+        for lyr in target_layers:
+            repo = MRRepository(layer=lyr)
+            for subject in repo.list_subjects():
+                mrs = repo.load(subject)
+                filtered = filter_by_quality(
+                    mrs, min_quality=min_ql, exclude_retired=exclude_retired
+                )
+                for m in filtered:
+                    result.append({
+                        "layer": lyr,
+                        "subject": subject,
+                        "id": m.id,
+                        "description": m.description,
+                        "oracle_expr": m.oracle_expr,
+                        "quality_level": m.quality_level,
+                        "lifecycle_state": m.lifecycle_state,
+                        "source": m.source,
+                        "applicable_frameworks": m.applicable_frameworks,
+                    })
+        return _ok({"count": len(result), "mrs": result})
     except Exception as e:
         return _err(str(e))

@@ -781,25 +781,45 @@ deepmt test experiment --json > experiment_data.json  # 导出 JSON 用于论文
 
 ---
 
-## `deepmt repo` — MR 知识库管理
+## `deepmt repo` — MR 知识库管理（Phase K 治理体系）
+
+知识库支持三层 MR（`operator` / `model` / `application`），所有子命令均通过 `--layer` 参数指定层次（默认 `operator`）。
+
+质量等级（`quality_level`）从低到高：`candidate` → `checked` → `proven` → `curated`，以及已废弃的 `retired`。
+
+子命令总览：
+
+| 子命令   | 说明                                             |
+| -------- | ------------------------------------------------ |
+| `list`   | 列出指定层的所有主体及 MR 摘要                   |
+| `stats`  | 显示统计（含质量等级分布、来源分布）             |
+| `info`   | 显示单个主体的 MR 详情（含生命周期、溯源信息）   |
+| `delete` | 删除 MR 记录（彻底删除）                         |
+| `retire` | 归档退役 MR（保留历史，lifecycle_state=retired） |
+| `filter` | 按质量/层次/框架筛选 MR                          |
+| `audit`  | 运行全库审计，输出质量报告与异常告警             |
+
+---
 
 ### `deepmt repo list`
 
-列出知识库中所有有 MR 的算子，含版本、数量摘要。
+列出指定层所有主体（算子/模型/应用）及 MR 数量摘要。
 
 ```
 deepmt repo list [OPTIONS]
 ```
 
-| 选项          | 默认值  | 说明                                                 |
-| ------------- | ------- | ---------------------------------------------------- |
-| `--framework` | —       | 按框架过滤（如 `pytorch`），仅显示含该框架 MR 的算子 |
-| `--json`      | `False` | 以 JSON 格式输出                                     |
+| 选项          | 默认值     | 说明                                        |
+| ------------- | ---------- | ------------------------------------------- |
+| `--layer`     | `operator` | MR 层次（`operator`/`model`/`application`） |
+| `--framework` | —          | 按框架过滤（如 `pytorch`）                  |
+| `--json`      | `False`    | 以 JSON 格式输出                            |
 
 **示例：**
 
 ```bash
 deepmt repo list
+deepmt repo list --layer model
 deepmt repo list --framework pytorch
 deepmt repo list --json
 ```
@@ -808,72 +828,157 @@ deepmt repo list --json
 
 ### `deepmt repo stats`
 
-显示知识库整体统计（总数、已验证、Precheck/SymPy 通过数），以及按算子分布表格。
+显示知识库整体统计（总数、验证率、质量等级分布、来源分布）。
 
 ```
 deepmt repo stats [OPTIONS]
 ```
 
-| 选项     | 默认值  | 说明             |
-| -------- | ------- | ---------------- |
-| `--json` | `False` | 以 JSON 格式输出 |
+| 选项           | 默认值     | 说明                                        |
+| -------------- | ---------- | ------------------------------------------- |
+| `--layer`      | `operator` | MR 层次（`operator`/`model`/`application`） |
+| `--all-layers` | `False`    | 汇总全部三层统计                            |
+| `--json`       | `False`    | 以 JSON 格式输出                            |
 
 **示例：**
 
 ```bash
 deepmt repo stats
+deepmt repo stats --layer model
+deepmt repo stats --all-layers
 deepmt repo stats --json
 ```
 
 ---
 
-### `deepmt repo info <operator>`
+### `deepmt repo info <subject>`
 
-显示算子的详细信息：版本列表、MR 数量、各 MR 摘要（类别、oracle 表达式、验证状态）。
+显示主体的详细信息：MR 摘要（类别、oracle 表达式、质量等级、溯源信息）。
 
 ```
-deepmt repo info <OPERATOR> [OPTIONS]
+deepmt repo info <SUBJECT> [OPTIONS]
 ```
 
-| 选项          | 默认值   | 说明                          |
-| ------------- | -------- | ----------------------------- |
-| `--version`   | 所有版本 | 仅查看指定版本                |
-| `--framework` | —        | 按框架过滤 MR（如 `pytorch`） |
-| `--json`      | `False`  | 以 JSON 格式输出              |
+| 选项          | 默认值     | 说明                                        |
+| ------------- | ---------- | ------------------------------------------- |
+| `--layer`     | `operator` | MR 层次（`operator`/`model`/`application`） |
+| `--framework` | —          | 按框架过滤 MR（如 `pytorch`）               |
+| `--json`      | `False`    | 以 JSON 格式输出                            |
 
 **示例：**
 
 ```bash
 deepmt repo info relu
-deepmt repo info relu --version 1
 deepmt repo info relu --framework pytorch
-deepmt repo info relu --json
+deepmt repo info ResNet50 --layer model --json
+deepmt repo info ImageClassification --layer application
 ```
 
 ---
 
-### `deepmt repo delete <operator>`
+### `deepmt repo delete <subject>`
 
-删除知识库中的 MR 记录。
+彻底删除知识库中的 MR 记录（不可恢复）。若只是临时停用请用 `retire`。
 
 ```
-deepmt repo delete <OPERATOR> [OPTIONS]
+deepmt repo delete <SUBJECT> [OPTIONS]
 ```
 
-| 选项           | 默认值  | 说明                          |
-| -------------- | ------- | ----------------------------- |
-| `--id`         | —       | 只删除该 MR ID（优先级最高）  |
-| `--version`    | —       | 只删除该版本的全部 MR         |
-| `--all`        | `False` | 删除算子的全部 MR（所有版本） |
-| `--yes` / `-y` | `False` | 跳过交互确认提示              |
+| 选项           | 默认值     | 说明                                        |
+| -------------- | ---------- | ------------------------------------------- |
+| `--layer`      | `operator` | MR 层次（`operator`/`model`/`application`） |
+| `--id`         | —          | 只删除该 MR ID                              |
+| `--all`        | `False`    | 删除主体的全部 MR                           |
+| `--yes` / `-y` | `False`    | 跳过交互确认提示                            |
 
 **示例：**
 
 ```bash
-deepmt repo delete relu --id <MR_ID>       # 删除单条 MR
-deepmt repo delete relu --version 1        # 删除版本 1 的全部 MR
-deepmt repo delete relu --all              # 删除算子所有 MR（交互确认）
-deepmt repo delete relu --all --yes        # 跳过确认直接删除
+deepmt repo delete relu --id <MR_ID>
+deepmt repo delete relu --all
+deepmt repo delete relu --all --yes
+```
+
+---
+
+### `deepmt repo retire <subject> --id <MR_ID>`
+
+归档退役指定 MR（`lifecycle_state` 设为 `retired`），保留历史记录但不参与测试。
+
+```
+deepmt repo retire <SUBJECT> [OPTIONS]
+```
+
+| 选项           | 默认值     | 说明                                        |
+| -------------- | ---------- | ------------------------------------------- |
+| `--id`         | **必填**   | 要退役的 MR ID                              |
+| `--layer`      | `operator` | MR 层次（`operator`/`model`/`application`） |
+| `--yes` / `-y` | `False`    | 跳过交互确认提示                            |
+
+**示例：**
+
+```bash
+deepmt repo retire relu --id <MR_ID>
+deepmt repo retire relu --id <MR_ID> --yes
+deepmt repo retire ResNet50 --layer model --id <MR_ID>
+```
+
+---
+
+### `deepmt repo filter`
+
+按质量等级、层次、框架筛选 MR，输出满足条件的关系列表。
+
+```
+deepmt repo filter [OPTIONS]
+```
+
+| 选项               | 默认值     | 说明                                                |
+| ------------------ | ---------- | --------------------------------------------------- |
+| `--layer`          | —（全部）  | 按层次过滤（`operator`/`model`/`application`）      |
+| `--min-quality`    | `checked`  | 最低质量等级（`candidate`/`checked`/`proven`/`curated`） |
+| `--framework`      | —          | 按框架过滤                                          |
+| `--exclude-retired`| `True`     | 排除已退役 MR（默认排除）                           |
+| `--json`           | `False`    | 以 JSON 格式输出                                    |
+
+**示例：**
+
+```bash
+deepmt repo filter --min-quality proven
+deepmt repo filter --layer operator --min-quality checked --framework pytorch
+deepmt repo filter --min-quality curated --json
+deepmt repo filter --layer model --min-quality candidate
+```
+
+---
+
+### `deepmt repo audit`
+
+运行全库审计，输出质量统计、来源分布、异常告警和重复 MR 检测报告。
+
+```
+deepmt repo audit [OPTIONS]
+```
+
+| 选项              | 默认值  | 说明                                              |
+| ----------------- | ------- | ------------------------------------------------- |
+| `--layer`         | —（全部）| 只审计指定层                                      |
+| `--pending-review`| `False` | 输出待复核清单（质量低于 proven 的 MR 汇总）      |
+| `--json`          | `False` | 以 JSON 格式输出                                  |
+
+**审计报告包含：**
+- 全库 MR 总数（按层、按质量等级分布）
+- 来源分布（llm / template / manual）
+- 异常告警（退役比例过高、空 oracle、缺少溯源信息）
+- 重复 MR 组（建议退役的 ID 列表）
+
+**示例：**
+
+```bash
+deepmt repo audit                      # 全库审计，文本报告
+deepmt repo audit --layer operator     # 仅审计算子层
+deepmt repo audit --json               # JSON 输出（可保存备用）
+deepmt repo audit --pending-review     # 输出待复核 MR 清单
 ```
 
 ---
