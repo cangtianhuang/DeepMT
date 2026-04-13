@@ -16,6 +16,6 @@ plugins:
   #   module: deepmt.plugins.tensorflow_plugin
   #   class: TensorFlowPlugin
 
-  # - name: paddle
-  #   module: deepmt.plugins.paddle_plugin
-  #   class: PaddlePlugin
+  - name: paddlepaddle
+    module: deepmt.plugins.paddle_plugin
+    class: PaddlePlugin

@@ -1,0 +1,158 @@
+# PyTorch → PaddlePaddle 算子映射表
+#
+# 本文件记录跨框架可比较的算子对，作为论文"跨框架算子等价性声明"的依据。
+# 状态说明：
+#   comparable   — 语义等价，可直接用于跨框架一致性对比
+#   convertible  — 需参数转换，已在插件中处理（透明）
+#   unsupported  — 暂不支持，需手动实现
+#
+# 运行时映射实现位于：deepmt/plugins/paddle_plugin.py (_PADDLE_OPERATORS)
+
+operator_mappings:
+
+  # ── 激活函数 ────────────────────────────────────────────────────────────────
+  - torch: "torch.nn.functional.relu"
+    paddle: "paddle.nn.functional.relu"
+    status: comparable
+    note: "完全等价，阈值均为 0"
+
+  - torch: "torch.nn.functional.elu"
+    paddle: "paddle.nn.functional.elu"
+    status: comparable
+    note: "默认 alpha=1.0 一致"
+
+  - torch: "torch.nn.functional.leaky_relu"
+    paddle: "paddle.nn.functional.leaky_relu"
+    status: comparable
+    note: "默认 negative_slope=0.01 一致"
+
+  - torch: "torch.nn.functional.sigmoid"
+    paddle: "paddle.nn.functional.sigmoid"
+    status: comparable
+
+  - torch: "torch.nn.functional.softmax"
+    paddle: "paddle.nn.functional.softmax"
+    status: convertible
+    note: "torch 用 dim 参数，paddle 用 axis 参数，插件中已转换"
+
+  - torch: "torch.nn.functional.silu"
+    paddle: "paddle.nn.functional.silu"
+    status: comparable
+    note: "SiLU = x * sigmoid(x)"
+
+  - torch: "torch.nn.functional.hardswish"
+    paddle: "paddle.nn.functional.hardswish"
+    status: comparable
+
+  - torch: "torch.nn.functional.gelu"
+    paddle: "paddle.nn.functional.gelu"
+    status: comparable
+    note: "两框架默认均使用 tanh 近似"
+
+  - torch: "torch.nn.functional.mish"
+    paddle: "paddle.nn.functional.mish"
+    status: comparable
+
+  - torch: "torch.nn.functional.tanh"
+    paddle: "paddle.nn.functional.tanh"
+    status: comparable
+
+  # ── 元素级数学算子 ───────────────────────────────────────────────────────────
+  - torch: "torch.exp"
+    paddle: "paddle.exp"
+    status: comparable
+
+  - torch: "torch.log"
+    paddle: "paddle.log"
+    status: comparable
+    note: "对负数均返回 nan（不抛异常）"
+
+  - torch: "torch.sqrt"
+    paddle: "paddle.sqrt"
+    status: comparable
+
+  - torch: "torch.abs"
+    paddle: "paddle.abs"
+    status: comparable
+
+  - torch: "torch.tanh"
+    paddle: "paddle.tanh"
+    status: comparable
+
+  - torch: "torch.sigmoid"
+    paddle: "paddle.nn.functional.sigmoid"
+    status: convertible
+    note: "torch.sigmoid 对应 paddle.nn.functional.sigmoid，语义相同"
+
+  - torch: "torch.sin"
+    paddle: "paddle.sin"
+    status: comparable
+
+  - torch: "torch.cos"
+    paddle: "paddle.cos"
+    status: comparable
+
+  - torch: "torch.neg"
+    paddle: "paddle.neg"
+    status: comparable
+
+  - torch: "torch.reciprocal"
+    paddle: "paddle.reciprocal"
+    status: comparable
+
+  - torch: "torch.sign"
+    paddle: "paddle.sign"
+    status: comparable
+
+  - torch: "torch.floor"
+    paddle: "paddle.floor"
+    status: comparable
+
+  - torch: "torch.ceil"
+    paddle: "paddle.ceil"
+    status: comparable
+
+  - torch: "torch.round"
+    paddle: "paddle.round"
+    status: comparable
+    note: "两框架均采用 round-half-to-even（银行家舍入）"
+
+  - torch: "torch.log2"
+    paddle: "paddle.log2"
+    status: comparable
+
+  - torch: "torch.log10"
+    paddle: "paddle.log10"
+    status: comparable
+
+  # ── 二元算子 ────────────────────────────────────────────────────────────────
+  - torch: "torch.add"
+    paddle: "paddle.add"
+    status: comparable
+
+  - torch: "torch.mul"
+    paddle: "paddle.multiply"
+    status: convertible
+    note: "函数名不同但语义完全等价"
+
+  - torch: "torch.div"
+    paddle: "paddle.divide"
+    status: convertible
+    note: "函数名不同但语义完全等价"
+
+  - torch: "torch.pow"
+    paddle: "paddle.pow"
+    status: comparable
+
+  - torch: "torch.clamp"
+    paddle: "paddle.clip"
+    status: convertible
+    note: "函数名不同（torch: clamp，paddle: clip），参数名一致"
+
+  - torch: "torch.maximum"
+    paddle: "paddle.maximum"
+    status: comparable
+
+  - torch: "torch.minimum"
+    paddle: "paddle.minimum"
+    status: comparable

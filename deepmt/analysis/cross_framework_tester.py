@@ -9,6 +9,7 @@
 核心概念：
   - 一致性（consistency）：两框架对同一输入执行同一 MR，结论相同（both pass 或 both fail）
   - 输出差异（output_diff）：两框架在相同输入上的实际数值差距，反映实现细节差异
+  - 差异分类（diff_type）：对差异原因的细分（数值差异/形状不匹配/异常差异/行为分歧）
 
 数据流：
   CrossFrameworkTester.compare_operator(op, f1, f2)
@@ -19,6 +20,7 @@
 框架支持：
   - "pytorch"：PyTorchPlugin（主链）
   - "numpy"：NumpyPlugin（数值参考后端，无需额外安装）
+  - "paddlepaddle" / "paddle"：PaddlePlugin（真实第二框架）
   - 其他已注册框架：通过 PluginsManager.get_backend() 加载
 """
 
@@ -41,6 +43,26 @@ from deepmt.mr_generator.base.operator_catalog import OperatorCatalog
 from deepmt.plugins.framework_plugin import FrameworkPlugin
 
 
+# ── 差异类型定义 ─────────────────────────────────────────────────────────────
+
+
+class DiffType:
+    """
+    跨框架差异类型常量。
+
+    用于 CrossConsistencyResult.diff_type_counts 字典中的键，
+    标识单次样本中观察到的差异原因。
+    """
+
+    NUMERIC_DIFF    = "numeric_diff"     # 两框架均成功，但输出数值差距超过阈值
+    SHAPE_MISMATCH  = "shape_mismatch"   # 两框架输出形状不一致
+    DTYPE_MISMATCH  = "dtype_mismatch"   # 两框架输出 dtype 不一致
+    BEHAVIOR_DIFF   = "behavior_diff"    # MR 结论不一致（仅一个框架通过）
+    EXCEPTION_F1    = "exception_f1"     # 仅 f1 抛出异常（f2 成功）
+    EXCEPTION_F2    = "exception_f2"     # 仅 f2 抛出异常（f1 成功）
+    BOTH_EXCEPTION  = "both_exception"   # 两框架均抛出异常
+
+
 # ── 数据结构 ──────────────────────────────────────────────────────────────────
 
 
@@ -49,10 +71,11 @@ class CrossConsistencyResult:
     """
     单条 MR 在两个框架之间的一致性对比结果。
 
-    字段分三组：
-      标识信息   — 算子、MR、两框架名称
-      一致性统计 — 两框架结论是否一致（both_pass / only_f1_pass / only_f2_pass / both_fail）
-      输出差异   — 相同输入下两框架实际数值差距
+    字段分四组：
+      标识信息     — 算子、MR、两框架名称
+      一致性统计   — 两框架结论是否一致（both_pass / only_f1_pass / only_f2_pass / both_fail）
+      输出差异     — 相同输入下两框架实际数值差距
+      差异分类统计 — 按 DiffType 分类的样本计数（H5 新增）
     """
 
     # ── 标识信息 ──────────────────────────────────────────────────────────────
@@ -75,6 +98,10 @@ class CrossConsistencyResult:
     output_max_diff: float          # max|f1_output - f2_output| 的最大值（跨所有样本）
     output_mean_diff: float         # 各样本 max 差值的均值
     output_close: bool              # 全部样本输出差 < output_close_threshold
+
+    # ── 差异分类统计（H5 新增） ───────────────────────────────────────────────
+    # 每个键对应一种 DiffType，值为该类型出现的样本数（一个样本可属于多种类型）
+    diff_type_counts: Dict[str, int] = field(default_factory=dict)
 
     @property
     def total_valid(self) -> int:
@@ -143,6 +170,15 @@ class CrossSessionResult:
         """有至少一个不一致样本的 MR 数量。"""
         return sum(1 for r in self.mr_results if r.inconsistent_cases > 0)
 
+    @property
+    def diff_type_summary(self) -> Dict[str, int]:
+        """汇总所有 MR 的差异类型计数（跨 MR 累加）。"""
+        summary: Dict[str, int] = {}
+        for r in self.mr_results:
+            for k, v in r.diff_type_counts.items():
+                summary[k] = summary.get(k, 0) + v
+        return summary
+
     def to_dict(self) -> Dict:
         return {
             "session_id": self.session_id,
@@ -155,6 +191,7 @@ class CrossSessionResult:
             "overall_consistency_rate": round(self.overall_consistency_rate, 4),
             "output_max_diff": self.output_max_diff,
             "inconsistent_mr_count": self.inconsistent_mr_count,
+            "diff_type_summary": self.diff_type_summary,
             "mr_results": [r.to_dict() for r in self.mr_results],
         }
 
@@ -189,13 +226,14 @@ class CrossFrameworkTester:
     统计：
       1. 两框架对 MR 的结论一致性（both_pass / inconsistent / both_fail）
       2. 两框架在相同输入上的数值输出差异
+      3. 差异类型分类（H5：shape/dtype/numeric/behavior/exception）
 
     用法示例：
         tester = CrossFrameworkTester()
         session = tester.compare_operator(
             "torch.nn.functional.relu",
             framework1="pytorch",
-            framework2="numpy",
+            framework2="paddlepaddle",
             n_samples=20,
         )
         print(f"一致率: {session.overall_consistency_rate:.1%}")
@@ -203,11 +241,17 @@ class CrossFrameworkTester:
 
     CLI 等价：
         deepmt test cross torch.nn.functional.relu
-        deepmt test cross torch.exp --framework1 pytorch --framework2 numpy --n-samples 30
+        deepmt test cross torch.exp --framework1 pytorch --framework2 paddlepaddle
+        deepmt test cross torch.tanh --framework1 pytorch --framework2 numpy --json
     """
 
     DEFAULT_RESULTS_DIR = Path("data/results/cross_framework")
     OUTPUT_CLOSE_THRESHOLD = 1e-3  # 输出差 < 此阈值视为"数值接近"
+
+    # 框架名称别名：支持用户输入 "paddle" 等简写
+    _FRAMEWORK_ALIASES: Dict[str, str] = {
+        "paddle": "paddlepaddle",
+    }
 
     def __init__(
         self,
@@ -238,13 +282,16 @@ class CrossFrameworkTester:
         Args:
             operator_name: 算子名称（与 MR 知识库中的键一致）
             framework1:    第一框架（默认 pytorch）
-            framework2:    第二框架（默认 numpy）
+            framework2:    第二框架（默认 numpy；可用 paddlepaddle/paddle）
             n_samples:     每条 MR 的测试样本数
             verified_only: 仅使用已验证的 MR
 
         Returns:
             CrossSessionResult，含每条 MR 的对比结果
         """
+        framework1 = self._normalize_framework(framework1)
+        framework2 = self._normalize_framework(framework2)
+
         logger.info(f"[CROSS] {operator_name} | {framework1} vs {framework2} | n_samples={n_samples}")
 
         backend1 = self._get_backend(framework1)
@@ -314,6 +361,9 @@ class CrossFrameworkTester:
         Args:
             operators: 算子名称列表；None 时自动从 MR 知识库读取
         """
+        framework1 = self._normalize_framework(framework1)
+        framework2 = self._normalize_framework(framework2)
+
         if operators is None:
             operators = self.repo.list_operators_by_framework(framework1)
 
@@ -371,6 +421,12 @@ class CrossFrameworkTester:
                 f"  MR 数: {s.mr_count}"
                 f"  输出最大差: {s.output_max_diff:.4g}"
             )
+            # 差异类型摘要
+            diff_summary = s.diff_type_summary
+            if diff_summary:
+                diff_str = "  ".join(f"{k}={v}" for k, v in diff_summary.items() if v > 0)
+                if diff_str:
+                    lines.append(f"    差异类型: {diff_str}")
             for r in s.mr_results:
                 mark = "≈" if r.consistency_rate >= 0.9 else ("!" if r.inconsistent_cases > 0 else "≠")
                 lines.append(
@@ -386,11 +442,25 @@ class CrossFrameworkTester:
 
     # ── 私有实现 ──────────────────────────────────────────────────────────────
 
+    def _normalize_framework(self, framework: str) -> str:
+        """统一框架名称别名（如 paddle → paddlepaddle）。"""
+        return self._FRAMEWORK_ALIASES.get(framework.lower(), framework.lower())
+
     def _get_backend(self, framework: str) -> FrameworkPlugin:
-        """获取框架后端实例，支持 'numpy' 特殊框架。"""
+        """
+        获取框架后端实例。
+
+        支持的 framework 值：
+          - "numpy"：NumpyPlugin（无需额外安装）
+          - "paddlepaddle"：PaddlePlugin（需安装 paddlepaddle）
+          - 其他已注册框架：通过 PluginsManager.get_backend() 加载
+        """
         if framework.lower() == "numpy":
             from deepmt.plugins.numpy_plugin import NumpyPlugin
             return NumpyPlugin()
+        if framework.lower() in ("paddlepaddle", "paddle"):
+            from deepmt.plugins.paddle_plugin import PaddlePlugin
+            return PaddlePlugin()
         from deepmt.core.plugins_manager import get_plugins_manager
         return get_plugins_manager().get_backend(framework)
 
@@ -405,7 +475,7 @@ class CrossFrameworkTester:
         input_specs: List[Dict],
         n_samples: int,
     ) -> CrossConsistencyResult:
-        """对单条 MR 执行跨框架对比，返回 CrossConsistencyResult。"""
+        """对单条 MR 执行跨框架对比，返回 CrossConsistencyResult（含差异类型分类）。"""
 
         # 解析两个框架的算子函数
         try:
@@ -429,50 +499,100 @@ class CrossFrameworkTester:
 
         both_pass = both_fail = only_f1 = only_f2 = errors = 0
         output_diffs: List[float] = []
+        diff_type_counts: Dict[str, int] = {}
+
+        def _inc(key: str) -> None:
+            diff_type_counts[key] = diff_type_counts.get(key, 0) + 1
 
         for _ in range(n_samples):
             try:
-                # 生成输入（使用 numpy 生成，再分别转换为各框架张量，保证数值相同）
-                inputs_np = self.random_gen.generate(input_specs, backend2)
-                # backend2 通常是 NumpyPlugin，生成 numpy 数组
-                # backend1 需要 _to_tensor 转换
+                # 生成输入（使用 backend1 生成，再分别转换为各框架张量，保证数值相同）
+                inputs_raw = self.random_gen.generate(input_specs, backend1)
 
-                x1_raw = backend1._to_tensor(backend2.to_numpy(inputs_np[0]))
-                x2_raw = inputs_np[0]
+                # 将 numpy/backend1 的输入转换为各自框架张量
+                raw_np = backend1.to_numpy(inputs_raw[0])
+                x1_raw = backend1._to_tensor(raw_np)
+                x2_raw = backend2._to_tensor(raw_np)
 
                 kwargs1 = MRPreChecker._build_kwargs([x1_raw])
                 kwargs2 = MRPreChecker._build_kwargs([x2_raw])
 
-                # Framework 1
-                orig1 = op_f1(**kwargs1)
-                trans_kwargs1 = transform1(kwargs1)
-                trans1 = op_f1(**trans_kwargs1)
-                oracle1 = self.verifier.verify(orig1, trans1, mr, backend1, x1_raw)
+                # ── Framework 1 执行 ──────────────────────────────────────
+                f1_ok = False
+                orig1 = trans1 = oracle1 = None
+                f1_exc: Optional[Exception] = None
+                try:
+                    orig1 = op_f1(**kwargs1)
+                    trans_kwargs1 = transform1(kwargs1)
+                    trans1 = op_f1(**trans_kwargs1)
+                    oracle1 = self.verifier.verify(orig1, trans1, mr, backend1, x1_raw)
+                    f1_ok = True
+                except Exception as e:
+                    f1_exc = e
 
-                # Framework 2
-                orig2 = op_f2(**kwargs2)
-                trans_kwargs2 = transform2(kwargs2)
-                trans2 = op_f2(**trans_kwargs2)
-                oracle2 = self.verifier.verify(orig2, trans2, mr, backend2, x2_raw)
+                # ── Framework 2 执行 ──────────────────────────────────────
+                f2_ok = False
+                orig2 = trans2 = oracle2 = None
+                f2_exc: Optional[Exception] = None
+                try:
+                    orig2 = op_f2(**kwargs2)
+                    trans_kwargs2 = transform2(kwargs2)
+                    trans2 = op_f2(**trans_kwargs2)
+                    oracle2 = self.verifier.verify(orig2, trans2, mr, backend2, x2_raw)
+                    f2_ok = True
+                except Exception as e:
+                    f2_exc = e
 
-                # 一致性分类
+                # ── 异常分类 ──────────────────────────────────────────────
+                if not f1_ok and not f2_ok:
+                    errors += 1
+                    _inc(DiffType.BOTH_EXCEPTION)
+                    continue
+                if not f1_ok:
+                    errors += 1
+                    _inc(DiffType.EXCEPTION_F1)
+                    continue
+                if not f2_ok:
+                    errors += 1
+                    _inc(DiffType.EXCEPTION_F2)
+                    continue
+
+                # ── 一致性分类 ────────────────────────────────────────────
                 p1, p2 = oracle1.passed, oracle2.passed
                 if p1 and p2:
                     both_pass += 1
                 elif p1 and not p2:
                     only_f1 += 1
+                    _inc(DiffType.BEHAVIOR_DIFF)
                 elif not p1 and p2:
                     only_f2 += 1
+                    _inc(DiffType.BEHAVIOR_DIFF)
                 else:
                     both_fail += 1
 
-                # 输出数值差（f1 原始输出 vs f2 原始输出，相同输入）
+                # ── 输出形状/dtype 差异分类 ───────────────────────────────
                 try:
-                    out1_np = backend1.to_numpy(orig1).astype(float)
-                    out2_np = backend2.to_numpy(orig2).astype(float)
-                    if out1_np.shape == out2_np.shape:
-                        diff = float(np.max(np.abs(out1_np - out2_np)))
+                    shape1 = backend1.get_shape(orig1)
+                    shape2 = backend2.get_shape(orig2)
+                    if shape1 != shape2:
+                        _inc(DiffType.SHAPE_MISMATCH)
+
+                    out1_np = backend1.to_numpy(orig1)
+                    out2_np = backend2.to_numpy(orig2)
+
+                    # dtype 差异（仅 kind 不同时才计入，如 float32 vs int64）
+                    if (hasattr(out1_np, "dtype") and hasattr(out2_np, "dtype")
+                            and out1_np.dtype.kind != out2_np.dtype.kind):
+                        _inc(DiffType.DTYPE_MISMATCH)
+
+                    # 数值差异
+                    if shape1 == shape2:
+                        out1_f = out1_np.astype(float)
+                        out2_f = out2_np.astype(float)
+                        diff = float(np.max(np.abs(out1_f - out2_f)))
                         output_diffs.append(diff)
+                        if diff >= self.OUTPUT_CLOSE_THRESHOLD:
+                            _inc(DiffType.NUMERIC_DIFF)
                 except Exception:
                     pass
 
@@ -503,6 +623,7 @@ class CrossFrameworkTester:
             output_max_diff=output_max_diff,
             output_mean_diff=output_mean_diff,
             output_close=output_close,
+            diff_type_counts=diff_type_counts,
         )
 
     @staticmethod
@@ -518,4 +639,5 @@ class CrossFrameworkTester:
             errors=n_samples,
             output_max_diff=float("nan"), output_mean_diff=float("nan"),
             output_close=False,
+            diff_type_counts={reason: n_samples},
         )

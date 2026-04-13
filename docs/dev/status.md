@@ -40,7 +40,7 @@ DeepMT 后续开发围绕以下核心问题展开：
 | Phase E：演示交付与生产化加固（E1~E6）        | ✅ 完成                   |
 | Phase F：软件工程规范化与包发布准备（F1~F11） | ✅ F1~F11 全部完成         |
 | Phase G：统一IR与三层对象建模                 | ✅ G1~G6 全部完成          |
-| Phase H：第二框架落地与真实跨框架适配         | ⬜ 未开始                 |
+| Phase H：第二框架落地与真实跨框架适配         | ✅ H1~H7 全部完成          |
 | Phase I：模型层MR自动生成引擎                 | ⬜ 未开始                 |
 | Phase J：应用层语义MR生成与验证               | ⬜ 未开始                 |
 | Phase K：全层MR质量保障与统一知识库治理       | ⬜ 未开始                 |
@@ -146,6 +146,17 @@ DeepMT 后续开发围绕以下核心问题展开：
 | `ui/static/`                    | 本地化静态资源（Bootstrap 5.3.3 / Icons 1.11.3 / Chart.js 4.4.2），离线可用 |
 | `commands/ui.py`                | `deepmt ui start` CLI 命令                                                  |
 
+### Phase H（PaddlePaddle 第二框架落地）
+
+| 模块                                                   | 说明                                                                                                                                  |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `plugins/paddle_plugin.py`                             | `PaddlePlugin`：完整 FrameworkPlugin 实现；33 个算子映射（torch.* 名称 → paddle 等价）；支持 paddle.* 原生名称解析；graceful import guard |
+| `plugins/plugins.yaml`                                 | 注册 `paddlepaddle` 插件条目                                                                                                          |
+| `mr_generator/config/operator_mapping/pytorch_to_paddle.yaml` | PyTorch→PaddlePaddle 算子等价性声明表（论文依据），含 status/note                                              |
+| `analysis/cross_framework_tester.py`                   | `DiffType` 差异类型常量；`CrossConsistencyResult` 新增 `diff_type_counts` 字段；`CrossSessionResult` 新增 `diff_type_summary` 属性；`_get_backend` 支持 paddle/paddlepaddle；`_normalize_framework` 别名映射 |
+| `pyproject.toml`                                       | 新增 `[paddle]` 可选依赖组                                                                                                           |
+| `tests/unit/test_paddle_plugin.py`                     | 75 个单元测试（接口/make_tensor/allclose/eval_expr/element_compare/算子解析/数值精度对比/跨框架集成/DiffType）                         |
+
 ### Phase G（统一 IR 底座）
 
 | 模块                              | 说明                                                                                            |
@@ -180,13 +191,14 @@ tests/
 │   ├── test_experiment_organizer.py   16 个（ExperimentOrganizer RQ1-RQ4）
 │   ├── test_ui_api.py                 27 个（Web 仪表盘 JSON API 端点，mock 数据源）
 │   ├── test_ir_unified.py             50 个（TestSubject/OperatorIR/ModelIR/AppIR/MR新字段/SubjectRegistry/RunManifest）
-│   └── test_storage_migration.py      15 个（ResultsManager 新列/RunManifest 持久化/迁移脚本）
+│   ├── test_storage_migration.py      15 个（ResultsManager 新列/RunManifest 持久化/迁移脚本）
+│   └── test_paddle_plugin.py          75 个（PaddlePlugin 接口/算子解析/数值精度/CrossFrameworkTester+paddle/DiffType）
 └── integration/
     ├── test_mr_generation.py   需 LLM API
     └── test_web_tools.py       需网络
 ```
 
-**全部 450 个单元测试通过（无 LLM/网络依赖）。**
+**全部 525 个单元测试通过（无 LLM/网络依赖）。**
 
 ---
 
@@ -207,4 +219,4 @@ tests/
 
 ---
 
-*最后更新：2026-04-13（Phase G 全部完成：统一 IR 底座落地，450 个单元测试通过；下一步进入 Phase H）*
+*最后更新：2026-04-13（Phase H 全部完成：PaddlePaddle 第二框架落地，525 个单元测试通过；下一步进入 Phase I）*

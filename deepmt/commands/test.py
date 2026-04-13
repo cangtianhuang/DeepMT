@@ -737,7 +737,7 @@ _CROSS_FRAMEWORKS = ["pytorch", "numpy"]
     "--framework2",
     default="numpy",
     show_default=True,
-    help="第二框架（参考框架，默认 numpy）",
+    help="第二框架（参考框架；可选 numpy/paddlepaddle/paddle，默认 numpy）",
 )
 @click.option("--n-samples", default=20, show_default=True, type=int, help="每条 MR 的测试样本数")
 @click.option("--verified-only", is_flag=True, default=False, help="仅使用已验证的 MR")
@@ -754,6 +754,8 @@ def test_cross(operator, framework1, framework2, n_samples, verified_only, save,
       deepmt test cross torch.nn.functional.relu
       deepmt test cross torch.exp --n-samples 30 --save
       deepmt test cross torch.tanh --framework1 pytorch --framework2 numpy --json
+      deepmt test cross torch.abs --framework2 paddlepaddle --save
+      deepmt test cross torch.nn.functional.relu --framework2 paddle --json
     """
     try:
         from deepmt.analysis.cross_framework_tester import CrossFrameworkTester
@@ -803,6 +805,9 @@ def test_cross(operator, framework1, framework2, n_samples, verified_only, save,
                     f"      不一致样本: {r.inconsistent_cases}/{r.total_valid}"
                     f"  (仅f1通过={r.only_f1_pass}, 仅f2通过={r.only_f2_pass})"
                 )
+            if r.diff_type_counts:
+                diff_str = "  ".join(f"{k}={v}" for k, v in r.diff_type_counts.items() if v > 0)
+                click.echo(f"      差异类型: {diff_str}")
         click.echo("─" * 72)
         click.echo(
             f"  ≈ 高度一致（≥90%）  ! 存在不一致  ≠ 低一致率"
