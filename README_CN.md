@@ -298,7 +298,7 @@ python -m pytest tests/unit/ --cov=deepmt --cov-report=html
 
 ## 📄 许可证
 
-[MIT License](LICENSE) © 2024 cangtianhuang
+[MIT License](LICENSE) © 2026 cangtianhuang
 
 <div align="center">
 <br>

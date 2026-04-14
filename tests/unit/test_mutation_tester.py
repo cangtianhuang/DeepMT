@@ -20,7 +20,7 @@ import pytest
 import torch
 import torch.nn.functional as F
 
-from deepmt.analysis.mutation_tester import (
+from deepmt.analysis.reporting.mutation_tester import (
     MutantResult,
     MutantType,
     MutationTester,

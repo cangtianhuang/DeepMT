@@ -417,11 +417,25 @@ deepmt data clean-logs --before 2026-01-01 -y   # 删除 2026-01-01 之前，跳
 
 ## `deepmt mr` — MR 生成与管理
 
+子命令总览：
+
+| 子命令           | 说明                                          |
+| ---------------- | --------------------------------------------- |
+| `generate`       | 为算子生成 MR（算子层，支持 LLM + 模板）      |
+| `batch-generate` | 批量为算子目录生成 MR 并入库                  |
+| `verify`         | 对知识库中某算子的 MR 进行数值预检            |
+| `list`           | 列出算子 MR 记录                              |
+| `stats`          | 统计知识库中 MR 数量与验证状态                |
+| `promote`        | 将已验证 MR 迁移到 MR Library（git 追踪）     |
+| `model-generate` | 为模型层基准对象生成 MR（结构分析，无需 LLM） |
+
+---
+
 ### `deepmt mr generate <operator>`
 
 为算子生成蜕变关系，并可选保存至知识库。
 
-**当前支持层次**：`operator`（算子层）。`model` / `application` 层的 CLI 入口尚未完整实现，请通过 Python API（`ModelMRGenerator` / `ApplicationMRGenerator`）使用。
+**当前支持层次**：`operator`（算子层，完整实现）；模型层请使用 `deepmt mr model-generate`；应用层请通过 Python API（`ApplicationMRGenerator`）使用。
 
 ```
 deepmt mr generate <OPERATOR> [OPTIONS]
@@ -575,18 +589,75 @@ deepmt mr stats --json
 
 ---
 
-### `deepmt mr delete <operator>` ⚠️ 未实现
+### `deepmt mr promote <operator>`
 
-删除知识库中算子的 MR 记录。
+将用户知识库中已验证（`verified=True`）的 MR 迁移到项目 MR Library（git 可追踪的 YAML 文件）。
 
-> **状态**：尚未实现。调用后会显示友好提示并以退出码 2 退出。
-> 临时替代方案：直接删除 `data/mr_repository/operator/<operator>.yaml` 文件。
+```
+deepmt mr promote <OPERATOR> [OPTIONS]
+```
+
+| 选项      | 默认值     | 说明                                        |
+| --------- | ---------- | ------------------------------------------- |
+| `--layer` | `operator` | MR 层次（`operator`/`model`/`application`） |
+
+**示例：**
+
+```bash
+deepmt mr promote torch.add
+deepmt mr promote torch.nn.functional.relu --layer operator
+```
+
+---
+
+### `deepmt mr model-generate [model_name]`
+
+为模型层基准对象生成蜕变关系（基于结构分析，无需 LLM）。支持 MLP、CNN、RNN、Transformer 四类基准模型。
+
+```
+deepmt mr model-generate [MODEL_NAME] [OPTIONS]
+```
+
+| 选项          | 默认值    | 说明                             |
+| ------------- | --------- | -------------------------------- |
+| `--framework` | `pytorch` | 目标框架（当前仅支持 `pytorch`） |
+| `--max-mrs`   | 无限制    | 每个模型最多生成的 MR 数量       |
+| `--all`       | `False`   | 为所有基准模型生成 MR            |
+| `--json`      | `False`   | 以 JSON 格式输出                 |
+
+**示例：**
+
+```bash
+deepmt mr model-generate SimpleMLP              # 为 SimpleMLP 生成 MR
+deepmt mr model-generate --all                  # 为所有基准模型生成 MR
+deepmt mr model-generate SimpleCNN --max-mrs 5
+deepmt mr model-generate SimpleMLP --json
+```
 
 ---
 
 ## `deepmt test` — 测试执行
 
 > **框架支持**：目前仅 `pytorch` 插件已实现。指定 `tensorflow` / `paddlepaddle` 会给出友好提示。
+
+子命令总览：
+
+| 子命令        | 说明                                                     |
+| ------------- | -------------------------------------------------------- |
+| `operator`    | 对单个算子运行蜕变测试（需手动指定输入）                 |
+| `batch`       | 从知识库批量测试（自动生成随机输入，推荐主入口）         |
+| `model`       | 模型层蜕变测试（自动生成 MR，支持基准模型）              |
+| `mutate`      | 变异测试：对已知错误实现验证 MR 的检测能力               |
+| `open`        | 开放测试：对含预设缺陷的插件运行批量测试（受控真实场景） |
+| `cross`       | 跨框架一致性测试（PyTorch vs NumPy）                     |
+| `report`      | 从数据库生成测试结果报告                                 |
+| `dedup`       | 缺陷线索去重：将失败证据包聚类为独立缺陷模式             |
+| `evidence`    | 证据包管理子命令组（`list` / `show` / `script`）         |
+| `from-config` | 从 YAML 配置文件批量运行测试                             |
+| `history`     | 查看测试历史记录                                         |
+| `failures`    | 查看所有失败的测试用例                                   |
+
+---
 
 ### `deepmt test operator <operator>`
 
@@ -746,6 +817,209 @@ deepmt test cross <OPERATOR> [OPTIONS]
 deepmt test cross torch.nn.functional.relu --save
 deepmt test cross torch.exp --n-samples 30 --json
 deepmt test cross torch.tanh --verified-only --save --json
+```
+
+---
+
+### `deepmt test mutate <operator>`
+
+变异测试：对算子注入已知错误实现，验证 MR 的缺陷检测能力。用于受控评估——若系统无法发现已知缺陷，说明 MR 或执行链路存在问题。
+
+```
+deepmt test mutate <OPERATOR> [OPTIONS]
+```
+
+| 选项              | 默认值    | 说明                                                                         |
+| ----------------- | --------- | ---------------------------------------------------------------------------- |
+| `--framework`     | `pytorch` | 目标框架                                                                     |
+| `--mutant`        | 全部      | 变异类型：`negate`/`add_const`/`scale`/`identity`/`zero`（不指定则运行全部） |
+| `--n-samples`     | `10`      | 每条 MR 的测试样本数                                                         |
+| `--verified-only` | `False`   | 仅使用已验证的 MR                                                            |
+| `--scale`         | `2.0`     | `scale` 变异的缩放系数                                                       |
+| `--const`         | `1.0`     | `add_const` 变异的偏置值                                                     |
+| `--json`          | `False`   | 以 JSON 格式输出                                                             |
+
+**变异类型说明：**
+
+| 类型        | 注入行为                         |
+| ----------- | -------------------------------- |
+| `negate`    | 取反输出：`f(x) = -real_f(x)`    |
+| `add_const` | 添加偏置：`f(x) = real_f(x) + C` |
+| `scale`     | 错误缩放：`f(x) = k * real_f(x)` |
+| `identity`  | 恒等函数：`f(x) = x`             |
+| `zero`      | 恒零输出：`f(x) = 0`             |
+
+**示例：**
+
+```bash
+deepmt test mutate torch.nn.functional.relu
+deepmt test mutate torch.nn.functional.relu --mutant negate
+deepmt test mutate torch.exp --mutant add_const --const 100 --json
+```
+
+---
+
+### `deepmt test open`
+
+开放测试：对含预设缺陷的插件运行批量蜕变测试（受控真实场景）。使用 `FaultyPyTorchPlugin` 代替正常插件，将指定算子替换为含已知缺陷的版本。
+
+```
+deepmt test open [OPTIONS]
+```
+
+| 选项                 | 默认值    | 说明                                             |
+| -------------------- | --------- | ------------------------------------------------ |
+| `--framework`        | `pytorch` | 目标框架                                         |
+| `--operator`         | 全部      | 指定单个算子（不指定则测试知识库中所有算子）     |
+| `--inject-faults`    | 内置目录  | 缺陷注入规格：`all` 或 `op1:mutant1,op2:mutant2` |
+| `--list-catalog`     | `False`   | 列出内置缺陷目录后退出                           |
+| `--n-samples`        | `10`      | 每条 MR 的随机测试样本数                         |
+| `--verified-only`    | `False`   | 仅使用已验证的 MR                                |
+| `--collect-evidence` | `False`   | 失败时保存可复现证据包                           |
+| `--json`             | `False`   | 以 JSON 格式输出                                 |
+
+**缺陷来源优先级**（从高到低）：
+1. `--inject-faults` 命令行参数
+2. `DEEPMT_INJECT_FAULTS` 环境变量
+3. 若均未设置，使用完整内置缺陷目录
+
+**示例：**
+
+```bash
+deepmt test open --list-catalog
+deepmt test open --operator torch.nn.functional.relu --inject-faults all
+deepmt test open --inject-faults "torch.exp:scale" --n-samples 20 --collect-evidence
+DEEPMT_INJECT_FAULTS=all deepmt test open
+```
+
+---
+
+### `deepmt test report`
+
+从数据库读取历史测试记录，汇总通过率、失败分布、逐 MR 明细。
+
+```
+deepmt test report [OPTIONS]
+```
+
+| 选项              | 默认值  | 说明                                       |
+| ----------------- | ------- | ------------------------------------------ |
+| `--framework`     | 全部    | 按框架过滤（`pytorch`/`tensorflow`/`all`） |
+| `--operator`      | 全部    | 按算子名称过滤                             |
+| `--failures-only` | `False` | 仅显示失败案例                             |
+| `--limit`         | `0`     | 最多显示算子数（0=不限）                   |
+| `--json`          | `False` | 以 JSON 格式输出                           |
+
+**示例：**
+
+```bash
+deepmt test report
+deepmt test report --framework pytorch
+deepmt test report --operator torch.nn.functional.relu
+deepmt test report --failures-only
+deepmt test report --json
+```
+
+---
+
+### `deepmt test dedup`
+
+缺陷线索去重：从 `data/results/evidence/` 读取已保存的证据包，按（算子 × MR × 错误类型）签名聚类，将大量重复失败压缩为可人工复核的缺陷线索集。
+
+**前提**：先运行 `deepmt test batch --collect-evidence` 或 `deepmt test open --collect-evidence` 收集证据包。
+
+```
+deepmt test dedup [OPTIONS]
+```
+
+| 选项          | 默认值  | 说明                   |
+| ------------- | ------- | ---------------------- |
+| `--operator`  | 全部    | 按算子名称过滤         |
+| `--framework` | 全部    | 按框架过滤             |
+| `--limit`     | `0`     | 最多显示条数（0=不限） |
+| `--json`      | `False` | 以 JSON 格式输出       |
+
+**示例：**
+
+```bash
+deepmt test dedup
+deepmt test dedup --operator torch.nn.functional.relu
+deepmt test dedup --limit 10 --json
+```
+
+---
+
+### `deepmt test evidence` — 证据包管理
+
+证据包子命令组，管理 `deepmt test batch --collect-evidence` 生成的可复现失败证据。
+
+#### `deepmt test evidence list`
+
+列出已保存的证据包。
+
+```
+deepmt test evidence list [OPTIONS]
+```
+
+| 选项          | 默认值  | 说明                   |
+| ------------- | ------- | ---------------------- |
+| `--operator`  | 全部    | 按算子名称过滤         |
+| `--framework` | 全部    | 按框架过滤             |
+| `--limit`     | `20`    | 最多显示条数（0=不限） |
+| `--json`      | `False` | 以 JSON 格式输出       |
+
+```bash
+deepmt test evidence list
+deepmt test evidence list --operator torch.nn.functional.relu
+deepmt test evidence list --limit 5 --json
+```
+
+#### `deepmt test evidence show <evidence_id>`
+
+显示单个证据包的详细信息（时间、算子、框架、MR、输入形状、实测差值等）。
+
+```bash
+deepmt test evidence show abc123def456
+deepmt test evidence show abc123def456 --json
+```
+
+#### `deepmt test evidence script <evidence_id>`
+
+打印指定证据包的可复现 Python 脚本，可直接保存为 `.py` 文件独立运行。
+
+```bash
+deepmt test evidence script abc123def456
+deepmt test evidence script abc123def456 > repro.py
+```
+
+---
+
+### `deepmt test model [model_name]`
+
+模型层蜕变测试：对基准模型自动生成并执行 MR 测试。基于结构分析自动生成模型层蜕变关系，无需 LLM。
+
+```
+deepmt test model [MODEL_NAME] [OPTIONS]
+```
+
+| 选项           | 默认值    | 说明                             |
+| -------------- | --------- | -------------------------------- |
+| `--framework`  | `pytorch` | 目标框架（当前仅支持 `pytorch`） |
+| `--n-samples`  | `10`      | 每条 MR 的测试样本数             |
+| `--max-mrs`    | 无限制    | 每个模型最多使用的 MR 数量       |
+| `--batch-size` | `4`       | 每次推理的 batch 大小            |
+| `--all`        | `False`   | 测试所有基准模型                 |
+| `--list`       | `False`   | 列出可用的基准模型后退出         |
+| `--json`       | `False`   | 以 JSON 格式输出结果             |
+
+**示例：**
+
+```bash
+deepmt test model --list                          # 列出可用基准模型
+deepmt test model SimpleMLP                       # 测试 SimpleMLP
+deepmt test model SimpleCNN --n-samples 20
+deepmt test model --all                           # 测试所有基准模型
+deepmt test model SimpleMLP --json
 ```
 
 ---
@@ -1040,22 +1314,12 @@ deepmt ui start --host 0.0.0.0 -p 80  # 局域网访问
 
 以下功能调用后会给出友好错误提示（退出码 2），**不会崩溃**：
 
-| 命令 / 选项                                          | 状态说明                                                         |
-| ---------------------------------------------------- | ---------------------------------------------------------------- |
-| `deepmt mr generate <op> --layer model`              | 模型层 MR 生成已完成（Phase I），CLI 入口待接入，请用 Python API |
-| `deepmt mr generate <op> --layer application`        | 应用层 MR 生成已完成（Phase J），CLI 入口待接入，请用 Python API |
-| `deepmt test operator <op> --framework tensorflow`   | TensorFlow 插件未实现                                            |
-| `deepmt test operator <op> --framework paddlepaddle` | PaddlePaddle 插件仅基础跨框架适配（Phase H），完整插件未实现     |
-
-**模型层 Python API 快速入口：**
-
-```python
-from deepmt.benchmarks.models import ModelBenchmarkRegistry
-from deepmt.mr_generator.model import ModelMRGenerator
-
-gen = ModelMRGenerator()
-mrs = gen.generate(ModelBenchmarkRegistry().get("SimpleMLP", with_instance=True))
-```
+| 命令 / 选项                                          | 状态说明                                                           |
+| ---------------------------------------------------- | ------------------------------------------------------------------ |
+| `deepmt mr generate <op> --layer model`              | 使用 `deepmt mr model-generate` 代替                               |
+| `deepmt mr generate <op> --layer application`        | 应用层 CLI 入口待接入，请用 Python API（`ApplicationMRGenerator`） |
+| `deepmt test operator <op> --framework tensorflow`   | TensorFlow 插件未实现                                              |
+| `deepmt test operator <op> --framework paddlepaddle` | PaddlePaddle 插件仅基础跨框架适配（Phase H），完整插件未实现       |
 
 **应用层 Python API 快速入口：**
 
@@ -1176,6 +1440,8 @@ deepmt experiment case export
 
 ### `deepmt experiment run`
 
+创建实验运行清单，记录当前 benchmark 对象、随机种子、环境快照，用于实验可复现性追踪。
+
 ```
 deepmt experiment run [OPTIONS]
 ```
@@ -1188,7 +1454,43 @@ deepmt experiment run [OPTIONS]
 | `--no-env` | `False` | 跳过环境快照（加速）               |
 | `--json`   | `False` | 以 JSON 格式输出                   |
 
+**示例：**
+
+```bash
+deepmt experiment run
+deepmt experiment run --seed 123 --notes "论文第二次实验"
+deepmt experiment run --rq rq1 --rq rq2 --no-env
+```
+
+---
+
+### `deepmt experiment collect`
+
+收集 RQ1-RQ4 当前统计数据并打印汇总。
+
+```
+deepmt experiment collect [OPTIONS]
+```
+
+| 选项       | 默认值  | 说明                               |
+| ---------- | ------- | ---------------------------------- |
+| `--rq`     | 全部    | 目标 RQ（可多次指定，如 --rq rq1） |
+| `--run-id` | 无      | 关联的 RunManifest ID              |
+| `--json`   | `False` | 以 JSON 格式输出                   |
+
+**示例：**
+
+```bash
+deepmt experiment collect
+deepmt experiment collect --rq rq1 --rq rq2
+deepmt experiment collect --json
+```
+
+---
+
 ### `deepmt experiment export`
+
+将统计数据导出为论文可用文件（JSON / CSV / Markdown）。
 
 ```
 deepmt experiment export [OPTIONS]
@@ -1202,3 +1504,144 @@ deepmt experiment export [OPTIONS]
 | `--run-id`     | 无                         | 关联的 RunManifest ID                 |
 | `--figures`    | `False`                    | 同时导出图表                          |
 | `--ascii-only` | `False`                    | 图表只生成 ASCII（不依赖 matplotlib） |
+
+**示例：**
+
+```bash
+deepmt experiment export
+deepmt experiment export --format markdown
+deepmt experiment export --format all --output data/my_export
+deepmt experiment export --figures --ascii-only
+```
+
+---
+
+### `deepmt experiment list`
+
+列出历史实验运行清单（由 `deepmt experiment run` 创建）。
+
+```
+deepmt experiment list [OPTIONS]
+```
+
+| 选项     | 默认值  | 说明             |
+| -------- | ------- | ---------------- |
+| `--json` | `False` | 以 JSON 格式输出 |
+
+**示例：**
+
+```bash
+deepmt experiment list
+deepmt experiment list --json
+```
+
+---
+
+### `deepmt experiment show <run_id>`
+
+查看单条运行清单详情（seed、RQs、创建时间、环境快照）。
+
+```
+deepmt experiment show <RUN_ID> [OPTIONS]
+```
+
+| 选项     | 默认值  | 说明             |
+| -------- | ------- | ---------------- |
+| `--json` | `False` | 以 JSON 格式输出 |
+
+**示例：**
+
+```bash
+deepmt experiment show abc123def456
+deepmt experiment show abc123def456 --json
+```
+
+---
+
+### `deepmt experiment benchmark`
+
+查看固化的论文实验 Benchmark Suite 清单（算子层 / 模型层 / 应用层）。
+
+```
+deepmt experiment benchmark [OPTIONS]
+```
+
+| 选项      | 默认值  | 说明                                                     |
+| --------- | ------- | -------------------------------------------------------- |
+| `--layer` | `all`   | 只显示指定层次（`operator`/`model`/`application`/`all`） |
+| `--json`  | `False` | 以 JSON 格式输出                                         |
+
+**示例：**
+
+```bash
+deepmt experiment benchmark
+deepmt experiment benchmark --layer operator
+deepmt experiment benchmark --json
+```
+
+---
+
+### `deepmt experiment case` — Case Study 管理
+
+Case Study 子命令组，管理论文的案例研究数据。
+
+#### `deepmt experiment case list`
+
+列出所有 case study。
+
+```
+deepmt experiment case list [OPTIONS]
+```
+
+| 选项       | 默认值  | 说明                                     |
+| ---------- | ------- | ---------------------------------------- |
+| `--status` | 全部    | 过滤状态（`draft`/`confirmed`/`closed`） |
+| `--json`   | `False` | 以 JSON 格式输出                         |
+
+#### `deepmt experiment case show <case_id>`
+
+查看单个 case study 详情（以 Markdown 格式输出）。
+
+```bash
+deepmt experiment case show CS001
+deepmt experiment case show CS001 --json
+```
+
+#### `deepmt experiment case export`
+
+将所有 case study 导出为 Markdown 目录文件。
+
+```
+deepmt experiment case export [OPTIONS]
+```
+
+| 选项       | 默认值                    | 说明                                     |
+| ---------- | ------------------------- | ---------------------------------------- |
+| `--output` | `case_studies/catalog.md` | 输出文件路径                             |
+| `--status` | 全部                      | 过滤状态（`draft`/`confirmed`/`closed`） |
+
+```bash
+deepmt experiment case export
+deepmt experiment case export --output data/cases.md --status confirmed
+```
+
+---
+
+### `deepmt experiment env`
+
+查看当前运行环境与框架版本矩阵（pinned vs installed 对比）。
+
+```
+deepmt experiment env [OPTIONS]
+```
+
+| 选项     | 默认值  | 说明             |
+| -------- | ------- | ---------------- |
+| `--json` | `False` | 以 JSON 格式输出 |
+
+**示例：**
+
+```bash
+deepmt experiment env
+deepmt experiment env --json
+```

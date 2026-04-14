@@ -55,7 +55,7 @@ class TestFaultCatalog:
             assert isinstance(desc, str)
 
     def test_catalog_mutant_types_are_valid(self):
-        from deepmt.analysis.mutation_tester import MutantType
+        from deepmt.analysis.reporting.mutation_tester import MutantType
         valid_types = {m.value for m in MutantType}
         for op, (mt, _, _) in BUILTIN_FAULT_CATALOG.items():
             assert mt in valid_types, f"{op}: invalid mutant type {mt!r}"

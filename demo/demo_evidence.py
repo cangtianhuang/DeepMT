@@ -16,7 +16,7 @@ from pathlib import Path
 
 import torch
 
-from deepmt.analysis.evidence_collector import EvidenceCollector
+from deepmt.analysis.reporting.evidence_collector import EvidenceCollector
 from deepmt.engine.batch_test_runner import BatchTestRunner
 from deepmt.ir.schema import MetamorphicRelation
 
@@ -106,7 +106,7 @@ def main():
 
         # ── 5. 序列化往返验证 ────────────────────────────────────────────────
         print("\n[5] 序列化往返验证")
-        from deepmt.analysis.evidence_collector import EvidencePack
+        from deepmt.analysis.reporting.evidence_collector import EvidencePack
         restored = EvidencePack.from_dict(pack.to_dict())
         assert restored.evidence_id == pack.evidence_id
         print(f"    ✓ to_dict → from_dict 往返正确（id={restored.evidence_id}）")

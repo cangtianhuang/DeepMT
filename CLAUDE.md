@@ -89,7 +89,8 @@ source .venv/bin/activate && PYTHONPATH=$(pwd) python -m pytest tests/
 │   ├── __main__.py         #   python -m deepmt 入口
 │   ├── cli.py              #   CLI 命令组
 │   ├── client.py           #   DeepMT / TestResult 高层 API
-│   ├── commands/           #   CLI 子命令实现（mr / test / repo / catalog / data / health）
+│   ├── commands/           #   CLI 子命令实现（mr / test/ / repo / catalog / data / health）
+│   │   └── test/           #     test 命令包（execution / analysis / evidence / history）
 │   ├── core/               #   微内核框架
 │   │   ├── config_manager.py   #   配置加载与管理
 │   │   ├── logger.py           #   日志（get_logger / log_structured）
@@ -126,17 +127,22 @@ source .venv/bin/activate && PYTHONPATH=$(pwd) python -m pytest tests/
 │   ├── tools/              #   通用工具
 │   │   ├── llm/            #     LLM 客户端 / OCR
 │   │   └── web_search/     #     搜索、Sphinx 解析、算子文档获取
-│   ├── analysis/           #   验证与测试工具
-│   │   ├── mr_prechecker.py        # 算子层数值预检
-│   │   ├── mr_verifier.py          # 算子层 oracle 验证
-│   │   ├── model_verifier.py       # 模型层 oracle 验证
-│   │   ├── semantic_mr_validator.py # 应用层语义验证（Phase J）
-│   │   ├── application_reporter.py # 应用层报告生成（Phase J）
-│   │   ├── report_generator.py     # 算子层报告
-│   │   ├── cross_framework_tester.py # 跨框架一致性
-│   │   ├── evidence_collector.py   # 证据包采集
-│   │   ├── defect_deduplicator.py  # 缺陷线索去重
-│   │   └── mutation_tester.py      # 变异测试器
+│   ├── analysis/           #   验证与测试工具（三层分包）
+│   │   ├── verification/       #   验证核心与输入生成
+│   │   │   ├── mr_prechecker.py        # 算子层数值预检
+│   │   │   ├── mr_verifier.py          # 算子层 oracle 验证
+│   │   │   ├── model_verifier.py       # 模型层 oracle 验证
+│   │   │   ├── semantic_mr_validator.py # 应用层语义验证（Phase J）
+│   │   │   └── random_generator.py     # 随机输入生成器
+│   │   ├── reporting/          #   测试报告、证据收集与变异测试
+│   │   │   ├── report_generator.py     # 算子层报告
+│   │   │   ├── application_reporter.py # 应用层报告生成（Phase J）
+│   │   │   ├── evidence_collector.py   # 证据包采集
+│   │   │   └── mutation_tester.py      # 变异测试器
+│   │   └── qa/                 #   跨框架一致性、缺陷去重与知识库审计
+│   │       ├── cross_framework_tester.py # 跨框架一致性
+│   │       ├── defect_deduplicator.py  # 缺陷线索去重
+│   │       └── repo_audit.py           # 知识库审计
 │   ├── experiments/        #   论文实验管理（Phase L）
 │   │   ├── organizer.py        #   实验数据组织器（RQ1-RQ4 汇总）
 │   │   ├── rq_config.py        #   RQ 口径与指标定义

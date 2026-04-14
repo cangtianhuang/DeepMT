@@ -12,7 +12,7 @@ import pytest
 
 from deepmt.ir.schema import MetamorphicRelation, OperatorIR
 from deepmt.mr_generator.base.mr_templates import MRTemplatePool
-from deepmt.analysis.mr_verifier import MRVerifier
+from deepmt.analysis.verification.mr_verifier import MRVerifier
 from deepmt.plugins.pytorch_plugin import PyTorchPlugin
 
 
@@ -36,7 +36,7 @@ class TestTemplateTransformCode:
 
     def test_transform_code_is_bindable(self):
         """transform_code 必须能被 MRPreChecker._bind_transform_code 解析"""
-        from deepmt.analysis.mr_prechecker import MRPreChecker
+        from deepmt.analysis.verification.mr_prechecker import MRPreChecker
         pool = MRTemplatePool()
 
         for name, t in pool.templates.items():
@@ -178,7 +178,7 @@ class TestTryImportOperator:
 
 class TestRandomGenerator:
     def setup_method(self):
-        from deepmt.analysis.random_generator import RandomGenerator
+        from deepmt.analysis.verification.random_generator import RandomGenerator
         from deepmt.plugins.pytorch_plugin import PyTorchPlugin
         self.gen = RandomGenerator()
         self.plugin = PyTorchPlugin()

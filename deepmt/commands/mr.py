@@ -527,25 +527,6 @@ def mr_batch_generate(framework, category, limit, skip_existing, sources, preche
     )
 
 
-# ── delete ────────────────────────────────────────────────────────────────────
-
-@mr.command("delete")
-@click.argument("operator")
-@click.option("--yes", "-y", is_flag=True, default=False, help="跳过确认提示")
-def mr_delete(operator, yes):
-    """删除知识库中算子的 MR 记录。
-
-    \b
-    示例:
-      deepmt mr delete relu
-      deepmt mr delete relu -y
-    """
-    not_implemented_error(
-        "deepmt mr delete",
-        "MR 删除功能尚未实现。如需清理，可直接删除 data/knowledge/mr_repository/operator/<operator>.yaml 文件。",
-    )
-
-
 # ── promote ───────────────────────────────────────────────────────────────────
 
 @mr.command("promote")

@@ -9,7 +9,7 @@ Demo D4：变异测试（MutationTester）
     PYTHONPATH=$(pwd) python demo/demo_mutation_test.py
 """
 
-from deepmt.analysis.mutation_tester import MutantType, MutationTester
+from deepmt.analysis.reporting.mutation_tester import MutantType, MutationTester
 
 
 def main():

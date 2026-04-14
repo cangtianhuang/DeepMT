@@ -112,7 +112,7 @@ class DefectDeduplicator:
     """
 
     def __init__(self, evidence_dir: Optional[str] = None):
-        from deepmt.analysis.evidence_collector import EvidenceCollector
+        from deepmt.analysis.reporting.evidence_collector import EvidenceCollector
         self._collector = EvidenceCollector(evidence_dir=evidence_dir)
 
     # ── 公共接口 ──────────────────────────────────────────────────────────────

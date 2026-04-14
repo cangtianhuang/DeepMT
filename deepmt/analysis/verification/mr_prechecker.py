@@ -9,8 +9,8 @@ MR 快速筛选器：对候选 MR 进行少量随机数值测试
 
 from typing import Any, Callable, Dict, List, Optional
 
-from deepmt.analysis.random_generator import RandomGenerator
-from deepmt.analysis.mr_verifier import MRVerifier
+from deepmt.analysis.verification.random_generator import RandomGenerator
+from deepmt.analysis.verification.mr_verifier import MRVerifier
 from deepmt.core.plugins_manager import FrameworkType, get_plugins_manager
 from deepmt.core.logger import logger
 from deepmt.ir.schema import MetamorphicRelation, OperatorIR

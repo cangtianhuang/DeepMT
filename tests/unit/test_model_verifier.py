@@ -21,7 +21,7 @@ pytestmark = pytest.mark.skipif(
 
 @pytest.fixture
 def verifier():
-    from deepmt.analysis.model_verifier import ModelVerifier
+    from deepmt.analysis.verification.model_verifier import ModelVerifier
     return ModelVerifier()
 
 

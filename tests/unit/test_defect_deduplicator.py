@@ -11,7 +11,7 @@ DefectDeduplicator 单元测试。
 import pytest
 from unittest.mock import MagicMock, patch
 
-from deepmt.analysis.defect_deduplicator import (
+from deepmt.analysis.qa.defect_deduplicator import (
     DefectDeduplicator,
     DefectLead,
     _extract_error_bucket,

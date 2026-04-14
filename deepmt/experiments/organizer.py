@@ -162,7 +162,7 @@ class ExperimentOrganizer:
             total_cases = total_passed = total_failed = ops_tested = ops_with_failure = 0
 
         try:
-            from deepmt.analysis.evidence_collector import EvidenceCollector
+            from deepmt.analysis.reporting.evidence_collector import EvidenceCollector
             ec = EvidenceCollector(evidence_dir=self._evidence_dir) if self._evidence_dir else EvidenceCollector()
             evidence_count = ec.count()
         except Exception as e:
@@ -170,7 +170,7 @@ class ExperimentOrganizer:
             evidence_count = 0
 
         try:
-            from deepmt.analysis.defect_deduplicator import DefectDeduplicator
+            from deepmt.analysis.qa.defect_deduplicator import DefectDeduplicator
             dedup = DefectDeduplicator(evidence_dir=self._evidence_dir)
             unique_leads = len(dedup.deduplicate())
         except Exception as e:
@@ -202,7 +202,7 @@ class ExperimentOrganizer:
           framework_pairs           — 参与对比的框架对
         """
         try:
-            from deepmt.analysis.cross_framework_tester import CrossFrameworkTester
+            from deepmt.analysis.qa.cross_framework_tester import CrossFrameworkTester
             tester = CrossFrameworkTester(
                 results_dir=self._cross_results_dir
             )

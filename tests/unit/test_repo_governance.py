@@ -512,19 +512,19 @@ class TestRepoAuditor:
         return str(tmp_path)
 
     def test_audit_total_mrs(self, repo_dir):
-        from deepmt.analysis.repo_audit import RepoAuditor
+        from deepmt.analysis.qa.repo_audit import RepoAuditor
         auditor = RepoAuditor(repo_dir=repo_dir)
         report = auditor.run_audit()
         assert report.total_mrs == 4  # 3 operator + 1 model
 
     def test_audit_retired_count(self, repo_dir):
-        from deepmt.analysis.repo_audit import RepoAuditor
+        from deepmt.analysis.qa.repo_audit import RepoAuditor
         auditor = RepoAuditor(repo_dir=repo_dir)
         report = auditor.run_audit()
         assert report.total_retired == 1
 
     def test_audit_quality_distribution(self, repo_dir):
-        from deepmt.analysis.repo_audit import RepoAuditor
+        from deepmt.analysis.qa.repo_audit import RepoAuditor
         auditor = RepoAuditor(repo_dir=repo_dir)
         report = auditor.run_audit()
         qd = report.quality_distribution()
@@ -533,14 +533,14 @@ class TestRepoAuditor:
         assert qd.get("retired", 0) >= 1
 
     def test_audit_single_layer(self, repo_dir):
-        from deepmt.analysis.repo_audit import RepoAuditor
+        from deepmt.analysis.qa.repo_audit import RepoAuditor
         auditor = RepoAuditor(repo_dir=repo_dir)
         report = auditor.run_audit(layers=["operator"])
         assert "operator" in report.layers
         assert "model" not in report.layers
 
     def test_audit_anomalies_retired_ratio(self, repo_dir):
-        from deepmt.analysis.repo_audit import RepoAuditor
+        from deepmt.analysis.qa.repo_audit import RepoAuditor
         auditor = RepoAuditor(repo_dir=repo_dir)
         report = auditor.run_audit(layers=["operator"])
         # operator 层 3 条中 1 条 retired（33.3% > 30%）
@@ -548,7 +548,7 @@ class TestRepoAuditor:
         assert any("退役比例过高" in a for a in anomalies)
 
     def test_audit_summary_text(self, repo_dir):
-        from deepmt.analysis.repo_audit import RepoAuditor
+        from deepmt.analysis.qa.repo_audit import RepoAuditor
         auditor = RepoAuditor(repo_dir=repo_dir)
         report = auditor.run_audit()
         text = report.summary_text()
@@ -556,7 +556,7 @@ class TestRepoAuditor:
         assert "质量等级分布" in text
 
     def test_pending_review_list(self, repo_dir):
-        from deepmt.analysis.repo_audit import RepoAuditor
+        from deepmt.analysis.qa.repo_audit import RepoAuditor
         from deepmt.mr_governance.quality import QualityLevel
         auditor = RepoAuditor(repo_dir=repo_dir)
         report = auditor.run_audit()

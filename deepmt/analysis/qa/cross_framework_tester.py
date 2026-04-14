@@ -33,9 +33,9 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 
-from deepmt.analysis.mr_prechecker import MRPreChecker
-from deepmt.analysis.mr_verifier import MRVerifier
-from deepmt.analysis.random_generator import RandomGenerator
+from deepmt.analysis.verification.mr_prechecker import MRPreChecker
+from deepmt.analysis.verification.mr_verifier import MRVerifier
+from deepmt.analysis.verification.random_generator import RandomGenerator
 from deepmt.core.logger import logger
 from deepmt.ir.schema import MetamorphicRelation
 from deepmt.mr_generator.base.mr_repository import MRRepository

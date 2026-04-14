@@ -108,7 +108,7 @@ class TestModelPipeline:
         """生成的 MR oracle_expr 类型必须均可被 ModelVerifier 处理。"""
         from deepmt.benchmarks.models import ModelBenchmarkRegistry
         from deepmt.mr_generator.model import ModelMRGenerator
-        from deepmt.analysis.model_verifier import ModelVerifier
+        from deepmt.analysis.verification.model_verifier import ModelVerifier
         import uuid
         from deepmt.ir.schema import MetamorphicRelation
 

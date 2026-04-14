@@ -82,22 +82,22 @@ class HealthChecker:
     ]
 
     MR_MODULES: List[Tuple[str, str]] = [
-        ("deepmt.mr_generator.operator.operator_mr_generator", "算子 MR 生成器"),
-        ("deepmt.mr_generator.base.mr_repository",             "MR 知识库"),
-        ("deepmt.mr_generator.base.mr_templates",              "MR 模板池"),
-        ("deepmt.mr_generator.base.operator_catalog",          "算子目录"),
-        ("deepmt.analysis.mr_prechecker",                      "MR 快速预检"),
-        ("deepmt.analysis.mr_verifier",                        "Oracle 验证器"),
-        ("deepmt.analysis.random_generator",                   "随机输入生成器"),
+        ("deepmt.mr_generator.operator.operator_mr_generator",   "算子 MR 生成器"),
+        ("deepmt.mr_generator.base.mr_repository",               "MR 知识库"),
+        ("deepmt.mr_generator.base.mr_templates",                "MR 模板池"),
+        ("deepmt.mr_generator.base.operator_catalog",            "算子目录"),
+        ("deepmt.analysis.verification.mr_prechecker",           "MR 快速预检"),
+        ("deepmt.analysis.verification.mr_verifier",             "Oracle 验证器"),
+        ("deepmt.analysis.verification.random_generator",        "随机输入生成器"),
     ]
 
     ANALYSIS_MODULES: List[Tuple[str, str]] = [
-        ("deepmt.analysis.report_generator",      "报告生成器"),
-        ("deepmt.analysis.mutation_tester",        "变异测试器"),
-        ("deepmt.analysis.evidence_collector",     "证据包采集器"),
-        ("deepmt.analysis.defect_deduplicator",    "缺陷去重器"),
-        ("deepmt.analysis.cross_framework_tester", "跨框架一致性测试器"),
-        ("deepmt.experiments.organizer",   "实验数据组织器"),
+        ("deepmt.analysis.reporting.report_generator",           "报告生成器"),
+        ("deepmt.analysis.reporting.mutation_tester",            "变异测试器"),
+        ("deepmt.analysis.reporting.evidence_collector",         "证据包采集器"),
+        ("deepmt.analysis.qa.defect_deduplicator",               "缺陷去重器"),
+        ("deepmt.analysis.qa.cross_framework_tester",            "跨框架一致性测试器"),
+        ("deepmt.experiments.organizer",                         "实验数据组织器"),
     ]
 
     PLUGIN_MODULES: List[Tuple[str, str]] = [

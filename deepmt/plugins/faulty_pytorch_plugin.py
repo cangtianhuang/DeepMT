@@ -151,7 +151,7 @@ class FaultyPyTorchPlugin(PyTorchPlugin):
         mutant_type_str, kwargs, description = self._active_faults[name]
         logger.debug(f"[FAULTY] {name}: {description}")
 
-        from deepmt.analysis.mutation_tester import MutantType, create_mutant_func
+        from deepmt.analysis.reporting.mutation_tester import MutantType, create_mutant_func
         mutant_type = MutantType(mutant_type_str)
         return create_mutant_func(real_func, mutant_type, **kwargs)
 

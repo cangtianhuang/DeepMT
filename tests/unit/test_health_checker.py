@@ -70,8 +70,8 @@ class TestCoreModuleCoverage:
         "deepmt.ir.schema",
         "deepmt.engine.batch_test_runner",
         "deepmt.mr_generator.base.mr_repository",
-        "deepmt.analysis.report_generator",
-        "deepmt.analysis.evidence_collector",
+        "deepmt.analysis.reporting.report_generator",
+        "deepmt.analysis.reporting.evidence_collector",
         "deepmt.plugins.pytorch_plugin",
     ]
 

@@ -122,7 +122,7 @@ class DeepMT:
         import time
         from deepmt.ir.schema import OperatorIR
         from deepmt.mr_generator.base.operator_catalog import OperatorCatalog
-        from deepmt.analysis.random_generator import RandomGenerator
+        from deepmt.analysis.verification.random_generator import RandomGenerator
         from deepmt.engine.batch_test_runner import BatchTestRunner
 
         start_time = time.time()

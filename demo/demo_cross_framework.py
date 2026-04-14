@@ -23,7 +23,7 @@ from unittest.mock import MagicMock
 
 import numpy as np
 
-from deepmt.analysis.cross_framework_tester import (
+from deepmt.analysis.qa.cross_framework_tester import (
     CrossConsistencyResult,
     CrossFrameworkTester,
     CrossSessionResult,

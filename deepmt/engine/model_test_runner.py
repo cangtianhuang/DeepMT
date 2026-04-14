@@ -20,7 +20,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 
-from deepmt.analysis.model_verifier import ModelVerifier
+from deepmt.analysis.verification.model_verifier import ModelVerifier
 from deepmt.benchmarks.models.model_registry import ModelBenchmarkRegistry
 from deepmt.core.logger import logger
 from deepmt.core.results_manager import ResultsManager

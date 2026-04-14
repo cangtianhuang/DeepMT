@@ -16,8 +16,8 @@ from pathlib import Path
 
 import numpy as np
 
-from deepmt.analysis.defect_deduplicator import DefectDeduplicator
-from deepmt.analysis.evidence_collector import EvidenceCollector
+from deepmt.analysis.qa.defect_deduplicator import DefectDeduplicator
+from deepmt.analysis.reporting.evidence_collector import EvidenceCollector
 
 
 def _seed_evidence(collector: EvidenceCollector):

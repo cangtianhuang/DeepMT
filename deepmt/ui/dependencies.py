@@ -33,14 +33,14 @@ def get_results_manager():
 @lru_cache(maxsize=1)
 def get_evidence_collector():
     """证据包采集器"""
-    from deepmt.analysis.evidence_collector import EvidenceCollector
+    from deepmt.analysis.reporting.evidence_collector import EvidenceCollector
     return EvidenceCollector()
 
 
 @lru_cache(maxsize=1)
 def get_cross_framework_tester():
     """跨框架一致性测试器"""
-    from deepmt.analysis.cross_framework_tester import CrossFrameworkTester
+    from deepmt.analysis.qa.cross_framework_tester import CrossFrameworkTester
     return CrossFrameworkTester()
 
 

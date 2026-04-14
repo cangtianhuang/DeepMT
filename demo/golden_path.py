@@ -29,8 +29,8 @@ from pathlib import Path
 
 import torch
 
-from deepmt.analysis.evidence_collector import EvidenceCollector
-from deepmt.analysis.report_generator import ReportGenerator
+from deepmt.analysis.reporting.evidence_collector import EvidenceCollector
+from deepmt.analysis.reporting.report_generator import ReportGenerator
 from deepmt.core.results_manager import ResultsManager
 from deepmt.engine.batch_test_runner import BatchTestRunner
 from deepmt.mr_generator.base.mr_repository import MRRepository

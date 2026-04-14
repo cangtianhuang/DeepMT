@@ -19,8 +19,8 @@ from typing import Any, Dict, Optional
 from fastapi import APIRouter
 
 from deepmt import __version__
-from deepmt.analysis.evidence_collector import EvidenceCollector
-from deepmt.analysis.cross_framework_tester import CrossFrameworkTester
+from deepmt.analysis.reporting.evidence_collector import EvidenceCollector
+from deepmt.analysis.qa.cross_framework_tester import CrossFrameworkTester
 from deepmt.experiments.organizer import ExperimentOrganizer
 from deepmt.core.results_manager import ResultsManager
 from deepmt.mr_generator.base.mr_repository import MRRepository
@@ -363,7 +363,7 @@ async def api_mr_quality():
     """
     def _load():
         try:
-            from deepmt.analysis.repo_audit import RepoAuditor
+            from deepmt.analysis.qa.repo_audit import RepoAuditor
             auditor = RepoAuditor()
             report = auditor.run_audit()
             return {

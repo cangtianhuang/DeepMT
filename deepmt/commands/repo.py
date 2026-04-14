@@ -399,7 +399,7 @@ def repo_audit(layer, as_json, pending_review):
       deepmt repo audit --json
       deepmt repo audit --pending-review
     """
-    from deepmt.analysis.repo_audit import RepoAuditor
+    from deepmt.analysis.qa.repo_audit import RepoAuditor
     from deepmt.mr_governance.quality import QualityLevel
 
     auditor = RepoAuditor()

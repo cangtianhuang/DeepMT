@@ -14,10 +14,10 @@
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
-from deepmt.analysis.evidence_collector import EvidenceCollector, EvidencePack
-from deepmt.analysis.mr_prechecker import MRPreChecker
-from deepmt.analysis.mr_verifier import MRVerifier
-from deepmt.analysis.random_generator import RandomGenerator
+from deepmt.analysis.reporting.evidence_collector import EvidenceCollector, EvidencePack
+from deepmt.analysis.verification.mr_prechecker import MRPreChecker
+from deepmt.analysis.verification.mr_verifier import MRVerifier
+from deepmt.analysis.verification.random_generator import RandomGenerator
 from deepmt.core.logger import logger
 from deepmt.core.plugins_manager import FrameworkType, get_plugins_manager
 from deepmt.core.results_manager import ResultsManager

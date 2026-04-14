@@ -20,7 +20,7 @@ from unittest.mock import MagicMock, patch
 import numpy as np
 import pytest
 
-from deepmt.analysis.evidence_collector import (
+from deepmt.analysis.reporting.evidence_collector import (
     EvidenceCollector,
     EvidencePack,
     _generate_reproduce_script,
@@ -316,7 +316,7 @@ class TestBatchTestRunnerEvidence:
 
     def test_collect_evidence_on_failure(self, tmp_path):
         from deepmt.engine.batch_test_runner import BatchTestRunner
-        from deepmt.analysis.evidence_collector import EvidenceCollector
+        from deepmt.analysis.reporting.evidence_collector import EvidenceCollector
 
         ev_dir = tmp_path / "ev"
         collector = EvidenceCollector(evidence_dir=str(ev_dir))
@@ -355,7 +355,7 @@ class TestBatchTestRunnerEvidence:
 
     def test_no_evidence_when_flag_off(self, tmp_path):
         from deepmt.engine.batch_test_runner import BatchTestRunner
-        from deepmt.analysis.evidence_collector import EvidenceCollector
+        from deepmt.analysis.reporting.evidence_collector import EvidenceCollector
 
         ev_dir = tmp_path / "ev"
         collector = EvidenceCollector(evidence_dir=str(ev_dir))

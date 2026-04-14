@@ -155,7 +155,7 @@ class TestCollectRQ3:
         assert "note" in rq3
 
     def test_with_saved_session(self, tmp_path):
-        from deepmt.analysis.cross_framework_tester import (
+        from deepmt.analysis.qa.cross_framework_tester import (
             CrossConsistencyResult, CrossFrameworkTester, CrossSessionResult
         )
         tester = CrossFrameworkTester(results_dir=str(tmp_path))

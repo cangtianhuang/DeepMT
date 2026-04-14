@@ -8,8 +8,8 @@
 
 用法::
 
-    from deepmt.analysis.application_reporter import ApplicationReporter
-    from deepmt.analysis.semantic_mr_validator import SemanticValidationResult
+    from deepmt.analysis.reporting.application_reporter import ApplicationReporter
+    from deepmt.analysis.verification.semantic_mr_validator import SemanticValidationResult
 
     reporter = ApplicationReporter()
     report = reporter.generate(mrs, validation_results, scenario_name="ImageClassification")
@@ -22,7 +22,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
-from deepmt.analysis.semantic_mr_validator import SemanticValidationResult
+from deepmt.analysis.verification.semantic_mr_validator import SemanticValidationResult
 from deepmt.ir.schema import MetamorphicRelation
 
 

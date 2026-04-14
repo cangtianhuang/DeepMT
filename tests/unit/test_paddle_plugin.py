@@ -367,21 +367,21 @@ class TestCrossFrameworkWithPaddle:
     """验证 CrossFrameworkTester 可以将 paddlepaddle 作为第二框架运行。"""
 
     def test_get_paddle_backend(self):
-        from deepmt.analysis.cross_framework_tester import CrossFrameworkTester
+        from deepmt.analysis.qa.cross_framework_tester import CrossFrameworkTester
         tester = CrossFrameworkTester()
         backend = tester._get_backend("paddlepaddle")
         from deepmt.plugins.paddle_plugin import PaddlePlugin
         assert isinstance(backend, PaddlePlugin)
 
     def test_get_paddle_alias(self):
-        from deepmt.analysis.cross_framework_tester import CrossFrameworkTester
+        from deepmt.analysis.qa.cross_framework_tester import CrossFrameworkTester
         tester = CrossFrameworkTester()
         backend = tester._get_backend("paddle")
         from deepmt.plugins.paddle_plugin import PaddlePlugin
         assert isinstance(backend, PaddlePlugin)
 
     def test_normalize_framework_paddle(self):
-        from deepmt.analysis.cross_framework_tester import CrossFrameworkTester
+        from deepmt.analysis.qa.cross_framework_tester import CrossFrameworkTester
         tester = CrossFrameworkTester()
         assert tester._normalize_framework("paddle") == "paddlepaddle"
         assert tester._normalize_framework("paddlepaddle") == "paddlepaddle"
@@ -393,7 +393,7 @@ class TestCrossFrameworkWithPaddle:
 
 class TestDiffType:
     def test_diff_type_constants_defined(self):
-        from deepmt.analysis.cross_framework_tester import DiffType
+        from deepmt.analysis.qa.cross_framework_tester import DiffType
         assert DiffType.NUMERIC_DIFF == "numeric_diff"
         assert DiffType.SHAPE_MISMATCH == "shape_mismatch"
         assert DiffType.DTYPE_MISMATCH == "dtype_mismatch"
@@ -408,7 +408,7 @@ class TestDiffType:
 
 class TestCrossConsistencyDiffFields:
     def test_diff_type_counts_in_result(self):
-        from deepmt.analysis.cross_framework_tester import CrossConsistencyResult
+        from deepmt.analysis.qa.cross_framework_tester import CrossConsistencyResult
         r = CrossConsistencyResult(
             operator="torch.abs",
             framework1="pytorch",
@@ -428,7 +428,7 @@ class TestCrossConsistencyDiffFields:
         assert r.consistency_rate == pytest.approx(0.9, rel=1e-3)
 
     def test_diff_type_counts_serialized_in_to_dict(self):
-        from deepmt.analysis.cross_framework_tester import CrossConsistencyResult
+        from deepmt.analysis.qa.cross_framework_tester import CrossConsistencyResult
         r = CrossConsistencyResult(
             operator="torch.abs",
             framework1="pytorch",
@@ -449,7 +449,7 @@ class TestCrossConsistencyDiffFields:
         assert d["diff_type_counts"]["numeric_diff"] == 2
 
     def test_cross_session_diff_type_summary(self):
-        from deepmt.analysis.cross_framework_tester import CrossConsistencyResult, CrossSessionResult
+        from deepmt.analysis.qa.cross_framework_tester import CrossConsistencyResult, CrossSessionResult
         mr1 = CrossConsistencyResult(
             operator="op", framework1="pytorch", framework2="paddlepaddle",
             mr_id="id1", mr_description="d1", oracle_expr="e1", n_samples=5,
@@ -474,7 +474,7 @@ class TestCrossConsistencyDiffFields:
         assert summary["behavior_diff"] == 1
 
     def test_cross_session_to_dict_includes_diff_summary(self):
-        from deepmt.analysis.cross_framework_tester import CrossSessionResult
+        from deepmt.analysis.qa.cross_framework_tester import CrossSessionResult
         session = CrossSessionResult(
             session_id="test", timestamp="2026-01-01T00:00:00",
             operator="op", framework1="pytorch", framework2="paddlepaddle",

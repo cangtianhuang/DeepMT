@@ -20,8 +20,8 @@ import uuid
 from pathlib import Path
 from unittest.mock import MagicMock
 
-from deepmt.analysis.experiment_organizer import ExperimentOrganizer
-from deepmt.analysis.cross_framework_tester import (
+from deepmt.experiments.organizer import ExperimentOrganizer
+from deepmt.analysis.qa.cross_framework_tester import (
     CrossConsistencyResult,
     CrossFrameworkTester,
     CrossSessionResult,
