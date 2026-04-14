@@ -92,13 +92,12 @@ source .venv/bin/activate && PYTHONPATH=$(pwd) python -m pytest tests/
 │   ├── commands/           #   CLI 子命令实现（mr / test / repo / catalog / data / health）
 │   ├── core/               #   微内核框架
 │   │   ├── config_manager.py   #   配置加载与管理
-│   │   ├── ir_manager.py       #   IR 管理
 │   │   ├── logger.py           #   日志（get_logger / log_structured）
 │   │   ├── plugins_manager.py  #   插件加载
 │   │   └── results_manager.py  #   结果管理
 │   ├── engine/             #   测试执行引擎
-│   │   ├── scheduler.py        #   任务调度
-│   │   └── test_runner.py      #   测试执行（使用已生成的 MR）
+│   │   ├── batch_test_runner.py  #   算子层批量测试执行器
+│   │   └── model_test_runner.py  #   模型层测试执行器
 │   ├── ir/                 #   统一中间表示
 │   │   └── schema.py           #   三层 IR（OperatorIR/ModelIR/ApplicationIR）+ MR 数据结构
 │   ├── mr_generator/       #   MR 生成引擎
@@ -121,12 +120,13 @@ source .venv/bin/activate && PYTHONPATH=$(pwd) python -m pytest tests/
 │   ├── application/        #   应用层场景描述（ApplicationScenario）
 │   ├── benchmarks/         #   基准对象注册表
 │   │   ├── models/             #   ModelBenchmarkRegistry + 预置 PyTorch 模型
-│   │   └── applications/       #   ApplicationBenchmarkRegistry（图像分类/文本情感）
+│   │   ├── applications/       #   ApplicationBenchmarkRegistry（图像分类/文本情感）
+│   │   └── suite.py            #   论文实验 Benchmark 固化清单（BenchmarkSuite）
 │   ├── plugins/            #   框架适配器（PyTorch 完整，NumPy/Paddle 部分）
 │   ├── tools/              #   通用工具
 │   │   ├── llm/            #     LLM 客户端 / OCR
 │   │   └── web_search/     #     搜索、Sphinx 解析、算子文档获取
-│   ├── analysis/           #   分析与验证模块
+│   ├── analysis/           #   验证与测试工具
 │   │   ├── mr_prechecker.py        # 算子层数值预检
 │   │   ├── mr_verifier.py          # 算子层 oracle 验证
 │   │   ├── model_verifier.py       # 模型层 oracle 验证
@@ -134,7 +134,18 @@ source .venv/bin/activate && PYTHONPATH=$(pwd) python -m pytest tests/
 │   │   ├── application_reporter.py # 应用层报告生成（Phase J）
 │   │   ├── report_generator.py     # 算子层报告
 │   │   ├── cross_framework_tester.py # 跨框架一致性
-│   │   └── experiment_organizer.py   # 实验组织与 RQ 统计
+│   │   ├── evidence_collector.py   # 证据包采集
+│   │   ├── defect_deduplicator.py  # 缺陷线索去重
+│   │   └── mutation_tester.py      # 变异测试器
+│   ├── experiments/        #   论文实验管理（Phase L）
+│   │   ├── organizer.py        #   实验数据组织器（RQ1-RQ4 汇总）
+│   │   ├── rq_config.py        #   RQ 口径与指标定义
+│   │   ├── case_study.py       #   Case Study 数据模板
+│   │   ├── version_matrix.py   #   框架版本矩阵
+│   │   ├── stats/              #   论文统计聚合与导出
+│   │   │   ├── aggregator.py       # ThesisStats 聚合
+│   │   │   └── exporter.py         # CSV/JSON/Markdown 导出
+│   │   └── runs/               #   运行清单与环境记录
 │   └── monitoring/         #   健康检查与进度追踪
 ├── tests/                  # 测试用例（unit/ + integration/）
 ├── demo/                   # 快速演示

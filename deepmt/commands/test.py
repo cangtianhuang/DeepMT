@@ -10,7 +10,6 @@ deepmt test — 测试执行子命令组
     dedup         缺陷线索去重（将失败证据包聚类为独立缺陷线索）
     evidence      证据包管理（list / show / script）
     cross         跨框架一致性测试（D6，对比两个框架在等价算子上的行为）
-    experiment    论文实验数据汇总（D7，RQ1-RQ4 数据组织）
     from-config   从 YAML 配置文件批量测试
     history       查看测试历史
     failures      查看失败的测试用例
@@ -817,76 +816,6 @@ def test_cross(operator, framework1, framework2, n_samples, verified_only, save,
         click.echo(click.style(f"错误: {e}", fg="red"), err=True)
         import traceback
         traceback.print_exc(file=sys.stderr)
-        sys.exit(1)
-
-
-# ── experiment ────────────────────────────────────────────────────────────────
-
-
-@test.command("experiment")
-@click.option(
-    "--rq",
-    default="all",
-    type=click.Choice(["1", "2", "3", "4", "all"], case_sensitive=False),
-    show_default=True,
-    help="收集指定 RQ 的数据（1/2/3/4/all）",
-)
-@click.option("--json", "as_json", is_flag=True, default=False, help="以 JSON 格式输出")
-def test_experiment(rq, as_json):
-    """论文实验数据汇总：将系统产出映射到 RQ1-RQ4。
-
-    \b
-    RQ1 — MR 生成质量（总数、验证率、分类分布）
-    RQ2 — 缺陷检测能力（通过率、失败分布、证据包数）
-    RQ3 — 跨框架一致性（一致率、输出差、不一致案例）
-    RQ4 — 覆盖度与自动化程度
-
-    \b
-    示例:
-      deepmt test experiment
-      deepmt test experiment --rq 2
-      deepmt test experiment --json > experiment_data.json
-    """
-    try:
-        from deepmt.analysis.experiment_organizer import ExperimentOrganizer
-
-        org = ExperimentOrganizer()
-
-        if rq == "all":
-            data = org.collect_all()
-            if as_json:
-                click.echo(json.dumps(data, ensure_ascii=False, indent=2))
-            else:
-                click.echo(org.format_text(data))
-        else:
-            fn = {
-                "1": org.collect_rq1,
-                "2": org.collect_rq2,
-                "3": org.collect_rq3,
-                "4": org.collect_rq4,
-            }[rq]
-            result = fn()
-            if as_json:
-                click.echo(json.dumps(result, ensure_ascii=False, indent=2))
-            else:
-                title = {
-                    "1": "RQ1 — MR 生成质量",
-                    "2": "RQ2 — 缺陷检测能力",
-                    "3": "RQ3 — 跨框架一致性",
-                    "4": "RQ4 — 覆盖度与自动化",
-                }[rq]
-                click.echo(f"\n{title}")
-                click.echo("─" * 60)
-                for k, v in result.items():
-                    if isinstance(v, dict):
-                        click.echo(f"  {k}:")
-                        for kk, vv in v.items():
-                            click.echo(f"    {kk}: {vv}")
-                    else:
-                        click.echo(f"  {k}: {v}")
-
-    except Exception as e:
-        click.echo(click.style(f"错误: {e}", fg="red"), err=True)
         sys.exit(1)
 
 

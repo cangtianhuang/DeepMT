@@ -19,7 +19,7 @@ from unittest.mock import MagicMock, patch
 import numpy as np
 import pytest
 
-from deepmt.analysis.experiment_organizer import ExperimentOrganizer
+from deepmt.experiments.organizer import ExperimentOrganizer
 from deepmt.core.results_manager import ResultsManager
 from deepmt.ir.schema import MetamorphicRelation, OracleResult, OperatorIR
 

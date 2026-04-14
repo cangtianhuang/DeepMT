@@ -12,7 +12,7 @@
 
 用法::
 
-    from deepmt.analysis.stats.aggregator import StatsAggregator
+    from deepmt.experiments.stats.aggregator import StatsAggregator
 
     agg = StatsAggregator()
     stats = agg.collect()          # 全量收集 RQ1-RQ4
@@ -104,7 +104,7 @@ class StatsAggregator:
         if rqs is None:
             rqs = ["rq1", "rq2", "rq3", "rq4"]
 
-        from deepmt.analysis.experiment_organizer import ExperimentOrganizer
+        from deepmt.experiments.organizer import ExperimentOrganizer
 
         org = ExperimentOrganizer(
             db_path=self._db_path,
@@ -139,7 +139,7 @@ class StatsAggregator:
 
         # benchmark 规模快照
         try:
-            from deepmt.experiments.benchmarks.benchmark_suite import BenchmarkSuite
+            from deepmt.benchmarks.suite import BenchmarkSuite
             stats.benchmark_summary = BenchmarkSuite().summary()
         except Exception as e:
             logger.warning(f"[StatsAggregator] benchmark 汇总失败: {e}")

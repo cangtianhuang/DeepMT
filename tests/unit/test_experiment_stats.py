@@ -112,41 +112,41 @@ class TestVersionMatrix:
 
 class TestBenchmarkSuite:
     def test_operator_count(self):
-        from deepmt.experiments.benchmarks.benchmark_suite import BenchmarkSuite
+        from deepmt.benchmarks.suite import BenchmarkSuite
         suite = BenchmarkSuite()
         ops = suite.operator_benchmark()
         assert len(ops) >= 20, "算子 benchmark 数量应 >= 20"
 
     def test_model_names_nonempty(self):
-        from deepmt.experiments.benchmarks.benchmark_suite import BenchmarkSuite
+        from deepmt.benchmarks.suite import BenchmarkSuite
         suite = BenchmarkSuite()
         names = suite.model_names()
         assert len(names) > 0
         assert "SimpleMLP" in names
 
     def test_application_names_nonempty(self):
-        from deepmt.experiments.benchmarks.benchmark_suite import BenchmarkSuite
+        from deepmt.benchmarks.suite import BenchmarkSuite
         suite = BenchmarkSuite()
         names = suite.application_names()
         assert len(names) > 0
         assert "ImageClassification" in names
 
     def test_operator_category_filter(self):
-        from deepmt.experiments.benchmarks.benchmark_suite import BenchmarkSuite
+        from deepmt.benchmarks.suite import BenchmarkSuite
         suite = BenchmarkSuite()
         activation = suite.operator_benchmark(category="activation")
         assert len(activation) > 0
         assert all(e.category == "activation" for e in activation)
 
     def test_operator_framework_filter(self):
-        from deepmt.experiments.benchmarks.benchmark_suite import BenchmarkSuite
+        from deepmt.benchmarks.suite import BenchmarkSuite
         suite = BenchmarkSuite()
         pytorch = suite.operator_benchmark(framework="pytorch")
         assert len(pytorch) > 0
         assert all(e.framework == "pytorch" for e in pytorch)
 
     def test_summary_keys(self):
-        from deepmt.experiments.benchmarks.benchmark_suite import BenchmarkSuite
+        from deepmt.benchmarks.suite import BenchmarkSuite
         suite = BenchmarkSuite()
         s = suite.summary()
         assert "operator_count" in s
@@ -155,19 +155,19 @@ class TestBenchmarkSuite:
         assert s["operator_count"] > 0
 
     def test_operator_names_unique(self):
-        from deepmt.experiments.benchmarks.benchmark_suite import BenchmarkSuite
+        from deepmt.benchmarks.suite import BenchmarkSuite
         suite = BenchmarkSuite()
         names = suite.operator_names()
         assert len(names) == len(set(names)), "算子名称不应有重复"
 
     def test_model_benchmark_without_instance(self):
-        from deepmt.experiments.benchmarks.benchmark_suite import BenchmarkSuite
+        from deepmt.benchmarks.suite import BenchmarkSuite
         suite = BenchmarkSuite()
         models = suite.model_benchmark(with_instance=False)
         assert len(models) == len(suite.model_names())
 
     def test_application_benchmark(self):
-        from deepmt.experiments.benchmarks.benchmark_suite import BenchmarkSuite
+        from deepmt.benchmarks.suite import BenchmarkSuite
         suite = BenchmarkSuite()
         apps = suite.application_benchmark()
         assert len(apps) > 0
@@ -287,7 +287,7 @@ class TestStatsAggregator:
     def _make_mock_stats(self, rqs=None):
         """创建一个使用 mock 数据的 ThesisStats。"""
         from unittest.mock import MagicMock, patch
-        from deepmt.analysis.stats.aggregator import StatsAggregator
+        from deepmt.experiments.stats.aggregator import StatsAggregator
 
         mock_rq1 = {
             "total_mr_count": 10, "verified_mr_count": 8,
@@ -316,7 +316,7 @@ class TestStatsAggregator:
 
         # ExperimentOrganizer 在 aggregator 内部通过 import 引入，需 patch 其所在模块
         with patch(
-            "deepmt.analysis.experiment_organizer.ExperimentOrganizer"
+            "deepmt.experiments.organizer.ExperimentOrganizer"
         ) as MockOrg:
             org_instance = MagicMock()
             org_instance.collect_rq1.return_value = mock_rq1
@@ -363,7 +363,7 @@ class TestStatsAggregator:
 class TestStatsExporter:
     def _make_stats(self):
         from unittest.mock import MagicMock, patch
-        from deepmt.analysis.stats.aggregator import StatsAggregator, ThesisStats
+        from deepmt.experiments.stats.aggregator import StatsAggregator, ThesisStats
         from datetime import datetime
 
         stats = ThesisStats(
@@ -392,7 +392,7 @@ class TestStatsExporter:
         return stats
 
     def test_export_json(self):
-        from deepmt.analysis.stats.exporter import StatsExporter
+        from deepmt.experiments.stats.exporter import StatsExporter
         with tempfile.TemporaryDirectory() as tmpdir:
             exporter = StatsExporter(output_dir=tmpdir)
             stats = self._make_stats()
@@ -404,7 +404,7 @@ class TestStatsExporter:
             assert "rq_data" in data
 
     def test_export_markdown(self):
-        from deepmt.analysis.stats.exporter import StatsExporter
+        from deepmt.experiments.stats.exporter import StatsExporter
         with tempfile.TemporaryDirectory() as tmpdir:
             exporter = StatsExporter(output_dir=tmpdir)
             stats = self._make_stats()
@@ -415,7 +415,7 @@ class TestStatsExporter:
             assert "RQ2" in content
 
     def test_export_csv_per_rq(self):
-        from deepmt.analysis.stats.exporter import StatsExporter
+        from deepmt.experiments.stats.exporter import StatsExporter
         with tempfile.TemporaryDirectory() as tmpdir:
             exporter = StatsExporter(output_dir=tmpdir)
             stats = self._make_stats()
@@ -426,14 +426,14 @@ class TestStatsExporter:
             assert "metric" in content.lower()
 
     def test_export_benchmark_csv(self):
-        from deepmt.analysis.stats.exporter import StatsExporter
+        from deepmt.experiments.stats.exporter import StatsExporter
         with tempfile.TemporaryDirectory() as tmpdir:
             exporter = StatsExporter(output_dir=tmpdir)
             path = exporter.export_benchmark_csv()
             assert path.exists()
 
     def test_export_all_returns_four_paths(self):
-        from deepmt.analysis.stats.exporter import StatsExporter
+        from deepmt.experiments.stats.exporter import StatsExporter
         with tempfile.TemporaryDirectory() as tmpdir:
             exporter = StatsExporter(output_dir=tmpdir)
             stats = self._make_stats()

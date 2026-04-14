@@ -21,7 +21,7 @@ from fastapi import APIRouter
 from deepmt import __version__
 from deepmt.analysis.evidence_collector import EvidenceCollector
 from deepmt.analysis.cross_framework_tester import CrossFrameworkTester
-from deepmt.analysis.experiment_organizer import ExperimentOrganizer
+from deepmt.experiments.organizer import ExperimentOrganizer
 from deepmt.core.results_manager import ResultsManager
 from deepmt.mr_generator.base.mr_repository import MRRepository
 

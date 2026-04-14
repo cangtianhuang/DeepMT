@@ -750,38 +750,6 @@ deepmt test cross torch.tanh --verified-only --save --json
 
 ---
 
-### `deepmt test experiment`
-
-收集全链路实验数据，映射到论文 RQ1-RQ4，生成结构化报告。
-
-```
-deepmt test experiment [OPTIONS]
-```
-
-| 选项     | 默认值  | 说明                                        |
-| -------- | ------- | ------------------------------------------- |
-| `--rq`   | `all`   | 仅收集指定研究问题（`1`/`2`/`3`/`4`/`all`） |
-| `--json` | `False` | 以 JSON 格式输出（可重定向到文件）          |
-
-**RQ 映射：**
-
-| RQ  | 数据来源                           | 关键指标                                    |
-| --- | ---------------------------------- | ------------------------------------------- |
-| RQ1 | MRRepository                       | MR 总数、验证率、分类分布、每算子平均 MR 数 |
-| RQ2 | ResultsManager + EvidenceCollector | 通过率、失败分布、证据包数量                |
-| RQ3 | CrossFrameworkTester 持久化结果    | 一致率、输出差值、不一致 MR 数              |
-| RQ4 | RQ1/RQ2 派生                       | 覆盖算子数、用例密度、自动化范围            |
-
-**示例：**
-
-```bash
-deepmt test experiment                             # 全部 RQ 文本报告
-deepmt test experiment --rq 2                      # 仅 RQ2（缺陷检测）
-deepmt test experiment --json > experiment_data.json  # 导出 JSON 用于论文
-```
-
----
-
 ## `deepmt repo` — MR 知识库管理（Phase K 治理体系）
 
 知识库支持三层 MR（`operator` / `model` / `application`），所有子命令均通过 `--layer` 参数指定层次（默认 `operator`）。

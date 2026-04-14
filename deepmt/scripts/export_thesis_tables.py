@@ -62,8 +62,8 @@ def main(argv=None):
     args = parser.parse_args(argv)
 
     # ── 收集数据 ────────────────────────────────────────────────────────────
-    from deepmt.analysis.stats.aggregator import StatsAggregator
-    from deepmt.analysis.stats.exporter import StatsExporter
+    from deepmt.experiments.stats.aggregator import StatsAggregator
+    from deepmt.experiments.stats.exporter import StatsExporter
 
     rqs = args.rq
     agg = StatsAggregator()

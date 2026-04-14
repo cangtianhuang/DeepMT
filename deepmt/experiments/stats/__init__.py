@@ -1,5 +1,5 @@
 """
-deepmt.analysis.stats — 论文实验统计聚合与导出
+deepmt.experiments.stats — 论文实验统计聚合与导出
 
 子模块：
   aggregator  — 从 ExperimentOrganizer 收集数据，按 RQConfig 规格聚合

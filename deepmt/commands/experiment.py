@@ -78,8 +78,8 @@ def experiment_collect(rq, as_json, run_id):
       deepmt experiment collect --rq rq1 --rq rq2
       deepmt experiment collect --json
     """
-    from deepmt.analysis.stats.aggregator import StatsAggregator
-    from deepmt.analysis.experiment_organizer import ExperimentOrganizer
+    from deepmt.experiments.stats.aggregator import StatsAggregator
+    from deepmt.experiments.organizer import ExperimentOrganizer
 
     rqs = list(rq) if rq else None
     agg = StatsAggregator()
@@ -123,8 +123,8 @@ def experiment_export(fmt, output, rq, run_id, figures, ascii_only):
       deepmt experiment export --format all --output data/my_export
       deepmt experiment export --figures --ascii-only
     """
-    from deepmt.analysis.stats.aggregator import StatsAggregator
-    from deepmt.analysis.stats.exporter import StatsExporter
+    from deepmt.experiments.stats.aggregator import StatsAggregator
+    from deepmt.experiments.stats.exporter import StatsExporter
 
     rqs = list(rq) if rq else None
     click.echo(f"[experiment export] 收集数据 ...")
@@ -236,7 +236,7 @@ def experiment_benchmark(layer, as_json):
       deepmt experiment benchmark --layer operator
       deepmt experiment benchmark --json
     """
-    from deepmt.experiments.benchmarks.benchmark_suite import BenchmarkSuite
+    from deepmt.benchmarks.suite import BenchmarkSuite
 
     suite = BenchmarkSuite()
     summary = suite.summary()

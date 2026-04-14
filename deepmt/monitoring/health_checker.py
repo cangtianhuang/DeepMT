@@ -73,14 +73,12 @@ class HealthChecker:
         ("deepmt.core.logger",           "日志系统"),
         ("deepmt.core.plugins_manager",  "插件管理器"),
         ("deepmt.core.results_manager",  "结果管理器"),
-        ("deepmt.core.ir_manager",       "IR 管理器"),
         ("deepmt.ir.schema",             "IR 数据结构"),
     ]
 
     ENGINE_MODULES: List[Tuple[str, str]] = [
         ("deepmt.engine.batch_test_runner", "批量测试执行器"),
-        ("deepmt.engine.scheduler",         "任务调度器"),
-        ("deepmt.engine.test_runner",        "单算子测试执行器"),
+        ("deepmt.engine.model_test_runner", "模型测试执行器"),
     ]
 
     MR_MODULES: List[Tuple[str, str]] = [
@@ -99,7 +97,7 @@ class HealthChecker:
         ("deepmt.analysis.evidence_collector",     "证据包采集器"),
         ("deepmt.analysis.defect_deduplicator",    "缺陷去重器"),
         ("deepmt.analysis.cross_framework_tester", "跨框架一致性测试器"),
-        ("deepmt.analysis.experiment_organizer",   "实验数据组织器"),
+        ("deepmt.experiments.organizer",   "实验数据组织器"),
     ]
 
     PLUGIN_MODULES: List[Tuple[str, str]] = [

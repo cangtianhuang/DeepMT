@@ -7,13 +7,8 @@
   - 提供查询接口（get_summary、get_failed_tests）
 
 比较/评估逻辑已移至 deepmt/analysis/mr_verifier.py（MRVerifier）。
-
-G 阶段扩展（2026-04）：
-  - test_results 新增 run_id / framework_version / random_seed 列（兼容追加）
-  - 新增 run_manifests 表，存储 RunManifest 上下文记录
 """
 
-import json
 import sqlite3
 from datetime import datetime
 from pathlib import Path
@@ -72,25 +67,6 @@ class ResultsManager:
             """
         )
 
-        # run_manifests 表：存储 RunManifest 的完整上下文（G 阶段新增）
-        cursor.execute(
-            """
-            CREATE TABLE IF NOT EXISTS run_manifests (
-                run_id            TEXT PRIMARY KEY,
-                subject_name      TEXT NOT NULL,
-                subject_type      TEXT NOT NULL DEFAULT 'operator',
-                framework         TEXT NOT NULL,
-                framework_version TEXT,
-                random_seed       INTEGER,
-                n_samples         INTEGER,
-                mr_ids            TEXT,
-                env_summary       TEXT,
-                notes             TEXT,
-                timestamp         TEXT NOT NULL
-            )
-            """
-        )
-
         conn.commit()
 
         # 新列迁移（对已有旧库兼容追加）
@@ -128,7 +104,7 @@ class ResultsManager:
             ir_object:         IR 对象（OperatorIR / ModelIR / ApplicationIR）
             results:           [(MR, OracleResult), ...] 列表
             framework:         框架名称字符串（如 "pytorch"）
-            run_id:            关联的 RunManifest ID（可选）
+            run_id:            关联的实验运行 ID（可选）
             framework_version: 框架版本字符串（可选）
             random_seed:       随机种子（可选）
         """
@@ -170,57 +146,6 @@ class ResultsManager:
         conn.close()
 
         self._update_summary(ir_name, framework, results)
-
-    def store_run_manifest(self, manifest: Any) -> None:
-        """持久化一个 RunManifest 记录。
-
-        Args:
-            manifest: RunManifest 实例（来自 deepmt.core.run_manifest）
-        """
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-        cursor.execute(
-            """
-            INSERT OR REPLACE INTO run_manifests
-            (run_id, subject_name, subject_type, framework, framework_version,
-             random_seed, n_samples, mr_ids, env_summary, notes, timestamp)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-            (
-                manifest.run_id,
-                manifest.subject_name,
-                manifest.subject_type,
-                manifest.framework,
-                manifest.framework_version or None,
-                manifest.random_seed,
-                manifest.n_samples,
-                json.dumps(manifest.mr_ids),
-                json.dumps(manifest.env_summary),
-                manifest.notes or None,
-                manifest.timestamp,
-            ),
-        )
-        conn.commit()
-        conn.close()
-
-    def get_run_manifest(self, run_id: str) -> Optional[Dict]:
-        """按 run_id 查询 RunManifest 记录，未找到返回 None。"""
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-        cursor.execute("SELECT * FROM run_manifests WHERE run_id = ?", (run_id,))
-        row = cursor.fetchone()
-        columns = [desc[0] for desc in cursor.description]
-        conn.close()
-        if not row:
-            return None
-        result = dict(zip(columns, row))
-        for field in ("mr_ids", "env_summary"):
-            if result.get(field):
-                try:
-                    result[field] = json.loads(result[field])
-                except (json.JSONDecodeError, TypeError):
-                    pass
-        return result
 
     def _update_summary(
         self,

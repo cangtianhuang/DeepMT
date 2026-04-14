@@ -189,7 +189,7 @@ class RunManifestManager:
             capture_env: 是否立即捕获环境快照
             notes:       附加备注
         """
-        from deepmt.experiments.benchmarks.benchmark_suite import BenchmarkSuite
+        from deepmt.benchmarks.suite import BenchmarkSuite
 
         if rqs is None:
             rqs = ["rq1", "rq2", "rq3", "rq4"]

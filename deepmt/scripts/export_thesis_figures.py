@@ -57,7 +57,7 @@ def _ascii_bar_chart(
 
 def _ascii_summary_text(stats: Any) -> str:
     """生成 RQ1-RQ4 核心指标的 ASCII 摘要文本（可直接打印或写文件）。"""
-    from deepmt.analysis.experiment_organizer import ExperimentOrganizer
+    from deepmt.experiments.organizer import ExperimentOrganizer
 
     org = ExperimentOrganizer()
     data = {
@@ -280,7 +280,7 @@ def main(argv=None):
     output_dir.mkdir(parents=True, exist_ok=True)
 
     # 收集数据
-    from deepmt.analysis.stats.aggregator import StatsAggregator
+    from deepmt.experiments.stats.aggregator import StatsAggregator
     print("[figures] 收集实验数据 ...")
     stats = StatsAggregator().collect()
 

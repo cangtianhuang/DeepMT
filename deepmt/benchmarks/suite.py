@@ -14,7 +14,7 @@
 
 用法::
 
-    from deepmt.experiments.benchmarks.benchmark_suite import BenchmarkSuite
+    from deepmt.benchmarks.suite import BenchmarkSuite
 
     suite = BenchmarkSuite()
     print(suite.operator_names())

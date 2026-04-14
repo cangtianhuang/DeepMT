@@ -47,5 +47,5 @@ def get_cross_framework_tester():
 @lru_cache(maxsize=1)
 def get_experiment_organizer():
     """论文实验数据组织器（RQ1-RQ4 聚合）"""
-    from deepmt.analysis.experiment_organizer import ExperimentOrganizer
+    from deepmt.experiments.organizer import ExperimentOrganizer
     return ExperimentOrganizer()
