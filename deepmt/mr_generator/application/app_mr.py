@@ -23,7 +23,6 @@ import uuid
 from typing import List, Optional, Union
 
 from deepmt.mr_generator.application.scenario import ApplicationScenario
-from deepmt.benchmarks.applications.app_registry import ApplicationBenchmarkRegistry
 from deepmt.core.logger import logger
 from deepmt.ir import ApplicationIR, MetamorphicRelation
 from deepmt.mr_generator.application.app_context_builder import AppContextBuilder
@@ -54,12 +53,15 @@ class ApplicationMRGenerator:
         use_llm: bool = True,
         context_builder: Optional[AppContextBuilder] = None,
         llm_generator: Optional[ApplicationLLMMRGenerator] = None,
-        registry: Optional[ApplicationBenchmarkRegistry] = None,
+        registry=None,
     ) -> None:
         self.use_llm = use_llm
         self.context_builder = context_builder or AppContextBuilder()
         self._llm_generator: Optional[ApplicationLLMMRGenerator] = llm_generator
-        self.registry = registry or ApplicationBenchmarkRegistry()
+        if registry is None:
+            from deepmt.benchmarks.applications.app_registry import ApplicationBenchmarkRegistry
+            registry = ApplicationBenchmarkRegistry()
+        self.registry = registry
 
     # ── 公共接口 ──────────────────────────────────────────────────────────────
 

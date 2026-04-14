@@ -84,7 +84,7 @@ def test_operator(operator, framework, inputs, generate, as_json):
 @click.option(
     "--operator",
     default=None,
-    help="指定单个算子名称（如 torch.nn.functional.relu）；不指定则测试知识库中所有算子",
+    help="指定单个算子名称（泛化名，如 relu / abs）；不指定则测试知识库中所有算子",
 )
 @click.option(
     "--category",
@@ -120,10 +120,10 @@ def test_batch(framework, operator, category, mr_id, n_samples, verified_only, c
     \b
     示例:
       deepmt test batch                                    # 测试所有算子
-      deepmt test batch --operator torch.nn.functional.relu
+      deepmt test batch --operator relu
       deepmt test batch --framework pytorch --n-samples 20
       deepmt test batch --category activation --verified-only
-      deepmt test batch --operator torch.exp --json
+      deepmt test batch --operator exp --json
     """
     _check_framework(framework)
 
@@ -238,11 +238,11 @@ def test_cross(operator, framework1, framework2, n_samples, verified_only, save,
 
     \b
     示例:
-      deepmt test cross torch.nn.functional.relu
-      deepmt test cross torch.exp --n-samples 30 --save
-      deepmt test cross torch.tanh --framework1 pytorch --framework2 numpy --json
-      deepmt test cross torch.abs --framework2 paddlepaddle --save
-      deepmt test cross torch.nn.functional.relu --framework2 paddle --json
+      deepmt test cross relu
+      deepmt test cross exp --n-samples 30 --save
+      deepmt test cross tanh --framework1 pytorch --framework2 numpy --json
+      deepmt test cross abs --framework2 paddlepaddle --save
+      deepmt test cross relu --framework2 paddle --json
     """
     try:
         from deepmt.analysis.qa.cross_framework_tester import CrossFrameworkTester

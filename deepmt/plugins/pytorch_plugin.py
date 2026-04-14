@@ -6,6 +6,7 @@ from typing import Any, Callable, ClassVar, Dict, Optional, Tuple
 
 import numpy as np
 import torch
+import torch.nn.functional as F
 
 from deepmt.plugins.framework_plugin import CompareResult, FrameworkPlugin
 
@@ -69,7 +70,31 @@ class PyTorchPlugin(FrameworkPlugin):
     """PyTorch 框架适配插件"""
 
     _root_modules = [torch]
-    _overrides: dict = {}
+
+    # 泛化短名覆盖表：处理根模块上不存在或需要指定到 nn.functional 的算子。
+    # 键为泛化名（与 MR 知识库 subject_name 一致），值为可调用对象。
+    # 对于直接存在于 torch.* 的算子（abs/exp/log 等），无需在此注册。
+    _overrides: ClassVar[Dict[str, Callable]] = {
+        "relu":         F.relu,
+        "sigmoid":      F.sigmoid,
+        "tanh":         F.tanh,
+        "softmax":      F.softmax,
+        "log_softmax":  F.log_softmax,
+        "leaky_relu":   F.leaky_relu,
+        "gelu":         F.gelu,
+        "elu":          F.elu,
+        "silu":         F.silu,
+        "hardswish":    F.hardswish,
+        "batch_norm":   F.batch_norm,
+        "layer_norm":   F.layer_norm,
+        "dropout":      F.dropout,
+        "max_pool1d":   F.max_pool1d,
+        "max_pool2d":   F.max_pool2d,
+        "avg_pool1d":   F.avg_pool1d,
+        "avg_pool2d":   F.avg_pool2d,
+        "cross_entropy":F.cross_entropy,
+        "mse_loss":     F.mse_loss,
+    }
 
     _DTYPE_MAP: ClassVar[Dict[str, torch.dtype]] = {
         "float16": torch.float16,

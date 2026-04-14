@@ -1,14 +1,14 @@
 """
 PaddlePaddle 框架适配插件
 
-将 PyTorch 风格的算子名称映射到 PaddlePaddle 等价实现，
+将泛化算子名称映射到 PaddlePaddle 等价实现，
 提供完整的 FrameworkPlugin 接口，可直接用于 BatchTestRunner 和 CrossFrameworkTester。
 
 框架标识符（CLI / FrameworkType 中使用）："paddlepaddle" 或别名 "paddle"
 
 算子映射策略：
-  1. _overrides（_PADDLE_OPERATORS）：将 torch.* 名称映射到 paddle 等价实现（lambda with **kw）
-  2. _root_modules = [paddle]：原生 paddle.* 名称通过属性链自动解析
+  1. _overrides：将泛化短名（relu/exp 等）映射到 paddle 等价实现（lambda with **kw）
+  2. _root_modules = [paddle]：原生 paddle.* 全路径名通过属性链自动解析
   优先级：_overrides > _root_modules
 
 安装检查：
@@ -45,100 +45,101 @@ def _require_paddle() -> None:
         )
 
 
-# ── PaddlePaddle 算子映射表（PyTorch 名称 → PaddlePaddle 实现） ───────────────
+# ── PaddlePaddle 算子映射表（泛化名 → PaddlePaddle 实现） ─────────────────────
 # 所有函数接受 **kwargs，其中 'input' 键为主输入张量（paddle.Tensor）。
 # 此格式与 CrossFrameworkTester 和 MRPreChecker._build_kwargs 保持一致。
+# 键为泛化短名（与 MR 知识库 subject_name 一致）。
 
 def _build_paddle_operators() -> Dict[str, Any]:
     """延迟构建算子映射表（paddle 可用时才调用）。"""
     return {
-        # ── 激活函数 ─────────────────────────────────────────────────────────
-        "torch.nn.functional.relu":
+        # ── 激活函数（泛化名） ────────────────────────────────────────────────
+        "relu":
             lambda **kw: paddle.nn.functional.relu(kw["input"]),
-        "torch.nn.functional.elu":
+        "elu":
             lambda **kw: paddle.nn.functional.elu(kw["input"]),
-        "torch.nn.functional.leaky_relu":
+        "leaky_relu":
             lambda **kw: paddle.nn.functional.leaky_relu(kw["input"]),
-        "torch.nn.functional.sigmoid":
+        "sigmoid":
             lambda **kw: paddle.nn.functional.sigmoid(kw["input"]),
-        "torch.nn.functional.softmax":
+        "softmax":
             lambda **kw: paddle.nn.functional.softmax(kw["input"], axis=kw.get("dim", -1)),
-        "torch.nn.functional.silu":
+        "silu":
             lambda **kw: paddle.nn.functional.silu(kw["input"]),
-        "torch.nn.functional.hardswish":
+        "hardswish":
             lambda **kw: paddle.nn.functional.hardswish(kw["input"]),
-        "torch.nn.functional.tanh":
-            lambda **kw: paddle.nn.functional.tanh(kw["input"]),
-        "torch.nn.functional.gelu":
+        "tanh":
+            lambda **kw: paddle.tanh(kw["input"]),
+        "gelu":
             lambda **kw: paddle.nn.functional.gelu(kw["input"]),
-        "torch.nn.functional.mish":
+        "mish":
             lambda **kw: paddle.nn.functional.mish(kw["input"]),
 
-        # ── 元素级数学算子 ────────────────────────────────────────────────────
-        "torch.exp":        lambda **kw: paddle.exp(kw["input"]),
-        "torch.log":        lambda **kw: paddle.log(kw["input"]),
-        "torch.sqrt":       lambda **kw: paddle.sqrt(kw["input"]),
-        "torch.abs":        lambda **kw: paddle.abs(kw["input"]),
-        "torch.tanh":       lambda **kw: paddle.tanh(kw["input"]),
-        "torch.sigmoid":    lambda **kw: paddle.nn.functional.sigmoid(kw["input"]),
-        "torch.sin":        lambda **kw: paddle.sin(kw["input"]),
-        "torch.cos":        lambda **kw: paddle.cos(kw["input"]),
-        "torch.neg":        lambda **kw: paddle.neg(kw["input"]),
-        "torch.reciprocal": lambda **kw: paddle.reciprocal(kw["input"]),
-        "torch.sign":       lambda **kw: paddle.sign(kw["input"]),
-        "torch.floor":      lambda **kw: paddle.floor(kw["input"]),
-        "torch.ceil":       lambda **kw: paddle.ceil(kw["input"]),
-        "torch.round":      lambda **kw: paddle.round(kw["input"]),
-        "torch.log2":       lambda **kw: paddle.log2(kw["input"]),
-        "torch.log10":      lambda **kw: paddle.log10(kw["input"]),
+        # ── 元素级数学算子（泛化名） ──────────────────────────────────────────
+        "exp":        lambda **kw: paddle.exp(kw["input"]),
+        "log":        lambda **kw: paddle.log(kw["input"]),
+        "sqrt":       lambda **kw: paddle.sqrt(kw["input"]),
+        "abs":        lambda **kw: paddle.abs(kw["input"]),
+        "sin":        lambda **kw: paddle.sin(kw["input"]),
+        "cos":        lambda **kw: paddle.cos(kw["input"]),
+        "neg":        lambda **kw: paddle.neg(kw["input"]),
+        "reciprocal": lambda **kw: paddle.reciprocal(kw["input"]),
+        "sign":       lambda **kw: paddle.sign(kw["input"]),
+        "floor":      lambda **kw: paddle.floor(kw["input"]),
+        "ceil":       lambda **kw: paddle.ceil(kw["input"]),
+        "round":      lambda **kw: paddle.round(kw["input"]),
+        "log2":       lambda **kw: paddle.log2(kw["input"]),
+        "log10":      lambda **kw: paddle.log10(kw["input"]),
 
-        # ── 二元算子 ──────────────────────────────────────────────────────────
-        "torch.add":
+        # ── 二元算子（泛化名） ─────────────────────────────────────────────────
+        "add":
             lambda **kw: paddle.add(kw["input"], kw.get("other", kw.get("arg1", paddle.zeros_like(kw["input"])))),
-        "torch.mul":
+        "mul":
             lambda **kw: paddle.multiply(kw["input"], kw.get("other", kw.get("arg1", paddle.ones_like(kw["input"])))),
-        "torch.div":
+        "multiply":
+            lambda **kw: paddle.multiply(kw["input"], kw.get("other", kw.get("arg1", paddle.ones_like(kw["input"])))),
+        "div":
             lambda **kw: paddle.divide(kw["input"], kw.get("other", kw.get("arg1", paddle.ones_like(kw["input"])))),
-        "torch.pow":
+        "pow":
             lambda **kw: paddle.pow(kw["input"], kw.get("exponent", kw.get("arg1", 2))),
-        "torch.clamp":
+        "clamp":
             lambda **kw: paddle.clip(kw["input"], min=kw.get("min", None), max=kw.get("max", None)),
-        "torch.maximum":
+        "maximum":
             lambda **kw: paddle.maximum(kw["input"], kw.get("other", kw.get("arg1", kw["input"]))),
-        "torch.minimum":
+        "minimum":
             lambda **kw: paddle.minimum(kw["input"], kw.get("other", kw.get("arg1", kw["input"]))),
     }
 
 
 # ── 跨框架算子等价性声明表（论文依据） ─────────────────────────────────────────
+# 键为泛化名（与 MR 知识库 subject_name 一致）
 OPERATOR_EQUIVALENCE_MAP: Dict[str, str] = {
-    "torch.nn.functional.relu":        "paddle.nn.functional.relu",
-    "torch.nn.functional.elu":         "paddle.nn.functional.elu",
-    "torch.nn.functional.leaky_relu":  "paddle.nn.functional.leaky_relu",
-    "torch.nn.functional.sigmoid":     "paddle.nn.functional.sigmoid",
-    "torch.nn.functional.softmax":     "paddle.nn.functional.softmax(axis=-1)",
-    "torch.nn.functional.silu":        "paddle.nn.functional.silu",
-    "torch.nn.functional.hardswish":   "paddle.nn.functional.hardswish",
-    "torch.nn.functional.gelu":        "paddle.nn.functional.gelu",
-    "torch.exp":                        "paddle.exp",
-    "torch.log":                        "paddle.log",
-    "torch.sqrt":                       "paddle.sqrt",
-    "torch.abs":                        "paddle.abs",
-    "torch.tanh":                       "paddle.tanh",
-    "torch.sigmoid":                    "paddle.nn.functional.sigmoid",
-    "torch.sin":                        "paddle.sin",
-    "torch.cos":                        "paddle.cos",
-    "torch.neg":                        "paddle.neg",
-    "torch.reciprocal":                 "paddle.reciprocal",
-    "torch.sign":                       "paddle.sign",
-    "torch.floor":                      "paddle.floor",
-    "torch.ceil":                       "paddle.ceil",
-    "torch.round":                      "paddle.round",
-    "torch.add":                        "paddle.add",
-    "torch.mul":                        "paddle.multiply",
-    "torch.div":                        "paddle.divide",
-    "torch.pow":                        "paddle.pow",
-    "torch.clamp":                      "paddle.clip",
+    "relu":        "paddle.nn.functional.relu",
+    "elu":         "paddle.nn.functional.elu",
+    "leaky_relu":  "paddle.nn.functional.leaky_relu",
+    "sigmoid":     "paddle.nn.functional.sigmoid",
+    "softmax":     "paddle.nn.functional.softmax(axis=-1)",
+    "silu":        "paddle.nn.functional.silu",
+    "hardswish":   "paddle.nn.functional.hardswish",
+    "gelu":        "paddle.nn.functional.gelu",
+    "exp":         "paddle.exp",
+    "log":         "paddle.log",
+    "sqrt":        "paddle.sqrt",
+    "abs":         "paddle.abs",
+    "tanh":        "paddle.tanh",
+    "sin":         "paddle.sin",
+    "cos":         "paddle.cos",
+    "neg":         "paddle.neg",
+    "reciprocal":  "paddle.reciprocal",
+    "sign":        "paddle.sign",
+    "floor":       "paddle.floor",
+    "ceil":        "paddle.ceil",
+    "round":       "paddle.round",
+    "add":         "paddle.add",
+    "mul":         "paddle.multiply",
+    "div":         "paddle.divide",
+    "pow":         "paddle.pow",
+    "clamp":       "paddle.clip",
 }
 
 
@@ -333,15 +334,15 @@ class PaddlePlugin(FrameworkPlugin):
             total_elements=int(mask.numel()),
         )
 
-    # ── 算子解析（覆盖基类，同时支持 torch.* 和 paddle.* 命名） ─────────────────
+    # ── 算子解析（覆盖基类，支持泛化短名和 paddle.* 全路径名） ────────────────
 
     def _resolve_operator(self, name: str) -> Callable:
         """
         算子名称解析，支持两种命名风格：
-          1. torch.* 名称 → 查 _overrides（_PADDLE_OPERATORS）
-          2. paddle.* 名称 → 通过 _root_modules 属性链解析
+          1. 泛化短名（relu/exp 等） → 查 _overrides（映射到 paddle 实现）
+          2. paddle.* 全路径名 → 通过 _root_modules 属性链解析
         """
-        # 优先查 _overrides
+        # 优先查 _overrides（泛化短名）
         if name in self._overrides:
             return self._overrides[name]
 
@@ -358,9 +359,8 @@ class PaddlePlugin(FrameworkPlugin):
 
         raise ValueError(
             f"PaddlePlugin: 算子 '{name}' 无对应实现。\n"
-            f"  支持格式：torch.* 名称（通过映射表）或 paddle.* 原生名称。\n"
-            f"  请在 paddle_plugin._PADDLE_OPERATORS 中添加 torch→paddle 映射，"
-            f"或直接使用 paddle.* 命名。"
+            f"  支持格式：泛化短名（通过映射表）或 paddle.* 原生全路径名。\n"
+            f"  请在 paddle_plugin._build_paddle_operators 中添加泛化名→paddle 映射。"
         )
 
     @staticmethod

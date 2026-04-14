@@ -16,7 +16,7 @@
 使用方式：
   # 验证 relu 的 MR 能否检测到"输出取反"的变异
   tester = MutationTester()
-  result = tester.run("torch.nn.functional.relu", MutantType.NEGATE_OUTPUT, "pytorch")
+  result = tester.run("relu", MutantType.NEGATE_OUTPUT, "pytorch")
   print(result.detection_rate)  # 期望 > 0（被检出）
 """
 
@@ -160,7 +160,7 @@ class MutationTester:
     用法示例：
         tester = MutationTester()
         result = tester.run(
-            "torch.nn.functional.relu",
+            "relu",
             MutantType.NEGATE_OUTPUT,
             "pytorch",
             n_samples=10,

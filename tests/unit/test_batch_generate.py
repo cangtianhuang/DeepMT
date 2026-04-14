@@ -19,33 +19,33 @@ from deepmt.commands.mr import _collect_batch_operators
 # ── _collect_batch_operators ──────────────────────────────────────────────────
 
 class TestCollectBatchOperators:
-    def test_pytorch_returns_torch_prefixed(self):
+    def test_pytorch_returns_generic_names(self):
         ops = _collect_batch_operators("pytorch")
         names = [op for op, _ in ops]
-        assert all(op.startswith("torch.") for op in names), (
-            f"Non-torch operators found: {[o for o in names if not o.startswith('torch.')]}"
+        assert all("." not in op for op in names), (
+            f"Framework-specific operators found: {[o for o in names if '.' in o]}"
         )
 
     def test_pytorch_includes_known_operators(self):
         ops = _collect_batch_operators("pytorch")
         names = [op for op, _ in ops]
-        assert "torch.nn.functional.relu" in names
-        assert "torch.nn.functional.sigmoid" in names
-        assert "torch.exp" in names
+        assert "relu" in names
+        assert "sigmoid" in names
+        assert "exp" in names
 
     def test_category_filter_linearity(self):
         ops = _collect_batch_operators("pytorch", category_filter="linearity")
         names = [op for op, _ in ops]
-        assert "torch.nn.functional.relu" in names
-        assert "torch.exp" in names
+        assert "relu" in names
+        assert "exp" in names
         # symmetry operators should be excluded
-        assert "torch.nn.functional.sigmoid" not in names
+        assert "sigmoid" not in names
 
     def test_category_filter_symmetry(self):
         ops = _collect_batch_operators("pytorch", category_filter="symmetry")
         names = [op for op, _ in ops]
-        assert "torch.nn.functional.sigmoid" in names
-        assert "torch.abs" in names
+        assert "sigmoid" in names
+        assert "abs" in names
 
     def test_unknown_category_returns_empty(self):
         ops = _collect_batch_operators("pytorch", category_filter="nonexistent_category_xyz")
@@ -75,8 +75,8 @@ class TestBatchGenerateCLI:
         runner = CliRunner()
         result = runner.invoke(cli, ["mr", "batch-generate", "--dry-run", "--framework", "pytorch"])
         assert result.exit_code == 0
-        assert "torch.nn.functional.relu" in result.output
-        assert "torch.exp" in result.output
+        assert "relu" in result.output
+        assert "exp" in result.output
 
     def test_dry_run_category_filter(self):
         runner = CliRunner()
@@ -86,8 +86,9 @@ class TestBatchGenerateCLI:
             "--category", "linearity",
         ])
         assert result.exit_code == 0
-        assert "torch.nn.functional.relu" in result.output
-        assert "torch.nn.functional.sigmoid" not in result.output
+        assert "relu" in result.output
+        # symmetry operators should not appear in linearity category
+        assert "abs  [symmetry]" not in result.output
 
     def test_dry_run_limit(self):
         runner = CliRunner()

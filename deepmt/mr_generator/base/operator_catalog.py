@@ -298,17 +298,32 @@ class OperatorCatalog:
         """
         按算子名称或别名查找 OperatorEntry。
 
+        匹配顺序：
+          1. 精确匹配 entry.name 或 entry.aliases（全路径名，如 torch.abs）
+          2. 末段匹配：entry.name.split(".")[-1] == operator_name（泛化短名，如 abs）
+             末段匹配存在歧义时返回第一个匹配项；如需精确控制请用全路径名。
+
         Args:
             framework:     框架名称
-            operator_name: 算子名称或别名
+            operator_name: 算子名称（全路径）或泛化短名（末段）
 
         Returns:
             匹配的 OperatorEntry，未找到时返回 None
         """
         fw = self._normalize_framework(framework)
-        for entry in self._entries.get(fw, []):
+        entries = self._entries.get(fw, [])
+
+        # 1. 精确匹配
+        for entry in entries:
             if entry.name == operator_name or operator_name in entry.aliases:
                 return entry
+
+        # 2. 末段匹配（支持泛化短名，如 "relu" 匹配 "torch.nn.functional.relu"）
+        if "." not in operator_name:
+            for entry in entries:
+                if entry.name.split(".")[-1] == operator_name:
+                    return entry
+
         return None
 
     def is_available(

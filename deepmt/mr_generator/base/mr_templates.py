@@ -182,6 +182,69 @@ class MRTemplatePool:
             verified=False,
         )
 
+    def discover_all_templates(
+        self,
+        operator_func: Optional[Callable] = None,
+        num_inputs: Optional[int] = None,
+    ) -> List[MRTemplate]:
+        """
+        不依赖 operator_mr_mapping，枚举所有已定义模板，仅按 min_inputs/max_inputs 过滤。
+
+        用于自动发现模式：当算子未在映射表中注册时，遍历全部模板，
+        由 precheck 进一步筛选哪些模板真正适用于该算子。
+
+        Args:
+            operator_func: 算子函数对象（用于推断输入数量）
+            num_inputs:    输入数量（优先于 operator_func 推断）
+
+        Returns:
+            满足输入数量约束的全部模板列表
+        """
+        if num_inputs is None:
+            num_inputs = self._infer_num_inputs(operator_func)
+
+        result = [
+            t for t in self.templates.values()
+            if num_inputs >= t.min_inputs
+            and (t.max_inputs is None or num_inputs <= t.max_inputs)
+        ]
+        logger.debug(
+            f"[DISCOVER] {len(result)}/{len(self.templates)} templates "
+            f"compatible with num_inputs={num_inputs}"
+        )
+        return result
+
+    def update_operator_mapping(
+        self,
+        operator_name: str,
+        template_names: List[str],
+    ) -> None:
+        """
+        将算子→模板列表写回 YAML 文件的 operator_mr_mapping 节，同时更新内存映射。
+
+        Args:
+            operator_name:  泛化短名（如 relu）
+            template_names: 适用模板名称列表
+        """
+        with open(self.config_path, "r", encoding="utf-8") as f:
+            config = yaml.safe_load(f) or {}
+
+        config.setdefault("operator_mr_mapping", {})[operator_name] = template_names
+        self.operator_mr_mapping[operator_name] = template_names
+
+        with open(self.config_path, "w", encoding="utf-8") as f:
+            yaml.dump(
+                config,
+                f,
+                allow_unicode=True,
+                default_flow_style=False,
+                sort_keys=False,
+            )
+        logger.info(
+            f"[TEMPLATE] operator_mr_mapping 已更新: "
+            f"{operator_name} → {template_names}"
+        )
+
     def generate_mr_candidates(
         self,
         operator_name: str,

@@ -13,7 +13,7 @@ NumPy 参考后端插件（用于 D6 跨框架一致性实验）
   由 CrossFrameworkTester._get_backend("numpy") 直接实例化。
 
 算子映射表（OPERATOR_EQUIVALENCE_MAP）：
-  记录 PyTorch 算子名称 → NumPy 等价实现的映射关系，
+  记录泛化算子名称 → NumPy 等价实现的映射关系，
   可作为论文中"跨框架算子等价性声明"的依据。
 """
 
@@ -35,51 +35,52 @@ def _np_softmax(input: np.ndarray, dim: int = -1, **kw) -> np.ndarray:
 
 
 _NUMPY_OPERATORS: Dict[str, Any] = {
-    # 激活函数
-    "torch.nn.functional.relu":        lambda **kw: np.maximum(0.0, kw["input"]),
-    "torch.nn.functional.elu":         lambda **kw: np.where(kw["input"] >= 0, kw["input"], np.exp(kw["input"]) - 1.0),
-    "torch.nn.functional.leaky_relu":  lambda **kw: np.where(kw["input"] >= 0, kw["input"], 0.01 * kw["input"]),
-    "torch.nn.functional.sigmoid":     lambda **kw: 1.0 / (1.0 + np.exp(-kw["input"])),
-    "torch.nn.functional.softmax":     lambda **kw: _np_softmax(**kw),
-    "torch.nn.functional.silu":        lambda **kw: kw["input"] * (1.0 / (1.0 + np.exp(-kw["input"]))),
-    "torch.nn.functional.hardswish":   lambda **kw: kw["input"] * np.clip(kw["input"] + 3.0, 0.0, 6.0) / 6.0,
-    # 元素级数学
-    "torch.exp":        lambda **kw: np.exp(kw["input"]),
-    "torch.log":        lambda **kw: np.log(kw["input"]),
-    "torch.sqrt":       lambda **kw: np.sqrt(kw["input"]),
-    "torch.abs":        lambda **kw: np.abs(kw["input"]),
-    "torch.tanh":       lambda **kw: np.tanh(kw["input"]),
-    "torch.sigmoid":    lambda **kw: 1.0 / (1.0 + np.exp(-kw["input"])),
-    "torch.sin":        lambda **kw: np.sin(kw["input"]),
-    "torch.cos":        lambda **kw: np.cos(kw["input"]),
-    "torch.neg":        lambda **kw: -kw["input"],
-    "torch.reciprocal": lambda **kw: 1.0 / kw["input"],
-    "torch.sign":       lambda **kw: np.sign(kw["input"]),
-    "torch.floor":      lambda **kw: np.floor(kw["input"]),
-    "torch.ceil":       lambda **kw: np.ceil(kw["input"]),
-    "torch.round":      lambda **kw: np.round(kw["input"]),
-    # 二元算子（第二操作数从 kwargs["other"] 或 kwargs["arg1"] 读取）
-    "torch.add":  lambda **kw: kw["input"] + kw.get("other", kw.get("arg1", 0)),
-    "torch.mul":  lambda **kw: kw["input"] * kw.get("other", kw.get("arg1", 1)),
-    "torch.div":  lambda **kw: kw["input"] / kw.get("other", kw.get("arg1", 1)),
-    "torch.pow":  lambda **kw: kw["input"] ** kw.get("exponent", kw.get("arg1", 2)),
-    "torch.clamp": lambda **kw: np.clip(kw["input"], kw.get("min", None), kw.get("max", None)),
+    # 激活函数（泛化名）
+    "relu":        lambda **kw: np.maximum(0.0, kw["input"]),
+    "elu":         lambda **kw: np.where(kw["input"] >= 0, kw["input"], np.exp(kw["input"]) - 1.0),
+    "leaky_relu":  lambda **kw: np.where(kw["input"] >= 0, kw["input"], 0.01 * kw["input"]),
+    "sigmoid":     lambda **kw: 1.0 / (1.0 + np.exp(-kw["input"])),
+    "softmax":     lambda **kw: _np_softmax(**kw),
+    "silu":        lambda **kw: kw["input"] * (1.0 / (1.0 + np.exp(-kw["input"]))),
+    "hardswish":   lambda **kw: kw["input"] * np.clip(kw["input"] + 3.0, 0.0, 6.0) / 6.0,
+    # 元素级数学（泛化名）
+    "exp":        lambda **kw: np.exp(kw["input"]),
+    "log":        lambda **kw: np.log(kw["input"]),
+    "sqrt":       lambda **kw: np.sqrt(kw["input"]),
+    "abs":        lambda **kw: np.abs(kw["input"]),
+    "tanh":       lambda **kw: np.tanh(kw["input"]),
+    "sin":        lambda **kw: np.sin(kw["input"]),
+    "cos":        lambda **kw: np.cos(kw["input"]),
+    "neg":        lambda **kw: -kw["input"],
+    "reciprocal": lambda **kw: 1.0 / kw["input"],
+    "sign":       lambda **kw: np.sign(kw["input"]),
+    "floor":      lambda **kw: np.floor(kw["input"]),
+    "ceil":       lambda **kw: np.ceil(kw["input"]),
+    "round":      lambda **kw: np.round(kw["input"]),
+    # 二元算子（泛化名；第二操作数从 kwargs["other"] 或 kwargs["arg1"] 读取）
+    "add":    lambda **kw: kw["input"] + kw.get("other", kw.get("arg1", 0)),
+    "mul":    lambda **kw: kw["input"] * kw.get("other", kw.get("arg1", 1)),
+    "multiply": lambda **kw: kw["input"] * kw.get("other", kw.get("arg1", 1)),
+    "div":    lambda **kw: kw["input"] / kw.get("other", kw.get("arg1", 1)),
+    "pow":    lambda **kw: kw["input"] ** kw.get("exponent", kw.get("arg1", 2)),
+    "clamp":  lambda **kw: np.clip(kw["input"], kw.get("min", None), kw.get("max", None)),
 }
 
 # ── 跨框架算子等价性声明表（论文依据） ─────────────────────────────────────────
+# 键为泛化名（与 MR 知识库 subject_name 一致）
 OPERATOR_EQUIVALENCE_MAP: Dict[str, str] = {
-    "torch.nn.functional.relu":    "np.maximum(0, x)",
-    "torch.exp":                   "np.exp(x)",
-    "torch.log":                   "np.log(x)",
-    "torch.abs":                   "np.abs(x)",
-    "torch.sqrt":                  "np.sqrt(x)",
-    "torch.tanh":                  "np.tanh(x)",
-    "torch.nn.functional.sigmoid": "1 / (1 + np.exp(-x))",
-    "torch.nn.functional.softmax": "stable softmax along dim=-1",
-    "torch.sin":                   "np.sin(x)",
-    "torch.cos":                   "np.cos(x)",
-    "torch.neg":                   "-x",
-    "torch.reciprocal":            "1 / x",
+    "relu":       "np.maximum(0, x)",
+    "exp":        "np.exp(x)",
+    "log":        "np.log(x)",
+    "abs":        "np.abs(x)",
+    "sqrt":       "np.sqrt(x)",
+    "tanh":       "np.tanh(x)",
+    "sigmoid":    "1 / (1 + np.exp(-x))",
+    "softmax":    "stable softmax along dim=-1",
+    "sin":        "np.sin(x)",
+    "cos":        "np.cos(x)",
+    "neg":        "-x",
+    "reciprocal": "1 / x",
 }
 
 

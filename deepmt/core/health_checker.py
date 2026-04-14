@@ -73,7 +73,7 @@ class HealthChecker:
         ("deepmt.core.logger",           "日志系统"),
         ("deepmt.core.plugins_manager",  "插件管理器"),
         ("deepmt.core.results_manager",  "结果管理器"),
-        ("deepmt.ir.schema",             "IR 数据结构"),
+        ("deepmt.ir",                     "IR 数据结构"),
     ]
 
     ENGINE_MODULES: List[Tuple[str, str]] = [

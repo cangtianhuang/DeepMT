@@ -67,7 +67,7 @@ class TestCoreModuleCoverage:
         "deepmt.core.logger",
         "deepmt.core.plugins_manager",
         "deepmt.core.results_manager",
-        "deepmt.ir.schema",
+        "deepmt.ir",
         "deepmt.engine.batch_test_runner",
         "deepmt.mr_generator.base.mr_repository",
         "deepmt.analysis.reporting.report_generator",

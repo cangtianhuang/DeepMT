@@ -288,32 +288,18 @@ def _collect_batch_operators(framework: str, category_filter=None):
     """
     构建 batch-generate 的算子列表，返回 [(operator_name, category), ...] 。
 
-    来源优先级：
-    1. mr_templates.yaml 的 operator_mr_mapping（有已知模板的算子）
-       - 按 framework 前缀过滤（pytorch -> "torch." 开头）
-       - 若指定 category_filter，按对应模板的 category 字段过滤
-    2. 若无结果，回退到算子目录的 name 字段
+    来源：mr_templates.yaml 的 operator_mr_mapping（键为泛化短名，如 relu/abs）。
+    framework 参数用于设置生成 MR 的 applicable_frameworks，不做名称过滤。
+    若指定 category_filter，按对应模板的 category 字段过滤。
     """
     from deepmt.mr_generator.base.mr_templates import MRTemplatePool
 
     pool = MRTemplatePool()
 
-    # framework -> operator 名称前缀映射
-    _FRAMEWORK_PREFIX = {
-        "pytorch": ("torch.",),
-        "tensorflow": ("tf.", "tensorflow."),
-        "paddlepaddle": ("paddle.",),
-    }
-    prefixes = _FRAMEWORK_PREFIX.get(framework, ())
-
     result = []
     seen = set()
 
     for op_name in pool.operator_mr_mapping:
-        # framework 过滤：通过前缀匹配
-        if prefixes and not any(op_name.startswith(p) for p in prefixes):
-            continue
-
         # category 过滤：用该算子第一个模板的 category 判断
         op_category = ""
         if category_filter:
@@ -346,18 +332,27 @@ def _try_import_operator(operator_name: str, framework: str):
     """
     尝试按算子名称动态导入算子函数。
 
-    支持完整 Python 路径（如 torch.nn.functional.relu）。
+    支持两种格式：
+      - 泛化短名（如 relu）：委托框架插件的 _resolve_operator 解析
+      - 完整 Python 路径（如 torch.nn.functional.relu）：直接 importlib 导入
     返回可调用对象，失败则返回 None。
     """
     try:
-        parts = operator_name.rsplit(".", 1)
-        if len(parts) == 2:
-            module_path, func_name = parts
-            import importlib
-            module = importlib.import_module(module_path)
-            func = getattr(module, func_name, None)
-            if callable(func):
-                return func
+        if "." not in operator_name:
+            # 泛化短名：委托插件解析（复用 _overrides + 根模块回退逻辑）
+            from deepmt.core.plugins_manager import get_plugins_manager
+            backend = get_plugins_manager().get_backend(framework)
+            return backend._resolve_operator(operator_name)
+        else:
+            # 全路径名：直接 importlib 导入
+            parts = operator_name.rsplit(".", 1)
+            if len(parts) == 2:
+                module_path, func_name = parts
+                import importlib
+                module = importlib.import_module(module_path)
+                func = getattr(module, func_name, None)
+                if callable(func):
+                    return func
     except Exception:
         pass
     return None
@@ -372,6 +367,13 @@ def _try_import_operator(operator_name: str, framework: str):
     type=click.Choice(["pytorch", "tensorflow", "paddlepaddle"], case_sensitive=False),
     show_default=True,
     help="目标框架",
+)
+@click.option(
+    "--operator", "-o",
+    "operators",
+    multiple=True,
+    help="显式指定要处理的算子（可重复，如 -o relu -o abs）；"
+         "未在 operator_mr_mapping 中注册的算子将自动进入发现模式",
 )
 @click.option(
     "--category",
@@ -404,8 +406,12 @@ def _try_import_operator(operator_name: str, framework: str):
     default=False,
     help="只列出待处理算子，不实际执行生成",
 )
-def mr_batch_generate(framework, category, limit, skip_existing, sources, precheck, sympy, dry_run):
+def mr_batch_generate(framework, operators, category, limit, skip_existing, sources, precheck, sympy, dry_run):
     """批量为算子目录中的算子生成蜕变关系并保存至知识库。
+
+    当通过 -o/--operator 显式指定算子且该算子不在 operator_mr_mapping 中时，
+    自动进入"发现模式"：遍历全部模板，用 precheck 筛选适用的模板，
+    并将结果写回 mr_templates.yaml 的 operator_mr_mapping，实现从零重建知识库。
 
     \b
     示例:
@@ -413,18 +419,37 @@ def mr_batch_generate(framework, category, limit, skip_existing, sources, preche
       deepmt mr batch-generate --limit 10 --skip-existing
       deepmt mr batch-generate --dry-run
       deepmt mr batch-generate --sources llm,template --precheck
+      deepmt mr batch-generate -o relu -o abs -o exp -o sigmoid --sources template --precheck --no-sympy
     """
     source_list = [s.strip().lower() for s in sources.split(",")]
     invalid = set(source_list) - {"llm", "template"}
     if invalid:
         raise click.BadParameter(f"未知来源: {', '.join(invalid)}，可选 llm / template")
 
-    operator_list = _collect_batch_operators(framework, category)
+    from deepmt.mr_generator.base.mr_templates import MRTemplatePool
+    pool = MRTemplatePool()
+
+    # ── 构建算子列表 ──────────────────────────────────────────────────────────
+    if operators:
+        # 显式指定算子：不需要 operator_mr_mapping 有内容
+        # 未注册的算子标记为 "discover" 分类，后续进入发现模式
+        operator_list = []
+        for op in operators:
+            if op in pool.operator_mr_mapping:
+                # 已注册：用第一个模板的 category 作为标签
+                tnames = pool.operator_mr_mapping[op]
+                cat = pool.templates[tnames[0]].category if tnames and tnames[0] in pool.templates else "registered"
+            else:
+                cat = "discover"
+            operator_list.append((op, cat))
+    else:
+        operator_list = _collect_batch_operators(framework, category)
 
     if not operator_list:
         click.echo(click.style(
             f"未找到符合条件的算子（framework={framework}"
-            + (f", category={category}" if category else "") + "）",
+            + (f", category={category}" if category else "")
+            + ("，请通过 -o/--operator 显式指定算子" if not operators else "") + "）",
             fg="yellow"
         ))
         return
@@ -474,12 +499,38 @@ def mr_batch_generate(framework, category, limit, skip_existing, sources, preche
                 operator_func = _try_import_operator(operator, framework)
                 operator_ir = OperatorIR(name=operator)
 
-                mrs = generator.generate_only(
-                    operator_ir=operator_ir,
-                    auto_fetch_info=False,
-                    sources=source_list,
-                    framework=framework,
-                )
+                # ── 发现模式：算子未在 operator_mr_mapping 中注册 ──────────────
+                is_discover = op_category == "discover"
+                discover_pairs = []   # [(MRTemplate, MetamorphicRelation), ...]
+
+                if is_discover and "template" in source_list:
+                    # 遍历全部模板，由 precheck 决定哪些适用
+                    discover_templates = pool.discover_all_templates(operator_func)
+                    click.echo(
+                        f"{prefix}  [discover] 尝试 {len(discover_templates)} 个候选模板 …"
+                    )
+                    discover_pairs = [
+                        (t, pool.create_mr_from_template(t))
+                        for t in discover_templates
+                    ]
+                    # 合并：LLM 来源正常走 generate_only，template 来源用 discover_pairs
+                    llm_mrs = []
+                    if "llm" in source_list:
+                        llm_mrs = generator.generate_only(
+                            operator_ir=operator_ir,
+                            auto_fetch_info=False,
+                            sources=["llm"],
+                            framework=framework,
+                        )
+                    mrs = llm_mrs + [mr for _, mr in discover_pairs]
+                else:
+                    # 常规模式：从 operator_mr_mapping 取模板
+                    mrs = generator.generate_only(
+                        operator_ir=operator_ir,
+                        auto_fetch_info=False,
+                        sources=source_list,
+                        framework=framework,
+                    )
 
                 if not mrs:
                     click.echo(f"{prefix}  {click.style('NO_MR', fg='yellow')} (无候选 MR)")
@@ -496,11 +547,34 @@ def mr_batch_generate(framework, category, limit, skip_existing, sources, preche
                         use_sympy_proof=sympy,
                     )
 
+                # ── 发现模式：将通过 precheck 的模板写回 operator_mr_mapping ──
+                if is_discover and discover_pairs and precheck:
+                    passing_names = [
+                        t.name for t, mr in discover_pairs if mr.checked is True
+                    ]
+                    if passing_names:
+                        pool.update_operator_mapping(operator, passing_names)
+                        click.echo(
+                            f"{prefix}  [discover] 发现 {len(passing_names)} 个适用模板 "
+                            f"→ 已写入 operator_mr_mapping"
+                        )
+                    else:
+                        click.echo(
+                            f"{prefix}  [discover] precheck 全部失败，"
+                            "operator_mr_mapping 未更新"
+                        )
+
                 passed = sum(1 for m in mrs if m.verified)
                 count = repo.save(operator, mrs, framework=framework)
 
-                if passed == 0:
-                    click.echo(f"{prefix}  {click.style('NO_MR', fg='yellow')} (生成={len(mrs)} 验证通过=0)")
+                if count == 0 and not mrs:
+                    click.echo(f"{prefix}  {click.style('NO_MR', fg='yellow')} (无候选 MR)")
+                    skipped += 1
+                elif passed == 0:
+                    click.echo(
+                        f"{prefix}  {click.style('NO_MR', fg='yellow')} "
+                        f"(生成={len(mrs)} 验证通过=0)"
+                    )
                     skipped += 1
                 else:
                     click.echo(

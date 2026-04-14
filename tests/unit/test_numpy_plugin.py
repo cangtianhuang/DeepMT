@@ -143,16 +143,16 @@ class TestElementCompare:
 
 class TestResolveOperator:
     def test_relu_resolved(self, plugin):
-        fn = plugin._resolve_operator("torch.nn.functional.relu")
+        fn = plugin._resolve_operator("relu")
         assert callable(fn)
 
     def test_exp_resolved(self, plugin):
-        fn = plugin._resolve_operator("torch.exp")
+        fn = plugin._resolve_operator("exp")
         assert callable(fn)
 
     def test_unknown_raises(self, plugin):
         with pytest.raises(ValueError, match="NumpyPlugin"):
-            plugin._resolve_operator("torch.nn.functional.nonexistent_op")
+            plugin._resolve_operator("nonexistent_op_xyz_abc")
 
     def test_operator_equivalence_map_not_empty(self):
         assert len(OPERATOR_EQUIVALENCE_MAP) > 0
@@ -164,59 +164,59 @@ class TestNumericalCorrectness:
     """验证 NumPy 算子与 PyTorch 算子数值一致（允许 float32 精度范围内的误差）。"""
 
     def test_relu(self, plugin):
-        fn = plugin._resolve_operator("torch.nn.functional.relu")
+        fn = plugin._resolve_operator("relu")
         x = np.array([-2.0, -1.0, 0.0, 1.0, 2.0], dtype=np.float32)
         out = fn(input=x)
         np.testing.assert_allclose(out, [0, 0, 0, 1, 2])
 
     def test_exp(self, plugin):
-        fn = plugin._resolve_operator("torch.exp")
+        fn = plugin._resolve_operator("exp")
         x = np.array([0.0, 1.0, 2.0], dtype=np.float32)
         out = fn(input=x)
         np.testing.assert_allclose(out, np.exp([0.0, 1.0, 2.0]), rtol=1e-5)
 
     def test_sigmoid_range(self, plugin):
-        fn = plugin._resolve_operator("torch.nn.functional.sigmoid")
+        fn = plugin._resolve_operator("sigmoid")
         x = np.linspace(-5, 5, 20).astype(np.float32)
         out = fn(input=x)
         assert float(out.min()) >= 0.0
         assert float(out.max()) <= 1.0
 
     def test_tanh_antisymmetry(self, plugin):
-        fn = plugin._resolve_operator("torch.tanh")
+        fn = plugin._resolve_operator("tanh")
         x = np.array([1.0, 2.0, -3.0], dtype=np.float32)
         out = fn(input=x)
         out_neg = fn(input=-x)
         np.testing.assert_allclose(out, -out_neg, rtol=1e-5)
 
     def test_abs_nonnegative(self, plugin):
-        fn = plugin._resolve_operator("torch.abs")
+        fn = plugin._resolve_operator("abs")
         x = np.random.randn(10).astype(np.float32)
         out = fn(input=x)
         assert float(out.min()) >= 0.0
 
     def test_sqrt_positive_input(self, plugin):
-        fn = plugin._resolve_operator("torch.sqrt")
+        fn = plugin._resolve_operator("sqrt")
         x = np.array([1.0, 4.0, 9.0], dtype=np.float32)
         out = fn(input=x)
         np.testing.assert_allclose(out, [1.0, 2.0, 3.0], rtol=1e-5)
 
     def test_softmax_sum_to_one(self, plugin):
-        fn = plugin._resolve_operator("torch.nn.functional.softmax")
+        fn = plugin._resolve_operator("softmax")
         x = np.random.randn(4, 5).astype(np.float32)
         out = fn(input=x)
         row_sums = out.sum(axis=-1)
         np.testing.assert_allclose(row_sums, np.ones(4), rtol=1e-5)
 
     def test_log_exp_inverse(self, plugin):
-        exp_fn = plugin._resolve_operator("torch.exp")
-        log_fn = plugin._resolve_operator("torch.log")
+        exp_fn = plugin._resolve_operator("exp")
+        log_fn = plugin._resolve_operator("log")
         x = np.array([0.5, 1.0, 2.0], dtype=np.float32)
         result = log_fn(input=exp_fn(input=x))
         np.testing.assert_allclose(result, x, rtol=1e-5)
 
     def test_supported_operators_list(self, plugin):
         ops = NumpyPlugin.supported_operators()
-        assert "torch.nn.functional.relu" in ops
-        assert "torch.exp" in ops
+        assert "relu" in ops
+        assert "exp" in ops
         assert len(ops) >= 8

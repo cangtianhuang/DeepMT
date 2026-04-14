@@ -176,7 +176,7 @@ class TestCompareOperator:
 
         tester = CrossFrameworkTester(repo=mock_repo, catalog=mock_catalog, results_dir=str(tmp_path))
         session = tester.compare_operator(
-            "torch.nn.functional.relu",
+            "relu",
             framework1="pytorch",
             framework2="numpy",
             n_samples=5,

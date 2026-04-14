@@ -58,9 +58,9 @@ class TestTemplateTransformCode:
 
     def test_operator_mapping_new_operators(self):
         pool = MRTemplatePool()
-        assert "torch.nn.functional.relu" in pool.operator_mr_mapping
-        assert "torch.nn.functional.sigmoid" in pool.operator_mr_mapping
-        assert "torch.exp" in pool.operator_mr_mapping
+        assert "relu" in pool.operator_mr_mapping
+        assert "sigmoid" in pool.operator_mr_mapping
+        assert "exp" in pool.operator_mr_mapping
 
 
 # ── 新模板的 oracle 表达式语义正确性 ────────────────────────────────────────────
@@ -126,7 +126,7 @@ class TestPrecheckSetsVerified():
         from deepmt.mr_generator.operator.operator_mr_generator import OperatorMRGenerator
 
         pool = MRTemplatePool()
-        templates = pool.get_applicable_templates("torch.nn.functional.relu")
+        templates = pool.get_applicable_templates("relu")
         assert len(templates) >= 1
 
         mrs = [pool.create_mr_from_template(t) for t in templates]
@@ -134,7 +134,7 @@ class TestPrecheckSetsVerified():
             assert mr.verified is False  # 初始状态
 
         generator = OperatorMRGenerator()
-        operator_ir = OperatorIR(name="torch.nn.functional.relu")
+        operator_ir = OperatorIR(name="relu")
 
         verified = generator._apply_precheck(
             operator_func=F.relu,
@@ -168,10 +168,10 @@ class TestTryImportOperator:
         func = _try_import_operator("torch.nonexistent_op_xyz", "pytorch")
         assert func is None
 
-    def test_import_bare_name_returns_none(self):
+    def test_import_bare_name_resolves_via_plugin(self):
         from deepmt.commands.mr import _try_import_operator
         func = _try_import_operator("relu", "pytorch")
-        assert func is None
+        assert func is not None and callable(func)
 
 
 # ── RandomGenerator ───────────────────────────────────────────────────────────

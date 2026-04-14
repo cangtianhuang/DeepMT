@@ -231,7 +231,7 @@ class CrossFrameworkTester:
     用法示例：
         tester = CrossFrameworkTester()
         session = tester.compare_operator(
-            "torch.nn.functional.relu",
+            "relu",
             framework1="pytorch",
             framework2="paddlepaddle",
             n_samples=20,
@@ -240,9 +240,9 @@ class CrossFrameworkTester:
         tester.save(session)
 
     CLI 等价：
-        deepmt test cross torch.nn.functional.relu
-        deepmt test cross torch.exp --framework1 pytorch --framework2 paddlepaddle
-        deepmt test cross torch.tanh --framework1 pytorch --framework2 numpy --json
+        deepmt test cross relu
+        deepmt test cross exp --framework1 pytorch --framework2 paddlepaddle
+        deepmt test cross tanh --framework1 pytorch --framework2 numpy --json
     """
 
     DEFAULT_RESULTS_DIR = Path("data/results/cross_framework")

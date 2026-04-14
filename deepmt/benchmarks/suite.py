@@ -54,47 +54,40 @@ class OperatorBenchmarkEntry:
 
 
 _OPERATOR_BENCHMARK_ENTRIES: List[OperatorBenchmarkEntry] = [
-    # ── 激活函数 ──────────────────────────────────────────────────────────────
-    OperatorBenchmarkEntry("torch.nn.functional.relu",    "pytorch", "activation"),
-    OperatorBenchmarkEntry("torch.nn.functional.sigmoid", "pytorch", "activation"),
-    OperatorBenchmarkEntry("torch.nn.functional.tanh",    "pytorch", "activation"),
-    OperatorBenchmarkEntry("torch.nn.functional.leaky_relu", "pytorch", "activation"),
-    OperatorBenchmarkEntry("torch.nn.functional.gelu",    "pytorch", "activation"),
-    OperatorBenchmarkEntry("torch.nn.functional.softmax", "pytorch", "activation"),
-    OperatorBenchmarkEntry("torch.nn.functional.log_softmax", "pytorch", "activation"),
-    # ── 基础数学算子 ──────────────────────────────────────────────────────────
-    OperatorBenchmarkEntry("torch.abs",  "pytorch", "math"),
-    OperatorBenchmarkEntry("torch.exp",  "pytorch", "math"),
-    OperatorBenchmarkEntry("torch.log",  "pytorch", "math"),
-    OperatorBenchmarkEntry("torch.sqrt", "pytorch", "math"),
-    OperatorBenchmarkEntry("torch.pow",  "pytorch", "math"),
-    OperatorBenchmarkEntry("Add",        "pytorch", "math",
-                           notes="逐元素加法（torch.add / tensor.__add__）"),
-    OperatorBenchmarkEntry("Multiply",   "pytorch", "math",
-                           notes="逐元素乘法（torch.mul / tensor.__mul__）"),
-    # ── 归一化 ────────────────────────────────────────────────────────────────
-    OperatorBenchmarkEntry("torch.nn.functional.batch_norm",  "pytorch", "normalization"),
-    OperatorBenchmarkEntry("torch.nn.functional.layer_norm",  "pytorch", "normalization"),
-    OperatorBenchmarkEntry("torch.nn.functional.group_norm",  "pytorch", "normalization"),
-    # ── 池化 ──────────────────────────────────────────────────────────────────
-    OperatorBenchmarkEntry("torch.nn.functional.max_pool2d",    "pytorch", "pooling"),
-    OperatorBenchmarkEntry("torch.nn.functional.avg_pool2d",    "pytorch", "pooling"),
-    OperatorBenchmarkEntry("torch.nn.functional.adaptive_avg_pool2d", "pytorch", "pooling"),
-    # ── 损失函数 ──────────────────────────────────────────────────────────────
-    OperatorBenchmarkEntry("torch.nn.functional.cross_entropy", "pytorch", "loss"),
-    OperatorBenchmarkEntry("torch.nn.functional.mse_loss",      "pytorch", "loss"),
-    OperatorBenchmarkEntry("torch.nn.functional.binary_cross_entropy_with_logits",
-                           "pytorch", "loss"),
-    # ── 归约 ──────────────────────────────────────────────────────────────────
-    OperatorBenchmarkEntry("torch.sum",  "pytorch", "reduction"),
-    OperatorBenchmarkEntry("torch.mean", "pytorch", "reduction"),
-    OperatorBenchmarkEntry("torch.max",  "pytorch", "reduction"),
-    OperatorBenchmarkEntry("torch.min",  "pytorch", "reduction"),
-    OperatorBenchmarkEntry("torch.std",  "pytorch", "reduction"),
-    # ── 线性代数 ──────────────────────────────────────────────────────────────
-    OperatorBenchmarkEntry("torch.nn.functional.linear", "pytorch", "linear_algebra"),
-    OperatorBenchmarkEntry("torch.matmul", "pytorch", "linear_algebra"),
-    OperatorBenchmarkEntry("torch.transpose", "pytorch", "linear_algebra"),
+    # ── 激活函数（泛化名，框架无关）──────────────────────────────────────────
+    OperatorBenchmarkEntry("relu",         "pytorch", "activation"),
+    OperatorBenchmarkEntry("sigmoid",      "pytorch", "activation"),
+    OperatorBenchmarkEntry("tanh",         "pytorch", "activation"),
+    OperatorBenchmarkEntry("leaky_relu",   "pytorch", "activation"),
+    OperatorBenchmarkEntry("gelu",         "pytorch", "activation"),
+    OperatorBenchmarkEntry("softmax",      "pytorch", "activation"),
+    OperatorBenchmarkEntry("log_softmax",  "pytorch", "activation"),
+    # ── 基础数学算子（泛化名）────────────────────────────────────────────────
+    OperatorBenchmarkEntry("abs",      "pytorch", "math"),
+    OperatorBenchmarkEntry("exp",      "pytorch", "math"),
+    OperatorBenchmarkEntry("log",      "pytorch", "math"),
+    OperatorBenchmarkEntry("sqrt",     "pytorch", "math"),
+    OperatorBenchmarkEntry("pow",      "pytorch", "math"),
+    OperatorBenchmarkEntry("add",      "pytorch", "math"),
+    OperatorBenchmarkEntry("multiply", "pytorch", "math"),
+    # ── 归一化（泛化名）──────────────────────────────────────────────────────
+    OperatorBenchmarkEntry("batch_norm",  "pytorch", "normalization"),
+    OperatorBenchmarkEntry("layer_norm",  "pytorch", "normalization"),
+    # ── 池化（泛化名）────────────────────────────────────────────────────────
+    OperatorBenchmarkEntry("max_pool2d",         "pytorch", "pooling"),
+    OperatorBenchmarkEntry("avg_pool2d",         "pytorch", "pooling"),
+    # ── 损失函数（泛化名）────────────────────────────────────────────────────
+    OperatorBenchmarkEntry("cross_entropy", "pytorch", "loss"),
+    OperatorBenchmarkEntry("mse_loss",      "pytorch", "loss"),
+    # ── 归约（泛化名）────────────────────────────────────────────────────────
+    OperatorBenchmarkEntry("sum",   "pytorch", "reduction"),
+    OperatorBenchmarkEntry("mean",  "pytorch", "reduction"),
+    OperatorBenchmarkEntry("max",   "pytorch", "reduction"),
+    OperatorBenchmarkEntry("min",   "pytorch", "reduction"),
+    OperatorBenchmarkEntry("std",   "pytorch", "reduction"),
+    # ── 线性代数（泛化名）────────────────────────────────────────────────────
+    OperatorBenchmarkEntry("matmul",    "pytorch", "linear_algebra"),
+    OperatorBenchmarkEntry("transpose", "pytorch", "linear_algebra"),
 ]
 
 

@@ -138,28 +138,42 @@ class FrameworkPlugin(ABC):
 
     def _resolve_operator(self, name: str) -> Callable:
         """
-        将算子名称（如 "torch.nn.functional.relu"）解析为可调用对象。
+        将算子名称解析为可调用对象。
 
         解析顺序：
-          1. 检查 _overrides 字典（优先，用于特殊情况）
-          2. 遍历 _root_modules，按属性链逐级查找
+          1. 检查 _overrides 字典（优先；支持泛化短名和全路径名）
+          2. 若名称含 "."：遍历 _root_modules，按属性链逐级 getattr
+          3. 若名称不含 "."（泛化短名）：遍历 _root_modules，直接 getattr(root, name)
 
-        若解析失败，抛出 ValueError 并提示将算子加入 _overrides。
+        子类可在 _overrides 中添加映射来处理以下情况：
+          - 根模块上不存在该短名（如 nn.functional 系算子）
+          - 短名对应的根模块属性与预期实现不同
+
+        若三步均失败，抛出 ValueError 并提示将算子加入 _overrides。
         """
+        # 1. _overrides 优先（支持短名和全路径名）
         if name in self._overrides:
             return self._overrides[name]
 
-        parts = name.split(".")
-        for root in self._root_modules:
-            if root.__name__ != parts[0]:
-                continue
-            try:
-                obj = root
-                for attr in parts[1:]:
-                    obj = getattr(obj, attr)
-                return obj
-            except AttributeError:
-                continue
+        if "." in name:
+            # 2. 全路径名：按属性链解析
+            parts = name.split(".")
+            for root in self._root_modules:
+                if root.__name__ != parts[0]:
+                    continue
+                try:
+                    obj = root
+                    for attr in parts[1:]:
+                        obj = getattr(obj, attr)
+                    return obj
+                except AttributeError:
+                    continue
+        else:
+            # 3. 泛化短名：直接 getattr(root_module, name)
+            for root in self._root_modules:
+                obj = getattr(root, name, None)
+                if callable(obj):
+                    return obj
 
         raise ValueError(
             f"Cannot resolve operator '{name}' via {[m.__name__ for m in self._root_modules]}. "

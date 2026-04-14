@@ -3,7 +3,7 @@ PaddlePlugin 单元测试
 
 覆盖：
   - 所有 FrameworkPlugin 抽象方法
-  - 算子解析（torch.* 名称 + paddle.* 名称）
+  - 算子解析（泛化短名如 relu/exp/abs + paddle.* 原生名）
   - 跨框架基本流程（CrossFrameworkTester with paddlepaddle）
   - DiffType 分类字段
   - is_available / supported_operators
@@ -56,8 +56,8 @@ class TestPaddlePluginBasicInterface:
         from deepmt.plugins.paddle_plugin import PaddlePlugin
         ops = PaddlePlugin.supported_operators()
         assert len(ops) > 0
-        assert "torch.nn.functional.relu" in ops
-        assert "torch.exp" in ops
+        assert "relu" in ops
+        assert "exp" in ops
 
     def test_to_tensor_from_numpy(self, plugin):
         arr = np.array([1.0, 2.0], dtype=np.float32)
@@ -234,20 +234,20 @@ class TestElementCompare:
 
 
 class TestResolveOperator:
-    def test_resolve_torch_relu(self, plugin):
-        fn = plugin._resolve_operator("torch.nn.functional.relu")
+    def test_resolve_relu(self, plugin):
+        fn = plugin._resolve_operator("relu")
         x = paddle.to_tensor([-1.0, 0.0, 1.0], dtype="float32")
         result = fn(input=x)
         np.testing.assert_array_almost_equal(result.numpy(), [0.0, 0.0, 1.0])
 
-    def test_resolve_torch_exp(self, plugin):
-        fn = plugin._resolve_operator("torch.exp")
+    def test_resolve_exp(self, plugin):
+        fn = plugin._resolve_operator("exp")
         x = paddle.to_tensor([0.0, 1.0], dtype="float32")
         result = fn(input=x)
         np.testing.assert_array_almost_equal(result.numpy(), [1.0, math.e], decimal=5)
 
-    def test_resolve_torch_abs(self, plugin):
-        fn = plugin._resolve_operator("torch.abs")
+    def test_resolve_abs(self, plugin):
+        fn = plugin._resolve_operator("abs")
         x = paddle.to_tensor([-1.0, -2.0, 3.0], dtype="float32")
         result = fn(input=x)
         np.testing.assert_array_almost_equal(result.numpy(), [1.0, 2.0, 3.0])
@@ -260,25 +260,25 @@ class TestResolveOperator:
 
     def test_resolve_unknown_raises(self, plugin):
         with pytest.raises(ValueError, match="PaddlePlugin"):
-            plugin._resolve_operator("torch.nonexistent_op_xyz")
+            plugin._resolve_operator("nonexistent_op_xyz_abc")
 
     @pytest.mark.parametrize("op_name", [
-        "torch.nn.functional.relu",
-        "torch.nn.functional.sigmoid",
-        "torch.nn.functional.softmax",
-        "torch.nn.functional.silu",
-        "torch.exp",
-        "torch.log",
-        "torch.sqrt",
-        "torch.abs",
-        "torch.tanh",
-        "torch.sin",
-        "torch.cos",
-        "torch.neg",
-        "torch.sign",
-        "torch.floor",
-        "torch.ceil",
-        "torch.round",
+        "relu",
+        "sigmoid",
+        "softmax",
+        "silu",
+        "exp",
+        "log",
+        "sqrt",
+        "abs",
+        "tanh",
+        "sin",
+        "cos",
+        "neg",
+        "sign",
+        "floor",
+        "ceil",
+        "round",
     ])
     def test_resolve_all_supported_unary_ops(self, plugin, op_name, pos_tensor):
         fn = plugin._resolve_operator(op_name)
@@ -286,9 +286,9 @@ class TestResolveOperator:
         assert isinstance(result, paddle.Tensor)
 
     @pytest.mark.parametrize("op_name,kw", [
-        ("torch.add",  {"input": None, "other": None}),
-        ("torch.mul",  {"input": None, "other": None}),
-        ("torch.div",  {"input": None, "other": None}),
+        ("add",  {"input": None, "other": None}),
+        ("mul",  {"input": None, "other": None}),
+        ("div",  {"input": None, "other": None}),
     ])
     def test_resolve_binary_ops(self, plugin, pos_tensor, op_name, kw):
         fn = plugin._resolve_operator(op_name)
@@ -309,27 +309,27 @@ class TestNumericalAccuracy:
         from deepmt.plugins.pytorch_plugin import PyTorchPlugin
         return PyTorchPlugin()
 
-    @pytest.mark.parametrize("op_torch, op_paddle", [
-        ("torch.nn.functional.relu",    "torch.nn.functional.relu"),
-        ("torch.nn.functional.sigmoid", "torch.nn.functional.sigmoid"),
-        ("torch.exp",                   "torch.exp"),
-        ("torch.abs",                   "torch.abs"),
-        ("torch.tanh",                  "torch.tanh"),
-        ("torch.sin",                   "torch.sin"),
-        ("torch.cos",                   "torch.cos"),
-        ("torch.neg",                   "torch.neg"),
-        ("torch.sign",                  "torch.sign"),
-        ("torch.floor",                 "torch.floor"),
-        ("torch.ceil",                  "torch.ceil"),
+    @pytest.mark.parametrize("op_name", [
+        "relu",
+        "sigmoid",
+        "exp",
+        "abs",
+        "tanh",
+        "sin",
+        "cos",
+        "neg",
+        "sign",
+        "floor",
+        "ceil",
     ])
-    def test_numerical_parity_with_pytorch(self, torch_plugin, plugin, op_torch, op_paddle):
+    def test_numerical_parity_with_pytorch(self, torch_plugin, plugin, op_name):
         import torch
         data = np.array([0.5, 1.0, 1.5, -0.5, -1.0], dtype=np.float32)
         t_torch = torch.tensor(data)
         t_paddle = paddle.to_tensor(data)
 
-        fn_torch = torch_plugin._resolve_operator(op_torch)
-        fn_paddle = plugin._resolve_operator(op_paddle)
+        fn_torch = torch_plugin._resolve_operator(op_name)
+        fn_paddle = plugin._resolve_operator(op_name)
 
         out_torch = fn_torch(input=t_torch)
         out_paddle = fn_paddle(input=t_paddle)
@@ -338,24 +338,24 @@ class TestNumericalAccuracy:
             torch_plugin.to_numpy(out_torch),
             plugin.to_numpy(out_paddle),
             decimal=5,
-            err_msg=f"Numerical mismatch for {op_torch}",
+            err_msg=f"Numerical mismatch for {op_name}",
         )
 
     def test_relu_zero_boundary(self, plugin):
         t = paddle.to_tensor([-0.001, 0.0, 0.001], dtype="float32")
-        fn = plugin._resolve_operator("torch.nn.functional.relu")
+        fn = plugin._resolve_operator("relu")
         out = fn(input=t)
         np.testing.assert_array_almost_equal(out.numpy(), [0.0, 0.0, 0.001])
 
     def test_log_positive_values(self, plugin):
         t = paddle.to_tensor([1.0, math.e, math.e ** 2], dtype="float32")
-        fn = plugin._resolve_operator("torch.log")
+        fn = plugin._resolve_operator("log")
         out = fn(input=t)
         np.testing.assert_array_almost_equal(out.numpy(), [0.0, 1.0, 2.0], decimal=5)
 
     def test_sqrt_values(self, plugin):
         t = paddle.to_tensor([1.0, 4.0, 9.0], dtype="float32")
-        fn = plugin._resolve_operator("torch.sqrt")
+        fn = plugin._resolve_operator("sqrt")
         out = fn(input=t)
         np.testing.assert_array_almost_equal(out.numpy(), [1.0, 2.0, 3.0], decimal=5)
 
@@ -410,7 +410,7 @@ class TestCrossConsistencyDiffFields:
     def test_diff_type_counts_in_result(self):
         from deepmt.analysis.qa.cross_framework_tester import CrossConsistencyResult
         r = CrossConsistencyResult(
-            operator="torch.abs",
+            operator="abs",
             framework1="pytorch",
             framework2="paddlepaddle",
             mr_id="test-id",
@@ -430,7 +430,7 @@ class TestCrossConsistencyDiffFields:
     def test_diff_type_counts_serialized_in_to_dict(self):
         from deepmt.analysis.qa.cross_framework_tester import CrossConsistencyResult
         r = CrossConsistencyResult(
-            operator="torch.abs",
+            operator="abs",
             framework1="pytorch",
             framework2="paddlepaddle",
             mr_id="test-id",
