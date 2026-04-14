@@ -21,7 +21,7 @@ from deepmt.analysis.verification.random_generator import RandomGenerator
 from deepmt.core.logger import logger
 from deepmt.core.plugins_manager import FrameworkType, get_plugins_manager
 from deepmt.core.results_manager import ResultsManager
-from deepmt.ir.schema import MetamorphicRelation, OperatorIR, OracleResult
+from deepmt.ir import MetamorphicRelation, OperatorIR, OracleResult
 from deepmt.mr_generator.base.mr_repository import MRRepository
 from deepmt.mr_generator.base.operator_catalog import OperatorCatalog
 

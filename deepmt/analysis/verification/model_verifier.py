@@ -20,7 +20,7 @@ from typing import Any, Optional
 import numpy as np
 
 from deepmt.core.logger import logger
-from deepmt.ir.schema import MetamorphicRelation, OracleResult
+from deepmt.ir import MetamorphicRelation, OracleResult
 
 
 # ── Oracle 解析辅助 ───────────────────────────────────────────────────────────

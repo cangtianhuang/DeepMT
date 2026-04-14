@@ -20,7 +20,7 @@ from pathlib import Path
 
 from deepmt.analysis.reporting.report_generator import ReportGenerator
 from deepmt.core.results_manager import ResultsManager
-from deepmt.ir.schema import MetamorphicRelation, OracleResult, OperatorIR
+from deepmt.ir import MetamorphicRelation, OracleResult, OperatorIR
 
 
 def _make_mr(id: str, desc: str) -> MetamorphicRelation:

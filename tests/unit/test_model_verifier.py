@@ -27,7 +27,7 @@ def verifier():
 
 def _make_mr(oracle_expr: str, tolerance: float = 1e-5):
     """构造用于测试的最小 MetamorphicRelation。"""
-    from deepmt.ir.schema import MetamorphicRelation
+    from deepmt.ir import MetamorphicRelation
     return MetamorphicRelation(
         id="test-mr-001",
         description="test MR",

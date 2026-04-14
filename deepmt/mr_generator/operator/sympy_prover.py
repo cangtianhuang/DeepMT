@@ -9,7 +9,7 @@ from typing import Callable, List, Optional, Tuple
 import sympy as sp
 
 from deepmt.core.logger import logger
-from deepmt.ir.schema import MetamorphicRelation
+from deepmt.ir import MetamorphicRelation
 from deepmt.mr_generator.operator.sympy_translator import SympyTranslator
 
 

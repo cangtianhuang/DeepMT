@@ -22,7 +22,7 @@ import torch
 
 from deepmt.analysis.reporting.evidence_collector import EvidenceCollector
 from deepmt.engine.batch_test_runner import BatchTestRunner
-from deepmt.ir.schema import MetamorphicRelation
+from deepmt.ir import MetamorphicRelation
 from deepmt.plugins.faulty_pytorch_plugin import (
     BUILTIN_FAULT_CATALOG,
     FaultyPyTorchPlugin,

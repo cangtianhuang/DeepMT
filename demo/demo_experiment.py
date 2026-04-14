@@ -27,7 +27,7 @@ from deepmt.analysis.qa.cross_framework_tester import (
     CrossSessionResult,
 )
 from deepmt.core.results_manager import ResultsManager
-from deepmt.ir.schema import MetamorphicRelation, OracleResult, OperatorIR
+from deepmt.ir import MetamorphicRelation, OracleResult, OperatorIR
 
 
 # ── 辅助函数 ──────────────────────────────────────────────────────────────────

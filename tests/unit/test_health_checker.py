@@ -16,7 +16,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 import pytest
 
-from deepmt.monitoring.health_checker import HealthChecker, HealthReport, HealthStatus
+from deepmt.core.health_checker import HealthChecker, HealthReport, HealthStatus
 
 
 @pytest.fixture(scope="module")

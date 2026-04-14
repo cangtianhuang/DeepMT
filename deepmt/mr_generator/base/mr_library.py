@@ -21,7 +21,7 @@ from typing import TYPE_CHECKING, Dict, List, Optional
 import yaml
 
 from deepmt.core.logger import logger
-from deepmt.ir.schema import MetamorphicRelation
+from deepmt.ir import MetamorphicRelation
 
 if TYPE_CHECKING:
     from deepmt.mr_generator.base.mr_repository import MRRepository

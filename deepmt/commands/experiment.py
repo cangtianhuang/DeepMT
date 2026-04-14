@@ -43,7 +43,7 @@ def experiment_run(rq, seed, notes, no_env, as_json):
       deepmt experiment run --rq rq1 --rq rq2 --seed 42
       deepmt experiment run --notes "第一次完整实验" --json
     """
-    from deepmt.experiments.runs.run_manifest import RunManifestManager
+    from deepmt.experiments.run_manifest import RunManifestManager
 
     rqs = list(rq) if rq else None
     mgr = RunManifestManager()
@@ -78,7 +78,7 @@ def experiment_collect(rq, as_json, run_id):
       deepmt experiment collect --rq rq1 --rq rq2
       deepmt experiment collect --json
     """
-    from deepmt.experiments.stats.aggregator import StatsAggregator
+    from deepmt.experiments.aggregator import StatsAggregator
     from deepmt.experiments.organizer import ExperimentOrganizer
 
     rqs = list(rq) if rq else None
@@ -123,8 +123,8 @@ def experiment_export(fmt, output, rq, run_id, figures, ascii_only):
       deepmt experiment export --format all --output data/my_export
       deepmt experiment export --figures --ascii-only
     """
-    from deepmt.experiments.stats.aggregator import StatsAggregator
-    from deepmt.experiments.stats.exporter import StatsExporter
+    from deepmt.experiments.aggregator import StatsAggregator
+    from deepmt.experiments.exporter import StatsExporter
 
     rqs = list(rq) if rq else None
     click.echo(f"[experiment export] 收集数据 ...")
@@ -146,7 +146,7 @@ def experiment_export(fmt, output, rq, run_id, figures, ascii_only):
 
     if figures:
         click.echo("\n[experiment export] 导出图表 ...")
-        from deepmt.scripts.export_thesis_figures import main as figures_main
+        from deepmt.experiments.export_figures import main as figures_main
         argv = ["--output", f"{output}/../figures"]
         if ascii_only:
             argv.append("--ascii-only")
@@ -165,7 +165,7 @@ def experiment_list(as_json):
       deepmt experiment list
       deepmt experiment list --json
     """
-    from deepmt.experiments.runs.run_manifest import RunManifestManager
+    from deepmt.experiments.run_manifest import RunManifestManager
 
     mgr = RunManifestManager()
     manifests = mgr.list_all()
@@ -200,7 +200,7 @@ def experiment_show(run_id, as_json):
     示例:
       deepmt experiment show abc123def456
     """
-    from deepmt.experiments.runs.run_manifest import RunManifestManager
+    from deepmt.experiments.run_manifest import RunManifestManager
 
     mgr = RunManifestManager()
     manifest = mgr.load(run_id)
@@ -370,7 +370,7 @@ def experiment_env(as_json):
       deepmt experiment env
       deepmt experiment env --json
     """
-    from deepmt.experiments.runs.environment_recorder import EnvironmentRecorder
+    from deepmt.experiments.environment_recorder import EnvironmentRecorder
     from deepmt.experiments.version_matrix import check_version_compatibility
 
     snap = EnvironmentRecorder().capture()

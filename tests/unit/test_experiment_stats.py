@@ -179,7 +179,7 @@ class TestBenchmarkSuite:
 
 class TestRunManifest:
     def test_create_and_serialise(self):
-        from deepmt.experiments.runs.run_manifest import RunManifestManager
+        from deepmt.experiments.run_manifest import RunManifestManager
         with tempfile.TemporaryDirectory() as tmpdir:
             mgr = RunManifestManager(runs_dir=tmpdir)
             m = mgr.create(rqs=["rq1", "rq2"], seed=42, capture_env=False)
@@ -190,7 +190,7 @@ class TestRunManifest:
             assert d["seed"] == 42
 
     def test_save_and_load_roundtrip(self):
-        from deepmt.experiments.runs.run_manifest import RunManifestManager
+        from deepmt.experiments.run_manifest import RunManifestManager
         with tempfile.TemporaryDirectory() as tmpdir:
             mgr = RunManifestManager(runs_dir=tmpdir)
             m = mgr.create(seed=99, capture_env=False)
@@ -201,13 +201,13 @@ class TestRunManifest:
             assert loaded.seed == 99
 
     def test_load_nonexistent_returns_none(self):
-        from deepmt.experiments.runs.run_manifest import RunManifestManager
+        from deepmt.experiments.run_manifest import RunManifestManager
         with tempfile.TemporaryDirectory() as tmpdir:
             mgr = RunManifestManager(runs_dir=tmpdir)
             assert mgr.load("nonexistent_id") is None
 
     def test_list_all_sorted(self):
-        from deepmt.experiments.runs.run_manifest import RunManifestManager
+        from deepmt.experiments.run_manifest import RunManifestManager
         with tempfile.TemporaryDirectory() as tmpdir:
             mgr = RunManifestManager(runs_dir=tmpdir)
             m1 = mgr.create(capture_env=False)
@@ -219,7 +219,7 @@ class TestRunManifest:
             assert all_m[0].created_at <= all_m[1].created_at
 
     def test_mark_status(self):
-        from deepmt.experiments.runs.run_manifest import RunManifestManager
+        from deepmt.experiments.run_manifest import RunManifestManager
         with tempfile.TemporaryDirectory() as tmpdir:
             mgr = RunManifestManager(runs_dir=tmpdir)
             m = mgr.create(capture_env=False)
@@ -230,7 +230,7 @@ class TestRunManifest:
             assert m.result_summary_path == "some/path.json"
 
     def test_benchmark_lists_populated(self):
-        from deepmt.experiments.runs.run_manifest import RunManifestManager
+        from deepmt.experiments.run_manifest import RunManifestManager
         with tempfile.TemporaryDirectory() as tmpdir:
             mgr = RunManifestManager(runs_dir=tmpdir)
             m = mgr.create(capture_env=False)
@@ -239,7 +239,7 @@ class TestRunManifest:
             assert len(m.benchmark_applications) > 0
 
     def test_from_dict_roundtrip(self):
-        from deepmt.experiments.runs.run_manifest import RunManifest
+        from deepmt.experiments.run_manifest import RunManifest
         m = RunManifest(
             run_id="test123",
             created_at="2026-01-01T00:00:00",
@@ -259,21 +259,21 @@ class TestRunManifest:
 
 class TestEnvironmentRecorder:
     def test_capture_returns_snapshot(self):
-        from deepmt.experiments.runs.environment_recorder import EnvironmentRecorder
+        from deepmt.experiments.environment_recorder import EnvironmentRecorder
         snap = EnvironmentRecorder().capture()
         assert snap.python_version
         assert snap.platform_info
         assert "pytorch" in snap.framework_versions
 
     def test_to_dict_serializable(self):
-        from deepmt.experiments.runs.environment_recorder import EnvironmentRecorder
+        from deepmt.experiments.environment_recorder import EnvironmentRecorder
         snap = EnvironmentRecorder().capture()
         d = snap.to_dict()
         # 可 JSON 序列化
         json.dumps(d)
 
     def test_format_text_nonempty(self):
-        from deepmt.experiments.runs.environment_recorder import EnvironmentRecorder
+        from deepmt.experiments.environment_recorder import EnvironmentRecorder
         snap = EnvironmentRecorder().capture()
         txt = snap.format_text()
         assert "Python" in txt
@@ -287,7 +287,7 @@ class TestStatsAggregator:
     def _make_mock_stats(self, rqs=None):
         """创建一个使用 mock 数据的 ThesisStats。"""
         from unittest.mock import MagicMock, patch
-        from deepmt.experiments.stats.aggregator import StatsAggregator
+        from deepmt.experiments.aggregator import StatsAggregator
 
         mock_rq1 = {
             "total_mr_count": 10, "verified_mr_count": 8,
@@ -363,7 +363,7 @@ class TestStatsAggregator:
 class TestStatsExporter:
     def _make_stats(self):
         from unittest.mock import MagicMock, patch
-        from deepmt.experiments.stats.aggregator import StatsAggregator, ThesisStats
+        from deepmt.experiments.aggregator import StatsAggregator, ThesisStats
         from datetime import datetime
 
         stats = ThesisStats(
@@ -392,7 +392,7 @@ class TestStatsExporter:
         return stats
 
     def test_export_json(self):
-        from deepmt.experiments.stats.exporter import StatsExporter
+        from deepmt.experiments.exporter import StatsExporter
         with tempfile.TemporaryDirectory() as tmpdir:
             exporter = StatsExporter(output_dir=tmpdir)
             stats = self._make_stats()
@@ -404,7 +404,7 @@ class TestStatsExporter:
             assert "rq_data" in data
 
     def test_export_markdown(self):
-        from deepmt.experiments.stats.exporter import StatsExporter
+        from deepmt.experiments.exporter import StatsExporter
         with tempfile.TemporaryDirectory() as tmpdir:
             exporter = StatsExporter(output_dir=tmpdir)
             stats = self._make_stats()
@@ -415,7 +415,7 @@ class TestStatsExporter:
             assert "RQ2" in content
 
     def test_export_csv_per_rq(self):
-        from deepmt.experiments.stats.exporter import StatsExporter
+        from deepmt.experiments.exporter import StatsExporter
         with tempfile.TemporaryDirectory() as tmpdir:
             exporter = StatsExporter(output_dir=tmpdir)
             stats = self._make_stats()
@@ -426,14 +426,14 @@ class TestStatsExporter:
             assert "metric" in content.lower()
 
     def test_export_benchmark_csv(self):
-        from deepmt.experiments.stats.exporter import StatsExporter
+        from deepmt.experiments.exporter import StatsExporter
         with tempfile.TemporaryDirectory() as tmpdir:
             exporter = StatsExporter(output_dir=tmpdir)
             path = exporter.export_benchmark_csv()
             assert path.exists()
 
     def test_export_all_returns_four_paths(self):
-        from deepmt.experiments.stats.exporter import StatsExporter
+        from deepmt.experiments.exporter import StatsExporter
         with tempfile.TemporaryDirectory() as tmpdir:
             exporter = StatsExporter(output_dir=tmpdir)
             stats = self._make_stats()

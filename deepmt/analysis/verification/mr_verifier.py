@@ -15,7 +15,7 @@ from typing import Any, Optional, Tuple
 import numpy as np
 
 from deepmt.core.logger import logger
-from deepmt.ir.schema import MetamorphicRelation, OracleResult
+from deepmt.ir import MetamorphicRelation, OracleResult
 from deepmt.plugins.framework_plugin import CompareResult
 
 # ── AST 操作符映射 ─────────────────────────────────────────────────────────────

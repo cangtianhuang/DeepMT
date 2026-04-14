@@ -12,7 +12,7 @@ debug_generate.py — 调试 MR 生成过程（阶段 1-2）
 import torch
 import torch.nn.functional as F
 
-from deepmt.ir.schema import OperatorIR
+from deepmt.ir import OperatorIR
 from deepmt.mr_generator.base.mr_templates import MRTemplatePool
 from deepmt.mr_generator.operator.operator_mr_generator import OperatorMRGenerator
 

@@ -56,7 +56,7 @@ class TestTransformStrategyLibrary:
         assert s is None
 
     def test_select_mlp_returns_float_strategies(self, library):
-        from deepmt.model.graph_analyzer import ModelAnalysisResult
+        from deepmt.mr_generator.model.graph_analyzer import ModelAnalysisResult
         result = ModelAnalysisResult(
             model_name="TestMLP",
             model_type="mlp",
@@ -79,7 +79,7 @@ class TestTransformStrategyLibrary:
             assert s.input_dtype != "int"
 
     def test_select_rnn_returns_int_strategies(self, library):
-        from deepmt.model.graph_analyzer import ModelAnalysisResult
+        from deepmt.mr_generator.model.graph_analyzer import ModelAnalysisResult
         result = ModelAnalysisResult(
             model_name="TestRNN",
             model_type="rnn",
@@ -102,7 +102,7 @@ class TestTransformStrategyLibrary:
             assert s.input_dtype != "float"
 
     def test_select_max_strategies(self, library):
-        from deepmt.model.graph_analyzer import ModelAnalysisResult
+        from deepmt.mr_generator.model.graph_analyzer import ModelAnalysisResult
         result = ModelAnalysisResult(
             model_name="TestMLP",
             model_type="mlp",
@@ -123,7 +123,7 @@ class TestTransformStrategyLibrary:
         assert len(strategies) <= 2
 
     def test_cnn_strategies_include_spatial(self, library):
-        from deepmt.model.graph_analyzer import ModelAnalysisResult
+        from deepmt.mr_generator.model.graph_analyzer import ModelAnalysisResult
         result = ModelAnalysisResult(
             model_name="TestCNN",
             model_type="cnn",
@@ -205,13 +205,13 @@ class TestModelMRGenerator:
         assert len(mrs) <= 2
 
     def test_generate_no_instance_returns_empty(self, generator):
-        from deepmt.ir.schema import ModelIR
+        from deepmt.ir import ModelIR
         ir = ModelIR(name="NoInstance", model_type="mlp")
         mrs = generator.generate(ir)
         assert mrs == []
 
     def test_generate_from_analysis(self, registry, generator):
-        from deepmt.model.graph_analyzer import ModelGraphAnalyzer
+        from deepmt.mr_generator.model.graph_analyzer import ModelGraphAnalyzer
         ir = registry.get("SimpleMLP", with_instance=True)
         analyzer = ModelGraphAnalyzer()
         analysis = analyzer.analyze(ir)

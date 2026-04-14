@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from deepmt.core.logger import logger
-from deepmt.ir.schema import MetamorphicRelation, OracleResult
+from deepmt.ir import MetamorphicRelation, OracleResult
 
 
 class ResultsManager:

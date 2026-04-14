@@ -23,7 +23,7 @@ from deepmt.analysis.qa.cross_framework_tester import (
     CrossFrameworkTester,
     CrossSessionResult,
 )
-from deepmt.ir.schema import MetamorphicRelation
+from deepmt.ir import MetamorphicRelation
 
 
 # ── 工具函数 ──────────────────────────────────────────────────────────────────

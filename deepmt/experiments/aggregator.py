@@ -12,7 +12,7 @@
 
 用法::
 
-    from deepmt.experiments.stats.aggregator import StatsAggregator
+    from deepmt.experiments.aggregator import StatsAggregator
 
     agg = StatsAggregator()
     stats = agg.collect()          # 全量收集 RQ1-RQ4

@@ -4,9 +4,9 @@
 """
 
 import pytest
-from deepmt.application.scenario import ApplicationScenario
+from deepmt.mr_generator.application.scenario import ApplicationScenario
 from deepmt.benchmarks.applications.app_registry import ApplicationBenchmarkRegistry
-from deepmt.ir.schema import ApplicationIR
+from deepmt.ir import ApplicationIR
 
 _SAFE_BUILTINS = {
     "min": min, "max": max, "sum": sum, "len": len, "abs": abs,

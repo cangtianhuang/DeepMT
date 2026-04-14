@@ -16,7 +16,7 @@ debug_verify.py — 调试 MR 验证过程（阶段 3-4）
 import torch
 import torch.nn.functional as F
 
-from deepmt.ir.schema import OperatorIR
+from deepmt.ir import OperatorIR
 from deepmt.mr_generator.base.mr_templates import MRTemplatePool
 from deepmt.analysis.verification.mr_prechecker import MRPreChecker
 from deepmt.mr_generator.operator.operator_mr_generator import OperatorMRGenerator

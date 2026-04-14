@@ -28,7 +28,7 @@ from deepmt.analysis.reporting.mutation_tester import (
 )
 from deepmt.core.results_manager import ResultsManager
 from deepmt.engine.batch_test_runner import BatchTestRunner
-from deepmt.ir.schema import MetamorphicRelation
+from deepmt.ir import MetamorphicRelation
 from deepmt.mr_generator.base.mr_repository import MRRepository
 
 

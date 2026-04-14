@@ -15,7 +15,7 @@
 
 用法::
 
-    from deepmt.experiments.runs.environment_recorder import EnvironmentRecorder
+    from deepmt.experiments.environment_recorder import EnvironmentRecorder
 
     env = EnvironmentRecorder().capture()
     print(env.python_version)

@@ -27,7 +27,7 @@ def registry():
 
 @pytest.fixture
 def analyzer():
-    from deepmt.model.graph_analyzer import ModelGraphAnalyzer
+    from deepmt.mr_generator.model.graph_analyzer import ModelGraphAnalyzer
     return ModelGraphAnalyzer()
 
 
@@ -182,7 +182,7 @@ class TestModelGraphAnalyzer:
         assert "has_conv" in ir.analysis_summary
 
     def test_analyze_no_instance_raises(self, analyzer):
-        from deepmt.ir.schema import ModelIR
+        from deepmt.ir import ModelIR
         ir = ModelIR(name="NoInstance", model_type="mlp")
         with pytest.raises(ValueError, match="model_instance"):
             analyzer.analyze(ir)

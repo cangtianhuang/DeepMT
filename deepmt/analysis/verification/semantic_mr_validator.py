@@ -30,7 +30,7 @@ from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Literal, Optional
 
 from deepmt.core.logger import logger
-from deepmt.ir.schema import MetamorphicRelation
+from deepmt.ir import MetamorphicRelation
 
 # oracle 类型常量
 ReviewStatus = Literal["passed", "failed", "needs_review", "approved", "rejected"]

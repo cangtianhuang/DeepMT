@@ -14,7 +14,7 @@ import inspect
 import sympy as sp
 import torch
 
-from deepmt.ir.schema import MetamorphicRelation
+from deepmt.ir import MetamorphicRelation
 from deepmt.mr_generator.operator.sympy_prover import SymPyProver
 
 

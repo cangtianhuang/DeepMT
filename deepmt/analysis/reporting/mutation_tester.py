@@ -27,7 +27,7 @@ from typing import Any, Callable, Dict, List, Optional
 from deepmt.core.logger import logger
 from deepmt.core.plugins_manager import FrameworkType, get_plugins_manager
 from deepmt.engine.batch_test_runner import BatchTestRunner, OperatorTestSummary
-from deepmt.ir.schema import MetamorphicRelation
+from deepmt.ir import MetamorphicRelation
 from deepmt.mr_generator.base.mr_repository import MRRepository
 
 

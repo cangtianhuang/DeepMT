@@ -24,8 +24,8 @@ from deepmt.analysis.verification.model_verifier import ModelVerifier
 from deepmt.benchmarks.models.model_registry import ModelBenchmarkRegistry
 from deepmt.core.logger import logger
 from deepmt.core.results_manager import ResultsManager
-from deepmt.ir.schema import MetamorphicRelation, ModelIR, OracleResult
-from deepmt.model.graph_analyzer import ModelGraphAnalyzer
+from deepmt.ir import MetamorphicRelation, ModelIR, OracleResult
+from deepmt.mr_generator.model.graph_analyzer import ModelGraphAnalyzer
 from deepmt.mr_generator.model.model_mr_generator import ModelMRGenerator
 
 # 懒导入 torch
@@ -396,7 +396,7 @@ class ModelTestRunner:
         try:
             # 将模型测试结果以 oracle_results 格式写入
             # 使用 OperatorIR 接口以兼容现有 ResultsManager（模型名作为 api_path）
-            from deepmt.ir.schema import OperatorIR
+            from deepmt.ir import OperatorIR
 
             op_ir = OperatorIR(
                 name=f"model:{model_ir.name}",

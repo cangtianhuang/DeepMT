@@ -17,7 +17,7 @@ from enum import IntEnum
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from deepmt.ir.schema import MetamorphicRelation
+    from deepmt.ir import MetamorphicRelation
 
 
 class QualityLevel(IntEnum):

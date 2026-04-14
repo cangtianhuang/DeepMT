@@ -13,7 +13,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 import pytest
 
 from deepmt.core.results_manager import ResultsManager
-from deepmt.ir.schema import MetamorphicRelation, OperatorIR, OracleResult
+from deepmt.ir import MetamorphicRelation, OperatorIR, OracleResult
 
 
 def _make_mr(mr_id: str = "mr-1") -> MetamorphicRelation:

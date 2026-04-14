@@ -15,7 +15,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from deepmt.engine.batch_test_runner import BatchTestRunner, OperatorTestSummary, MRTestSummary
-from deepmt.ir.schema import MetamorphicRelation
+from deepmt.ir import MetamorphicRelation
 
 
 # ── fixtures ──────────────────────────────────────────────────────────────────

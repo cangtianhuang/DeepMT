@@ -23,7 +23,7 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
 from deepmt.analysis.verification.semantic_mr_validator import SemanticValidationResult
-from deepmt.ir.schema import MetamorphicRelation
+from deepmt.ir import MetamorphicRelation
 
 
 # ── 报告数据结构 ──────────────────────────────────────────────────────────────

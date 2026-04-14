@@ -305,7 +305,7 @@ class TestBatchTestRunnerEvidence:
     """验证 BatchTestRunner.run_operator(collect_evidence=True) 在失败时生成证据包。"""
 
     def _make_failing_mr(self):
-        from deepmt.ir.schema import MetamorphicRelation
+        from deepmt.ir import MetamorphicRelation
         return MetamorphicRelation(
             id="failing-mr-id-123",
             description="always failing test",

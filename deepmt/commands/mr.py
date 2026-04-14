@@ -72,7 +72,7 @@ def mr_generate(operator, layer, framework, sources, precheck, sympy, auto_fetch
     click.echo(f"           precheck={precheck}  sympy={sympy}  auto_fetch={auto_fetch}  save={save}")
 
     try:
-        from deepmt.ir.schema import OperatorIR
+        from deepmt.ir import OperatorIR
         from deepmt.mr_generator.operator.operator_mr_generator import OperatorMRGenerator
 
         operator_func = _try_import_operator(operator, framework)
@@ -151,7 +151,7 @@ def mr_verify(operator, framework, precheck, sympy, save):
     click.echo(f"[verify] 算子: {operator}  precheck={precheck}  sympy={sympy}")
 
     try:
-        from deepmt.ir.schema import OperatorIR
+        from deepmt.ir import OperatorIR
         from deepmt.mr_generator.operator.operator_mr_generator import OperatorMRGenerator
 
         operator_ir = OperatorIR(name=operator)
@@ -446,7 +446,7 @@ def mr_batch_generate(framework, category, limit, skip_existing, sources, preche
         return
 
     try:
-        from deepmt.ir.schema import OperatorIR
+        from deepmt.ir import OperatorIR
         from deepmt.mr_generator.operator.operator_mr_generator import OperatorMRGenerator
         repo = get_repo()
         generator = OperatorMRGenerator()

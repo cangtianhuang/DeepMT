@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from deepmt.ir.schema import MetamorphicRelation
+from deepmt.ir import MetamorphicRelation
 from deepmt.mr_generator.base.mr_repository import MRRepository
 
 

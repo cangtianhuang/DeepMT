@@ -26,7 +26,7 @@ def health_check():
       deepmt health check
     """
     try:
-        from deepmt.monitoring.health_checker import HealthChecker
+        from deepmt.core.health_checker import HealthChecker
         checker = HealthChecker()
         checker.print_report()
     except Exception as e:
@@ -43,7 +43,7 @@ def health_progress():
       deepmt health progress
     """
     try:
-        from deepmt.monitoring.progress_tracker import ProgressTracker
+        from deepmt.core.progress_tracker import ProgressTracker
         tracker = ProgressTracker()
         tracker.print_report()
     except Exception as e:
@@ -64,7 +64,7 @@ def health_all():
     click.echo("=" * 60 + "\n")
 
     try:
-        from deepmt.monitoring.progress_tracker import ProgressTracker
+        from deepmt.core.progress_tracker import ProgressTracker
         tracker = ProgressTracker()
         tracker.print_report()
     except Exception as e:
@@ -73,7 +73,7 @@ def health_all():
     click.echo()
 
     try:
-        from deepmt.monitoring.health_checker import HealthChecker
+        from deepmt.core.health_checker import HealthChecker
         checker = HealthChecker()
         checker.print_report()
     except Exception as e:

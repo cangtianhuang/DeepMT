@@ -105,7 +105,7 @@ class TestModelTestRunner:
 
     def test_identity_transform_high_pass_rate(self, runner):
         """恒等变换（output_close）应几乎全部通过。"""
-        from deepmt.ir.schema import MetamorphicRelation
+        from deepmt.ir import MetamorphicRelation
         import uuid
         from deepmt.benchmarks.models import ModelBenchmarkRegistry
         registry = ModelBenchmarkRegistry()
@@ -128,7 +128,7 @@ class TestModelTestRunner:
 
     def test_prediction_consistent_passing(self, runner):
         """预测一致性 oracle 对确定性模型应通过。"""
-        from deepmt.ir.schema import MetamorphicRelation
+        from deepmt.ir import MetamorphicRelation
         import uuid
         from deepmt.benchmarks.models import ModelBenchmarkRegistry
         registry = ModelBenchmarkRegistry()

@@ -8,7 +8,7 @@ import uuid
 import pytest
 import sympy as sp
 
-from deepmt.ir.schema import MetamorphicRelation
+from deepmt.ir import MetamorphicRelation
 from deepmt.mr_generator.operator.sympy_prover import SymPyProver
 from deepmt.mr_generator.operator.sympy_translator import SympyTranslator
 

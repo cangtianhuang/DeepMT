@@ -4,9 +4,9 @@
 """
 
 import pytest
-from deepmt.application.scenario import ApplicationScenario
+from deepmt.mr_generator.application.scenario import ApplicationScenario
 from deepmt.benchmarks.applications.app_registry import ApplicationBenchmarkRegistry
-from deepmt.ir.schema import ApplicationIR, MetamorphicRelation
+from deepmt.ir import ApplicationIR, MetamorphicRelation
 from deepmt.mr_generator.application.app_context_builder import AppContextBuilder
 from deepmt.mr_generator.application.app_mr import ApplicationMRGenerator
 

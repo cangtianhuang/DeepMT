@@ -24,8 +24,8 @@ import uuid
 from typing import List, Optional
 
 from deepmt.core.logger import logger
-from deepmt.ir.schema import MetamorphicRelation, ModelIR
-from deepmt.model.graph_analyzer import ModelAnalysisResult, ModelGraphAnalyzer
+from deepmt.ir import MetamorphicRelation, ModelIR
+from deepmt.mr_generator.model.graph_analyzer import ModelAnalysisResult, ModelGraphAnalyzer
 from deepmt.mr_generator.model.transform_strategy import (
     TransformStrategy,
     TransformStrategyLibrary,

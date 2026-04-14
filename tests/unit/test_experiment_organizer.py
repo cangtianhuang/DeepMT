@@ -21,7 +21,7 @@ import pytest
 
 from deepmt.experiments.organizer import ExperimentOrganizer
 from deepmt.core.results_manager import ResultsManager
-from deepmt.ir.schema import MetamorphicRelation, OracleResult, OperatorIR
+from deepmt.ir import MetamorphicRelation, OracleResult, OperatorIR
 
 
 # ── fixtures ──────────────────────────────────────────────────────────────────

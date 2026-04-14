@@ -197,7 +197,7 @@ class TestBatchTestRunnerBackendOverride:
 
     def test_backend_override_is_used(self, no_env):
         from deepmt.engine.batch_test_runner import BatchTestRunner
-        from deepmt.ir.schema import MetamorphicRelation
+        from deepmt.ir import MetamorphicRelation
 
         # 构造 MR：negate MR 对正常 relu 会失败，但对含负值缺陷的 relu 也可能失败
         mr = MetamorphicRelation(

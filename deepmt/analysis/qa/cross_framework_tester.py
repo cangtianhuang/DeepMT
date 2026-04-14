@@ -37,7 +37,7 @@ from deepmt.analysis.verification.mr_prechecker import MRPreChecker
 from deepmt.analysis.verification.mr_verifier import MRVerifier
 from deepmt.analysis.verification.random_generator import RandomGenerator
 from deepmt.core.logger import logger
-from deepmt.ir.schema import MetamorphicRelation
+from deepmt.ir import MetamorphicRelation
 from deepmt.mr_generator.base.mr_repository import MRRepository
 from deepmt.mr_generator.base.operator_catalog import OperatorCatalog
 from deepmt.plugins.framework_plugin import FrameworkPlugin

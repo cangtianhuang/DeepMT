@@ -12,7 +12,7 @@ from deepmt.analysis.verification.semantic_mr_validator import (
 )
 from deepmt.analysis.reporting.application_reporter import ApplicationReporter
 from deepmt.benchmarks.applications.app_registry import ApplicationBenchmarkRegistry
-from deepmt.ir.schema import MetamorphicRelation
+from deepmt.ir import MetamorphicRelation
 from deepmt.mr_generator.application.app_mr import ApplicationMRGenerator
 
 

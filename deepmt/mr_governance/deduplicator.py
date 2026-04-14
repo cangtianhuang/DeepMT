@@ -16,7 +16,7 @@ from dataclasses import dataclass, field
 from typing import List, Tuple, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from deepmt.ir.schema import MetamorphicRelation
+    from deepmt.ir import MetamorphicRelation
 
 
 @dataclass

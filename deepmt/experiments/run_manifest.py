@@ -17,7 +17,7 @@
 
 用法::
 
-    from deepmt.experiments.runs.run_manifest import RunManifest, RunManifestManager
+    from deepmt.experiments.run_manifest import RunManifest, RunManifestManager
 
     # 创建
     mgr = RunManifestManager()
@@ -200,7 +200,7 @@ class RunManifestManager:
         env_dict = None
         if capture_env:
             try:
-                from deepmt.experiments.runs.environment_recorder import EnvironmentRecorder
+                from deepmt.experiments.environment_recorder import EnvironmentRecorder
                 env_dict = EnvironmentRecorder().capture().to_dict()
             except Exception as e:
                 logger.warning(f"[RunManifest] 环境捕获失败: {e}")

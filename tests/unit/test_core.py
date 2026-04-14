@@ -10,7 +10,7 @@ import torch
 import torch.nn.functional as F
 
 from deepmt.analysis.verification.mr_verifier import MRVerifier
-from deepmt.ir.schema import MetamorphicRelation, OracleResult
+from deepmt.ir import MetamorphicRelation, OracleResult
 from deepmt.plugins.framework_plugin import CompareResult
 from deepmt.plugins.pytorch_plugin import PyTorchPlugin
 

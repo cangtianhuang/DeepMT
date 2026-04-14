@@ -9,8 +9,8 @@
 
 用法::
 
-    from deepmt.experiments.stats.aggregator import StatsAggregator
-    from deepmt.experiments.stats.exporter import StatsExporter
+    from deepmt.experiments.aggregator import StatsAggregator
+    from deepmt.experiments.exporter import StatsExporter
 
     agg = StatsAggregator()
     stats = agg.collect()
@@ -142,7 +142,7 @@ class StatsExporter:
         fname = filename or f"thesis_stats_{ts}.csv"
         path = self._dir / fname
 
-        from deepmt.experiments.stats.aggregator import StatsAggregator
+        from deepmt.experiments.aggregator import StatsAggregator
         from deepmt.experiments.rq_config import RQ_DEFINITIONS
 
         rows: List[Dict[str, str]] = []

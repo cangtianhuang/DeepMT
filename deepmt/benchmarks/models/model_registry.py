@@ -12,7 +12,7 @@
 from typing import List, Optional
 
 from deepmt.core.logger import logger
-from deepmt.ir.schema import ModelIR
+from deepmt.ir import ModelIR
 
 # 懒导入 PyTorch 模型，避免在无 torch 环境中报错
 _pytorch_models = None

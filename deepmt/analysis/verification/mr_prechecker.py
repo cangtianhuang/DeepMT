@@ -13,7 +13,7 @@ from deepmt.analysis.verification.random_generator import RandomGenerator
 from deepmt.analysis.verification.mr_verifier import MRVerifier
 from deepmt.core.plugins_manager import FrameworkType, get_plugins_manager
 from deepmt.core.logger import logger
-from deepmt.ir.schema import MetamorphicRelation, OperatorIR
+from deepmt.ir import MetamorphicRelation, OperatorIR
 
 
 class MRPreChecker:

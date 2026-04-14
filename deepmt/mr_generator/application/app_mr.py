@@ -22,10 +22,10 @@ oracle_expr 含义（SemanticMRValidator 解析）：
 import uuid
 from typing import List, Optional, Union
 
-from deepmt.application.scenario import ApplicationScenario
+from deepmt.mr_generator.application.scenario import ApplicationScenario
 from deepmt.benchmarks.applications.app_registry import ApplicationBenchmarkRegistry
 from deepmt.core.logger import logger
-from deepmt.ir.schema import ApplicationIR, MetamorphicRelation
+from deepmt.ir import ApplicationIR, MetamorphicRelation
 from deepmt.mr_generator.application.app_context_builder import AppContextBuilder
 from deepmt.mr_generator.application.app_llm_mr_generator import (
     ApplicationLLMMRGenerator,

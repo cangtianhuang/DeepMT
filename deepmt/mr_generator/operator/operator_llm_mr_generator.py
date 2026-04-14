@@ -11,7 +11,7 @@ import uuid
 from typing import Any, Callable, Dict, List, Optional
 
 from deepmt.core.logger import logger
-from deepmt.ir.schema import MetamorphicRelation
+from deepmt.ir import MetamorphicRelation
 from deepmt.tools.llm.client import LLMClient
 
 

@@ -20,7 +20,7 @@ from deepmt.mr_governance.deduplicator import DuplicateGroup, MRDeduplicator
 from deepmt.mr_governance.quality import QualityLevel
 
 if TYPE_CHECKING:
-    from deepmt.ir.schema import MetamorphicRelation
+    from deepmt.ir import MetamorphicRelation
     from deepmt.mr_generator.base.mr_repository import MRRepository
 
 

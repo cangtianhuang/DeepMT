@@ -280,7 +280,7 @@ def main(argv=None):
     output_dir.mkdir(parents=True, exist_ok=True)
 
     # 收集数据
-    from deepmt.experiments.stats.aggregator import StatsAggregator
+    from deepmt.experiments.aggregator import StatsAggregator
     print("[figures] 收集实验数据 ...")
     stats = StatsAggregator().collect()
 

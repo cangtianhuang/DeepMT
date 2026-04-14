@@ -34,7 +34,7 @@ class TestModelPipeline:
     def test_mlp_full_pipeline(self, tmp_runner):
         """SimpleMLP 完整主链：加载 → 分析 → 生成 MR → 执行 → 统计。"""
         from deepmt.benchmarks.models import ModelBenchmarkRegistry
-        from deepmt.model.graph_analyzer import ModelGraphAnalyzer
+        from deepmt.mr_generator.model.graph_analyzer import ModelGraphAnalyzer
         from deepmt.mr_generator.model import ModelMRGenerator
 
         registry = ModelBenchmarkRegistry()
@@ -92,7 +92,7 @@ class TestModelPipeline:
     def test_model_ir_fields_after_analysis(self):
         """通过 analyze_and_fill 后 ModelIR 的 analysis_summary 应被正确填充。"""
         from deepmt.benchmarks.models import ModelBenchmarkRegistry
-        from deepmt.model.graph_analyzer import ModelGraphAnalyzer
+        from deepmt.mr_generator.model.graph_analyzer import ModelGraphAnalyzer
 
         registry = ModelBenchmarkRegistry()
         analyzer = ModelGraphAnalyzer()
@@ -110,7 +110,7 @@ class TestModelPipeline:
         from deepmt.mr_generator.model import ModelMRGenerator
         from deepmt.analysis.verification.model_verifier import ModelVerifier
         import uuid
-        from deepmt.ir.schema import MetamorphicRelation
+        from deepmt.ir import MetamorphicRelation
 
         registry = ModelBenchmarkRegistry()
         generator = ModelMRGenerator()

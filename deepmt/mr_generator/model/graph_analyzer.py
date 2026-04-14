@@ -16,7 +16,7 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
 
 from deepmt.core.logger import logger
-from deepmt.ir.schema import ModelIR
+from deepmt.ir import ModelIR
 
 # ── 已知层类型到语义标签的映射 ──────────────────────────────────────────────────
 

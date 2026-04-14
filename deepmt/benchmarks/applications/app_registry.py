@@ -18,9 +18,9 @@
 
 from typing import List, Optional
 
-from deepmt.application.scenario import ApplicationScenario
+from deepmt.mr_generator.application.scenario import ApplicationScenario
 from deepmt.core.logger import logger
-from deepmt.ir.schema import ApplicationIR
+from deepmt.ir import ApplicationIR
 
 # ── 场景元数据定义 ────────────────────────────────────────────────────────────
 
@@ -235,7 +235,7 @@ class ApplicationBenchmarkRegistry:
 
     def get_ir(self, name: str) -> Optional["ApplicationIR"]:
         """将场景转换为 ApplicationIR 对象并返回。"""
-        from deepmt.ir.schema import ApplicationIR
+        from deepmt.ir import ApplicationIR
 
         sc = self.get(name)
         if sc is None:

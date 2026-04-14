@@ -13,7 +13,7 @@ from typing import Callable, Dict, List, Optional
 import yaml
 
 from deepmt.core.logger import logger
-from deepmt.ir.schema import MetamorphicRelation
+from deepmt.ir import MetamorphicRelation
 
 
 @dataclass

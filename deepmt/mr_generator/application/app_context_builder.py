@@ -6,7 +6,7 @@
 输出的上下文字符串直接插入 ApplicationLLMMRGenerator 的 user prompt。
 """
 
-from deepmt.application.scenario import ApplicationScenario
+from deepmt.mr_generator.application.scenario import ApplicationScenario
 
 
 class AppContextBuilder:

@@ -30,9 +30,9 @@ import traceback
 import uuid
 from typing import Any, Callable, Dict, List, Optional
 
-from deepmt.application.scenario import ApplicationScenario
+from deepmt.mr_generator.application.scenario import ApplicationScenario
 from deepmt.core.logger import logger
-from deepmt.ir.schema import MetamorphicRelation
+from deepmt.ir import MetamorphicRelation
 from deepmt.tools.llm.client import LLMClient
 
 # ── Prompt 模板 ───────────────────────────────────────────────────────────────

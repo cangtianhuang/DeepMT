@@ -12,7 +12,7 @@ from typing import Callable, Dict, List, Literal, Optional, Set
 
 from deepmt.core.plugins_manager import FrameworkType
 from deepmt.core.logger import logger
-from deepmt.ir.schema import MetamorphicRelation, OperatorIR
+from deepmt.ir import MetamorphicRelation, OperatorIR
 from deepmt.mr_generator.base.mr_templates import MRTemplatePool
 from deepmt.analysis.verification.mr_prechecker import MRPreChecker
 from deepmt.mr_generator.operator.operator_llm_mr_generator import OperatorLLMMRGenerator

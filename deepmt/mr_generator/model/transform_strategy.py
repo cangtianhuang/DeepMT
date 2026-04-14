@@ -23,7 +23,7 @@
 from dataclasses import dataclass, field
 from typing import List, Optional
 
-from deepmt.model.graph_analyzer import ModelAnalysisResult
+from deepmt.mr_generator.model.graph_analyzer import ModelAnalysisResult
 
 
 # ── 策略数据结构 ──────────────────────────────────────────────────────────────
