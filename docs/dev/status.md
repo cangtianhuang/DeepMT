@@ -16,16 +16,16 @@
 | Phase J：应用层语义MR生成与验证               | ✅ 完成    |
 | Phase K：全层MR质量保障与统一知识库治理       | ✅ 完成    |
 | Phase L：论文实验基准与自动化数据生产线       | ✅ 完成    |
-| Phase M：真实缺陷挖掘与案例沉淀               | ⬜ 未开始  |
+| Phase M：真实缺陷挖掘与案例沉淀               | 🔄 进行中  |
 | Phase N：论文交付收口与复现资产封装           | ⬜ 未开始  |
 
-**当前主链：** A~L 已完成 → **下一步：真实缺陷挖掘与案例沉淀（Phase M）**
+**当前主链：** A~L 已完成 → **Phase M 进行中（M1~M7 已实现主体流程，2 个案例已归档）**
 
 ---
 
 ## 测试覆盖
 
-**全部 718 个单元测试通过（无 LLM/网络依赖），另有 13 个集成测试通过。**（共 731 个测试）
+**全部 718 个单元测试通过（无 LLM/网络依赖），另有 31 个集成测试通过。**（共 749 个测试；Phase M 新增 18 个集成测试）
 
 ---
 
@@ -46,4 +46,19 @@
 
 ---
 
-*最后更新：2026-04-13（Phase L 全部完成；下一步进入 Phase M）*
+### Phase M 已完成模块（2026-04-14）
+
+| 模块 | 路径 | 说明 |
+|------|------|------|
+| DefectCaseBuilder | `deepmt/analysis/defect_case_builder.py` | 缺陷线索 → 案例包自动构建器 |
+| case CLI 命令组 | `deepmt/commands/case.py` | list/show/confirm/build/export 五个子命令 |
+| 案例包 009eb89bcb | `deepmt/cases/real_defects/009eb89bcb/` | gelu MR 质量案例（confirmed） |
+| 案例包 e861263744 | `deepmt/cases/real_defects/e861263744/` | exp float32 溢出边界案例（confirmed） |
+| 缺陷挖掘流程文档 | `docs/phase_m_defect_hunting_process.md` | 完整流程说明与扩展建议 |
+| 缺陷报告模板 | `deepmt/templates/bug_report_template.md` | 向外部社区提交缺陷报告用 |
+| 集成测试 | `tests/integration/test_real_case_pipeline.py` | 18 个测试覆盖完整案例流水线 |
+| MR YAML 扩展 | `data/knowledge/mr_repository/operator/` | 新增 gelu/tanh/leaky_relu/softmax/log_softmax |
+
+---
+
+*最后更新：2026-04-14（Phase M 主体流程实现完成；等待 Phase N）*

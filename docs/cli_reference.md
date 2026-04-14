@@ -30,6 +30,7 @@ PYTHONPATH=/home/lhy/DeepMT python -m deepmt <command> [options]
 | `health`     | 系统健康检查与进度                 | ✅ 已实现                                         |
 | `ui`         | Web 仪表盘服务器                   | ✅ 已实现                                         |
 | `experiment` | 论文实验基准与自动化数据生产       | ✅ 已实现（Phase L）                              |
+| `case`       | 真实缺陷案例管理                   | ✅ 已实现（Phase M）                              |
 
 > **注意**：模型层和应用层 MR 生成目前通过 Python API 使用（`ModelMRGenerator`、`ApplicationMRGenerator`），CLI 的 `mr generate --layer model/application` 入口仍在开发中。
 
@@ -1644,4 +1645,176 @@ deepmt experiment env [OPTIONS]
 ```bash
 deepmt experiment env
 deepmt experiment env --json
+```
+
+---
+
+## `deepmt case` — 真实缺陷案例管理（Phase M）
+
+管理真实缺陷案例的完整生命周期：自动构建、人工确认、状态追踪和导出。
+
+子命令总览：
+
+| 子命令    | 说明                                         |
+|-----------|----------------------------------------------|
+| `list`    | 列出所有案例及状态                           |
+| `show`    | 查看单个案例 Markdown 详情                   |
+| `confirm` | 人工更新案例字段（状态、根因、严重程度等）   |
+| `build`   | 从缺陷线索或证据包 ID 构建案例包             |
+| `export`  | 导出案例目录（Markdown / JSON）              |
+
+---
+
+### `deepmt case list`
+
+列出所有案例，支持按状态过滤。
+
+```
+deepmt case list [OPTIONS]
+```
+
+| 选项       | 默认值  | 说明                                          |
+|------------|---------|-----------------------------------------------|
+| `--status` | 全部    | 按状态过滤（`draft` / `confirmed` / `closed`）|
+| `--json`   | `False` | 以 JSON 格式输出                              |
+
+**示例：**
+
+```bash
+deepmt case list
+deepmt case list --status confirmed
+deepmt case list --json
+```
+
+**输出示例：**
+
+```
+案例库（共 2 个）
+──────────────────────────────────────────────────────────────────────
+  ✅ [009eb89bcb]  gelu           pytorch     mr_quality              severity=low
+       gelu 下界性 MR 定义错误：MR 断言 gelu(x) >= -0.15，但真实最小值约 -0.170
+  ✅ [e861263744]  exp            pytorch     numerical_precision     severity=low
+       exp float32 溢出边界（x≈88）不对称 Inf 现象
+──────────────────────────────────────────────────────────────────────
+运行 'deepmt case show <case_id>' 查看详情
+```
+
+---
+
+### `deepmt case show <case_id>`
+
+以 Markdown 格式查看单个案例详情（根因、触发输入、复现步骤等）。
+
+```
+deepmt case show <CASE_ID> [OPTIONS]
+```
+
+| 选项     | 默认值  | 说明             |
+|----------|---------|------------------|
+| `--json` | `False` | 以 JSON 格式输出 |
+
+**示例：**
+
+```bash
+deepmt case show 009eb89bcb
+deepmt case show e861263744 --json
+```
+
+---
+
+### `deepmt case confirm <case_id>`
+
+人工更新案例字段。可单次更新一个或多个字段。
+
+```
+deepmt case confirm <CASE_ID> [OPTIONS]
+```
+
+| 选项            | 默认值 | 说明                                                        |
+|-----------------|--------|-------------------------------------------------------------|
+| `--status`      | 无     | 更新状态（`draft` / `confirmed` / `closed`）                |
+| `--severity`    | 无     | 更新严重程度（`critical` / `high` / `medium` / `low` / `unknown`） |
+| `--root-cause`  | 无     | 填写根因分析文本                                            |
+| `--summary`     | 无     | 更新案例摘要                                                |
+| `--defect-type` | 无     | 更新缺陷类型（如 `mr_quality` / `numerical_precision`）     |
+| `--notes`       | 无     | 追加备注（附加到现有备注后，不覆盖）                        |
+
+**示例：**
+
+```bash
+# 确认案例并设置严重程度
+deepmt case confirm 009eb89bcb --status confirmed --severity low
+
+# 填写根因分析
+deepmt case confirm e861263744 --root-cause "IEEE 754 浮点溢出边界行为，非框架缺陷"
+
+# 更新摘要和追加备注
+deepmt case confirm 009eb89bcb --summary "gelu MR 下界定义偏紧" --notes "已修复 MR"
+
+# 关闭案例
+deepmt case confirm 009eb89bcb --status closed --notes "已提交 upstream issue #1234"
+```
+
+---
+
+### `deepmt case build`
+
+从缺陷线索或证据包构建案例包（`reproduce.py` + `case_summary.md` + `evidence.json` + `metadata.json`）。
+
+```
+deepmt case build [OPTIONS]
+```
+
+| 选项               | 默认值                           | 说明                                           |
+|--------------------|----------------------------------|------------------------------------------------|
+| `--from-evidence`  | 无                               | 从指定证据包 ID 构建单个案例                   |
+| `--top N`          | `0`（全部）                      | 从去重缺陷线索中构建前 N 个高优先级案例        |
+| `--output DIR`     | `deepmt/cases/real_defects/`     | 案例包输出根目录                               |
+| `--json`           | `False`                          | 以 JSON 输出构建结果                           |
+
+**示例：**
+
+```bash
+# 从特定证据包手动构建
+deepmt case build --from-evidence bee67689-15b
+
+# 批量构建前 3 个高优先级案例
+deepmt case build --top 3
+
+# 批量构建全部线索，指定输出目录
+deepmt case build --top 5 --output /tmp/my_cases
+```
+
+**前提**：需要先运行 `deepmt test batch --collect-evidence` 收集证据包。
+
+---
+
+### `deepmt case export`
+
+将案例目录导出为 Markdown 或 JSON 格式。
+
+```
+deepmt case export [OPTIONS]
+```
+
+| 选项       | 默认值                                       | 说明                                          |
+|------------|----------------------------------------------|-----------------------------------------------|
+| `--format` | `markdown`                                   | 输出格式（`markdown` / `json`）               |
+| `--status` | 全部                                         | 只导出指定状态的案例                          |
+| `--output` | `data/experiments/case_studies/catalog.md`   | 输出文件路径（JSON 格式时打印到 stdout）      |
+
+**示例：**
+
+```bash
+# 导出全部案例为 Markdown
+deepmt case export
+
+# 只导出已确认案例
+deepmt case export --status confirmed
+
+# 导出为 JSON 文件
+deepmt case export --format json --output /tmp/cases.json
+
+# 导出并指定输出路径
+deepmt case export --output docs/case_catalog.md
 ```

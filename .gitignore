@@ -8,24 +8,23 @@ build/
 # ── Virtual environment ───────────────────────────────────────────────────────
 .venv/
 
-# ── Project config（可能含密钥） ──────────────────────────────────────────────
+# ── Project config ──────────────────────────────────────────────
 config*.yaml
 
 # ── Runtime databases ─────────────────────────────────────────────────────────
 *.db
 
-# ── Runtime data（日志、缓存）────────────────────────────────────────────────────
+# ── Runtime data ────────────────────────────────────────────────────
 data/logs/
 data/cache/
 
-# ── Phase L 实验运行产物（运行时生成，不上传）─────────────────────────────────────
-data/experiments/runs/
-data/experiments/exports/
-data/experiments/figures/
-data/experiments/case_studies/
+# ── 实验运行产物 ─────────────────────────────────────
+data/cases/
+data/experiments/
+data/results/
 
-# ── 用户工作区 MR（生成的 MR 实例，不上传）────────────────────────────────────────
-data/knowledge/mr_repository/operator/
+# ── 用户工作区 MR ────────────────────────────────────────
+data/knowledge/mr_repository
 
 # ── OS / Editor ───────────────────────────────────────────────────────────────
 .DS_Store

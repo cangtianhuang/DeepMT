@@ -25,6 +25,7 @@ from deepmt.commands.catalog import catalog
 from deepmt.commands.data import data
 from deepmt.commands.ui import ui
 from deepmt.commands.experiment import experiment
+from deepmt.commands.case import case
 
 CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"], max_content_width=100)
 
@@ -44,6 +45,7 @@ def cli():
       health      系统健康检查
       ui          Web 仪表盘（deepmt ui start）
       experiment  论文实验基准与数据生产（Phase L）
+      case        真实缺陷案例管理（Phase M）
 
     \b
     快速开始:
@@ -68,3 +70,4 @@ cli.add_command(catalog)
 cli.add_command(data)
 cli.add_command(ui)
 cli.add_command(experiment)
+cli.add_command(case)

@@ -95,6 +95,40 @@ def _summarize_tensor(tensor: Any) -> Dict[str, Any]:
 
 # ── 复现脚本生成 ──────────────────────────────────────────────────────────────
 
+# PyTorch 短名 → F.xxx 映射（用于复现脚本生成）
+_PYTORCH_SHORT_TO_CALLABLE = {
+    "relu": "F.relu",
+    "sigmoid": "torch.sigmoid",
+    "tanh": "torch.tanh",
+    "exp": "torch.exp",
+    "log": "torch.log",
+    "abs": "torch.abs",
+    "sqrt": "torch.sqrt",
+    "gelu": "F.gelu",
+    "leaky_relu": "F.leaky_relu",
+    "softmax": "F.softmax",
+    "log_softmax": "F.log_softmax",
+    "batch_norm": "F.batch_norm",
+    "layer_norm": "F.layer_norm",
+}
+
+
+def _resolve_callable_name(operator_name: str, framework: str) -> str:
+    """
+    将算子名称转换为复现脚本中可直接调用的表达式。
+
+    例如：
+      "gelu"                        → "F.gelu"
+      "relu"                        → "F.relu"
+      "torch.nn.functional.relu"    → "torch.nn.functional.relu"
+      "torch.abs"                   → "torch.abs"
+    """
+    if framework == "pytorch":
+        if "." not in operator_name:
+            return _PYTORCH_SHORT_TO_CALLABLE.get(operator_name, f"F.{operator_name}")
+    return operator_name
+
+
 def _generate_reproduce_script(
     operator_name: str,
     framework: str,
@@ -149,9 +183,11 @@ def _generate_reproduce_script(
     lines.append("")
 
     # 算子调用
+    # 将短算子名（如 "gelu"）解析为可调用引用（如 "F.gelu"）
+    callable_name = _resolve_callable_name(operator_name, framework)
     lines.append("# ── 原始算子调用 ────────────────────────────────────────")
     lines.append("kwargs = {'input': input_data}")
-    lines.append(f"orig = {operator_name}(**kwargs)")
+    lines.append(f"orig = {callable_name}(**kwargs)")
     lines.append("")
 
     # MR 变换
@@ -159,7 +195,7 @@ def _generate_reproduce_script(
     lines.append(f"# 变换代码: {transform_code}")
     lines.append(f"transform = {transform_code}")
     lines.append("kwargs_trans = transform(kwargs)")
-    lines.append(f"trans = {operator_name}(**kwargs_trans)")
+    lines.append(f"trans = {callable_name}(**kwargs_trans)")
     lines.append("")
 
     # Oracle 验证

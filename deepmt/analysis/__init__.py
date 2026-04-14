@@ -12,6 +12,7 @@ from deepmt.analysis.verification.model_verifier import ModelVerifier
 from deepmt.analysis.verification.random_generator import RandomGenerator
 from deepmt.analysis.reporting.report_generator import ReportGenerator
 from deepmt.analysis.reporting.evidence_collector import EvidenceCollector
+from deepmt.analysis.defect_case_builder import DefectCaseBuilder
 
 __all__ = [
     "MRVerifier",
@@ -20,4 +21,5 @@ __all__ = [
     "RandomGenerator",
     "ReportGenerator",
     "EvidenceCollector",
+    "DefectCaseBuilder",
 ]

@@ -91,6 +91,13 @@ BUILTIN_FAULT_CATALOG: Dict[str, Tuple[str, Dict, str]] = {
         {"scale": 1.002},
         "sqrt 输出乘以 1.002（Newton 迭代终止过早），破坏 sqrt(a)^2==a",
     ),
+    # cos: 输出乘以 1.05（模拟 SIMD 精度近似错误），破坏 |cos(x)|<=1 有界性与周期性
+    "torch.cos": (
+        "scale",
+        {"scale": 1.05},
+        "cos 输出乘以 1.05（SIMD 精度近似错误），破坏 |cos(x)|<=1 有界性，"
+        "且破坏 cos(x+2π)==cos(x) 周期性（两侧按同比例放大但与 oracle 不合）",
+    ),
 }
 
 
