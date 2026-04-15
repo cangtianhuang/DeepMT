@@ -41,6 +41,14 @@ def _get_framework_version(framework: str) -> str:
             return torch.__version__
         except ImportError:
             return "unknown"
+    if framework in ("paddlepaddle", "paddle"):
+        try:
+            import paddle
+            return paddle.__version__
+        except ImportError:
+            return "unknown"
+    if framework == "numpy":
+        return np.__version__
     return "unknown"
 
 
@@ -215,6 +223,88 @@ def _generate_reproduce_script(
     return "\n".join(lines)
 
 
+def _generate_cross_reproduce_script(
+    operator_name: str,
+    framework1: str,
+    framework1_version: str,
+    framework2: str,
+    framework2_version: str,
+    mr_description: str,
+    transform_code: str,
+    oracle_expr: str,
+    input_summary: Dict[str, Any],
+    f1_output_summary: Dict[str, Any],
+    f2_output_summary: Dict[str, Any],
+    diff_type: str,
+    numeric_diff: Optional[float],
+) -> str:
+    """生成跨框架差异复现脚本：两框架分别执行算子，打印输出差异。"""
+    shape = input_summary.get("shape", [4, 4])
+    values = input_summary.get("values")
+
+    lines = [
+        '"""',
+        "DeepMT 跨框架差异复现脚本",
+        f"算子: {operator_name}",
+        f"差异类型: {diff_type}",
+        f"MR:  {mr_description}",
+        f"框架1: {framework1} {framework1_version}",
+        f"框架2: {framework2} {framework2_version}",
+        f"数值差: {numeric_diff}",
+        '"""',
+        "",
+        "import numpy as np",
+    ]
+    if framework1 == "pytorch" or framework2 == "pytorch":
+        lines.append("import torch")
+    if framework1 in ("paddlepaddle", "paddle") or framework2 in ("paddlepaddle", "paddle"):
+        lines.append("import paddle")
+    lines += ["", "# ── 输入数据 ──────────────────────────────────────────"]
+    if values is not None:
+        lines.append(f"x_np = np.array({values}, dtype=np.float32)")
+    else:
+        lines.append(f"np.random.seed(42)")
+        lines.append(f"x_np = np.random.randn(*{shape}).astype(np.float32)")
+    def _call(fw: str, var_in: str, var_out: str) -> List[str]:
+        if fw == "pytorch":
+            return [
+                f"{var_in}_t = torch.from_numpy(x_np)",
+                f"{var_out} = getattr(torch.nn.functional, {operator_name!r}, getattr(torch, {operator_name!r}))({var_in}_t).detach().cpu().numpy()",
+            ]
+        if fw in ("paddlepaddle", "paddle"):
+            return [
+                f"{var_in}_p = paddle.to_tensor(x_np)",
+                f"_fn = getattr(paddle.nn.functional, {operator_name!r}, getattr(paddle, {operator_name!r}, None))",
+                f"{var_out} = _fn({var_in}_p).numpy()",
+            ]
+        if fw == "numpy":
+            return [
+                f"from deepmt.plugins.numpy_plugin import _NUMPY_OPERATORS",
+                f"{var_out} = _NUMPY_OPERATORS[{operator_name!r}](input=x_np)",
+            ]
+        return [f"# framework {fw} not supported in reproducer"]
+
+    lines += [
+        "",
+        f"# ── 在两个框架上分别执行 {operator_name} ──",
+    ]
+    lines += _call(framework1, "x1", "y1")
+    lines += _call(framework2, "x2", "y2")
+    lines += [
+        "",
+        "diff = np.abs(np.asarray(y1, dtype=np.float64) - np.asarray(y2, dtype=np.float64))",
+        f"print('framework1={framework1} framework2={framework2}')",
+        "print(f'max_abs_diff = {diff.max():.6g}')",
+        "print(f'mean_abs_diff = {diff.mean():.6g}')",
+        f"print('diff_type(recorded) = {diff_type}')",
+        f"print('numeric_diff(recorded) = {numeric_diff}')",
+        f"# oracle_expr (两框架共同): {oracle_expr!r}",
+        f"# f1 output summary: {f1_output_summary}",
+        f"# f2 output summary: {f2_output_summary}",
+    ]
+    return "\n".join(lines)
+
+
 # ── EvidencePack ──────────────────────────────────────────────────────────────
 
 
@@ -251,12 +341,23 @@ class EvidencePack:
     # ── 复现材料 ──────────────────────────────────────────────────────────────
     reproduce_script: str             # 可直接运行的 Python 脚本
 
+    # ── 变体信息（T5：跨框架差异证据包扩展） ───────────────────────────────
+    # kind="single_framework_oracle_violation"（默认）或 "cross_framework_divergence"
+    kind: str = "single_framework_oracle_violation"
+    # 跨框架差异场景下的第二框架信息（kind="cross_framework_divergence" 才有意义）
+    framework2: Optional[str] = None
+    framework2_version: Optional[str] = None
+    f2_output_summary: Optional[Dict[str, Any]] = None
+    diff_type: Optional[str] = None   # BEHAVIOR_DIFF / NUMERIC_DIFF / SHAPE_MISMATCH / ...
+
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
 
     @classmethod
     def from_dict(cls, d: Dict[str, Any]) -> "EvidencePack":
-        return cls(**d)
+        # 向后兼容：旧证据包可能没有 kind/framework2 字段
+        valid = {k: v for k, v in d.items() if k in cls.__dataclass_fields__}
+        return cls(**valid)
 
 
 # ── EvidenceCollector ─────────────────────────────────────────────────────────
@@ -347,6 +448,96 @@ class EvidenceCollector:
             detail=detail,
             reproduce_script=reproduce_script,
         )
+
+    def create_cross(
+        self,
+        operator: str,
+        framework1: str,
+        framework2: str,
+        mr_id: str,
+        mr_description: str,
+        transform_code: str,
+        oracle_expr: str,
+        input_summary: Dict[str, Any],
+        f1_output_summary: Dict[str, Any],
+        f2_output_summary: Dict[str, Any],
+        diff_type: str,
+        numeric_diff: Optional[float],
+    ) -> EvidencePack:
+        """
+        根据跨框架一致性会话中的失败样本，构造 kind=cross_framework_divergence 的证据包。
+
+        复现脚本以 framework1 为主（当前仅 pytorch 完整支持），在末尾附加
+        framework2 的输出摘要供对比。
+        """
+        evidence_id = str(uuid.uuid4())[:12]
+        timestamp = datetime.now().isoformat()
+        f1_ver = _get_framework_version(framework1)
+        f2_ver = _get_framework_version(framework2)
+
+        reproduce_script = _generate_cross_reproduce_script(
+            operator_name=operator,
+            framework1=framework1,
+            framework1_version=f1_ver,
+            framework2=framework2,
+            framework2_version=f2_ver,
+            mr_description=mr_description,
+            transform_code=transform_code,
+            oracle_expr=oracle_expr,
+            input_summary=input_summary,
+            f1_output_summary=f1_output_summary,
+            f2_output_summary=f2_output_summary,
+            diff_type=diff_type,
+            numeric_diff=numeric_diff,
+        )
+
+        return EvidencePack(
+            evidence_id=evidence_id,
+            timestamp=timestamp,
+            operator=operator,
+            framework=framework1,
+            framework_version=f1_ver,
+            mr_id=mr_id,
+            mr_description=mr_description,
+            transform_code=transform_code,
+            oracle_expr=oracle_expr,
+            input_summary=input_summary,
+            actual_diff=float(numeric_diff) if numeric_diff is not None else float("nan"),
+            tolerance=0.0,
+            detail=f"CROSS_FRAMEWORK_DIVERGENCE[{diff_type}] {framework1} vs {framework2}",
+            reproduce_script=reproduce_script,
+            kind="cross_framework_divergence",
+            framework2=framework2,
+            framework2_version=f2_ver,
+            f2_output_summary=f2_output_summary,
+            diff_type=diff_type,
+        )
+
+    def import_from_cross_session(self, session: Any) -> List[EvidencePack]:
+        """
+        将一次 CrossSessionResult 中所有 failed_samples 转换为证据包并落盘。
+        返回生成的 EvidencePack 列表（已 save）。
+        """
+        packs: List[EvidencePack] = []
+        for mr_result in session.mr_results:
+            for sample in getattr(mr_result, "failed_samples", []) or []:
+                pack = self.create_cross(
+                    operator=session.operator,
+                    framework1=session.framework1,
+                    framework2=session.framework2,
+                    mr_id=mr_result.mr_id,
+                    mr_description=mr_result.mr_description,
+                    transform_code="",  # cross 当前未回传 transform_code
+                    oracle_expr=mr_result.oracle_expr,
+                    input_summary=sample.get("input_summary", {}),
+                    f1_output_summary=sample.get("f1_output_summary") or {},
+                    f2_output_summary=sample.get("f2_output_summary") or {},
+                    diff_type=sample.get("diff_type", "unknown"),
+                    numeric_diff=sample.get("numeric_diff"),
+                )
+                self.save(pack)
+                packs.append(pack)
+        return packs
 
     def save(self, pack: EvidencePack) -> Path:
         """将证据包写入 JSON 文件，返回文件路径。"""

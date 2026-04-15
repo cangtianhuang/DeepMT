@@ -229,8 +229,15 @@ _CROSS_FRAMEWORKS = ["pytorch", "numpy"]
 @click.option("--n-samples", default=20, show_default=True, type=int, help="每条 MR 的测试样本数")
 @click.option("--verified-only", is_flag=True, default=False, help="仅使用已验证的 MR")
 @click.option("--save", is_flag=True, default=False, help="将结果保存到 data/results/cross_framework/")
+@click.option("--save-to-evidence", is_flag=True, default=False,
+              help="把 failed_samples 转换为 EvidencePack 落盘到 data/results/evidence/")
+@click.option("--keep-samples", default=50, show_default=True, type=int,
+              help="每条 MR 保留的失败样本上限（失败样本用于 case build 复现）")
+@click.option("--matrix", is_flag=True, default=False,
+              help="跨多个 (f1,f2) 框架对批量运行（忽略 --framework1/--framework2）")
 @click.option("--json", "as_json", is_flag=True, default=False, help="以 JSON 格式输出")
-def test_cross(operator, framework1, framework2, n_samples, verified_only, save, as_json):
+def test_cross(operator, framework1, framework2, n_samples, verified_only, save,
+               save_to_evidence, keep_samples, matrix, as_json):
     """跨框架一致性测试：对比两框架在等价算子上的 MR 结论是否一致。
 
     默认以 pytorch 为主框架，numpy 为参考框架。
@@ -248,17 +255,60 @@ def test_cross(operator, framework1, framework2, n_samples, verified_only, save,
         from deepmt.analysis.qa.cross_framework_tester import CrossFrameworkTester
 
         tester = CrossFrameworkTester()
+        if matrix:
+            pairs = [
+                ("pytorch", "numpy"),
+                ("pytorch", "paddlepaddle"),
+                ("paddlepaddle", "numpy"),
+            ]
+            sessions = []
+            for f1, f2 in pairs:
+                try:
+                    s = tester.compare_operator(
+                        operator_name=operator,
+                        framework1=f1, framework2=f2,
+                        n_samples=n_samples, verified_only=verified_only,
+                        keep_samples=keep_samples,
+                    )
+                    sessions.append(s)
+                    if save:
+                        tester.save(s)
+                except Exception as e:
+                    click.echo(click.style(f"  ({f1} vs {f2}) 跳过：{e}", fg="yellow"))
+            if as_json:
+                click.echo(json.dumps([s.to_dict() for s in sessions],
+                                       ensure_ascii=False, indent=2))
+                return
+            click.echo(f"\n跨框架矩阵测试 — {operator}  (n_samples={n_samples})")
+            click.echo("─" * 72)
+            for s in sessions:
+                warn = (" [!]" if s.silent_numeric_diff_rate >= tester.SILENT_DIFF_WARN_RATE else "")
+                click.echo(
+                    f"  {s.framework1:>10} vs {s.framework2:<12} "
+                    f"一致率={s.overall_consistency_rate:.1%}  "
+                    f"不一致MR={s.inconsistent_mr_count}/{s.mr_count}  "
+                    f"silent_diff={s.silent_numeric_diff_rate:.1%}{warn}"
+                )
+            click.echo("─" * 72)
+            return
+
         session = tester.compare_operator(
             operator_name=operator,
             framework1=framework1,
             framework2=framework2,
             n_samples=n_samples,
             verified_only=verified_only,
+            keep_samples=keep_samples,
         )
 
         if save:
             path = tester.save(session)
             click.echo(f"已保存: {path}")
+
+        if save_to_evidence:
+            from deepmt.analysis.reporting.evidence_collector import EvidenceCollector
+            packs = EvidenceCollector().import_from_cross_session(session)
+            click.echo(f"已导出 {len(packs)} 个 cross-framework 证据包到 data/results/evidence/")
 
         if as_json:
             click.echo(json.dumps(session.to_dict(), ensure_ascii=False, indent=2))
@@ -272,6 +322,13 @@ def test_cross(operator, framework1, framework2, n_samples, verified_only, save,
             f"  整体一致率: {session.overall_consistency_rate:.1%}"
             f"  输出最大差: {session.output_max_diff:.4g}"
         )
+        if session.silent_numeric_diff_rate >= tester.SILENT_DIFF_WARN_RATE:
+            click.echo(click.style(
+                f"  [!] 静默数值差异: {session.silent_numeric_diff_count} 样本"
+                f"  (rate={session.silent_numeric_diff_rate:.1%}) "
+                f"— 两框架 oracle 结论一致但输出数值存在显著差异",
+                fg="yellow",
+            ))
         click.echo("─" * 72)
         for r in session.mr_results:
             mark = (

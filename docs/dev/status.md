@@ -17,15 +17,16 @@
 | Phase K：全层MR质量保障与统一知识库治理       | ✅ 完成    |
 | Phase L：论文实验基准与自动化数据生产线       | ✅ 完成    |
 | Phase M：真实缺陷挖掘与案例沉淀               | 🔄 进行中  |
+| Phase M 系统能力缺口修复（前置 T1~T9）        | ✅ 完成    |
 | Phase N：论文交付收口与复现资产封装           | ⬜ 未开始  |
 
-**当前主链：** A~L 已完成 → **Phase M 进行中（M1~M7 已实现主体流程，2 个案例已归档）**
+**当前主链：** A~L 已完成 → **Phase M 系统能力缺口修复完成（L1+L2+L3 全绿，详见 [15_Phase_M_system_capability_gaps.md](./15_Phase_M_system_capability_gaps.md)）** → Phase M 主干真实缺陷扫描可重启
 
 ---
 
 ## 测试覆盖
 
-**全部 718 个单元测试通过（无 LLM/网络依赖），另有 31 个集成测试通过。**（共 749 个测试；Phase M 新增 18 个集成测试）
+**全部 739 个单元测试通过（无 LLM/网络依赖），另有 31 个集成测试通过。**（Phase M 系统能力缺口修复新增测试覆盖 T1~T9）
 
 ---
 
@@ -61,4 +62,25 @@
 
 ---
 
-*最后更新：2026-04-14（Phase M 主体流程实现完成；等待 Phase N）*
+### Phase M 系统能力缺口修复（2026-04-15）
+
+| 任务 | 内容 | 主要改动 |
+|------|------|---------|
+| T1 | Paddle 插件算子表扩面 | `deepmt/plugins/paddle_plugin.py`（新增 log_softmax/layer_norm/logsumexp/tan/sinh/cosh 等 19 个算子） |
+| T2 | NumPy 插件算子表扩面 | `deepmt/plugins/numpy_plugin.py`（新增 gelu/erf/log_softmax/layer_norm/logsumexp 等，无 scipy 依赖） |
+| T3 | `test batch` 放开 paddlepaddle | `deepmt/commands/test/_group.py` `_SUPPORTED_FRAMEWORKS` |
+| T4 | cross session 保留失败样本 | `CrossConsistencyResult.failed_samples` + `keep_samples` CLI 选项 |
+| T5 | EvidencePack 跨框架变体 | `evidence_collector.create_cross / import_from_cross_session`、`_generate_cross_reproduce_script` |
+| T6 | silent-numeric-diff 告警 | `CrossSessionResult.silent_numeric_diff_rate` + 终端 `[!]` 提示 |
+| T7 | `test cross --matrix` | 三对 (pytorch,numpy)/(pytorch,paddle)/(paddle,numpy) 一次跑 |
+| T8 | `test dedup --source cross` | `DefectDeduplicator._collect_cross_packs` 按 `(op, mr_id, fw_pair, bucket)` 聚类 |
+| T9 | 模板-only MR 生成降级 | `MRTemplatePool.generate_mr_candidates` 无映射时回退 `discover_all_templates`，并新增短名兜底 |
+
+验收记录：
+- [L1 验收](../phase_m_real_defect_hunting/05_acceptance_L1.md) — CLI 到达能力 4/4
+- [L2 验收](../phase_m_real_defect_hunting/06_acceptance_L2.md) — CLI 闭环能力 4/4
+- [L3 验收](../phase_m_real_defect_hunting/07_acceptance_L3.md) — 受控缺陷自主挖掘闭环（cosh/asinh/expm1）+ 零 FP 对照
+
+---
+
+*最后更新：2026-04-15（Phase M 系统能力缺口 T1~T9 修复完成，L1+L2+L3 全绿；Phase M 主干真实缺陷扫描待重启）*

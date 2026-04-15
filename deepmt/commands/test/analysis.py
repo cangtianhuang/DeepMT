@@ -330,8 +330,15 @@ def test_report(framework, operator, failures_only, limit, as_json):
 @click.option("--operator", default=None, help="按算子名称过滤")
 @click.option("--framework", default=None, help="按框架过滤")
 @click.option("--limit", default=0, show_default=True, type=int, help="最多显示条数（0=不限）")
+@click.option(
+    "--source",
+    default="evidence",
+    type=click.Choice(["evidence", "cross", "all"], case_sensitive=False),
+    show_default=True,
+    help="聚类输入来源：evidence=证据包；cross=跨框架会话；all=两者合并",
+)
 @click.option("--json", "as_json", is_flag=True, default=False, help="以 JSON 格式输出")
-def test_dedup(operator, framework, limit, as_json):
+def test_dedup(operator, framework, limit, source, as_json):
     """缺陷线索去重：将失败证据包聚类为独立缺陷模式。
 
     从 data/results/evidence/ 读取已保存的证据包，按（算子 × MR × 错误类型）签名聚类，
@@ -350,7 +357,9 @@ def test_dedup(operator, framework, limit, as_json):
         from deepmt.analysis.qa.defect_deduplicator import DefectDeduplicator
 
         dedup = DefectDeduplicator()
-        leads = dedup.deduplicate(operator=operator, framework=framework, limit=limit)
+        leads = dedup.deduplicate(
+            operator=operator, framework=framework, limit=limit, source=source.lower(),
+        )
 
         if as_json:
             click.echo(json.dumps([l.to_dict() for l in leads], ensure_ascii=False, indent=2))

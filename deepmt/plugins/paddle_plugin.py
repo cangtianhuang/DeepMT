@@ -90,6 +90,49 @@ def _build_paddle_operators() -> Dict[str, Any]:
         "round":      lambda **kw: paddle.round(kw["input"]),
         "log2":       lambda **kw: paddle.log2(kw["input"]),
         "log10":      lambda **kw: paddle.log10(kw["input"]),
+        "log1p":      lambda **kw: paddle.log1p(kw["input"]),
+        "expm1":      lambda **kw: paddle.expm1(kw["input"]),
+        "tan":        lambda **kw: paddle.tan(kw["input"]),
+        "sinh":       lambda **kw: paddle.sinh(kw["input"]),
+        "cosh":       lambda **kw: paddle.cosh(kw["input"]),
+        "asin":       lambda **kw: paddle.asin(kw["input"]),
+        "acos":       lambda **kw: paddle.acos(kw["input"]),
+        "atan":       lambda **kw: paddle.atan(kw["input"]),
+        "erf":        lambda **kw: paddle.erf(kw["input"]),
+        "square":     lambda **kw: paddle.square(kw["input"]),
+
+        # ── 归约 / 统计 ───────────────────────────────────────────────────────
+        "sum":        lambda **kw: paddle.sum(kw["input"], axis=kw.get("dim", None)),
+        "mean":       lambda **kw: paddle.mean(kw["input"], axis=kw.get("dim", None)),
+        "var":        lambda **kw: paddle.var(kw["input"], axis=kw.get("dim", None), unbiased=kw.get("unbiased", True)),
+        "std":        lambda **kw: paddle.std(kw["input"], axis=kw.get("dim", None), unbiased=kw.get("unbiased", True)),
+        "cumsum":     lambda **kw: paddle.cumsum(kw["input"], axis=kw.get("dim", -1)),
+        "logsumexp":  lambda **kw: paddle.logsumexp(kw["input"], axis=kw.get("dim", -1), keepdim=kw.get("keepdim", False)),
+
+        # ── Softmax 族 ────────────────────────────────────────────────────────
+        "log_softmax":
+            lambda **kw: paddle.nn.functional.log_softmax(kw["input"], axis=kw.get("dim", -1)),
+
+        # ── 归一化 ───────────────────────────────────────────────────────────
+        "layer_norm":
+            lambda **kw: paddle.nn.functional.layer_norm(
+                kw["input"],
+                normalized_shape=kw.get("normalized_shape", (kw["input"].shape[-1],)),
+                weight=kw.get("weight", None),
+                bias=kw.get("bias", None),
+                epsilon=kw.get("eps", 1e-5),
+            ),
+        "batch_norm":
+            lambda **kw: paddle.nn.functional.batch_norm(
+                kw["input"],
+                running_mean=kw.get("running_mean", paddle.zeros([kw["input"].shape[1]])),
+                running_var=kw.get("running_var", paddle.ones([kw["input"].shape[1]])),
+                weight=kw.get("weight", None),
+                bias=kw.get("bias", None),
+                training=kw.get("training", False),
+                momentum=kw.get("momentum", 0.9),
+                epsilon=kw.get("eps", 1e-5),
+            ),
 
         # ── 二元算子（泛化名） ─────────────────────────────────────────────────
         "add":
@@ -140,6 +183,25 @@ OPERATOR_EQUIVALENCE_MAP: Dict[str, str] = {
     "div":         "paddle.divide",
     "pow":         "paddle.pow",
     "clamp":       "paddle.clip",
+    "log1p":       "paddle.log1p",
+    "expm1":       "paddle.expm1",
+    "tan":         "paddle.tan",
+    "sinh":        "paddle.sinh",
+    "cosh":        "paddle.cosh",
+    "asin":        "paddle.asin",
+    "acos":        "paddle.acos",
+    "atan":        "paddle.atan",
+    "erf":         "paddle.erf",
+    "square":      "paddle.square",
+    "log_softmax": "paddle.nn.functional.log_softmax(axis=-1)",
+    "logsumexp":   "paddle.logsumexp",
+    "layer_norm":  "paddle.nn.functional.layer_norm",
+    "batch_norm":  "paddle.nn.functional.batch_norm(training=False)",
+    "var":         "paddle.var",
+    "std":         "paddle.std",
+    "cumsum":      "paddle.cumsum",
+    "sum":         "paddle.sum",
+    "mean":        "paddle.mean",
 }
 
 

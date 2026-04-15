@@ -117,6 +117,9 @@ class MRTemplatePool:
         applicable = []
 
         template_names = self.operator_mr_mapping.get(operator_name, [])
+        if not template_names and "." in operator_name:
+            short = operator_name.rsplit(".", 1)[-1]
+            template_names = self.operator_mr_mapping.get(short, [])
 
         for template_name in template_names:
             template = self.templates.get(template_name)
@@ -265,6 +268,16 @@ class MRTemplatePool:
         templates = self.get_applicable_templates(
             operator_name, operator_func=operator_func, num_inputs=num_inputs
         )
+
+        # T9：无映射时退回到全模板枚举，保证模板-only 路径可用
+        if not templates:
+            logger.info(
+                f"⚡ [GEN] No template mapping for {operator_name!r}; "
+                f"falling back to discover_all_templates"
+            )
+            templates = self.discover_all_templates(
+                operator_func=operator_func, num_inputs=num_inputs
+            )
 
         candidates = []
         for template in templates:

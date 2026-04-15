@@ -8,7 +8,7 @@ import click
 
 from deepmt._utils import not_implemented_error
 
-_SUPPORTED_FRAMEWORKS = {"pytorch"}
+_SUPPORTED_FRAMEWORKS = {"pytorch", "paddlepaddle"}
 _ALL_FRAMEWORKS = {"pytorch", "tensorflow", "paddlepaddle"}
 _MUTANT_TYPES = ["negate", "add_const", "scale", "identity", "zero"]
 

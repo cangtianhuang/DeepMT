@@ -98,6 +98,24 @@ BUILTIN_FAULT_CATALOG: Dict[str, Tuple[str, Dict, str]] = {
         "cos 输出乘以 1.05（SIMD 精度近似错误），破坏 |cos(x)|<=1 有界性，"
         "且破坏 cos(x+2π)==cos(x) 周期性（两侧按同比例放大但与 oracle 不合）",
     ),
+    # cosh: 恒等映射（严重破坏偶函数性质：f(-x)!=f(x) 对非零输入）
+    "torch.cosh": (
+        "identity",
+        {},
+        "cosh 返回原始输入（近似分支彻底失效），破坏 cosh(-x)==cosh(x) 偶函数性质",
+    ),
+    # asinh: 输出取反（破坏 asinh 全局单调递增性质）
+    "torch.asinh": (
+        "negate",
+        {},
+        "asinh 输出取反（符号错误），破坏 asinh 单调递增 x+1 >= x ⇒ f(x+1) >= f(x)",
+    ),
+    # expm1: 输出取反（破坏 expm1 单调递增性质）
+    "torch.expm1": (
+        "negate",
+        {},
+        "expm1 输出取反（符号错误），破坏 expm1 单调递增 x+1 >= x ⇒ f(x+1) >= f(x)",
+    ),
 }
 
 

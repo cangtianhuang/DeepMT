@@ -15,6 +15,12 @@ operator_mr_mapping:
   - relu_positive_homogeneity
   - exp_positive
   - abs_even_symmetry
+  cosh:
+  - abs_even_symmetry
+  asinh:
+  - sigmoid_monotone_scale
+  expm1:
+  - sigmoid_monotone_scale
 templates:
   commutative:
     name: commutative

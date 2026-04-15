@@ -34,6 +34,55 @@ def _np_softmax(input: np.ndarray, dim: int = -1, **kw) -> np.ndarray:
     return exp_x / (exp_x.sum(axis=dim, keepdims=True) + 1e-12)
 
 
+def _np_log_softmax(input: np.ndarray, dim: int = -1, **kw) -> np.ndarray:
+    """数值稳定的 log_softmax = x - logsumexp(x)。"""
+    m = input.max(axis=dim, keepdims=True)
+    shifted = input - m
+    return shifted - np.log(np.exp(shifted).sum(axis=dim, keepdims=True))
+
+
+def _np_logsumexp(input: np.ndarray, dim: int = -1, keepdim: bool = False, **kw) -> np.ndarray:
+    m = input.max(axis=dim, keepdims=True)
+    out = m + np.log(np.exp(input - m).sum(axis=dim, keepdims=True))
+    return out if keepdim else np.squeeze(out, axis=dim)
+
+
+def _np_erf(x: np.ndarray) -> np.ndarray:
+    """Abramowitz-Stegun 7.1.26 近似（|err| < 1.5e-7），避免 scipy 依赖。"""
+    a1, a2, a3 = 0.254829592, -0.284496736, 1.421413741
+    a4, a5, p = -1.453152027, 1.061405429, 0.3275911
+    sign = np.sign(x)
+    ax = np.abs(x)
+    t = 1.0 / (1.0 + p * ax)
+    y = 1.0 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * np.exp(-ax * ax)
+    return sign * y
+
+
+def _np_gelu(x: np.ndarray) -> np.ndarray:
+    """精确 GELU（用 erf 近似）：0.5 * x * (1 + erf(x / sqrt(2)))。"""
+    return 0.5 * x * (1.0 + _np_erf(x / np.sqrt(2.0)))
+
+
+def _np_layer_norm(
+    input: np.ndarray,
+    normalized_shape=None,
+    weight=None,
+    bias=None,
+    eps: float = 1e-5,
+    **kw,
+) -> np.ndarray:
+    ns = normalized_shape or (input.shape[-1],)
+    axes = tuple(range(input.ndim - len(ns), input.ndim))
+    mean = input.mean(axis=axes, keepdims=True)
+    var = input.var(axis=axes, keepdims=True)
+    out = (input - mean) / np.sqrt(var + eps)
+    if weight is not None:
+        out = out * np.asarray(weight)
+    if bias is not None:
+        out = out + np.asarray(bias)
+    return out
+
+
 _NUMPY_OPERATORS: Dict[str, Any] = {
     # 激活函数（泛化名）
     "relu":        lambda **kw: np.maximum(0.0, kw["input"]),
@@ -41,8 +90,11 @@ _NUMPY_OPERATORS: Dict[str, Any] = {
     "leaky_relu":  lambda **kw: np.where(kw["input"] >= 0, kw["input"], 0.01 * kw["input"]),
     "sigmoid":     lambda **kw: 1.0 / (1.0 + np.exp(-kw["input"])),
     "softmax":     lambda **kw: _np_softmax(**kw),
+    "log_softmax": lambda **kw: _np_log_softmax(**kw),
     "silu":        lambda **kw: kw["input"] * (1.0 / (1.0 + np.exp(-kw["input"]))),
     "hardswish":   lambda **kw: kw["input"] * np.clip(kw["input"] + 3.0, 0.0, 6.0) / 6.0,
+    "gelu":        lambda **kw: _np_gelu(kw["input"]),
+    "mish":        lambda **kw: kw["input"] * np.tanh(np.log1p(np.exp(kw["input"]))),
     # 元素级数学（泛化名）
     "exp":        lambda **kw: np.exp(kw["input"]),
     "log":        lambda **kw: np.log(kw["input"]),
@@ -57,6 +109,29 @@ _NUMPY_OPERATORS: Dict[str, Any] = {
     "floor":      lambda **kw: np.floor(kw["input"]),
     "ceil":       lambda **kw: np.ceil(kw["input"]),
     "round":      lambda **kw: np.round(kw["input"]),
+    "log1p":      lambda **kw: np.log1p(kw["input"]),
+    "expm1":      lambda **kw: np.expm1(kw["input"]),
+    "log2":       lambda **kw: np.log2(kw["input"]),
+    "log10":      lambda **kw: np.log10(kw["input"]),
+    "tan":        lambda **kw: np.tan(kw["input"]),
+    "sinh":       lambda **kw: np.sinh(kw["input"]),
+    "cosh":       lambda **kw: np.cosh(kw["input"]),
+    "asin":       lambda **kw: np.arcsin(kw["input"]),
+    "acos":       lambda **kw: np.arccos(kw["input"]),
+    "atan":       lambda **kw: np.arctan(kw["input"]),
+    "erf":        lambda **kw: _np_erf(kw["input"]),
+    "square":     lambda **kw: np.square(kw["input"]),
+    # 归约 / 统计
+    "sum":        lambda **kw: np.sum(kw["input"], axis=kw.get("dim", None)),
+    "mean":       lambda **kw: np.mean(kw["input"], axis=kw.get("dim", None)),
+    "var":        lambda **kw: np.var(kw["input"], axis=kw.get("dim", None),
+                                       ddof=1 if kw.get("unbiased", True) else 0),
+    "std":        lambda **kw: np.std(kw["input"], axis=kw.get("dim", None),
+                                      ddof=1 if kw.get("unbiased", True) else 0),
+    "cumsum":     lambda **kw: np.cumsum(kw["input"], axis=kw.get("dim", -1)),
+    "logsumexp":  lambda **kw: _np_logsumexp(**kw),
+    # 归一化
+    "layer_norm": lambda **kw: _np_layer_norm(**kw),
     # 二元算子（泛化名；第二操作数从 kwargs["other"] 或 kwargs["arg1"] 读取）
     "add":    lambda **kw: kw["input"] + kw.get("other", kw.get("arg1", 0)),
     "mul":    lambda **kw: kw["input"] * kw.get("other", kw.get("arg1", 1)),

@@ -111,9 +111,15 @@ class DefectDeduplicator:
             print(f"  {lead.operator} / {lead.mr_description}: {lead.occurrence_count} 次")
     """
 
-    def __init__(self, evidence_dir: Optional[str] = None):
+    def __init__(
+        self,
+        evidence_dir: Optional[str] = None,
+        cross_dir: Optional[str] = None,
+    ):
         from deepmt.analysis.reporting.evidence_collector import EvidenceCollector
+        from deepmt.analysis.qa.cross_framework_tester import CrossFrameworkTester
         self._collector = EvidenceCollector(evidence_dir=evidence_dir)
+        self._cross_tester = CrossFrameworkTester(results_dir=cross_dir)
 
     # ── 公共接口 ──────────────────────────────────────────────────────────────
 
@@ -122,6 +128,7 @@ class DefectDeduplicator:
         operator: Optional[str] = None,
         framework: Optional[str] = None,
         limit: int = 0,
+        source: str = "evidence",
     ) -> List[DefectLead]:
         """
         读取证据包并返回去重后的缺陷线索列表，按出现次数降序排列。
@@ -134,19 +141,26 @@ class DefectDeduplicator:
         Returns:
             DefectLead 列表，按 occurrence_count 降序
         """
-        packs = self._collector.list_all(operator=operator, framework=framework, limit=0)
+        packs: List[Any] = []
+        if source in ("evidence", "all"):
+            packs.extend(self._collector.list_all(
+                operator=operator, framework=framework, limit=0
+            ))
+        if source in ("cross", "all"):
+            packs.extend(self._collect_cross_packs(operator=operator, framework=framework))
 
         if not packs:
             return []
 
-        # 按签名聚类
+        # 按签名聚类（cross-framework 证据包把 framework2 一并纳入签名）
         clusters: Dict[str, List] = {}
         for pack in packs:
             bucket = _extract_error_bucket(pack.detail)
-            lead_id = _make_lead_id(pack.operator, pack.mr_id, bucket, pack.framework)
-            if lead_id not in clusters:
-                clusters[lead_id] = []
-            clusters[lead_id].append(pack)
+            fw_key = pack.framework
+            if getattr(pack, "kind", "") == "cross_framework_divergence":
+                fw_key = f"{pack.framework}__{pack.framework2}"
+            lead_id = _make_lead_id(pack.operator, pack.mr_id, bucket, fw_key)
+            clusters.setdefault(lead_id, []).append(pack)
 
         # 每个聚类生成一条 DefectLead
         leads = []
@@ -183,6 +197,47 @@ class DefectDeduplicator:
             + (f" (showing top {limit})" if limit > 0 else "")
         )
         return leads
+
+    def _collect_cross_packs(
+        self,
+        operator: Optional[str],
+        framework: Optional[str],
+    ) -> List[Any]:
+        """把跨框架会话中的 failed_samples 转成 transient EvidencePack 供聚类复用。"""
+        from deepmt.analysis.reporting.evidence_collector import EvidencePack
+
+        sessions = self._cross_tester.load_all()
+        out: List[EvidencePack] = []
+        for session in sessions:
+            if operator and session.operator != operator:
+                continue
+            if framework and framework not in (session.framework1, session.framework2):
+                continue
+            for mr_result in session.mr_results:
+                for sample in getattr(mr_result, "failed_samples", []) or []:
+                    detail = f"{sample.get('diff_type', 'CROSS').upper()}: {session.framework1} vs {session.framework2}"
+                    out.append(EvidencePack(
+                        evidence_id=f"cross:{session.session_id}:{mr_result.mr_id[:8]}:{sample.get('seed', 0)}",
+                        timestamp=session.timestamp,
+                        operator=session.operator,
+                        framework=session.framework1,
+                        framework_version="",
+                        mr_id=mr_result.mr_id,
+                        mr_description=mr_result.mr_description,
+                        transform_code="",
+                        oracle_expr=mr_result.oracle_expr,
+                        input_summary=sample.get("input_summary", {}),
+                        actual_diff=float(sample.get("numeric_diff") or 0.0),
+                        tolerance=0.0,
+                        detail=detail,
+                        reproduce_script="",
+                        kind="cross_framework_divergence",
+                        framework2=session.framework2,
+                        framework2_version="",
+                        f2_output_summary=sample.get("f2_output_summary"),
+                        diff_type=sample.get("diff_type"),
+                    ))
+        return out
 
     def format_text(self, leads: List[DefectLead]) -> str:
         """格式化为可读文本摘要。"""

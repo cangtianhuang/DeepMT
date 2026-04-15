@@ -103,6 +103,20 @@ class CrossConsistencyResult:
     # 每个键对应一种 DiffType，值为该类型出现的样本数（一个样本可属于多种类型）
     diff_type_counts: Dict[str, int] = field(default_factory=dict)
 
+    # ── 失败样本明细（T4 新增） ───────────────────────────────────────────────
+    # 记录有差异的样本供 case build 复现用，每个样本含输入摘要与两框架输出摘要
+    failed_samples: List[Dict[str, Any]] = field(default_factory=list)
+
+    # ── 静默数值差异指标（T6 新增） ───────────────────────────────────────────
+    # consistency=1 但 output_close=False 的样本比例；silent_numeric_diff_rate>0 为可疑信号
+    silent_numeric_diff_count: int = 0
+
+    @property
+    def silent_numeric_diff_rate(self) -> float:
+        if self.total_valid == 0:
+            return 0.0
+        return self.silent_numeric_diff_count / self.total_valid
+
     @property
     def total_valid(self) -> int:
         return self.both_pass + self.only_f1_pass + self.only_f2_pass + self.both_fail
@@ -131,6 +145,7 @@ class CrossConsistencyResult:
         d["f1_pass_rate"]     = round(self.f1_pass_rate, 4)
         d["f2_pass_rate"]     = round(self.f2_pass_rate, 4)
         d["inconsistent_cases"] = self.inconsistent_cases
+        d["silent_numeric_diff_rate"] = round(self.silent_numeric_diff_rate, 4)
         return d
 
 
@@ -171,6 +186,15 @@ class CrossSessionResult:
         return sum(1 for r in self.mr_results if r.inconsistent_cases > 0)
 
     @property
+    def silent_numeric_diff_count(self) -> int:
+        return sum(r.silent_numeric_diff_count for r in self.mr_results)
+
+    @property
+    def silent_numeric_diff_rate(self) -> float:
+        total = sum(r.total_valid for r in self.mr_results)
+        return self.silent_numeric_diff_count / total if total > 0 else 0.0
+
+    @property
     def diff_type_summary(self) -> Dict[str, int]:
         """汇总所有 MR 的差异类型计数（跨 MR 累加）。"""
         summary: Dict[str, int] = {}
@@ -191,6 +215,8 @@ class CrossSessionResult:
             "overall_consistency_rate": round(self.overall_consistency_rate, 4),
             "output_max_diff": self.output_max_diff,
             "inconsistent_mr_count": self.inconsistent_mr_count,
+            "silent_numeric_diff_count": self.silent_numeric_diff_count,
+            "silent_numeric_diff_rate": round(self.silent_numeric_diff_rate, 4),
             "diff_type_summary": self.diff_type_summary,
             "mr_results": [r.to_dict() for r in self.mr_results],
         }
@@ -247,6 +273,8 @@ class CrossFrameworkTester:
 
     DEFAULT_RESULTS_DIR = Path("data/results/cross_framework")
     OUTPUT_CLOSE_THRESHOLD = 1e-3  # 输出差 < 此阈值视为"数值接近"
+    DEFAULT_KEEP_SAMPLES = 50       # 每条 MR 保留的失败样本上限
+    SILENT_DIFF_WARN_RATE = 0.05    # silent_numeric_diff_rate 超过此值输出告警
 
     # 框架名称别名：支持用户输入 "paddle" 等简写
     _FRAMEWORK_ALIASES: Dict[str, str] = {
@@ -275,6 +303,7 @@ class CrossFrameworkTester:
         framework2: str = "numpy",
         n_samples: int = 20,
         verified_only: bool = False,
+        keep_samples: Optional[int] = None,
     ) -> CrossSessionResult:
         """
         对单个算子执行跨框架一致性测试。
@@ -317,6 +346,7 @@ class CrossFrameworkTester:
         entry = self.catalog.get_operator_info(framework1, operator_name)
         input_specs = entry.input_specs if (entry and entry.input_specs) else []
 
+        keep = keep_samples if keep_samples is not None else self.DEFAULT_KEEP_SAMPLES
         mr_results = []
         for mr in mrs:
             result = self._compare_single_mr(
@@ -328,6 +358,7 @@ class CrossFrameworkTester:
                 framework2=framework2,
                 input_specs=input_specs,
                 n_samples=n_samples,
+                keep_samples=keep,
             )
             mr_results.append(result)
 
@@ -474,6 +505,7 @@ class CrossFrameworkTester:
         framework2: str,
         input_specs: List[Dict],
         n_samples: int,
+        keep_samples: int = 50,
     ) -> CrossConsistencyResult:
         """对单条 MR 执行跨框架对比，返回 CrossConsistencyResult（含差异类型分类）。"""
 
@@ -498,13 +530,34 @@ class CrossFrameworkTester:
             return self._empty_result(operator_name, framework1, framework2, mr, n_samples, "transform_error")
 
         both_pass = both_fail = only_f1 = only_f2 = errors = 0
+        silent_numeric_diff_count = 0
         output_diffs: List[float] = []
         diff_type_counts: Dict[str, int] = {}
+        failed_samples: List[Dict[str, Any]] = []
 
         def _inc(key: str) -> None:
             diff_type_counts[key] = diff_type_counts.get(key, 0) + 1
 
-        for _ in range(n_samples):
+        def _record_sample(
+            seed: int, diff_type: str, x_raw: Any,
+            orig1: Any, orig2: Any, numeric_diff: Optional[float] = None,
+            f1_error: Optional[str] = None, f2_error: Optional[str] = None,
+        ) -> None:
+            if len(failed_samples) >= keep_samples:
+                return
+            from deepmt.analysis.reporting.evidence_collector import _summarize_tensor
+            failed_samples.append({
+                "seed": int(seed),
+                "diff_type": diff_type,
+                "input_summary": _summarize_tensor(x_raw),
+                "f1_output_summary": _summarize_tensor(orig1) if orig1 is not None else None,
+                "f2_output_summary": _summarize_tensor(orig2) if orig2 is not None else None,
+                "numeric_diff": numeric_diff,
+                "f1_error": f1_error,
+                "f2_error": f2_error,
+            })
+
+        for sample_idx in range(n_samples):
             try:
                 # 生成输入（使用 backend1 生成，再分别转换为各框架张量，保证数值相同）
                 inputs_raw = self.random_gen.generate(input_specs, backend1)
@@ -547,18 +600,26 @@ class CrossFrameworkTester:
                 if not f1_ok and not f2_ok:
                     errors += 1
                     _inc(DiffType.BOTH_EXCEPTION)
+                    _record_sample(sample_idx, DiffType.BOTH_EXCEPTION, x1_raw,
+                                   None, None,
+                                   f1_error=repr(f1_exc), f2_error=repr(f2_exc))
                     continue
                 if not f1_ok:
                     errors += 1
                     _inc(DiffType.EXCEPTION_F1)
+                    _record_sample(sample_idx, DiffType.EXCEPTION_F1, x1_raw,
+                                   None, orig2, f1_error=repr(f1_exc))
                     continue
                 if not f2_ok:
                     errors += 1
                     _inc(DiffType.EXCEPTION_F2)
+                    _record_sample(sample_idx, DiffType.EXCEPTION_F2, x1_raw,
+                                   orig1, None, f2_error=repr(f2_exc))
                     continue
 
                 # ── 一致性分类 ────────────────────────────────────────────
                 p1, p2 = oracle1.passed, oracle2.passed
+                consistent = (p1 == p2)
                 if p1 and p2:
                     both_pass += 1
                 elif p1 and not p2:
@@ -571,11 +632,14 @@ class CrossFrameworkTester:
                     both_fail += 1
 
                 # ── 输出形状/dtype 差异分类 ───────────────────────────────
+                sample_diff_types: List[str] = []
+                sample_numeric_diff: Optional[float] = None
                 try:
                     shape1 = backend1.get_shape(orig1)
                     shape2 = backend2.get_shape(orig2)
                     if shape1 != shape2:
                         _inc(DiffType.SHAPE_MISMATCH)
+                        sample_diff_types.append(DiffType.SHAPE_MISMATCH)
 
                     out1_np = backend1.to_numpy(orig1)
                     out2_np = backend2.to_numpy(orig2)
@@ -584,6 +648,7 @@ class CrossFrameworkTester:
                     if (hasattr(out1_np, "dtype") and hasattr(out2_np, "dtype")
                             and out1_np.dtype.kind != out2_np.dtype.kind):
                         _inc(DiffType.DTYPE_MISMATCH)
+                        sample_diff_types.append(DiffType.DTYPE_MISMATCH)
 
                     # 数值差异
                     if shape1 == shape2:
@@ -591,10 +656,27 @@ class CrossFrameworkTester:
                         out2_f = out2_np.astype(float)
                         diff = float(np.max(np.abs(out1_f - out2_f)))
                         output_diffs.append(diff)
+                        sample_numeric_diff = diff
                         if diff >= self.OUTPUT_CLOSE_THRESHOLD:
                             _inc(DiffType.NUMERIC_DIFF)
+                            sample_diff_types.append(DiffType.NUMERIC_DIFF)
+                            # silent：两侧结论一致但数值差异超阈值
+                            if consistent:
+                                silent_numeric_diff_count += 1
                 except Exception:
                     pass
+
+                # ── 记录失败样本（仅 behavior_diff 或显著差异） ──────────
+                if not consistent:
+                    _record_sample(
+                        sample_idx, DiffType.BEHAVIOR_DIFF, x1_raw,
+                        orig1, orig2, numeric_diff=sample_numeric_diff,
+                    )
+                elif sample_diff_types:
+                    _record_sample(
+                        sample_idx, sample_diff_types[0], x1_raw,
+                        orig1, orig2, numeric_diff=sample_numeric_diff,
+                    )
 
             except Exception as e:
                 errors += 1
@@ -624,6 +706,8 @@ class CrossFrameworkTester:
             output_mean_diff=output_mean_diff,
             output_close=output_close,
             diff_type_counts=diff_type_counts,
+            failed_samples=failed_samples,
+            silent_numeric_diff_count=silent_numeric_diff_count,
         )
 
     @staticmethod

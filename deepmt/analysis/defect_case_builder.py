@@ -310,12 +310,30 @@ class DefectCaseBuilder:
         若存在证据包，使用证据包中的元数据重新生成脚本（确保算子名称可执行）；
         若无证据包，生成包含已知信息的占位脚本。
         """
-        from deepmt.analysis.reporting.evidence_collector import _generate_reproduce_script
+        from deepmt.analysis.reporting.evidence_collector import (
+            _generate_cross_reproduce_script,
+            _generate_reproduce_script,
+        )
 
         if case.evidence_pack_path:
             pack = self._collector.load(Path(case.evidence_pack_path).stem)
             if pack:
-                # 使用最新的生成函数重新生成，避免旧版本脚本中的算子名问题
+                if getattr(pack, "kind", "") == "cross_framework_divergence":
+                    return _generate_cross_reproduce_script(
+                        operator_name=pack.operator,
+                        framework1=pack.framework,
+                        framework1_version=pack.framework_version,
+                        framework2=pack.framework2 or "",
+                        framework2_version=pack.framework2_version or "",
+                        mr_description=pack.mr_description,
+                        transform_code=pack.transform_code,
+                        oracle_expr=pack.oracle_expr,
+                        input_summary=pack.input_summary,
+                        f1_output_summary={},
+                        f2_output_summary=pack.f2_output_summary or {},
+                        diff_type=pack.diff_type or "unknown",
+                        numeric_diff=pack.actual_diff,
+                    )
                 return _generate_reproduce_script(
                     operator_name=pack.operator,
                     framework=pack.framework,
