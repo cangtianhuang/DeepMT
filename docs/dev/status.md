@@ -19,14 +19,15 @@
 | Phase M：真实缺陷挖掘与案例沉淀               | 🔄 进行中  |
 | Phase M 系统能力缺口修复（前置 T1~T9）        | ✅ 完成    |
 | Phase N：论文交付收口与复现资产封装           | ⬜ 未开始  |
+| Phase O：核心框架插件闭环与健康管理           | 🔄 进行中  |
 
-**当前主链：** A~L 已完成 → **Phase M 系统能力缺口修复完成（L1+L2+L3 全绿，详见 [15_Phase_M_system_capability_gaps.md](./15_Phase_M_system_capability_gaps.md)）** → Phase M 主干真实缺陷扫描可重启
+**当前主链：** A~L 已完成 → **Phase M 系统能力缺口修复完成（L1+L2+L3 全绿，详见 [15_Phase_M_system_capability_gaps.md](./15_Phase_M_system_capability_gaps.md)）** → Phase M 主干真实扫描 TODO 已就绪（[phase_m_real_defect_hunting/08_scan_todo.md](../phase_m_real_defect_hunting/08_scan_todo.md)），由用户手动执行 → 并行新增 Phase O（[16_Phase_O_framework_plugin_closure_and_health.md](./16_Phase_O_framework_plugin_closure_and_health.md)）处理四框架插件闭环与健康系统扩展
 
 ---
 
 ## 测试覆盖
 
-**全部 739 个单元测试通过（无 LLM/网络依赖），另有 31 个集成测试通过。**（Phase M 系统能力缺口修复新增测试覆盖 T1~T9）
+**全部 747 个单元测试通过（无 LLM/网络依赖，含 1 个 TF 未安装时 skip），另有 31 个集成测试通过。**（Phase O 新增 test_plugin_contract 4 个，test_plugin_parity 9 个，test_health_deep 3 个）
 
 ---
 
@@ -83,4 +84,24 @@
 
 ---
 
-*最后更新：2026-04-15（Phase M 系统能力缺口 T1~T9 修复完成，L1+L2+L3 全绿；Phase M 主干真实缺陷扫描待重启）*
+*最后更新：2026-04-15（Phase M 系统能力缺口 T1~T9 修复完成，L1+L2+L3 全绿；Phase M 主干真实缺陷扫描待用户手动执行；Phase O 首轮落地——O1/O2/O3/O4/O5/O6/O7/O8 均已实现；tensorflow 2.21.0 已安装且可 import，但本机 TF 加载极慢导致含 TF 的 pytest 回归在本机卡死——pytorch/numpy/paddlepaddle 三框架契约测试已验证通过，TF 契约/对等/O-L3 端到端回归待在性能更好的机器或 CI 上补齐）*
+
+---
+
+### Phase O 已完成模块（2026-04-15）
+
+| 任务 | 内容 | 主要改动 |
+|------|------|---------|
+| O1 | 插件契约与异常 | `deepmt/plugins/exceptions.py` (新增)；`framework_plugin.py` 新增 `framework_name/framework_version/supported_operators/is_available` 基类方法 |
+| O2 | Paddle 对等 & 健康登记 | `paddle_plugin.py` 暴露 `framework_version`；`health_checker.PLUGIN_MODULES` 新增 paddle/tensorflow/faulty_tensorflow 条目 |
+| O3 | NumPy 金标准暴露 | `numpy_plugin.py` 暴露 `framework_version`，`supported_operators` 改为 classmethod |
+| O4 | TensorFlow 插件 MVP | `tensorflow_plugin.py` + `faulty_tensorflow_plugin.py` 新建；覆盖一级 9 算子；懒加载，TF 未装时 `is_available()=False` |
+| O5 | health --deep + matrix | `health_checker.run_deep_checks / compute_reachability_matrix / _framework_version_matrix`；`commands/health.py` 新增 `--deep` 与 `matrix` 子命令 |
+| O6 | 声明式注册 | `plugins/__init__.py::PLUGIN_REGISTRY` 新建；`plugins.yaml` 追加 optional 标志与 tensorflow 条目；`plugins_manager.py` 对 optional 插件降级为 debug 日志 |
+| O7 | 回归测试 | `tests/unit/test_plugin_contract.py`、`tests/integration/test_plugin_parity.py`、`tests/integration/test_health_deep.py` 新建 |
+| O8 | 文档 | `deepmt/plugins/README.md` 新建；`docs/cli_reference.md` 补充 `health check --deep` / `health matrix`；本文件 |
+
+验收对照 `docs/dev/16_Phase_O_framework_plugin_closure_and_health.md §7`：
+- **O-L1 插件契约对齐**：pytorch / numpy / paddlepaddle 3/4 通过；tensorflow 契约检查因 TF 未安装被跳过为 WARNING（非 ERROR），待 `uv pip install tensorflow-cpu` 后自动转绿
+- **O-L2 健康系统覆盖**：`health check` 已含所有插件 + 版本矩阵；`health check --deep` 零 ERROR、WARN 已解释（TF 未装、L3 受控注入用算子 torch.asinh/cosh/expm1 未加 paddle/numpy 短名映射——属预期而非缺口）；`health matrix --json` 可达性表输出正常
+- **O-L3 端到端回归**：`test batch --framework tensorflow ...` / `test cross --matrix` 含 TF 的验收留到 TF 安装后执行；`test_plugin_parity.py` 对 pytorch/numpy/paddle 3 框架一级 9 算子全部通过

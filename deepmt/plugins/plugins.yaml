@@ -1,21 +1,27 @@
-# 插件注册表：仅此处注册的插件才会被加载
+# 插件注册表：仅此处注册的插件才会被 PluginsManager 加载到进程级单例
 # 将框架适配代码放入 deepmt/plugins/，然后在此处声明即可启用
 #
 # 字段说明：
-#   name   — 框架标识符（与 FrameworkType 值保持一致，全小写）
-#   module — Python 模块路径
-#   class  — 插件类名
+#   name     — 框架标识符（与 FrameworkType 值保持一致，全小写）
+#   module   — Python 模块路径
+#   class    — 插件类名
+#   optional — 若为 true，框架依赖缺失时仅 WARNING，不阻断启动（默认 false）
+#
+# 声明式可用性探测见 deepmt/plugins/__init__.py::PLUGIN_REGISTRY；
+# 本 yaml 与 PLUGIN_REGISTRY 必须保持一致（health check --deep 会交叉校验）。
 
 plugins:
   - name: pytorch
     module: deepmt.plugins.pytorch_plugin
     class: PyTorchPlugin
-
-  # 其他框架暂未实现，取消注释前需先编写对应插件类
-  # - name: tensorflow
-  #   module: deepmt.plugins.tensorflow_plugin
-  #   class: TensorFlowPlugin
+    optional: false
 
   - name: paddlepaddle
     module: deepmt.plugins.paddle_plugin
     class: PaddlePlugin
+    optional: true
+
+  - name: tensorflow
+    module: deepmt.plugins.tensorflow_plugin
+    class: TensorFlowPlugin
+    optional: true

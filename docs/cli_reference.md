@@ -1231,17 +1231,38 @@ deepmt repo audit --pending-review     # 输出待复核 MR 清单
 
 ### `deepmt health check`
 
-逐一尝试导入所有核心模块，输出通过/警告/错误统计，快速诊断环境问题。
+逐一尝试导入所有核心模块，输出通过/警告/错误统计，快速诊断环境问题。报告头部附带框架运行时版本矩阵（pytorch / numpy / paddlepaddle / tensorflow）。
 
 ```bash
 deepmt health check
+deepmt health check --deep   # 追加插件契约 + 算子可达性 + 目录对账
 ```
 
 **输出示例：**
 
 ```
 总体状态: ✅ healthy
-通过: 22 | 警告: 0 | 错误: 0
+框架运行时版本:
+  ✅ pytorch         2.11.0
+  ✅ numpy           2.4.4
+  ✅ paddlepaddle    3.3.1
+  ⛔ tensorflow      uninstalled
+```
+
+`--deep` 模式额外执行（Phase O）：
+- **插件契约**：反射校验所有登记插件实现 `FrameworkPlugin` 必需原语
+- **算子↔插件可达性**：遍历知识库算子在 pytorch/numpy/paddle 的 `_resolve_operator` 是否成功
+- **目录对账**：知识库中有 MR 但 `OperatorCatalog` 未收录的算子给 WARN
+
+---
+
+### `deepmt health matrix`
+
+输出"算子 × 框架"可达性矩阵（基于知识库全部算子与 `PLUGIN_REGISTRY` 中可用的插件）。
+
+```bash
+deepmt health matrix
+deepmt health matrix --json
 ```
 
 ---

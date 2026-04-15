@@ -235,6 +235,16 @@ class PaddlePlugin(FrameworkPlugin):
 
     _CMP_FN: ClassVar[Dict[str, Any]] = {}       # 延迟初始化
 
+    @classmethod
+    def framework_name(cls) -> str:
+        return "paddlepaddle"
+
+    @classmethod
+    def framework_version(cls) -> str:
+        if not _PADDLE_AVAILABLE:
+            return "uninstalled"
+        return paddle.__version__
+
     def __init__(self) -> None:
         _require_paddle()
         # 延迟初始化类属性（保证 import 本模块不触发 paddle 导入）
@@ -425,14 +435,14 @@ class PaddlePlugin(FrameworkPlugin):
             f"  请在 paddle_plugin._build_paddle_operators 中添加泛化名→paddle 映射。"
         )
 
-    @staticmethod
-    def supported_operators() -> List[str]:
+    @classmethod
+    def supported_operators(cls) -> List[str]:
         """返回支持 PyTorch→PaddlePaddle 跨框架对比的算子列表。"""
         if not _PADDLE_AVAILABLE:
             return []
-        return list(_build_paddle_operators().keys())
+        return sorted(_build_paddle_operators().keys())
 
-    @staticmethod
-    def is_available() -> bool:
+    @classmethod
+    def is_available(cls) -> bool:
         """返回 paddlepaddle 是否已安装。"""
         return _PADDLE_AVAILABLE

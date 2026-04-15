@@ -53,12 +53,22 @@ class PluginsManager:
             name = entry["name"]
             module_path = entry["module"]
             class_name = entry["class"]
+            optional = bool(entry.get("optional", False))
             try:
                 module = importlib.import_module(module_path)
                 cls = getattr(module, class_name)
                 plugin = cls()
                 self.plugins[name] = plugin
                 logger.debug(f"Loaded plugin: {name} ({class_name})")
+            except ImportError as e:
+                if optional:
+                    logger.debug(
+                        f"Optional plugin '{name}' skipped (framework not installed): {e}"
+                    )
+                else:
+                    logger.error(
+                        f"Failed to load plugin '{name}' from {module_path}: {e}"
+                    )
             except Exception as e:
                 logger.error(f"Failed to load plugin '{name}' from {module_path}: {e}")
 

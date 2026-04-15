@@ -208,6 +208,14 @@ class NumpyPlugin(FrameworkPlugin):
 
     # ── 抽象方法实现 ──────────────────────────────────────────────────────────
 
+    @classmethod
+    def framework_name(cls) -> str:
+        return "numpy"
+
+    @classmethod
+    def framework_version(cls) -> str:
+        return np.__version__
+
     def _to_tensor(self, value: Any) -> np.ndarray:
         if isinstance(value, np.ndarray):
             return value.astype(np.float32)
@@ -329,7 +337,7 @@ class NumpyPlugin(FrameworkPlugin):
             )
         return fn
 
-    @staticmethod
-    def supported_operators() -> list:
+    @classmethod
+    def supported_operators(cls) -> list:
         """返回当前支持跨框架对比的算子列表。"""
-        return list(_NUMPY_OPERATORS.keys())
+        return sorted(_NUMPY_OPERATORS.keys())

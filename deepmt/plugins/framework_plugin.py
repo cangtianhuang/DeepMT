@@ -220,3 +220,25 @@ class FrameworkPlugin(ABC):
     def execute(self, run_func: Callable) -> tuple:
         """执行 ir_to_code 返回的闭包"""
         return run_func()
+
+    # ── 框架元信息（子类可覆盖以暴露真实运行时信息） ───────────────────────────
+
+    @classmethod
+    def framework_name(cls) -> str:
+        """框架短名（与 FrameworkType / plugins.yaml 中的 name 对齐）。"""
+        return cls.__name__.replace("Plugin", "").lower()
+
+    @classmethod
+    def framework_version(cls) -> str:
+        """运行时框架版本；未实现时返回 'unknown'。"""
+        return "unknown"
+
+    @classmethod
+    def supported_operators(cls) -> List[str]:
+        """本插件直接映射到实现的泛化算子短名列表（不含通过 _root_modules 动态解析的）。"""
+        return sorted(set(cls._overrides.keys()))
+
+    @classmethod
+    def is_available(cls) -> bool:
+        """插件所依赖的框架是否在当前运行时可用。"""
+        return True

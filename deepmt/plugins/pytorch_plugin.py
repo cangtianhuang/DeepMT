@@ -127,6 +127,14 @@ class PyTorchPlugin(FrameworkPlugin):
         ">=": torch.ge,
     }
 
+    @classmethod
+    def framework_name(cls) -> str:
+        return "pytorch"
+
+    @classmethod
+    def framework_version(cls) -> str:
+        return torch.__version__
+
     def _to_tensor(self, value: Any) -> torch.Tensor:
         if isinstance(value, torch.Tensor):
             return value

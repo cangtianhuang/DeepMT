@@ -12,7 +12,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 
 class HealthStatus(Enum):
@@ -101,9 +101,12 @@ class HealthChecker:
     ]
 
     PLUGIN_MODULES: List[Tuple[str, str]] = [
-        ("deepmt.plugins.pytorch_plugin",        "PyTorch 插件"),
-        ("deepmt.plugins.numpy_plugin",          "NumPy 参考后端"),
-        ("deepmt.plugins.faulty_pytorch_plugin", "缺陷注入插件"),
+        ("deepmt.plugins.pytorch_plugin",            "PyTorch 插件"),
+        ("deepmt.plugins.numpy_plugin",              "NumPy 参考后端"),
+        ("deepmt.plugins.paddle_plugin",             "PaddlePaddle 插件"),
+        ("deepmt.plugins.tensorflow_plugin",         "TensorFlow 插件（可选）"),
+        ("deepmt.plugins.faulty_pytorch_plugin",     "缺陷注入插件 (PyTorch)"),
+        ("deepmt.plugins.faulty_tensorflow_plugin",  "缺陷注入插件 (TensorFlow 骨架)"),
     ]
 
     # ── 可选模块（缺失时为 WARNING，不影响主链）─────────────────────────────
@@ -209,6 +212,185 @@ class HealthChecker:
             ms = (time.time() - start) * 1000
             return CheckResult("pytorch", HealthStatus.ERROR, "PyTorch 未安装（核心依赖，请 pip install torch）", ms)
 
+    # ── Phase O 深度检查 ───────────────────────────────────────────────────────
+
+    def _framework_version_matrix(self) -> List[Tuple[str, str, str]]:
+        """
+        返回 [(framework, version, availability)] 元组列表。
+        availability ∈ {"installed", "uninstalled"}.
+        """
+        from deepmt.plugins import PLUGIN_REGISTRY
+
+        out: List[Tuple[str, str, str]] = []
+        for entry in PLUGIN_REGISTRY:
+            available = entry.is_available()
+            try:
+                cls = entry.load_class()
+                version = cls.framework_version()
+            except Exception:
+                version = "error"
+            out.append((entry.name, version, "installed" if available else "uninstalled"))
+        return out
+
+    def _check_plugin_contract(self) -> List[CheckResult]:
+        """
+        反射校验 PLUGIN_REGISTRY 中每个插件是否实现 FrameworkPlugin 必需原语。
+        仅对 is_available() 为 True 的插件实例化；否则视为可选跳过。
+        """
+        from deepmt.plugins import PLUGIN_REGISTRY
+        from deepmt.plugins.framework_plugin import FrameworkPlugin
+
+        required = [
+            "_to_tensor", "_execute_operator", "to_numpy", "get_shape",
+            "make_tensor", "allclose", "eval_expr", "element_compare",
+        ]
+        results: List[CheckResult] = []
+        for entry in PLUGIN_REGISTRY:
+            key = f"contract.{entry.name}"
+            if not entry.is_available():
+                results.append(CheckResult(
+                    key, HealthStatus.WARNING,
+                    f"{entry.name}: framework uninstalled, contract check skipped",
+                ))
+                continue
+            try:
+                cls = entry.load_class()
+                if not issubclass(cls, FrameworkPlugin):
+                    results.append(CheckResult(
+                        key, HealthStatus.ERROR,
+                        f"{entry.name}: {cls.__name__} 未继承 FrameworkPlugin",
+                    ))
+                    continue
+                missing = [m for m in required if getattr(cls, m, None) is None]
+                if missing:
+                    results.append(CheckResult(
+                        key, HealthStatus.ERROR,
+                        f"{entry.name}: 缺失原语 {missing}",
+                    ))
+                    continue
+                # 尝试实例化（会触发 _require_* 检查）
+                cls()
+                results.append(CheckResult(
+                    key, HealthStatus.HEALTHY,
+                    f"{entry.name}: 契约完整（{len(required)} 原语）",
+                ))
+            except Exception as e:
+                results.append(CheckResult(
+                    key, HealthStatus.ERROR,
+                    f"{entry.name}: 契约校验失败 {e}",
+                ))
+        return results
+
+    def _check_mr_plugin_reachability(self) -> List[CheckResult]:
+        """
+        对知识库中每个算子，检查其在已装载的核心参考插件中是否可达。
+        仅检查 pytorch / numpy / paddlepaddle，不要求所有插件都可达。
+        不可达时 WARN，不 ERROR。
+        """
+        from deepmt.mr_generator.base.mr_repository import MRRepository
+        from deepmt.plugins import PLUGIN_REGISTRY
+
+        results: List[CheckResult] = []
+        try:
+            repo = MRRepository()
+            operators = sorted({p.stem for p in repo.repo_dir.glob("*.yaml")})
+        except Exception as e:
+            return [CheckResult("reachability", HealthStatus.ERROR, f"知识库访问失败: {e}")]
+
+        available_plugins = []
+        for entry in PLUGIN_REGISTRY:
+            if entry.name in ("pytorch", "numpy", "paddlepaddle") and entry.is_available():
+                try:
+                    available_plugins.append((entry.name, entry.load_class()()))
+                except Exception:
+                    continue
+
+        for op in operators:
+            gaps = []
+            for name, plugin in available_plugins:
+                try:
+                    plugin._resolve_operator(op)
+                except Exception:
+                    gaps.append(name)
+            if gaps:
+                results.append(CheckResult(
+                    f"reach.{op}", HealthStatus.WARNING,
+                    f"算子 '{op}' 未在插件映射: {gaps}",
+                ))
+            else:
+                results.append(CheckResult(
+                    f"reach.{op}", HealthStatus.HEALTHY,
+                    f"算子 '{op}' 全部可达",
+                ))
+        return results
+
+    def _check_catalog_gap(self) -> CheckResult:
+        """知识库有 MR 但算子目录未收录时给 WARN。"""
+        try:
+            from deepmt.mr_generator.base.mr_repository import MRRepository
+            from deepmt.mr_generator.base.operator_catalog import OperatorCatalog
+
+            repo = MRRepository()
+            repo_ops = {p.stem for p in repo.repo_dir.glob("*.yaml")}
+            catalog = OperatorCatalog()
+            catalog_ops = set()
+            try:
+                catalog_ops = set(catalog.list_operators())  # 尽力尝试
+            except Exception:
+                pass
+            gaps = sorted(repo_ops - catalog_ops)
+            if not gaps:
+                return CheckResult(
+                    "catalog_gap", HealthStatus.HEALTHY,
+                    "知识库算子全部在目录中",
+                )
+            return CheckResult(
+                "catalog_gap", HealthStatus.WARNING,
+                f"以下算子在知识库中有 MR 但未收录算子目录: {gaps}",
+            )
+        except Exception as e:
+            return CheckResult("catalog_gap", HealthStatus.WARNING, f"目录对账失败: {e}")
+
+    def run_deep_checks(self) -> HealthReport:
+        """快速检查 + 插件契约 + MR↔插件可达性 + 目录对账。"""
+        base = self.run_all_checks()
+        base.results.extend(self._check_plugin_contract())
+        base.results.extend(self._check_mr_plugin_reachability())
+        base.results.append(self._check_catalog_gap())
+        return base
+
+    def compute_reachability_matrix(self) -> Dict[str, Dict[str, bool]]:
+        """
+        产出 {operator: {framework: bool}} 可达性矩阵。
+        framework 范围取自 PLUGIN_REGISTRY 中可用的插件。
+        """
+        from deepmt.mr_generator.base.mr_repository import MRRepository
+        from deepmt.plugins import PLUGIN_REGISTRY
+
+        repo = MRRepository()
+        operators = sorted({p.stem for p in repo.repo_dir.glob("*.yaml")})
+        matrix: Dict[str, Dict[str, bool]] = {}
+
+        plugins: List[Tuple[str, Any]] = []
+        for entry in PLUGIN_REGISTRY:
+            if not entry.is_available():
+                continue
+            try:
+                plugins.append((entry.name, entry.load_class()()))
+            except Exception:
+                continue
+
+        for op in operators:
+            row: Dict[str, bool] = {}
+            for name, plugin in plugins:
+                try:
+                    plugin._resolve_operator(op)
+                    row[name] = True
+                except Exception:
+                    row[name] = False
+            matrix[op] = row
+        return matrix
+
     # ── 主检查入口 ─────────────────────────────────────────────────────────────
 
     def run_all_checks(self) -> HealthReport:
@@ -257,6 +439,14 @@ class HealthChecker:
         print(f"检查时间: {report.timestamp.strftime('%Y-%m-%d %H:%M:%S')}")
         print(f"总体状态: {overall_icon} {report.overall_status.value.upper()}")
         print(f"通过: {report.healthy_count}  警告: {report.warning_count}  错误: {report.error_count}")
+        # 框架版本矩阵
+        matrix = self._framework_version_matrix()
+        if matrix:
+            print("─" * 64)
+            print("框架运行时版本:")
+            for name, version, avail in matrix:
+                mark = "✅" if avail == "installed" else "⛔"
+                print(f"  {mark} {name:<15} {version}")
         print("─" * 64)
 
         # 分类展示
@@ -271,6 +461,19 @@ class HealthChecker:
             ("数据目录",    [p for p, _ in self.DATA_DIRS]),
             ("运行时",      ["mr_repository", "results_db"]),
         ]
+
+        # 追加深度检查的结果
+        all_known_keys = {k for _, keys in sections for k in keys}
+        deep_keys = [r.name for r in report.results if r.name not in all_known_keys]
+        contract_keys = [k for k in deep_keys if k.startswith("contract.")]
+        reach_keys = [k for k in deep_keys if k.startswith("reach.")]
+        misc_keys = [k for k in deep_keys if k not in contract_keys + reach_keys]
+        if contract_keys:
+            sections.append(("插件契约（深度）", contract_keys))
+        if reach_keys:
+            sections.append(("算子↔插件可达性（深度）", reach_keys))
+        if misc_keys:
+            sections.append(("其他深度检查", misc_keys))
 
         result_map = {r.name: r for r in report.results}
 

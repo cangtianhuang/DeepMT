@@ -18,19 +18,62 @@ def health():
 
 
 @health.command("check")
-def health_check():
+@click.option("--deep", is_flag=True, help="追加插件契约、算子可达性与目录对账检查")
+def health_check(deep: bool):
     """运行系统健康检查（配置、依赖、数据库连接等）。
 
     \b
     示例:
       deepmt health check
+      deepmt health check --deep
     """
     try:
         from deepmt.core.health_checker import HealthChecker
         checker = HealthChecker()
-        checker.print_report()
+        if deep:
+            report = checker.run_deep_checks()
+            checker.print_report(report)
+        else:
+            checker.print_report()
     except Exception as e:
         click.echo(click.style(f"健康检查失败: {e}", fg="red"), err=True)
+        sys.exit(1)
+
+
+@health.command("matrix")
+@click.option("--json", "as_json", is_flag=True, help="输出 JSON 格式")
+def health_matrix(as_json: bool):
+    """输出算子 × 框架 可达性矩阵。
+
+    \b
+    示例:
+      deepmt health matrix
+      deepmt health matrix --json
+    """
+    try:
+        from deepmt.core.health_checker import HealthChecker
+        checker = HealthChecker()
+        matrix = checker.compute_reachability_matrix()
+        if as_json:
+            import json
+            click.echo(json.dumps(matrix, indent=2, ensure_ascii=False))
+            return
+        if not matrix:
+            click.echo("（知识库为空或无可用插件）")
+            return
+        frameworks = sorted({f for row in matrix.values() for f in row})
+        header = "operator".ljust(20) + "".join(f.ljust(16) for f in frameworks)
+        click.echo(header)
+        click.echo("─" * len(header))
+        for op in sorted(matrix):
+            row = matrix[op]
+            cells = []
+            for f in frameworks:
+                mark = "✅" if row.get(f) else "·"
+                cells.append(f"  {mark}".ljust(16))
+            click.echo(op.ljust(20) + "".join(cells))
+    except Exception as e:
+        click.echo(click.style(f"matrix 生成失败: {e}", fg="red"), err=True)
         sys.exit(1)
 
 

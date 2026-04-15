@@ -26,8 +26,9 @@ DeepMT（Deep Metamorphic Testing）是面向深度学习框架（PyTorch、Tens
 | Phase J：应用层语义MR生成与验证       | ✅ 完成   | `docs/dev/archived/10_Phase_J_应用层语义MR生成与验证.md`       |
 | Phase K：全层MR质量保障与知识库治理   | ✅ 完成   | `docs/dev/11_Phase_K_全层MR质量保障与统一知识库治理.md`        |
 | Phase L：论文实验基准与自动化数据生产 | ✅ 完成   | `docs/dev/12_Phase_L_论文实验基准与自动化数据生产线.md`        |
-| Phase M：真实缺陷挖掘与案例沉淀       | ⬜ 未开始 | `docs/dev/13_Phase_M_真实缺陷挖掘与案例沉淀.md`                |
+| Phase M：真实缺陷挖掘与案例沉淀       | 🔄 进行中 | `docs/dev/13_Phase_M_真实缺陷挖掘与案例沉淀.md`                |
 | Phase N：论文交付收口与复现资产封装   | ⬜ 未开始 | `docs/dev/14_Phase_N_论文交付收口与复现资产封装.md`            |
+| Phase O：核心框架插件闭环与健康管理   | ⬜ 未开始 | `docs/dev/16_Phase_O_framework_plugin_closure_and_health.md`   |
 
 **当前主链：** A~L 已完成 → **下一步：真实缺陷挖掘与案例沉淀（Phase M）**
 
