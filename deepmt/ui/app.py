@@ -16,7 +16,7 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
 from deepmt import __version__
-from deepmt.ui.routers import api, cross_framework, mr_repo, overview, test_results
+from deepmt.ui.routers import api, cases, cross_framework, frameworks, mr_repo, overview, quality, test_results
 
 _STATIC_DIR = Path(__file__).parent / "static"
 _STATIC_DIR.mkdir(parents=True, exist_ok=True)
@@ -45,6 +45,9 @@ def create_app() -> FastAPI:
     app.include_router(mr_repo.router)
     app.include_router(test_results.router)
     app.include_router(cross_framework.router)
+    app.include_router(frameworks.router)
+    app.include_router(quality.router)
+    app.include_router(cases.router)
 
     # JSON API（前缀 /api）
     app.include_router(api.router, prefix="/api")

@@ -631,6 +631,26 @@
             <i class="bi bi-arrow-left-right"></i><span>跨框架</span>
           </a>
         </li>
+        <li class="nav-item" style="margin-left:.25rem;">
+          <div style="width:1px; height:16px; background:var(--border); margin:auto .25rem;"></div>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if active_page=='frameworks' %}active{% endif %}" href="/frameworks"
+             style="{% if active_page=='frameworks' %}--kpi-c:var(--c-rq3);{% endif %}">
+            <i class="bi bi-cpu-fill"></i><span>框架信息</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if active_page=='quality' %}active{% endif %}" href="/quality">
+            <i class="bi bi-shield-check"></i><span>MR 质量</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if active_page=='cases' %}active{% endif %}" href="/cases"
+             style="{% if active_page=='cases' %}color:var(--c-rq2) !important;{% endif %}">
+            <i class="bi bi-bug-fill"></i><span>缺陷案例</span>
+          </a>
+        </li>
       </ul>
 
       <div class="d-flex align-items-center gap-3">

@@ -1,0 +1,470 @@
+{% extends "base.html" %}
+{% block title %}真实缺陷案例 — DeepMT Dashboard{% endblock %}
+
+{% block extra_head %}
+<style>
+  :root {
+    --page-accent:     #ff5252;
+    --page-accent-dim: rgba(255,82,82,.12);
+    --page-accent-glow:rgba(255,82,82,.38);
+  }
+
+  /* ── 状态标签 ───────────────────────────────────────────────────────── */
+  .case-status {
+    display: inline-flex; align-items: center; gap: .3rem;
+    padding: .18rem .6rem; border-radius: 99px; font-size: .66rem;
+    font-weight: 700; letter-spacing: .04em; text-transform: uppercase; border: 1px solid;
+  }
+  .case-status-confirmed { color:#00e5b0; border-color:rgba(0,229,176,.35); background:rgba(0,229,176,.08); }
+  .case-status-draft     { color:#ffcc00; border-color:rgba(255,204,0,.35); background:rgba(255,204,0,.08); }
+  .case-status-closed    { color:#3d5570; border-color:rgba(61,85,112,.35); background:rgba(61,85,112,.08); }
+
+  /* ── 严重程度标签 ──────────────────────────────────────────────────── */
+  .severity-dot {
+    width:8px; height:8px; border-radius:50%; display:inline-block; flex-shrink:0;
+  }
+  .sev-critical { background:#ff1744; box-shadow:0 0 8px #ff174499; }
+  .sev-high     { background:#ff5252; box-shadow:0 0 6px #ff525266; }
+  .sev-medium   { background:#ffcc00; box-shadow:0 0 5px #ffcc0066; }
+  .sev-low      { background:#00e5b0; box-shadow:0 0 5px #00e5b066; }
+  .sev-unknown  { background:#3d5570; }
+
+  /* ── 详情面板 ──────────────────────────────────────────────────────── */
+  .detail-panel {
+    position: fixed; top: 58px; right: 0; bottom: 0;
+    width: min(560px, 90vw);
+    background: var(--surface);
+    border-left: 1px solid var(--border-bright);
+    box-shadow: -8px 0 40px rgba(0,0,0,.65);
+    z-index: 500;
+    display: flex; flex-direction: column;
+    transform: translateX(100%);
+    transition: transform .3s cubic-bezier(.4,0,.2,1);
+    overflow: hidden;
+  }
+  .detail-panel.open { transform: translateX(0); }
+  .detail-panel-header {
+    padding: 1rem 1.2rem; border-bottom: 1px solid var(--border);
+    background: rgba(13,21,37,.9); flex-shrink: 0;
+    display: flex; align-items: center; gap: .75rem;
+  }
+  .detail-panel-body {
+    flex: 1; overflow-y: auto; padding: 1.2rem;
+  }
+  .detail-section {
+    margin-bottom: 1.2rem;
+  }
+  .detail-section-title {
+    font-size: .68rem; font-weight: 700; letter-spacing: .09em;
+    text-transform: uppercase; color: var(--text-dim);
+    margin-bottom: .5rem;
+    display: flex; align-items: center; gap: .4rem;
+  }
+  .detail-section-title::after { content:''; flex:1; height:1px; background:var(--border); }
+
+  /* ── 字段行 ─────────────────────────────────────────────────────────── */
+  .field-row {
+    display: flex; gap: .75rem; margin-bottom: .45rem; font-size: .82rem;
+  }
+  .field-label { width: 90px; color: var(--text-dim); flex-shrink: 0; font-size: .76rem; }
+  .field-value { color: var(--text); word-break: break-word; }
+
+  /* ── 覆盖层（面板打开时） ───────────────────────────────────────────── */
+  #panel-overlay {
+    position: fixed; inset: 58px 0 0 0;
+    background: rgba(0,0,0,.4);
+    z-index: 499; display: none;
+  }
+  #panel-overlay.show { display: block; }
+
+  /* ── 过滤器 ─────────────────────────────────────────────────────────── */
+  .status-filter-pill {
+    padding: .25rem .75rem; border-radius: 99px; font-size: .74rem;
+    font-weight: 600; cursor: pointer; border: 1px solid var(--border);
+    color: var(--text-dim); background: var(--surface-2);
+    transition: var(--transition);
+  }
+  .status-filter-pill.active {
+    border-color: var(--page-accent); color: var(--page-accent);
+    background: var(--page-accent-dim);
+    box-shadow: 0 0 10px var(--page-accent-glow);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-wrap">
+
+  <!-- ── Header ──────────────────────────────────────────────────────── -->
+  <div class="page-hd d-flex justify-content-between align-items-start">
+    <div>
+      <h4>真实缺陷案例</h4>
+      <p>Phase M 挖掘 &ensp;·&ensp; 可复现案例包 &ensp;·&ensp; 论文案例分析</p>
+    </div>
+    <button class="btn btn-sm btn-outline-secondary" onclick="loadCases()">
+      <i class="bi bi-arrow-clockwise me-1"></i>刷新
+    </button>
+  </div>
+
+  <!-- ── KPI ─────────────────────────────────────────────────────────── -->
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-3 anim-up d1">
+      <div class="card kpi-card text-center"
+           style="--kpi-c:var(--page-accent); --kpi-glow:var(--page-accent-glow);">
+        <div class="kpi-num" id="kpi-total">—</div>
+        <div class="kpi-sub mt-2">案例总数</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3 anim-up d2">
+      <div class="card kpi-card text-center"
+           style="--kpi-c:var(--success); --kpi-glow:var(--success-glow);">
+        <div class="kpi-num" id="kpi-confirmed">—</div>
+        <div class="kpi-sub mt-2">已确认</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3 anim-up d3">
+      <div class="card kpi-card text-center"
+           style="--kpi-c:var(--danger); --kpi-glow:var(--danger-glow);">
+        <div class="kpi-num" id="kpi-high">—</div>
+        <div class="kpi-sub mt-2">高/严重</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3 anim-up d4">
+      <div class="card kpi-card text-center"
+           style="--kpi-c:var(--warning); --kpi-glow:var(--warning-glow);">
+        <div class="kpi-num" id="kpi-draft">—</div>
+        <div class="kpi-sub mt-2">待分析</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 过滤器 ────────────────────────────────────────────────────────── -->
+  <div class="d-flex flex-wrap gap-2 align-items-center mb-3 anim-up d2">
+    <span class="status-filter-pill active" data-status="" onclick="setFilter('', this)">
+      全部
+    </span>
+    <span class="status-filter-pill" data-status="confirmed" onclick="setFilter('confirmed', this)">
+      <i class="bi bi-check-circle-fill me-1" style="color:var(--success); font-size:.7rem;"></i>已确认
+    </span>
+    <span class="status-filter-pill" data-status="draft" onclick="setFilter('draft', this)">
+      <i class="bi bi-pencil-fill me-1" style="color:var(--warning); font-size:.7rem;"></i>草稿
+    </span>
+    <span class="status-filter-pill" data-status="closed" onclick="setFilter('closed', this)">
+      <i class="bi bi-lock-fill me-1" style="font-size:.7rem;"></i>已关闭
+    </span>
+
+    <div style="margin-left:auto; position:relative; min-width:200px; max-width:280px;">
+      <i class="bi bi-search" style="position:absolute; left:.65rem; top:50%;
+         transform:translateY(-50%); color:var(--text-dim); font-size:.78rem;"></i>
+      <input type="text" class="form-control form-control-sm"
+             id="case-search" placeholder="搜索算子、框架、描述…"
+             oninput="renderTable()"
+             style="padding-left:2rem; border-radius:99px;">
+    </div>
+  </div>
+
+  <!-- ── Case Table ──────────────────────────────────────────────────── -->
+  <div class="card anim-up d3">
+    <div class="card-header d-flex align-items-center gap-2">
+      <i class="bi bi-bug-fill" style="color:var(--page-accent);"></i>
+      <span class="fw-semibold">缺陷案例列表</span>
+      <span id="case-count" style="font-size:.73rem; color:var(--text-dim); margin-left:.3rem;"></span>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead>
+            <tr>
+              <th class="ps-4" style="width:8rem;">案例 ID</th>
+              <th>算子 / 场景</th>
+              <th>框架</th>
+              <th>层次</th>
+              <th>缺陷类型</th>
+              <th>严重度</th>
+              <th>状态</th>
+              <th>时间</th>
+            </tr>
+          </thead>
+          <tbody id="cases-tbody">
+            <tr><td colspan="8">
+              <div class="py-3 px-4">
+                <div class="skeleton mb-2"></div>
+                <div class="skeleton mb-2" style="width:75%;"></div>
+                <div class="skeleton" style="width:50%;"></div>
+              </div>
+            </td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ── 详情面板 ──────────────────────────────────────────────────────── -->
+<div id="panel-overlay" onclick="closePanel()"></div>
+<div class="detail-panel" id="detail-panel">
+  <div class="detail-panel-header">
+    <div style="flex:1; min-width:0;">
+      <div style="font-size:.7rem; color:var(--text-dim); margin-bottom:.2rem;">案例详情</div>
+      <div id="panel-title" style="font-size:.95rem; font-weight:700; color:var(--text-bright);
+           overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">—</div>
+    </div>
+    <button class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="closePanel()"
+            style="font-size:.72rem; flex-shrink:0;">
+      <i class="bi bi-x-lg"></i>
+    </button>
+  </div>
+  <div class="detail-panel-body" id="panel-body">
+    <div class="empty-state"><i class="bi bi-file-earmark-text"></i><div>选择案例查看详情</div></div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+let _allCases = [];
+let _statusFilter = '';
+
+const SEV_COLORS  = { critical:'#ff1744', high:'#ff5252', medium:'#ffcc00', low:'#00e5b0', unknown:'#3d5570' };
+const SEV_LABELS  = { critical:'严重', high:'高', medium:'中', low:'低', unknown:'—' };
+const LAYER_LABELS = { operator:'算子层', model:'模型层', application:'应用层' };
+
+function sevLabel(s) { return SEV_LABELS[s] || s || '—'; }
+
+async function loadCases() {
+  try {
+    const resp = await fetch('/api/cases');
+    const json = await resp.json();
+    _allCases = json.data || [];
+
+    countUp(document.getElementById('kpi-total'), _allCases.length);
+    countUp(document.getElementById('kpi-confirmed'),
+      _allCases.filter(c => c.status === 'confirmed').length);
+    countUp(document.getElementById('kpi-high'),
+      _allCases.filter(c => ['critical','high'].includes(c.severity)).length);
+    countUp(document.getElementById('kpi-draft'),
+      _allCases.filter(c => c.status === 'draft').length);
+
+    renderTable();
+
+    // 如果 URL 有 case_id（从 /cases/{id} 路由进来），直接打开对应面板
+    const pathParts = location.pathname.split('/');
+    if (pathParts.length === 3 && pathParts[1] === 'cases' && pathParts[2]) {
+      const caseId = pathParts[2];
+      const c = _allCases.find(x => x.case_id === caseId);
+      if (c) openPanel(c.case_id);
+    }
+  } catch (e) { console.warn('案例加载失败:', e); }
+}
+
+function setFilter(status, el) {
+  document.querySelectorAll('.status-filter-pill').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  _statusFilter = status;
+  renderTable();
+}
+
+function renderTable() {
+  const q = (document.getElementById('case-search').value || '').trim().toLowerCase();
+  const filtered = _allCases.filter(c => {
+    if (_statusFilter && c.status !== _statusFilter) return false;
+    if (q && !(`${c.operator} ${c.framework} ${c.summary || ''} ${c.defect_type || ''}`).toLowerCase().includes(q))
+      return false;
+    return true;
+  });
+
+  document.getElementById('case-count').textContent = `共 ${filtered.length} 项`;
+  const tbody = document.getElementById('cases-tbody');
+
+  if (!filtered.length) {
+    tbody.innerHTML = `<tr><td colspan="8">
+      <div class="empty-state">
+        <i class="bi bi-database-x"></i>
+        <div>暂无案例，请先运行 <code>deepmt case build</code></div>
+      </div></td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = filtered.map((c, i) => {
+    const statusCls = `case-status-${c.status || 'draft'}`;
+    const statusLabel = { confirmed:'已确认', draft:'草稿', closed:'已关闭' }[c.status] || c.status;
+    const sevColor = SEV_COLORS[c.severity] || SEV_COLORS.unknown;
+    const sevLabelText = sevLabel(c.severity);
+    const layerColor = c.layer === 'operator' ? '#4d8bff' : c.layer === 'model' ? '#a855f7' : '#00e5b0';
+    const defType = (c.defect_type || '—').replace(/_/g, ' ');
+    const date = c.created_at ? c.created_at.slice(0, 10) : '—';
+
+    return `<tr onclick="openPanel('${c.case_id}')"
+                style="cursor:pointer; animation:revealUp .3s both; animation-delay:${i*.03}s;">
+      <td class="ps-4">
+        <code style="font-size:.75rem; color:var(--page-accent);">${c.case_id}</code>
+      </td>
+      <td>
+        <div style="font-weight:600; font-size:.82rem; color:var(--text-bright);">${c.operator || '—'}</div>
+        <div style="font-size:.7rem; color:var(--text-dim); max-width:160px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${c.mr_description || ''}">${c.mr_description || ''}</div>
+      </td>
+      <td><span class="badge badge-template" style="font-size:.66rem;">${c.framework || '—'}</span></td>
+      <td><span style="font-size:.72rem; color:${layerColor}; font-weight:600;">${LAYER_LABELS[c.layer] || c.layer || '—'}</span></td>
+      <td><span style="font-size:.75rem; color:var(--text-dim);">${defType}</span></td>
+      <td>
+        <div class="d-flex align-items-center gap-2">
+          <span class="severity-dot sev-${c.severity || 'unknown'}"></span>
+          <span style="font-size:.75rem; color:${sevColor}; font-weight:600;">${sevLabelText}</span>
+        </div>
+      </td>
+      <td><span class="case-status ${statusCls}">${statusLabel}</span></td>
+      <td style="font-size:.73rem; color:var(--text-dim);">${date}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── 详情面板 ──────────────────────────────────────────────────────────────────
+async function openPanel(caseId) {
+  document.getElementById('detail-panel').classList.add('open');
+  document.getElementById('panel-overlay').classList.add('show');
+  document.getElementById('panel-title').textContent = `#${caseId}`;
+  document.getElementById('panel-body').innerHTML = `
+    <div class="skeleton mb-3" style="height:20px;"></div>
+    <div class="skeleton mb-3" style="height:14px; width:70%;"></div>
+    <div class="skeleton" style="height:100px;"></div>`;
+
+  try {
+    const resp = await fetch(`/api/cases/${caseId}`);
+    const json = await resp.json();
+    if (json.error) { renderPanelError(json.error); return; }
+    renderPanelContent(json.data);
+  } catch (e) { renderPanelError(String(e)); }
+}
+
+function closePanel() {
+  document.getElementById('detail-panel').classList.remove('open');
+  document.getElementById('panel-overlay').classList.remove('show');
+}
+
+function renderPanelError(msg) {
+  document.getElementById('panel-body').innerHTML = `
+    <div class="empty-state"><i class="bi bi-exclamation-triangle"></i><div>${msg}</div></div>`;
+}
+
+function renderPanelContent(c) {
+  const sevColor = SEV_COLORS[c.severity] || SEV_COLORS.unknown;
+  const layerColor = c.layer === 'operator' ? '#4d8bff' : c.layer === 'model' ? '#a855f7' : '#00e5b0';
+  const statusCls = `case-status-${c.status || 'draft'}`;
+  const statusLabel = { confirmed:'已确认', draft:'草稿', closed:'已关闭' }[c.status] || c.status;
+
+  document.getElementById('panel-title').textContent = `${c.operator || '—'} · #${c.case_id}`;
+
+  let html = `
+    <div class="d-flex flex-wrap gap-2 mb-3">
+      <span class="case-status ${statusCls}">${statusLabel}</span>
+      <span style="font-size:.72rem; color:${sevColor}; font-weight:700; border:1px solid ${sevColor}44;
+           background:${sevColor}11; padding:.18rem .6rem; border-radius:99px;">
+        <span class="severity-dot sev-${c.severity || 'unknown'}" style="margin-right:.3rem;"></span>
+        ${sevLabel(c.severity)}
+      </span>
+      <span style="font-size:.72rem; color:${layerColor}; font-weight:600; border:1px solid ${layerColor}44;
+           background:${layerColor}11; padding:.18rem .6rem; border-radius:99px;">
+        ${LAYER_LABELS[c.layer] || c.layer || '—'}
+      </span>
+    </div>`;
+
+  if (c.summary) {
+    html += `<div class="detail-section">
+      <div class="detail-section-title"><i class="bi bi-chat-quote-fill"></i>摘要</div>
+      <div style="font-size:.85rem; color:var(--text); line-height:1.7;">${escHtml(c.summary)}</div>
+    </div>`;
+  }
+
+  html += `<div class="detail-section">
+    <div class="detail-section-title"><i class="bi bi-info-circle-fill"></i>基本信息</div>
+    ${fieldRow('案例 ID', `<code>${c.case_id}</code>`)}
+    ${fieldRow('算子', c.operator ? `<code>${c.operator}</code>` : '—')}
+    ${fieldRow('框架', `<span class="badge badge-template">${c.framework || '—'}</span>${c.framework_version ? ` <span style="color:var(--text-dim);font-size:.75rem;">v${c.framework_version}</span>` : ''}`)}
+    ${fieldRow('MR ID', c.mr_id ? `<code style="font-size:.72rem;">${c.mr_id}</code>` : '—')}
+    ${fieldRow('MR 描述', c.mr_description || '—')}
+    ${fieldRow('缺陷类型', (c.defect_type || '—').replace(/_/g, ' '))}
+    ${fieldRow('创建时间', c.created_at ? c.created_at.slice(0,19) : '—')}
+  </div>`;
+
+  if (c.oracle_violation) {
+    html += `<div class="detail-section">
+      <div class="detail-section-title"><i class="bi bi-x-octagon-fill" style="color:var(--danger);"></i>Oracle 违反</div>
+      <div style="font-size:.8rem; color:var(--danger); font-family:var(--font-mono);
+           background:rgba(255,82,82,.06); border:1px solid rgba(255,82,82,.2);
+           border-radius:6px; padding:.6rem .8rem; word-break:break-word;">
+        ${escHtml(c.oracle_violation)}
+      </div>
+    </div>`;
+  }
+
+  if (c.root_cause) {
+    html += `<div class="detail-section">
+      <div class="detail-section-title"><i class="bi bi-diagram-2-fill"></i>根因分析</div>
+      <div style="font-size:.82rem; color:var(--text); line-height:1.7;">${escHtml(c.root_cause)}</div>
+    </div>`;
+  }
+
+  if (c.affected_versions && c.affected_versions.length) {
+    html += `<div class="detail-section">
+      <div class="detail-section-title"><i class="bi bi-tag-fill"></i>受影响版本</div>
+      <div>${c.affected_versions.map(v => `<span class="badge badge-checked me-1">${escHtml(v)}</span>`).join('')}</div>
+    </div>`;
+  }
+
+  if (c.reproduction_steps) {
+    html += `<div class="detail-section">
+      <div class="detail-section-title"><i class="bi bi-play-circle-fill"></i>复现步骤</div>
+      <div class="code-block-wrap">
+        <pre class="code-block" id="repro-code">${escHtml(c.reproduction_steps)}</pre>
+        <button class="code-copy-btn" onclick="copyCode('repro-code')">
+          <i class="bi bi-clipboard"></i> 复制
+        </button>
+      </div>
+    </div>`;
+  }
+
+  if (c.evidence_pack_path) {
+    html += `<div class="detail-section">
+      <div class="detail-section-title"><i class="bi bi-folder2-open"></i>证据来源</div>
+      <code style="font-size:.73rem; word-break:break-all;">${escHtml(c.evidence_pack_path)}</code>
+    </div>`;
+  }
+
+  if (c.notes) {
+    html += `<div class="detail-section">
+      <div class="detail-section-title"><i class="bi bi-sticky-fill"></i>备注</div>
+      <div style="font-size:.82rem; color:var(--text-dim); line-height:1.7;">${escHtml(c.notes)}</div>
+    </div>`;
+  }
+
+  document.getElementById('panel-body').innerHTML = html;
+}
+
+function fieldRow(label, value) {
+  return `<div class="field-row">
+    <span class="field-label">${label}</span>
+    <span class="field-value">${value}</span>
+  </div>`;
+}
+
+function escHtml(s) {
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+}
+
+function copyCode(id) {
+  const el = document.getElementById(id);
+  navigator.clipboard?.writeText(el.textContent).then(() => showToast('已复制'));
+}
+
+// 键盘关闭
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closePanel();
+});
+
+loadCases();
+</script>
+{% endblock %}

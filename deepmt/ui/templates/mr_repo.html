@@ -9,23 +9,66 @@
     --page-accent-glow:rgba(168,85,247,.35);
   }
 
-  /* Filter pill group */
+  /* ── 三层 Tab ───────────────────────────────────────────────────────── */
+  .layer-tabs {
+    display: flex; gap: .5rem;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: .3rem;
+    margin-bottom: 1.2rem;
+  }
+  .layer-tab {
+    flex: 1; text-align: center; padding: .45rem .6rem;
+    border-radius: 6px; font-size: .8rem; font-weight: 600;
+    cursor: pointer; border: 1px solid transparent;
+    transition: var(--transition); color: var(--text-dim);
+    display: flex; align-items: center; justify-content: center; gap: .4rem;
+  }
+  .layer-tab:hover { color: var(--text); background: rgba(255,255,255,.04); }
+  .layer-tab.active {
+    color: var(--layer-color, var(--primary)) !important;
+    background: rgba(255,255,255,.06);
+    border-color: var(--layer-color, var(--primary));
+    box-shadow: 0 0 12px rgba(0,0,0,.3), inset 0 0 8px rgba(255,255,255,.03);
+  }
+  .layer-tab[data-layer="operator"]    { --layer-color: #4d8bff; }
+  .layer-tab[data-layer="model"]       { --layer-color: #a855f7; }
+  .layer-tab[data-layer="application"] { --layer-color: #00e5b0; }
+
+  /* ── Filter pill ─────────────────────────────────────────────────── */
   .filter-pill {
     display: inline-flex; align-items: center; gap: .4rem;
     padding: .28rem .75rem; border-radius: 99px; font-size: .78rem;
     background: var(--surface-2); border: 1px solid var(--border);
-    color: var(--text-dim); cursor: pointer;
-    transition: var(--transition);
+    color: var(--text-dim); cursor: pointer; transition: var(--transition);
     white-space: nowrap;
   }
-  .filter-pill:hover {
-    border-color: var(--page-accent);
-    color: var(--text-bright);
-  }
+  .filter-pill:hover { border-color: var(--page-accent); color: var(--text-bright); }
   .filter-pill select, .filter-pill input[type="checkbox"] {
     background: transparent; border: none; outline: none;
-    color: inherit; font-size: inherit; cursor: pointer;
-    padding: 0; margin: 0;
+    color: inherit; font-size: inherit; cursor: pointer; padding: 0; margin: 0;
+  }
+
+  /* ── Subject card（模型/应用层展示）────────────────────────────────── */
+  .subject-card {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: .9rem 1rem;
+    transition: var(--transition);
+    cursor: pointer;
+  }
+  .subject-card:hover {
+    border-color: var(--layer-active-color, var(--primary));
+    box-shadow: 0 0 16px var(--layer-active-glow, var(--primary-glow));
+    transform: translateY(-2px);
+  }
+  .subject-tag {
+    display:inline-block; padding:.18rem .55rem;
+    border-radius:4px; font-size:.68rem; font-weight:600;
+    background:rgba(255,255,255,.06); border:1px solid var(--border);
+    color:var(--text-dim); margin:.15rem .1rem;
   }
 </style>
 {% endblock %}
@@ -36,7 +79,23 @@
   <!-- ── Header ──────────────────────────────────────────────────────── -->
   <div class="page-hd">
     <h4>MR 知识库</h4>
-    <p>算子列表 &ensp;·&ensp; MR 统计 &ensp;·&ensp; 来源与分类分布</p>
+    <p>三层蜕变关系 &ensp;·&ensp; 算子 / 模型 / 应用 &ensp;·&ensp; 来源分布与验证状态</p>
+  </div>
+
+  <!-- ── 三层 Tab ─────────────────────────────────────────────────────── -->
+  <div class="layer-tabs anim-up d1">
+    <div class="layer-tab active" data-layer="operator" onclick="switchLayer('operator')">
+      <i class="bi bi-cpu"></i> 算子层
+      <span id="tab-badge-op" style="font-size:.65rem; color:var(--text-dim); font-weight:400;"></span>
+    </div>
+    <div class="layer-tab" data-layer="model" onclick="switchLayer('model')">
+      <i class="bi bi-diagram-3"></i> 模型层
+      <span id="tab-badge-mo" style="font-size:.65rem; color:var(--text-dim); font-weight:400;"></span>
+    </div>
+    <div class="layer-tab" data-layer="application" onclick="switchLayer('application')">
+      <i class="bi bi-app-indicator"></i> 应用层
+      <span id="tab-badge-ap" style="font-size:.65rem; color:var(--text-dim); font-weight:400;"></span>
+    </div>
   </div>
 
   <!-- ── Filter Bar ──────────────────────────────────────────────────── -->
@@ -48,8 +107,6 @@
           <i class="bi bi-layers" style="color:var(--page-accent); font-size:.8rem;"></i>
           <select id="filter-framework" onchange="applyFilters()">
             <option value="">全部框架</option>
-            <option value="pytorch">PyTorch</option>
-            <option value="numpy">NumPy</option>
           </select>
         </label>
 
@@ -81,7 +138,7 @@
             <i class="bi bi-search" style="position:absolute; left:.65rem; top:50%;
                transform:translateY(-50%); color:var(--text-dim); font-size:.78rem;"></i>
             <input type="text" class="form-control form-control-sm"
-                   id="filter-search" placeholder="搜索算子名称…"
+                   id="filter-search" placeholder="搜索名称…"
                    oninput="applyFilters()"
                    style="padding-left:2rem; border-radius:99px;">
           </div>
@@ -114,15 +171,15 @@
     <div class="col-6 col-md-3 anim-up d3">
       <div class="card kpi-card text-center"
            style="--kpi-c:var(--info); --kpi-glow:var(--info-glow);">
-        <div class="kpi-num" id="stat-operators">—</div>
-        <div class="kpi-sub mt-2">覆盖算子</div>
+        <div class="kpi-num" id="stat-subjects">—</div>
+        <div class="kpi-sub mt-2" id="stat-subjects-label">覆盖算子</div>
       </div>
     </div>
     <div class="col-6 col-md-3 anim-up d4">
       <div class="card kpi-card text-center"
            style="--kpi-c:var(--warning); --kpi-glow:var(--warning-glow);">
         <div class="kpi-num" id="stat-avg">—</div>
-        <div class="kpi-sub mt-2">平均 MR/算子</div>
+        <div class="kpi-sub mt-2">平均 MR/主体</div>
       </div>
     </div>
   </div>
@@ -132,8 +189,7 @@
     <div class="col-md-5 anim-up d2">
       <div class="card">
         <div class="card-header d-flex align-items-center gap-2">
-          <i class="bi bi-pie-chart-fill" style="color:var(--page-accent);
-             text-shadow:0 0 10px var(--page-accent-glow);"></i>
+          <i class="bi bi-pie-chart-fill" style="color:var(--page-accent);"></i>
           <span class="fw-semibold">来源分布</span>
         </div>
         <div class="card-body" style="padding:1rem;">
@@ -144,236 +200,324 @@
     <div class="col-md-7 anim-up d3">
       <div class="card">
         <div class="card-header d-flex align-items-center gap-2">
-          <i class="bi bi-bar-chart-fill" style="color:var(--page-accent);
-             text-shadow:0 0 10px var(--page-accent-glow);"></i>
+          <i class="bi bi-bar-chart-fill" style="color:var(--c-rq1);"></i>
           <span class="fw-semibold">分类分布</span>
         </div>
         <div class="card-body" style="padding:1rem;">
-          <canvas id="chart-cat"></canvas>
+          <canvas id="chart-category"></canvas>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- ── Operator Table ──────────────────────────────────────────────── -->
+  <!-- ── Subject List ────────────────────────────────────────────────── -->
   <div class="card anim-up d4">
     <div class="card-header d-flex align-items-center gap-2">
-      <i class="bi bi-table" style="color:var(--page-accent);"></i>
-      <span class="fw-semibold">算子列表</span>
-      <span id="table-count" class="ms-auto badge badge-unverified"></span>
+      <i class="bi bi-list-ul" style="color:var(--page-accent);"></i>
+      <span class="fw-semibold" id="table-title">算子列表</span>
+      <span id="table-count" style="font-size:.73rem; color:var(--text-dim); margin-left:.3rem;"></span>
+      <button class="btn btn-sm btn-outline-secondary ms-auto py-0 px-2"
+              style="font-size:.72rem;" onclick="loadCurrentLayer()">
+        <i class="bi bi-arrow-clockwise me-1"></i>刷新
+      </button>
     </div>
-    <div class="card-body p-0">
-      <div class="table-responsive">
-        <table class="table table-hover mb-0">
-          <thead>
-            <tr>
-              <th class="ps-4">算子名称</th>
-              <th>MR 总数</th>
-              <th>已验证</th>
-              <th>类别</th>
-              <th>来源</th>
-              <th>操作</th>
-            </tr>
-          </thead>
-          <tbody id="mr-tbody">
-            <tr><td colspan="6">
-              <div class="py-3 px-4">
-                <div class="skeleton mb-2"></div>
-                <div class="skeleton mb-2" style="width:70%;"></div>
-                <div class="skeleton" style="width:50%;"></div>
-              </div>
-            </td></tr>
-          </tbody>
-        </table>
+    <!-- Operator layer table -->
+    <div id="view-operator">
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead>
+              <tr>
+                <th class="ps-4">算子名称</th>
+                <th>MR 数</th>
+                <th>验证率</th>
+                <th>类别</th>
+                <th>来源</th>
+                <th>框架</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="operator-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Model / Application layer cards -->
+    <div id="view-subject" style="display:none;">
+      <div class="card-body">
+        <div id="subject-grid" class="row g-3"></div>
+        <div id="subject-empty" style="display:none;">
+          <div class="empty-state">
+            <i class="bi bi-database-x"></i>
+            <div>该层暂无 MR 数据</div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 
-</div>
+</div><!-- /page-wrap -->
 {% endblock %}
 
 {% block extra_scripts %}
 <script>
-let _allOperators = [];
-let _srcChart, _catChart;
+let _currentLayer = 'operator';
+let _allSubjects = [];
+let _chartSource = null, _chartCategory = null;
 
-async function loadData() {
+// ── 层切换 ────────────────────────────────────────────────────────────────────
+function switchLayer(layer) {
+  _currentLayer = layer;
+  document.querySelectorAll('.layer-tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.layer === layer);
+  });
+  const isOp = layer === 'operator';
+  document.getElementById('view-operator').style.display = isOp ? '' : 'none';
+  document.getElementById('view-subject').style.display  = isOp ? 'none' : '';
+  document.getElementById('stat-subjects-label').textContent =
+    isOp ? '覆盖算子' : (layer === 'model' ? '基准模型' : '应用场景');
+  document.getElementById('table-title').textContent =
+    isOp ? '算子列表' : (layer === 'model' ? '模型列表' : '应用场景列表');
+  loadCurrentLayer();
+}
+
+// ── 加载当前层数据 ────────────────────────────────────────────────────────────
+async function loadCurrentLayer() {
   try {
-    const resp = await fetch('/api/mr-repository');
+    const resp = await fetch(`/api/mr-repository?layer=${_currentLayer}`);
     const json = await resp.json();
-    if (!json.data) return showEmpty();
-    const d = json.data;
-    _allOperators = d.operators || [];
+    const d = json.data || {};
+    if (d.error) { showToast(d.error, 'error'); return; }
 
-    countUp(document.getElementById('stat-total'),        d.total_mr_count);
+    _allSubjects = d.subjects || d.operators || [];
+
+    countUp(document.getElementById('stat-total'), d.total_mr_count || 0);
     countUp(document.getElementById('stat-verified-rate'),
-      d.verification_rate != null
-        ? (d.verification_rate * 100).toFixed(1) : null, '%');
-    countUp(document.getElementById('stat-operators'),    d.operators_with_mr);
-    countUp(document.getElementById('stat-avg'),          d.avg_mr_per_operator);
+      d.verification_rate != null ? (d.verification_rate * 100).toFixed(1) : '0', '%');
+    countUp(document.getElementById('stat-subjects'), d.subjects_with_mr || d.operators_with_mr || 0);
+    countUp(document.getElementById('stat-avg'),
+      d.avg_mr_per_subject || d.avg_mr_per_operator || 0);
 
-    if (d.source_distribution)   renderSrcChart(d.source_distribution);
-    if (d.category_distribution) renderCatChart(d.category_distribution);
+    // Tab 标签
+    const badgeMap = { operator:'tab-badge-op', model:'tab-badge-mo', application:'tab-badge-ap' };
+    const badgeEl = document.getElementById(badgeMap[_currentLayer]);
+    if (badgeEl) badgeEl.textContent = `(${d.total_mr_count || 0})`;
 
-    if (d.category_distribution) {
-      const sel = document.getElementById('filter-category');
-      Object.keys(d.category_distribution).forEach(c => {
-        sel.innerHTML += `<option value="${c}">${c}</option>`;
-      });
-    }
-    renderTable(_allOperators);
-  } catch (e) {
-    console.warn('加载失败:', e);
-    showEmpty();
+    // 填充框架下拉（动态）
+    populateFrameworkFilter(d.subjects || d.operators || []);
+    // 填充类别下拉
+    populateCategoryFilter(d.category_distribution || {});
+
+    // 图表
+    if (d.source_distribution) renderSourceChart(d.source_distribution);
+    if (d.category_distribution) renderCategoryChart(d.category_distribution);
+
+    applyFilters();
+  } catch (e) { console.warn('MR repo 加载失败:', e); }
+}
+
+// ── 过滤与渲染 ────────────────────────────────────────────────────────────────
+function applyFilters() {
+  const fw  = document.getElementById('filter-framework').value;
+  const cat = document.getElementById('filter-category').value;
+  const src = document.getElementById('filter-source').value;
+  const ver = document.getElementById('filter-verified').checked;
+  const q   = document.getElementById('filter-search').value.trim().toLowerCase();
+
+  const filtered = _allSubjects.filter(s => {
+    if (fw  && !((s.frameworks || []).includes(fw)))          return false;
+    if (cat && !(s.categories || []).includes(cat))           return false;
+    if (src && !(s.sources || []).includes(src))              return false;
+    if (ver && (s.verified_count || 0) === 0)                 return false;
+    if (q   && !((s.subject_name || s.operator_name || '').toLowerCase().includes(q))) return false;
+    return true;
+  });
+
+  document.getElementById('table-count').textContent = `共 ${filtered.length} 项`;
+
+  if (_currentLayer === 'operator') {
+    renderOperatorTable(filtered);
+  } else {
+    renderSubjectGrid(filtered);
   }
 }
 
-function showEmpty() {
-  document.getElementById('mr-tbody').innerHTML = `<tr><td colspan="6">
-    <div class="empty-state">
-      <i class="bi bi-database-x"></i>
-      <div>暂无 MR 数据，请先运行
-        <code>deepmt mr generate &lt;operator&gt; --save</code>
-      </div>
-    </div></td></tr>`;
+function clearFilters() {
+  ['filter-framework','filter-category','filter-source'].forEach(id =>
+    document.getElementById(id).value = '');
+  document.getElementById('filter-verified').checked = false;
+  document.getElementById('filter-search').value = '';
+  applyFilters();
 }
 
-function renderTable(ops) {
-  const countEl = document.getElementById('table-count');
-  countEl.textContent = ops.length + ' 个算子';
-  if (!ops.length) { showEmpty(); return; }
+// ── 动态填充框架下拉 ──────────────────────────────────────────────────────────
+function populateFrameworkFilter(subjects) {
+  const fwSet = new Set();
+  subjects.forEach(s => (s.frameworks || []).forEach(f => fwSet.add(f)));
+  const sel = document.getElementById('filter-framework');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">全部框架</option>';
+  [...fwSet].sort().forEach(fw => {
+    const o = document.createElement('option');
+    o.value = fw; o.textContent = fw;
+    if (fw === cur) o.selected = true;
+    sel.appendChild(o);
+  });
+}
 
-  const tbody = document.getElementById('mr-tbody');
-  tbody.innerHTML = ops.map((op, i) => {
-    const cats = (op.categories || []).map(c =>
-      `<span class="badge badge-unverified me-1" style="font-size:.64rem;">${c}</span>`
-    ).join('');
-    const srcs = (op.sources || []).map(s => {
-      const cls = s === 'llm' ? 'badge-llm'
-                : s === 'template' ? 'badge-template' : 'badge-manual';
-      return `<span class="badge ${cls} me-1" style="font-size:.64rem;">${s}</span>`;
+// ── 动态填充类别下拉 ──────────────────────────────────────────────────────────
+function populateCategoryFilter(dist) {
+  const sel = document.getElementById('filter-category');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">全部类别</option>';
+  Object.keys(dist).forEach(cat => {
+    const o = document.createElement('option');
+    o.value = cat; o.textContent = cat;
+    if (cat === cur) o.selected = true;
+    sel.appendChild(o);
+  });
+}
+
+// ── 渲染算子表格 ──────────────────────────────────────────────────────────────
+function renderOperatorTable(rows) {
+  const tbody = document.getElementById('operator-tbody');
+  if (!rows.length) {
+    tbody.innerHTML = `<tr><td colspan="7">
+      <div class="empty-state">
+        <i class="bi bi-database-x"></i>
+        <div>暂无匹配数据，请先运行 <code>deepmt mr generate</code></div>
+      </div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = rows.map((r, i) => {
+    const name = r.subject_name || r.operator_name;
+    const pct = r.total_count > 0 ? (r.verified_count / r.total_count * 100).toFixed(0) : 0;
+    const col = pct >= 80 ? 'var(--success)' : pct >= 50 ? 'var(--warning)' : 'var(--danger)';
+    const catTags = (r.categories || []).map(c =>
+      `<span class="badge badge-template me-1" style="font-size:.62rem;">${c}</span>`).join('');
+    const srcBadge = (r.sources || []).map(s => {
+      const cls = s === 'llm' ? 'badge-llm' : s === 'template' ? 'badge-template' : 'badge-manual';
+      return `<span class="badge ${cls} me-1" style="font-size:.62rem;">${s}</span>`;
     }).join('');
-    const vNum = op.verified_count ?? 0;
-    const vBadge = vNum > 0
-      ? `<span class="badge badge-verified" style="font-size:.73rem;">${vNum}</span>`
-      : `<span class="badge badge-unverified" style="font-size:.73rem;">0</span>`;
-
-    return `<tr style="animation:revealUp .35s both; animation-delay:${i * 0.03}s;">
-      <td class="ps-4">
-        <code style="font-size:.82rem; font-weight:700;">${op.operator_name}</code>
-      </td>
-      <td style="font-variant-numeric:tabular-nums; font-weight:600;">
-        ${op.total_count ?? 0}
-      </td>
-      <td>${vBadge}</td>
-      <td>${cats || '<span style="color:var(--text-dim);">—</span>'}</td>
-      <td>${srcs || '<span style="color:var(--text-dim);">—</span>'}</td>
+    const fwTags = (r.frameworks || []).map(f =>
+      `<span class="badge badge-verified me-1" style="font-size:.62rem;">${f}</span>`).join('');
+    return `<tr onclick="location.href='/mr/operator/${encodeURIComponent(name)}'"
+                style="animation:revealUp .32s both; animation-delay:${i*.03}s;">
+      <td class="ps-4"><code style="font-size:.8rem; font-weight:600;">${name}</code></td>
+      <td><span style="font-weight:700; color:var(--page-accent);">${r.total_count}</span></td>
       <td>
-        <a href="/mr/${encodeURIComponent(op.operator_name)}"
-           class="btn btn-sm btn-outline-primary py-0 px-2"
-           style="font-size:.74rem; border-radius:99px;">
-          <i class="bi bi-arrow-right-circle me-1"></i>详情
+        <div class="d-flex align-items-center gap-2">
+          <div class="progress" style="height:4px; width:50px;">
+            <div class="progress-bar" style="width:${pct}%;
+              background:${col};"></div>
+          </div>
+          <span style="font-size:.75rem; color:${col};">${pct}%</span>
+        </div>
+      </td>
+      <td>${catTags || '<span style="color:var(--text-dim);font-size:.75rem;">—</span>'}</td>
+      <td>${srcBadge || '—'}</td>
+      <td>${fwTags || '<span style="color:var(--text-dim);font-size:.75rem;">—</span>'}</td>
+      <td>
+        <a href="/mr/operator/${encodeURIComponent(name)}"
+           class="btn btn-sm btn-outline-secondary py-0 px-2"
+           style="font-size:.7rem;" onclick="event.stopPropagation()">
+          <i class="bi bi-arrow-right"></i> 详情
         </a>
       </td>
     </tr>`;
   }).join('');
 }
 
-function applyFilters() {
-  const fw  = document.getElementById('filter-framework').value.toLowerCase();
-  const cat = document.getElementById('filter-category').value.toLowerCase();
-  const src = document.getElementById('filter-source').value.toLowerCase();
-  const vfy = document.getElementById('filter-verified').checked;
-  const q   = document.getElementById('filter-search').value.toLowerCase();
+// ── 渲染模型/应用卡片格 ──────────────────────────────────────────────────────
+function renderSubjectGrid(rows) {
+  const grid = document.getElementById('subject-grid');
+  const empty = document.getElementById('subject-empty');
+  const layerColor = _currentLayer === 'model' ? '#a855f7' : '#00e5b0';
+  const layerGlow  = _currentLayer === 'model' ? 'rgba(168,85,247,.3)' : 'rgba(0,229,176,.3)';
+  const layerIcon  = _currentLayer === 'model' ? 'bi-diagram-3' : 'bi-app-indicator';
 
-  const filtered = _allOperators.filter(op => {
-    if (fw  && !(op.frameworks  || []).some(f => f.toLowerCase().includes(fw)))  return false;
-    if (cat && !(op.categories  || []).some(c => c.toLowerCase().includes(cat))) return false;
-    if (src && !(op.sources     || []).some(s => s.toLowerCase().includes(src))) return false;
-    if (vfy && !(op.verified_count > 0)) return false;
-    if (q   && !op.operator_name.toLowerCase().includes(q)) return false;
-    return true;
-  });
-  renderTable(filtered);
+  if (!rows.length) {
+    grid.innerHTML = ''; empty.style.display = '';
+    return;
+  }
+  empty.style.display = 'none';
+  grid.innerHTML = rows.map((r, i) => {
+    const name = r.subject_name || r.operator_name;
+    const pct = r.total_count > 0 ? (r.verified_count / r.total_count * 100).toFixed(0) : 0;
+    const catTags = (r.categories || []).map(c =>
+      `<span class="subject-tag">${c}</span>`).join('');
+    return `<div class="col-sm-6 col-lg-4" style="animation:revealUp .3s both; animation-delay:${i*.04}s;">
+      <div class="subject-card" style="--layer-active-color:${layerColor}; --layer-active-glow:${layerGlow};"
+           onclick="location.href='/mr/${_currentLayer}/${encodeURIComponent(name)}'">
+        <div class="d-flex align-items-start gap-2 mb-2">
+          <i class="bi ${layerIcon}" style="color:${layerColor}; font-size:1.1rem; flex-shrink:0;"></i>
+          <div>
+            <div style="font-weight:700; font-size:.88rem; color:var(--text-bright);">${name}</div>
+            <div style="font-size:.72rem; color:var(--text-dim);">${(r.frameworks || []).join(' · ') || '—'}</div>
+          </div>
+          <span style="margin-left:auto; font-size:1.1rem; font-weight:800; color:${layerColor};">${r.total_count}</span>
+        </div>
+        <div class="d-flex flex-wrap">${catTags}</div>
+        <div class="mt-2" style="height:3px; background:var(--surface-3); border-radius:99px; overflow:hidden;">
+          <div style="width:${pct}%; height:100%;
+               background:linear-gradient(90deg,${layerColor},${layerColor}88);"></div>
+        </div>
+        <div style="font-size:.68rem; color:var(--text-dim); margin-top:3px;">
+          验证率 ${pct}% · ${r.verified_count}/${r.total_count} MR
+        </div>
+      </div>
+    </div>`;
+  }).join('');
 }
 
-function clearFilters() {
-  ['filter-framework', 'filter-category', 'filter-source', 'filter-search']
-    .forEach(id => { document.getElementById(id).value = ''; });
-  document.getElementById('filter-verified').checked = false;
-  renderTable(_allOperators);
-}
-
-function renderSrcChart(dist) {
+// ── Chart: 来源分布 ──────────────────────────────────────────────────────────
+function renderSourceChart(dist) {
   const labels = Object.keys(dist), values = Object.values(dist);
-  const colorMap = {
-    llm:      '#a855f7',
-    template: '#4d8bff',
-    manual:   '#ffcc00',
-    unknown:  '#3d5570',
-  };
-  if (_srcChart) _srcChart.destroy();
-  _srcChart = new Chart(document.getElementById('chart-source'), {
+  if (!labels.length) return;
+  const palette = ['rgba(139,92,246,.8)','rgba(0,176,255,.8)','rgba(255,204,0,.8)','rgba(0,229,176,.8)'];
+  if (_chartSource) _chartSource.destroy();
+  _chartSource = new Chart(document.getElementById('chart-source'), {
     type: 'doughnut',
     data: {
       labels,
-      datasets: [{
-        data: values,
-        backgroundColor: labels.map(l => colorMap[l] || '#3d5570'),
-        borderWidth: 2, borderColor: '#080d18', hoverOffset: 6,
-      }]
+      datasets: [{ data: values, backgroundColor: palette.slice(0, labels.length),
+        borderWidth: 2, borderColor: '#080d18', hoverBorderColor: '#080d18', hoverOffset: 6 }]
     },
     options: {
-      responsive: true,
-      aspectRatio: 2,
+      responsive: true, aspectRatio: 1.7, cutout: '62%',
       plugins: {
-        legend: {
-          position: 'bottom',
-          labels: { color: '#3d5570', font: { size: 11 }, padding: 12,
-                    boxWidth: 10, boxHeight: 10 }
-        },
+        legend: { position: 'right', labels: { color:'#3d5570', font:{size:11}, padding:12, boxWidth:8, boxHeight:8 } },
         tooltip: { ...TOOLTIP_CFG },
       },
-      cutout: '60%',
-    }
+    },
   });
 }
 
-function renderCatChart(dist) {
-  const labels = Object.keys(dist), values = Object.values(dist);
-  if (_catChart) _catChart.destroy();
-  _catChart = new Chart(document.getElementById('chart-cat'), {
+// ── Chart: 分类分布 ──────────────────────────────────────────────────────────
+function renderCategoryChart(dist) {
+  const labels = Object.keys(dist).slice(0, 8), values = labels.map(k => dist[k]);
+  if (!labels.length) return;
+  if (_chartCategory) _chartCategory.destroy();
+  _chartCategory = new Chart(document.getElementById('chart-category'), {
     type: 'bar',
     data: {
       labels,
-      datasets: [{
-        data: values,
-        backgroundColor: 'rgba(168,85,247,.68)',
-        borderRadius: 5,
-      }]
+      datasets: [{ data: values, backgroundColor: 'rgba(168,85,247,.7)',
+        borderRadius: 4, borderSkipped: false }]
     },
     options: {
-      responsive: true,
-      aspectRatio: 3,
-      indexAxis: 'y',
-      plugins: {
-        legend: { display: false },
-        tooltip: { ...TOOLTIP_CFG },
-      },
+      responsive: true, aspectRatio: 1.7, indexAxis: 'y',
+      plugins: { legend: { display: false }, tooltip: { ...TOOLTIP_CFG } },
       scales: {
-        x: {
-          grid: { color: 'rgba(77,139,255,.07)' },
-          ticks: { color: '#3d5570' }
-        },
-        y: {
-          grid: { display: false },
-          ticks: { color: '#c8daf0', font: { size: 11 } }
-        }
-      }
-    }
+        x: { grid: { color:'rgba(77,139,255,.07)' }, ticks: { color:'#3d5570', font:{size:10} } },
+        y: { grid: { display: false }, ticks: { color:'#c8daf0', font:{size:10} } },
+      },
+    },
   });
 }
 
-loadData();
+// ── init ─────────────────────────────────────────────────────────────────────
+loadCurrentLayer();
 </script>
 {% endblock %}

@@ -1,0 +1,348 @@
+{% extends "base.html" %}
+{% block title %}MR 质量视图 — DeepMT Dashboard{% endblock %}
+
+{% block extra_head %}
+<style>
+  :root {
+    --page-accent:     #ffcc00;
+    --page-accent-dim: rgba(255,204,0,.12);
+    --page-accent-glow:rgba(255,204,0,.38);
+  }
+
+  /* ── 质量等级颜色 ───────────────────────────────────────────────────── */
+  :root {
+    --ql-curated:   #f59e0b;
+    --ql-proven:    #00e5b0;
+    --ql-checked:   #4d8bff;
+    --ql-candidate: #a855f7;
+    --ql-retired:   #3d5570;
+  }
+
+  /* ── 告警项 ─────────────────────────────────────────────────────────── */
+  .anomaly-item {
+    display: flex; align-items: flex-start; gap: .75rem;
+    padding: .75rem 1rem; border-radius: var(--radius-sm);
+    background: rgba(255,82,82,.06); border: 1px solid rgba(255,82,82,.18);
+    margin-bottom: .5rem; font-size: .82rem;
+  }
+  .anomaly-item .bi { color: var(--danger); font-size: 1rem; flex-shrink: 0; margin-top:.1rem; }
+  .anomaly-item-info {
+    background: rgba(0,229,255,.06); border-color: rgba(0,229,255,.18);
+  }
+  .anomaly-item-info .bi { color: var(--info); }
+
+  /* ── 质量筛选器 ─────────────────────────────────────────────────────── */
+  .ql-filter-pill {
+    display: inline-flex; align-items: center; gap: .35rem;
+    padding: .28rem .8rem; border-radius: 99px; font-size: .75rem;
+    font-weight: 600; cursor: pointer; border: 1px solid;
+    transition: var(--transition); white-space: nowrap;
+  }
+  .ql-filter-pill.active {
+    background: rgba(255,255,255,.08);
+    box-shadow: 0 0 12px rgba(0,0,0,.3);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-wrap">
+
+  <!-- ── Header ──────────────────────────────────────────────────────── -->
+  <div class="page-hd d-flex justify-content-between align-items-start">
+    <div>
+      <h4>MR 质量视图</h4>
+      <p>三层质量分布 &ensp;·&ensp; 来源治理 &ensp;·&ensp; 异常告警</p>
+    </div>
+    <button class="btn btn-sm btn-outline-secondary" onclick="loadQuality()">
+      <i class="bi bi-arrow-clockwise me-1"></i>刷新
+    </button>
+  </div>
+
+  <!-- ── KPI ─────────────────────────────────────────────────────────── -->
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-3 anim-up d1">
+      <div class="card kpi-card text-center"
+           style="--kpi-c:var(--page-accent); --kpi-glow:var(--page-accent-glow);">
+        <div class="kpi-num" id="kpi-total-mrs">—</div>
+        <div class="kpi-sub mt-2">MR 总量</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3 anim-up d2">
+      <div class="card kpi-card text-center"
+           style="--kpi-c:var(--ql-curated); --kpi-glow:rgba(245,158,11,.4);">
+        <div class="kpi-num" id="kpi-curated">—</div>
+        <div class="kpi-sub mt-2">Curated 高质量</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3 anim-up d3">
+      <div class="card kpi-card text-center"
+           style="--kpi-c:var(--danger); --kpi-glow:var(--danger-glow);">
+        <div class="kpi-num" id="kpi-retired">—</div>
+        <div class="kpi-sub mt-2">已退役</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3 anim-up d4">
+      <div class="card kpi-card text-center"
+           style="--kpi-c:var(--info); --kpi-glow:var(--info-glow);">
+        <div class="kpi-num" id="kpi-anomalies">—</div>
+        <div class="kpi-sub mt-2">异常告警</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Charts Row ──────────────────────────────────────────────────── -->
+  <div class="row g-3 mb-4">
+    <div class="col-lg-7 anim-up d2">
+      <div class="card h-100">
+        <div class="card-header d-flex align-items-center gap-2">
+          <i class="bi bi-bar-chart-steps" style="color:var(--page-accent);"></i>
+          <span class="fw-semibold">各层质量等级分布</span>
+        </div>
+        <div class="card-body" style="padding:1rem;">
+          <canvas id="chart-quality-dist" style="max-height:240px;"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-5 anim-up d3">
+      <div class="card h-100">
+        <div class="card-header d-flex align-items-center gap-2">
+          <i class="bi bi-pie-chart-fill" style="color:#a855f7;"></i>
+          <span class="fw-semibold">来源分布</span>
+        </div>
+        <div class="card-body" style="padding:1rem;">
+          <canvas id="chart-source-dist" style="max-height:240px;"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 两栏：异常告警 + 质量筛选器 ────────────────────────────────── -->
+  <div class="row g-3">
+
+    <!-- 异常告警 -->
+    <div class="col-lg-5 anim-up d3">
+      <div class="card h-100">
+        <div class="card-header d-flex align-items-center gap-2">
+          <i class="bi bi-exclamation-triangle-fill" style="color:var(--danger);"></i>
+          <span class="fw-semibold">异常告警</span>
+          <span id="anomaly-count"
+                style="font-size:.7rem; color:var(--text-dim); margin-left:.3rem;"></span>
+        </div>
+        <div class="card-body" style="padding:1rem; max-height:400px; overflow-y:auto;">
+          <div id="anomaly-list">
+            <div class="skeleton mb-2"></div>
+            <div class="skeleton mb-2" style="width:80%;"></div>
+            <div class="skeleton" style="width:60%;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 质量筛选器 -->
+    <div class="col-lg-7 anim-up d4">
+      <div class="card h-100">
+        <div class="card-header d-flex align-items-center gap-2">
+          <i class="bi bi-funnel-fill" style="color:var(--page-accent);"></i>
+          <span class="fw-semibold">按质量等级筛选 MR</span>
+        </div>
+        <div class="card-body" style="padding:1rem;">
+          <div class="d-flex flex-wrap gap-2 mb-3">
+            <span class="ql-filter-pill active"
+                  style="color:var(--ql-curated);border-color:rgba(245,158,11,.4);"
+                  data-ql="curated" onclick="setQlFilter('curated', this)">
+              <i class="bi bi-star-fill" style="font-size:.65rem;"></i>Curated
+            </span>
+            <span class="ql-filter-pill"
+                  style="color:var(--ql-proven);border-color:rgba(0,229,176,.4);"
+                  data-ql="proven" onclick="setQlFilter('proven', this)">
+              <i class="bi bi-shield-check" style="font-size:.65rem;"></i>Proven
+            </span>
+            <span class="ql-filter-pill"
+                  style="color:var(--ql-checked);border-color:rgba(77,139,255,.4);"
+                  data-ql="checked" onclick="setQlFilter('checked', this)">
+              <i class="bi bi-check2-circle" style="font-size:.65rem;"></i>Checked
+            </span>
+            <span class="ql-filter-pill"
+                  style="color:var(--ql-candidate);border-color:rgba(168,85,247,.4);"
+                  data-ql="candidate" onclick="setQlFilter('candidate', this)">
+              <i class="bi bi-hourglass-split" style="font-size:.65rem;"></i>Candidate
+            </span>
+          </div>
+
+          <div id="ql-table-wrap" style="max-height:320px; overflow-y:auto;">
+            <table class="table table-hover mb-0">
+              <thead>
+                <tr>
+                  <th class="ps-2">层次</th>
+                  <th>主体</th>
+                  <th>描述</th>
+                  <th>来源</th>
+                </tr>
+              </thead>
+              <tbody id="ql-tbody">
+                <tr><td colspan="4">
+                  <div class="empty-state" style="padding:1.5rem;">
+                    <i class="bi bi-search"></i>
+                    <div style="font-size:.8rem;">选择质量等级后加载</div>
+                  </div>
+                </td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+const QL_COLORS = {
+  curated:   '#f59e0b',
+  proven:    '#00e5b0',
+  checked:   '#4d8bff',
+  candidate: '#a855f7',
+  retired:   '#3d5570',
+};
+const LAYER_LABELS = { operator: '算子层', model: '模型层', application: '应用层' };
+
+async function loadQuality() {
+  try {
+    const resp = await fetch('/api/mr-quality');
+    const json = await resp.json();
+    const d = json.data || {};
+    if (d.error) { showToast(d.error, 'error'); return; }
+
+    countUp(document.getElementById('kpi-total-mrs'), d.total_mrs || 0);
+    countUp(document.getElementById('kpi-retired'), d.total_retired || 0);
+
+    const qdist = d.quality_distribution || {};
+    countUp(document.getElementById('kpi-curated'), qdist.curated || 0);
+
+    const anomalies = d.anomalies || [];
+    countUp(document.getElementById('kpi-anomalies'), anomalies.length);
+    document.getElementById('anomaly-count').textContent = `共 ${anomalies.length} 项`;
+
+    renderQualityChart(d.by_layer || {});
+    renderSourceChart(d.source_distribution || {});
+    renderAnomalies(anomalies);
+  } catch (e) { console.warn('quality 加载失败:', e); }
+}
+
+function renderQualityChart(byLayer) {
+  const layers = ['operator', 'model', 'application'];
+  const qlOrder = ['curated', 'proven', 'checked', 'candidate', 'retired'];
+  const qlLabels = { curated:'Curated', proven:'Proven', checked:'Checked', candidate:'Candidate', retired:'Retired' };
+
+  const datasets = qlOrder.map(ql => ({
+    label: qlLabels[ql],
+    data: layers.map(lyr => ((byLayer[lyr] || {}).by_quality || {})[ql] || 0),
+    backgroundColor: QL_COLORS[ql] + 'bb',
+    borderRadius: 4,
+    stack: 'q',
+  }));
+
+  new Chart(document.getElementById('chart-quality-dist'), {
+    type: 'bar',
+    data: { labels: layers.map(l => LAYER_LABELS[l]), datasets },
+    options: {
+      responsive: true, aspectRatio: 2.2,
+      plugins: {
+        legend: { position: 'right', labels: { color:'#3d5570', font:{size:11}, boxWidth:10, boxHeight:10 } },
+        tooltip: { ...TOOLTIP_CFG },
+      },
+      scales: {
+        x: { stacked: true, grid: { display: false }, ticks: { color:'#c8daf0', font:{size:12} } },
+        y: { stacked: true, grid: { color:'rgba(77,139,255,.07)' }, ticks: { color:'#3d5570' } },
+      },
+    },
+  });
+}
+
+function renderSourceChart(dist) {
+  const labels = Object.keys(dist), values = Object.values(dist);
+  if (!labels.length) return;
+  const palette = ['rgba(139,92,246,.85)','rgba(0,176,255,.85)','rgba(255,204,0,.85)','rgba(0,229,176,.85)'];
+  new Chart(document.getElementById('chart-source-dist'), {
+    type: 'doughnut',
+    data: {
+      labels,
+      datasets: [{ data: values, backgroundColor: palette.slice(0, labels.length),
+        borderWidth: 2, borderColor: '#080d18', hoverBorderColor: '#080d18', hoverOffset: 6 }]
+    },
+    options: {
+      responsive: true, aspectRatio: 1.5, cutout: '65%',
+      plugins: {
+        legend: { position: 'bottom', labels: { color:'#3d5570', font:{size:11}, padding:10, boxWidth:8, boxHeight:8 } },
+        tooltip: { ...TOOLTIP_CFG },
+      },
+    },
+  });
+}
+
+function renderAnomalies(anomalies) {
+  const el = document.getElementById('anomaly-list');
+  if (!anomalies.length) {
+    el.innerHTML = `<div class="anomaly-item anomaly-item-info">
+      <i class="bi bi-check-circle-fill"></i>
+      <span>暂无异常告警，知识库状态良好</span>
+    </div>`;
+    return;
+  }
+  el.innerHTML = anomalies.map(a => {
+    const isInfo = (a.level || '').toLowerCase() === 'info';
+    const icon = isInfo ? 'bi-info-circle-fill' : 'bi-exclamation-triangle-fill';
+    return `<div class="anomaly-item ${isInfo ? 'anomaly-item-info' : ''}">
+      <i class="bi ${icon}"></i>
+      <div>
+        <div style="font-size:.8rem; color:var(--text);">${a.message || JSON.stringify(a)}</div>
+        ${a.subject ? `<div style="font-size:.7rem; color:var(--text-dim); margin-top:.2rem;">${a.subject}</div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── 质量筛选器 ────────────────────────────────────────────────────────────────
+async function setQlFilter(ql, el) {
+  document.querySelectorAll('.ql-filter-pill').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  try {
+    const resp = await fetch(`/api/mr-quality/filter?min_quality=${ql}&exclude_retired=true`);
+    const json = await resp.json();
+    const d = json.data || {};
+    const mrs = d.mrs || [];
+    const tbody = document.getElementById('ql-tbody');
+    if (!mrs.length) {
+      tbody.innerHTML = `<tr><td colspan="4">
+        <div class="empty-state" style="padding:1rem;">
+          <i class="bi bi-database-x"></i><div>无符合条件的 MR</div>
+        </div></td></tr>`;
+      return;
+    }
+    tbody.innerHTML = mrs.slice(0, 50).map((m, i) => {
+      const layerColor = m.layer === 'operator' ? '#4d8bff' : m.layer === 'model' ? '#a855f7' : '#00e5b0';
+      const srcCls = m.source === 'llm' ? 'badge-llm' : m.source === 'template' ? 'badge-template' : 'badge-manual';
+      const qlColor = QL_COLORS[m.quality_level || 'candidate'] || '#3d5570';
+      return `<tr style="animation:revealUp .25s both; animation-delay:${i*.02}s;">
+        <td class="ps-2">
+          <span style="font-size:.7rem; color:${layerColor}; font-weight:600;">
+            ${LAYER_LABELS[m.layer] || m.layer}
+          </span>
+        </td>
+        <td><code style="font-size:.72rem;">${m.subject}</code></td>
+        <td style="max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+                   font-size:.78rem; color:var(--text-dim);" title="${m.description || ''}">${m.description || '—'}</td>
+        <td>
+          <span class="badge ${srcCls}" style="font-size:.62rem;">${m.source || '—'}</span>
+        </td>
+      </tr>`;
+    }).join('');
+  } catch (e) { showToast('筛选加载失败', 'error'); }
+}
+
+loadQuality();
+</script>
+{% endblock %}

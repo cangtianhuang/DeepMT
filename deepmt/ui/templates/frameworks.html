@@ -1,0 +1,249 @@
+{% extends "base.html" %}
+{% block title %}框架信息 — DeepMT Dashboard{% endblock %}
+
+{% block extra_head %}
+<style>
+  :root {
+    --page-accent:     #00e5b0;
+    --page-accent-dim: rgba(0,229,176,.12);
+    --page-accent-glow:rgba(0,229,176,.38);
+  }
+
+  /* ── 框架卡片 ──────────────────────────────────────────────────────── */
+  .fw-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.4rem;
+    transition: var(--transition);
+    position: relative; overflow: hidden;
+  }
+  .fw-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: linear-gradient(90deg, var(--fw-color, var(--primary)), transparent);
+  }
+  .fw-card:hover {
+    border-color: var(--fw-color, var(--primary));
+    box-shadow: 0 0 32px rgba(0,0,0,.4), 0 0 0 1px var(--fw-color, var(--primary));
+    transform: translateY(-2px);
+  }
+
+  /* ── 状态标签 ───────────────────────────────────────────────────────── */
+  .status-badge {
+    display: inline-flex; align-items: center; gap: .3rem;
+    padding: .2rem .65rem; border-radius: 99px; font-size: .68rem; font-weight: 600;
+    letter-spacing: .04em; text-transform: uppercase; border: 1px solid;
+  }
+  .status-full      { color:#00e5b0; border-color:rgba(0,229,176,.35); background:rgba(0,229,176,.08); }
+  .status-partial   { color:#ffcc00; border-color:rgba(255,204,0,.35); background:rgba(255,204,0,.08); }
+  .status-unavailable { color:#3d5570; border-color:rgba(61,85,112,.35); background:rgba(61,85,112,.08); }
+
+  /* ── 算子标签云 ─────────────────────────────────────────────────────── */
+  .op-tag {
+    display: inline-block; margin: .15rem .1rem;
+    padding: .18rem .5rem; border-radius: 4px; font-size: .65rem;
+    font-family: var(--font-mono);
+    background: rgba(255,255,255,.04); border: 1px solid var(--border);
+    color: var(--text-dim);
+    transition: var(--transition);
+  }
+  .op-tag:hover { color: var(--text); border-color: var(--border-bright); }
+
+  details > summary {
+    cursor: pointer; font-size: .76rem; color: var(--text-dim);
+    list-style: none; display: flex; align-items: center; gap: .4rem;
+    user-select: none;
+  }
+  details > summary::-webkit-details-marker { display: none; }
+  details[open] > summary { color: var(--text); }
+  details[open] > summary .chevron { transform: rotate(90deg); }
+  .chevron { transition: transform .2s ease; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-wrap">
+
+  <!-- ── Header ──────────────────────────────────────────────────────── -->
+  <div class="page-hd d-flex justify-content-between align-items-start">
+    <div>
+      <h4>框架信息</h4>
+      <p>已注册框架 &ensp;·&ensp; 算子覆盖 &ensp;·&ensp; 插件能力</p>
+    </div>
+    <button class="btn btn-sm btn-outline-secondary" onclick="loadFrameworks()">
+      <i class="bi bi-arrow-clockwise me-1"></i>刷新
+    </button>
+  </div>
+
+  <!-- ── KPI ─────────────────────────────────────────────────────────── -->
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-4 anim-up d1">
+      <div class="card kpi-card text-center"
+           style="--kpi-c:var(--page-accent); --kpi-glow:var(--page-accent-glow);">
+        <div class="kpi-num" id="kpi-total-fw">—</div>
+        <div class="kpi-sub mt-2">已注册框架</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-4 anim-up d2">
+      <div class="card kpi-card text-center"
+           style="--kpi-c:var(--c-rq1); --kpi-glow:var(--c-rq1-glow);">
+        <div class="kpi-num" id="kpi-avail-fw">—</div>
+        <div class="kpi-sub mt-2">当前可用</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-4 anim-up d3">
+      <div class="card kpi-card text-center"
+           style="--kpi-c:var(--warning); --kpi-glow:var(--warning-glow);">
+        <div class="kpi-num" id="kpi-total-ops">—</div>
+        <div class="kpi-sub mt-2">总支持算子数</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 框架卡片列表 ─────────────────────────────────────────────────── -->
+  <div id="fw-loading" style="display:none;">
+    <div class="row g-3">
+      <div class="col-md-6"><div class="skeleton" style="height:180px;border-radius:12px;"></div></div>
+      <div class="col-md-6"><div class="skeleton" style="height:180px;border-radius:12px;"></div></div>
+    </div>
+  </div>
+  <div id="fw-cards" class="row g-3"></div>
+
+  <!-- ── 算子覆盖对比图 ──────────────────────────────────────────────── -->
+  <div class="card mt-4 anim-up d4">
+    <div class="card-header d-flex align-items-center gap-2">
+      <i class="bi bi-bar-chart-fill" style="color:var(--page-accent);"></i>
+      <span class="fw-semibold">各框架算子覆盖对比</span>
+    </div>
+    <div class="card-body" style="padding:1rem;">
+      <canvas id="chart-fw-ops" style="max-height:220px;"></canvas>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+const FW_COLORS = {
+  pytorch:     '#4d8bff',
+  numpy:       '#00e5ff',
+  paddlepaddle:'#00e5b0',
+  tensorflow:  '#ff7043',
+};
+
+async function loadFrameworks() {
+  document.getElementById('fw-loading').style.display = '';
+  document.getElementById('fw-cards').innerHTML = '';
+  try {
+    const resp = await fetch('/api/frameworks');
+    const json = await resp.json();
+    document.getElementById('fw-loading').style.display = 'none';
+    const d = json.data || {};
+    const fws = d.frameworks || [];
+
+    countUp(document.getElementById('kpi-total-fw'), fws.length);
+    countUp(document.getElementById('kpi-avail-fw'), fws.filter(f => f.available).length);
+    const totalOps = fws.reduce((s, f) => s + (f.operator_count || 0), 0);
+    countUp(document.getElementById('kpi-total-ops'), totalOps);
+
+    renderFwCards(fws);
+    renderFwChart(fws);
+  } catch (e) {
+    document.getElementById('fw-loading').style.display = 'none';
+    document.getElementById('fw-cards').innerHTML = `
+      <div class="col-12"><div class="card"><div class="empty-state">
+        <i class="bi bi-wifi-off"></i>
+        <div>加载失败，请检查服务状态</div>
+      </div></div></div>`;
+  }
+}
+
+function renderFwCards(fws) {
+  const container = document.getElementById('fw-cards');
+  container.innerHTML = fws.map((fw, i) => {
+    const color = FW_COLORS[fw.name] || '#4d8bff';
+    const statusCls = fw.status === 'full' ? 'status-full'
+                    : fw.status === 'partial' ? 'status-partial' : 'status-unavailable';
+    const statusLabel = fw.status === 'full' ? '全量支持'
+                      : fw.status === 'partial' ? '部分实现' : '未安装';
+    const statusIcon = fw.status === 'full' ? 'check-circle-fill'
+                     : fw.status === 'partial' ? 'exclamation-circle-fill' : 'x-circle';
+
+    const opTagsHtml = fw.available && fw.supported_operators.length > 0
+      ? `<details style="margin-top:.8rem;">
+           <summary>
+             <i class="bi bi-chevron-right chevron" style="font-size:.65rem;"></i>
+             算子列表 <span style="color:var(--text-dim);">(${fw.operator_count})</span>
+           </summary>
+           <div style="margin-top:.5rem;">
+             ${fw.supported_operators.map(op =>
+               `<span class="op-tag">${op}</span>`
+             ).join('')}
+           </div>
+         </details>`
+      : '';
+
+    return `
+    <div class="col-md-6 anim-up" style="animation-delay:${i*.08}s;">
+      <div class="fw-card" style="--fw-color:${color};">
+        <div class="d-flex align-items-start gap-3">
+          <div style="width:42px; height:42px; border-radius:10px; flex-shrink:0;
+               background:linear-gradient(135deg, ${color}33, ${color}11);
+               border:1px solid ${color}44;
+               display:flex; align-items:center; justify-content:center;">
+            <i class="bi bi-cpu-fill" style="color:${color}; font-size:1.15rem;"></i>
+          </div>
+          <div style="flex:1; min-width:0;">
+            <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+              <span style="font-size:1rem; font-weight:800; color:var(--text-bright);
+                           text-transform:capitalize;">${fw.name}</span>
+              <span class="status-badge ${statusCls}">
+                <i class="bi bi-${statusIcon}" style="font-size:.65rem;"></i>
+                ${statusLabel}
+              </span>
+              ${fw.optional ? '<span class="badge" style="font-size:.6rem;background:rgba(61,85,112,.2);color:#3d5570;border:1px solid var(--border);">可选</span>' : ''}
+            </div>
+            <div style="font-size:.75rem; color:var(--text-dim); margin-bottom:.6rem;">
+              版本 <code>${fw.version || 'N/A'}</code>
+              &ensp;·&ensp;
+              <span style="color:${color}; font-weight:600;">${fw.operator_count}</span> 个算子
+              &ensp;·&ensp;
+              MR 适用 <span style="color:${color}; font-weight:600;">${fw.mr_applicable_count}</span> 条
+            </div>
+          </div>
+        </div>
+        ${opTagsHtml}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderFwChart(fws) {
+  const avail = fws.filter(f => f.available);
+  if (!avail.length) return;
+  new Chart(document.getElementById('chart-fw-ops'), {
+    type: 'bar',
+    data: {
+      labels: avail.map(f => f.name),
+      datasets: [{
+        data: avail.map(f => f.operator_count),
+        backgroundColor: avail.map(f => (FW_COLORS[f.name] || '#4d8bff') + 'bb'),
+        borderRadius: 6,
+        borderSkipped: false,
+      }]
+    },
+    options: {
+      responsive: true, aspectRatio: 3,
+      plugins: { legend: { display: false }, tooltip: { ...TOOLTIP_CFG } },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: '#c8daf0', font: { size: 12, weight: 600 } } },
+        y: { grid: { color: 'rgba(77,139,255,.07)' }, ticks: { color: '#3d5570', font: { size: 11 } } },
+      },
+    },
+  });
+}
+
+loadFrameworks();
+</script>
+{% endblock %}

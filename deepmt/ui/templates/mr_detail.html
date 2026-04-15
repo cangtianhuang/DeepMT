@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}{{ operator_name }} — MR 详情 — DeepMT Dashboard{% endblock %}
+{% block title %}{{ subject_name or operator_name }} — MR 详情 — DeepMT Dashboard{% endblock %}
 
 {% block extra_head %}
 <style>
@@ -47,7 +47,15 @@
           <i class="bi bi-database-fill me-2" style="color:var(--page-accent);
              text-shadow:0 0 14px var(--page-accent-glow);"></i>
           <code style="font-size:1.05rem; background:transparent; border:none;
-                       color:var(--text-bright); padding:0;">{{ operator_name }}</code>
+                       color:var(--text-bright); padding:0;">{{ subject_name or operator_name }}</code>
+          {% if layer and layer != 'operator' %}
+          <span style="font-size:.65rem; padding:.2rem .6rem; border-radius:99px; font-weight:600;
+                       margin-left:.5rem;
+                       {% if layer == 'model' %}color:#a855f7;background:rgba(168,85,247,.1);border:1px solid rgba(168,85,247,.3);
+                       {% else %}color:#00e5b0;background:rgba(0,229,176,.1);border:1px solid rgba(0,229,176,.3);{% endif %}">
+            {{ {'model':'模型层','application':'应用层'}.get(layer, layer) }}
+          </span>
+          {% endif %}
         </h4>
         <p style="font-size:.78rem; color:var(--text-dim); margin:0;">
           蜕变关系详情 &ensp;·&ensp; 每条 MR 包含输入变换与 Oracle 表达式
@@ -82,11 +90,12 @@
 
 {% block extra_scripts %}
 <script>
-const OP = "{{ operator_name }}";
+const OP    = "{{ subject_name or operator_name }}";
+const LAYER = "{{ layer or 'operator' }}";
 
 async function loadMRs() {
   try {
-    const resp = await fetch('/api/mr-repository/' + encodeURIComponent(OP));
+    const resp = await fetch('/api/mr-repository/' + encodeURIComponent(OP) + '?layer_hint=' + LAYER);
     const json = await resp.json();
     const mrs  = json.data;
     const container = document.getElementById('mr-list');

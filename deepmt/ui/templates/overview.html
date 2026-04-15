@@ -1,20 +1,62 @@
 {% extends "base.html" %}
 {% block title %}总览 — DeepMT Dashboard{% endblock %}
 
+{% block extra_head %}
+<style>
+  /* ── 架构层次标签行 ──────────────────────────────────────────────────── */
+  .layer-badge {
+    display: inline-flex; align-items: center; gap: .45rem;
+    padding: .3rem .8rem; border-radius: 99px;
+    font-size: .72rem; font-weight: 600; letter-spacing: .04em;
+    text-transform: uppercase; border: 1px solid;
+    transition: var(--transition);
+  }
+  .layer-badge:hover { transform: translateY(-2px); }
+  .layer-badge-op   { color:#4d8bff; border-color:rgba(77,139,255,.3);  background:rgba(77,139,255,.07); }
+  .layer-badge-mo   { color:#a855f7; border-color:rgba(168,85,247,.3);  background:rgba(168,85,247,.07); }
+  .layer-badge-ap   { color:#00e5b0; border-color:rgba(0,229,176,.3);   background:rgba(0,229,176,.07);  }
+
+  /* ── 三层 MR 进度条组 ──────────────────────────────────────────────── */
+  .layer-bar-row { display:flex; align-items:center; gap:.75rem; margin-bottom:.5rem; }
+  .layer-bar-label { width: 4.5rem; font-size:.72rem; color:var(--text-dim); flex-shrink:0; }
+  .layer-bar-track { flex:1; height:6px; background:var(--surface-3); border-radius:99px; overflow:hidden; }
+  .layer-bar-fill  { height:100%; border-radius:99px; transition:width 1s cubic-bezier(.4,0,.2,1); }
+  .layer-bar-count { width:3rem; text-align:right; font-size:.72rem; font-variant-numeric:tabular-nums; }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="page-wrap">
 
-  <!-- ── Hero Section ────────────────────────────────────────────────── -->
-  <div class="anim-up" style="padding: 0.5rem 0 1.5rem;">
-    <!-- Title row: heading left, status badge right -->
+  <!-- ── Hero ──────────────────────────────────────────────────────────── -->
+  <div class="anim-up" style="padding:.4rem 0 1.4rem;">
     <div class="d-flex justify-content-between align-items-start gap-3 mb-2">
-      <h1 style="font-size:2.0rem; font-weight:800; letter-spacing:-.04em;
-                 color:var(--text-bright); line-height:1.2; margin:0;">
-        深度学习框架
-        <span class="grad-text">蜕变关系</span>
-        自动测试体系
-      </h1>
-      <!-- Status indicator (right side) -->
+      <div>
+        <h1 style="font-size:2.0rem; font-weight:800; letter-spacing:-.04em;
+                   color:var(--text-bright); line-height:1.2; margin:0 0 .55rem;">
+          深度学习框架
+          <span class="grad-text">蜕变关系</span>
+          自动测试体系
+        </h1>
+        <!-- 三层架构标签 -->
+        <div class="d-flex flex-wrap gap-2 align-items-center">
+          <span class="layer-badge layer-badge-op">
+            <i class="bi bi-cpu"></i>算子层
+          </span>
+          <span style="color:var(--text-dim);font-size:.8rem;">→</span>
+          <span class="layer-badge layer-badge-mo">
+            <i class="bi bi-diagram-3"></i>模型层
+          </span>
+          <span style="color:var(--text-dim);font-size:.8rem;">→</span>
+          <span class="layer-badge layer-badge-ap">
+            <i class="bi bi-app-indicator"></i>应用层
+          </span>
+          <span style="color:var(--border-bright);margin:0 .3rem;">·</span>
+          <span style="font-size:.72rem;color:var(--text-dim);">
+            MR 自动生成 · 缺陷检测 · 跨框架验证
+          </span>
+        </div>
+      </div>
       <div class="d-none d-md-flex align-items-center gap-2 flex-shrink-0 mt-1"
            style="font-size:.7rem; color:var(--text-dim); white-space:nowrap;
                   background:var(--surface-2); border:1px solid var(--border);
@@ -22,94 +64,145 @@
         <span class="status-pip"></span>实验仪表盘在线
       </div>
     </div>
-    <p style="font-size:.83rem; color:var(--text-dim); margin:0;">
-      MR 自动生成 &ensp;·&ensp; 缺陷检测 &ensp;·&ensp; 跨框架验证 &ensp;·&ensp; 覆盖分析
-    </p>
   </div>
 
-  <!-- ── KPI Cards ───────────────────────────────────────────────────── -->
+  <!-- ── KPI Cards（6个，三层 + 实验指标）─────────────────────────────── -->
   <div class="row g-3 mb-4">
 
-    <div class="col-6 col-xl-3 anim-up d1">
+    <!-- 算子层 MR -->
+    <div class="col-6 col-xl-2 anim-up d1">
       <div class="card kpi-card"
-           style="--kpi-c:var(--c-rq1); --kpi-glow:var(--c-rq1-glow);">
-        <div class="kpi-num" id="kpi-rq1-value">—</div>
-        <div class="kpi-title">MR 自动生成</div>
-        <div class="kpi-sub" id="kpi-rq1-sub">已生成 · 验证率</div>
-        <i class="bi bi-magic kpi-icon"></i>
+           style="--kpi-c:#4d8bff; --kpi-glow:rgba(77,139,255,.45);">
+        <div class="kpi-rq-badge">算子层</div>
+        <div class="kpi-num" id="kpi-op-mr">—</div>
+        <div class="kpi-title">MR 总量</div>
+        <div class="kpi-sub" id="kpi-op-sub">— 个算子</div>
+        <i class="bi bi-cpu kpi-icon"></i>
       </div>
     </div>
 
-    <div class="col-6 col-xl-3 anim-up d2">
+    <!-- 模型层 MR -->
+    <div class="col-6 col-xl-2 anim-up d2">
+      <div class="card kpi-card"
+           style="--kpi-c:#a855f7; --kpi-glow:rgba(168,85,247,.45);">
+        <div class="kpi-rq-badge">模型层</div>
+        <div class="kpi-num" id="kpi-mo-mr">—</div>
+        <div class="kpi-title">MR 总量</div>
+        <div class="kpi-sub" id="kpi-mo-sub">— 个模型</div>
+        <i class="bi bi-diagram-3 kpi-icon"></i>
+      </div>
+    </div>
+
+    <!-- 应用层 MR -->
+    <div class="col-6 col-xl-2 anim-up d3">
+      <div class="card kpi-card"
+           style="--kpi-c:#00e5b0; --kpi-glow:rgba(0,229,176,.45);">
+        <div class="kpi-rq-badge">应用层</div>
+        <div class="kpi-num" id="kpi-ap-mr">—</div>
+        <div class="kpi-title">MR 总量</div>
+        <div class="kpi-sub" id="kpi-ap-sub">— 个场景</div>
+        <i class="bi bi-app-indicator kpi-icon"></i>
+      </div>
+    </div>
+
+    <!-- 缺陷检测 -->
+    <div class="col-6 col-xl-2 anim-up d2">
       <div class="card kpi-card"
            style="--kpi-c:var(--c-rq2); --kpi-glow:var(--c-rq2-glow);">
+        <div class="kpi-rq-badge">RQ2</div>
         <div class="kpi-num" id="kpi-rq2-value">—</div>
-        <div class="kpi-title">缺陷检测</div>
-        <div class="kpi-sub" id="kpi-rq2-sub">通过率 · 证据包</div>
+        <div class="kpi-title">缺陷检测率</div>
+        <div class="kpi-sub" id="kpi-rq2-sub">— 条用例</div>
         <i class="bi bi-bug-fill kpi-icon"></i>
       </div>
     </div>
 
-    <div class="col-6 col-xl-3 anim-up d3">
+    <!-- 跨框架一致性 -->
+    <div class="col-6 col-xl-2 anim-up d3">
       <div class="card kpi-card"
            style="--kpi-c:var(--c-rq3); --kpi-glow:var(--c-rq3-glow);">
+        <div class="kpi-rq-badge">RQ3</div>
         <div class="kpi-num" id="kpi-rq3-value">—</div>
-        <div class="kpi-title">跨框架一致性</div>
-        <div class="kpi-sub" id="kpi-rq3-sub">一致率</div>
+        <div class="kpi-title">跨框架一致率</div>
+        <div class="kpi-sub" id="kpi-rq3-sub">— 次实验</div>
         <i class="bi bi-arrow-left-right kpi-icon"></i>
       </div>
     </div>
 
-    <div class="col-6 col-xl-3 anim-up d4">
+    <!-- 已注册框架 -->
+    <div class="col-6 col-xl-2 anim-up d4">
       <div class="card kpi-card"
            style="--kpi-c:var(--c-rq4); --kpi-glow:var(--c-rq4-glow);">
-        <div class="kpi-num" id="kpi-rq4-value">—</div>
-        <div class="kpi-title">覆盖算子数</div>
-        <div class="kpi-sub" id="kpi-rq4-sub">算子 · MR 密度</div>
+        <div class="kpi-rq-badge">框架</div>
+        <div class="kpi-num" id="kpi-fw-value">—</div>
+        <div class="kpi-title">已注册框架</div>
+        <div class="kpi-sub" id="kpi-fw-sub">— MR 总量</div>
         <i class="bi bi-layers-fill kpi-icon"></i>
       </div>
     </div>
   </div>
 
-  <!-- ── Charts ──────────────────────────────────────────────────────── -->
+  <!-- ── Charts Row ─────────────────────────────────────────────────────── -->
   <div class="row g-3 mb-4">
 
-    <!-- MR 分类分布（donut）-->
-    <div class="col-lg-5 anim-up d2">
-      <div class="card">
+    <!-- 三层 MR 全景环形图 -->
+    <div class="col-lg-4 anim-up d2">
+      <div class="card h-100">
         <div class="card-header d-flex align-items-center gap-2">
-          <i class="bi bi-pie-chart-fill" style="color:var(--c-rq1);"></i>
-          <span class="fw-semibold">MR 分类分布</span>
+          <i class="bi bi-pie-chart-fill" style="color:#4d8bff;"></i>
+          <span class="fw-semibold">三层 MR 全景</span>
         </div>
         <div class="card-body" style="padding:1rem;">
-          <canvas id="chart-category"></canvas>
+          <canvas id="chart-layers-donut" style="max-height:200px;"></canvas>
         </div>
       </div>
     </div>
 
-    <!-- 算子测试概况（stacked bar）-->
-    <div class="col-lg-7 anim-up d3">
-      <div class="card">
+    <!-- 三层 MR 规模 + 验证率横向条 -->
+    <div class="col-lg-4 anim-up d3">
+      <div class="card h-100">
+        <div class="card-header d-flex align-items-center gap-2">
+          <i class="bi bi-bar-chart-steps" style="color:#a855f7;"></i>
+          <span class="fw-semibold">各层规模与验证率</span>
+        </div>
+        <div class="card-body d-flex flex-column justify-content-center" style="padding:1.2rem;">
+          <div id="layer-bars-container">
+            <div class="skeleton mb-3" style="height:20px;"></div>
+            <div class="skeleton mb-3" style="height:20px; width:80%;"></div>
+            <div class="skeleton" style="height:20px; width:60%;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 算子测试概况（堆叠柱图）-->
+    <div class="col-lg-4 anim-up d4">
+      <div class="card h-100">
         <div class="card-header d-flex align-items-center gap-2">
           <i class="bi bi-bar-chart-fill" style="color:var(--c-rq2);"></i>
           <span class="fw-semibold">算子测试概况</span>
         </div>
         <div class="card-body" style="padding:1rem;">
-          <canvas id="chart-operators"></canvas>
+          <canvas id="chart-operators" style="max-height:200px;"></canvas>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- ── Recent Test Summary ─────────────────────────────────────────── -->
+  <!-- ── Recent Test Summary ─────────────────────────────────────────────── -->
   <div class="card anim-up d4">
     <div class="card-header d-flex align-items-center gap-2">
       <i class="bi bi-clock-history" style="color:var(--primary);"></i>
       <span class="fw-semibold">最近测试摘要</span>
-      <button class="btn btn-sm btn-outline-secondary ms-auto py-0 px-2"
-              style="font-size:.72rem;" onclick="location.reload()">
-        <i class="bi bi-arrow-clockwise me-1"></i>刷新
-      </button>
+      <div class="ms-auto d-flex gap-2">
+        <a href="/tests" class="btn btn-sm btn-outline-primary py-0 px-2" style="font-size:.72rem;">
+          <i class="bi bi-arrow-right me-1"></i>全部结果
+        </a>
+        <button class="btn btn-sm btn-outline-secondary py-0 px-2"
+                style="font-size:.72rem;" onclick="location.reload()">
+          <i class="bi bi-arrow-clockwise me-1"></i>刷新
+        </button>
+      </div>
     </div>
     <div class="card-body p-0">
       <div class="table-responsive">
@@ -144,48 +237,80 @@
 
 {% block extra_scripts %}
 <script>
-// ── Load KPI data ──────────────────────────────────────────────────────
-async function loadSummary() {
+// ── 加载三层汇总 summary-v2 ──────────────────────────────────────────────────
+async function loadSummaryV2() {
   try {
-    const resp = await fetch('/api/summary');
+    const resp = await fetch('/api/summary-v2');
     const json = await resp.json();
     if (!json.data) return;
-    const { rq1, rq2, rq3, rq4 } = json.data;
+    const d = json.data;
+    const layers = d.layers || {};
 
-    if (rq1 && !rq1.error) {
-      countUp(document.getElementById('kpi-rq1-value'), rq1.total_mr_count);
-      document.getElementById('kpi-rq1-sub').textContent =
-        `验证率 ${rq1.verification_rate != null
-          ? (rq1.verification_rate * 100).toFixed(1) + '%' : '—'
-        } · ${rq1.operators_with_mr ?? 0} 个算子`;
-    }
-    if (rq2 && !rq2.error) {
+    // 算子层
+    const op = layers.operator || {};
+    countUp(document.getElementById('kpi-op-mr'), op.total || 0);
+    document.getElementById('kpi-op-sub').textContent =
+      `${op.subjects || 0} 个算子 · 验证率 ${((op.verification_rate||0)*100).toFixed(0)}%`;
+
+    // 模型层
+    const mo = layers.model || {};
+    countUp(document.getElementById('kpi-mo-mr'), mo.total || 0);
+    document.getElementById('kpi-mo-sub').textContent =
+      `${mo.subjects || 0} 个模型 · 验证率 ${((mo.verification_rate||0)*100).toFixed(0)}%`;
+
+    // 应用层
+    const ap = layers.application || {};
+    countUp(document.getElementById('kpi-ap-mr'), ap.total || 0);
+    document.getElementById('kpi-ap-sub').textContent =
+      `${ap.subjects || 0} 个场景 · 验证率 ${((ap.verification_rate||0)*100).toFixed(0)}%`;
+
+    // 框架 KPI
+    countUp(document.getElementById('kpi-fw-value'), '—');
+    document.getElementById('kpi-fw-sub').textContent =
+      `全局 ${d.grand_total_mr || 0} MR`;
+
+    // RQ2
+    const rq2 = d.rq2 || {};
+    if (!rq2.error) {
       const rate = rq2.overall_pass_rate != null
         ? (rq2.overall_pass_rate * 100).toFixed(1) : null;
       countUp(document.getElementById('kpi-rq2-value'), rate, '%');
       document.getElementById('kpi-rq2-sub').textContent =
-        `${rq2.total_test_cases ?? 0} 条用例 · ${rq2.evidence_pack_count ?? 0} 个证据包`;
+        `${rq2.total_test_cases || 0} 条用例`;
     }
-    if (rq3 && !rq3.error) {
+
+    // RQ3
+    const rq3 = d.rq3 || {};
+    if (!rq3.error) {
       const cr = rq3.overall_consistency_rate != null
         ? (rq3.overall_consistency_rate * 100).toFixed(1) : null;
       countUp(document.getElementById('kpi-rq3-value'), cr, '%');
       document.getElementById('kpi-rq3-sub').textContent =
-        `${rq3.operators_compared ?? 0} 个算子 · ${rq3.cross_session_count ?? 0} 次实验`;
-    }
-    if (rq4 && !rq4.error) {
-      countUp(document.getElementById('kpi-rq4-value'), rq4.operators_covered);
-      document.getElementById('kpi-rq4-sub').textContent =
-        `平均 ${rq4.avg_mrs_per_operator ?? 0} MR/算子 · 密度 ${rq4.test_density ?? 0}`;
+        `${rq3.cross_session_count || 0} 次实验`;
     }
 
-    if (rq1?.category_distribution) {
-      renderCategoryChart(rq1.category_distribution);
-    }
-  } catch (e) { console.warn('KPI 加载失败:', e); }
+    // 三层环形图
+    renderLayersDonut(op.total || 0, mo.total || 0, ap.total || 0);
+    // 三层规模条
+    renderLayerBars(layers);
+
+  } catch (e) { console.warn('summary-v2 加载失败:', e); }
 }
 
-// ── Load operator test table ───────────────────────────────────────────
+// ── 框架 KPI（单独请求避免超时）─────────────────────────────────────────────
+async function loadFrameworkKPI() {
+  try {
+    const resp = await fetch('/api/frameworks');
+    const json = await resp.json();
+    const fws = (json.data && json.data.frameworks) || [];
+    countUp(document.getElementById('kpi-fw-value'), fws.length);
+    const avail = fws.filter(f => f.available).length;
+    document.getElementById('kpi-fw-sub').textContent =
+      `${avail} 个可用 · 点击查看详情`;
+  } catch (e) { /* 可选请求，失败静默 */ }
+}
+
+// ── 算子测试结果表格 ──────────────────────────────────────────────────────────
 async function loadTestResults() {
   try {
     const resp = await fetch('/api/test-results');
@@ -202,7 +327,7 @@ async function loadTestResults() {
       return;
     }
 
-    tbody.innerHTML = rows.map((r, i) => {
+    tbody.innerHTML = rows.slice(0, 12).map((r, i) => {
       const pct  = r.total_tests > 0 ? (r.passed_tests / r.total_tests * 100) : 0;
       const pctS = pct.toFixed(1);
       const col  = pct >= 90 ? 'var(--success)' : pct >= 70 ? 'var(--warning)' : 'var(--danger)';
@@ -242,45 +367,34 @@ async function loadTestResults() {
   } catch (e) { console.warn('测试摘要加载失败:', e); }
 }
 
-// ── Chart: MR category donut (with canvas center-text plugin) ──────────
-function renderCategoryChart(dist) {
-  const labels = Object.keys(dist);
-  const values = Object.values(dist);
-  if (!labels.length) return;
+// ── 环形图：三层 MR 占比 ───────────────────────────────────────────────────────
+function renderLayersDonut(opTotal, moTotal, apTotal) {
+  const total = opTotal + moTotal + apTotal;
+  if (total === 0) return;
 
-  const palette = [
-    '#4d8bff','#00e5b0','#ff5252','#ffcc00','#a855f7','#00e5ff','#f97316','#ec4899'
-  ];
-  const total = values.reduce((a, b) => a + b, 0);
-
-  // Center-text drawn directly on the canvas via a Chart.js plugin
-  const centerTextPlugin = {
-    id: 'centerText',
+  const centerPlugin = {
+    id: 'center',
     beforeDraw(chart) {
-      const { ctx, chartArea } = chart;
-      if (!chartArea) return;
-      const cx = (chartArea.left + chartArea.right)  / 2;
-      const cy = (chartArea.top  + chartArea.bottom) / 2;
+      const { ctx, chartArea: ca } = chart;
+      if (!ca) return;
+      const cx = (ca.left + ca.right) / 2, cy = (ca.top + ca.bottom) / 2;
       ctx.save();
-      ctx.textAlign    = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.font         = 'bold 26px var(--font-ui, system-ui)';
-      ctx.fillStyle    = '#f0f6ff';
-      ctx.fillText(total, cx, cy - 9);
-      ctx.font      = '11px var(--font-ui, system-ui)';
-      ctx.fillStyle = '#3d5570';
-      ctx.fillText('MR 总数', cx, cy + 12);
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.font = 'bold 28px var(--font-ui)'; ctx.fillStyle = '#f0f6ff';
+      ctx.fillText(total, cx, cy - 10);
+      ctx.font = '11px var(--font-ui)'; ctx.fillStyle = '#3d5570';
+      ctx.fillText('MR 总量', cx, cy + 12);
       ctx.restore();
     }
   };
 
-  new Chart(document.getElementById('chart-category'), {
+  new Chart(document.getElementById('chart-layers-donut'), {
     type: 'doughnut',
     data: {
-      labels,
+      labels: ['算子层', '模型层', '应用层'],
       datasets: [{
-        data: values,
-        backgroundColor: palette.slice(0, labels.length),
+        data: [opTotal, moTotal, apTotal],
+        backgroundColor: ['rgba(77,139,255,.8)', 'rgba(168,85,247,.8)', 'rgba(0,229,176,.8)'],
         borderWidth: 2,
         borderColor: '#080d18',
         hoverBorderColor: '#080d18',
@@ -288,29 +402,68 @@ function renderCategoryChart(dist) {
       }]
     },
     options: {
-      responsive: true,
-      aspectRatio: 1.9,
+      responsive: true, aspectRatio: 1.6, cutout: '68%',
       plugins: {
         legend: {
-          position: 'right',
-          labels: {
-            color: '#3d5570', font: { size: 11 }, padding: 14,
-            boxWidth: 10, boxHeight: 10,
-          }
+          position: 'bottom',
+          labels: { color: '#3d5570', font: { size: 11 }, padding: 12, boxWidth: 10, boxHeight: 10 }
         },
         tooltip: { ...TOOLTIP_CFG },
       },
-      cutout: '65%',
     },
-    plugins: [centerTextPlugin],
+    plugins: [centerPlugin],
   });
 }
 
-// ── Chart: operator stacked bar ────────────────────────────────────────
+// ── 条形组：各层规模 + 验证率 ──────────────────────────────────────────────────
+function renderLayerBars(layers) {
+  const cfg = [
+    { key: 'operator',    label: '算子层', color: '#4d8bff', icon: '●' },
+    { key: 'model',       label: '模型层', color: '#a855f7', icon: '●' },
+    { key: 'application', label: '应用层', color: '#00e5b0', icon: '●' },
+  ];
+  const maxTotal = Math.max(...cfg.map(c => (layers[c.key] || {}).total || 0), 1);
+  const container = document.getElementById('layer-bars-container');
+  container.innerHTML = '';
+
+  cfg.forEach(({ key, label, color }) => {
+    const lyr = layers[key] || {};
+    const total = lyr.total || 0;
+    const verified = lyr.verified || 0;
+    const pct = total > 0 ? (verified / total * 100).toFixed(0) : 0;
+    const barW = (total / maxTotal * 100).toFixed(1);
+
+    container.insertAdjacentHTML('beforeend', `
+      <div style="margin-bottom:1rem;">
+        <div class="d-flex justify-content-between mb-1" style="font-size:.75rem;">
+          <span style="color:${color}; font-weight:600;">${label}</span>
+          <span style="color:var(--text-dim);">${total} MR · 验证率 <span style="color:${color};">${pct}%</span></span>
+        </div>
+        <div class="layer-bar-row">
+          <div class="layer-bar-track" style="flex:1;">
+            <div class="layer-bar-fill" style="width:${barW}%;
+              background:linear-gradient(90deg,${color},${color}88);
+              box-shadow:0 0 8px ${color}55;"></div>
+          </div>
+        </div>
+        <div style="height:4px; background:var(--surface-3); border-radius:99px; overflow:hidden; margin-top:3px;">
+          <div style="width:${pct}%; height:100%;
+               background:linear-gradient(90deg,${color}44,${color}88);
+               border-radius:99px;"></div>
+        </div>
+        <div style="font-size:.68rem; color:var(--text-dim); margin-top:2px;">
+          已验证 ${verified}/${total}
+        </div>
+      </div>
+    `);
+  });
+}
+
+// ── 算子堆叠条图 ──────────────────────────────────────────────────────────────
 function renderOperatorChart(rows) {
-  const labels = rows.map(r => r.ir_name.replace(/torch\.nn\.functional\./, ''));
-  const passed = rows.map(r => r.passed_tests);
-  const failed = rows.map(r => r.failed_tests);
+  const labels = rows.slice(0, 10).map(r => r.ir_name.replace(/torch\.nn\.functional\./, ''));
+  const passed = rows.slice(0, 10).map(r => r.passed_tests);
+  const failed = rows.slice(0, 10).map(r => r.failed_tests);
   if (!labels.length) return;
 
   new Chart(document.getElementById('chart-operators'), {
@@ -318,50 +471,26 @@ function renderOperatorChart(rows) {
     data: {
       labels,
       datasets: [
-        {
-          label: '通过',
-          data: passed,
-          backgroundColor: 'rgba(0,229,176,.72)',   // 固定色，避免 scriptable 首帧失效
-          borderRadius: 3,
-          stack: 's',
-        },
-        {
-          label: '失败',
-          data: failed,
-          backgroundColor: 'rgba(255,82,82,.72)',
-          borderRadius: 3,
-          stack: 's',
-        },
+        { label: '通过', data: passed, backgroundColor: 'rgba(0,229,176,.72)', borderRadius: 3, stack: 's' },
+        { label: '失败', data: failed, backgroundColor: 'rgba(255,82,82,.72)', borderRadius: 3, stack: 's' },
       ]
     },
     options: {
-      responsive: true,
-      aspectRatio: 2.8,
-      indexAxis: 'y',
+      responsive: true, aspectRatio: 1.6, indexAxis: 'y',
       plugins: {
-        legend: {
-          position: 'top',
-          labels: { color: '#3d5570', font: { size: 11 }, boxWidth: 10, boxHeight: 10 }
-        },
+        legend: { position: 'top', labels: { color: '#3d5570', font:{size:10}, boxWidth:8, boxHeight:8 } },
         tooltip: { ...TOOLTIP_CFG },
       },
       scales: {
-        x: {
-          stacked: true,
-          grid: { color: 'rgba(77,139,255,.07)' },
-          ticks: { color: '#3d5570' },
-        },
-        y: {
-          stacked: true,
-          grid: { display: false },
-          ticks: { color: '#c8daf0', font: { size: 11 } },
-        }
+        x: { stacked: true, grid: { color: 'rgba(77,139,255,.07)' }, ticks: { color:'#3d5570', font:{size:10} } },
+        y: { stacked: true, grid: { display: false }, ticks: { color:'#c8daf0', font:{size:10} } }
       },
     }
   });
 }
 
-loadSummary();
+loadSummaryV2();
 loadTestResults();
+loadFrameworkKPI();
 </script>
 {% endblock %}

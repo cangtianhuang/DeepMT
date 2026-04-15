@@ -12,6 +12,8 @@ DeepMT Dashboard — JSON API 端点
     /api/evidence         — 30s
 """
 
+import asyncio
+import threading
 import time
 from datetime import datetime
 from typing import Any, Dict, Optional
@@ -21,32 +23,82 @@ from fastapi import APIRouter
 from deepmt import __version__
 from deepmt.analysis.reporting.evidence_collector import EvidenceCollector
 from deepmt.analysis.qa.cross_framework_tester import CrossFrameworkTester
+from deepmt.analysis.qa.repo_audit import RepoAuditor
+from deepmt.experiments.case_study import CaseStudyIndex
 from deepmt.experiments.organizer import ExperimentOrganizer
 from deepmt.core.results_manager import ResultsManager
 from deepmt.mr_generator.base.mr_repository import MRRepository
+from deepmt.mr_governance.quality import QualityLevel, filter_by_quality
 
 router = APIRouter(tags=["API"])
 
 # ── 通用工具 ───────────────────────────────────────────────────────────────────
 
-_CACHE: Dict[str, Any] = {}  # { key: (data, timestamp) }
+_CACHE: Dict[str, Any] = {}             # { key: (data, timestamp) }
+_CACHE_LOCKS: Dict[str, threading.Lock] = {}
+_CACHE_META_LOCK = threading.Lock()
+
+
+def _get_cache_lock(key: str) -> threading.Lock:
+    with _CACHE_META_LOCK:
+        if key not in _CACHE_LOCKS:
+            _CACHE_LOCKS[key] = threading.Lock()
+        return _CACHE_LOCKS[key]
 
 
 def _cached(key: str, ttl: int, factory):
-    """简单 TTL 缓存，避免每次请求都重新读取文件/数据库。"""
+    """
+    线程安全的 TTL 缓存。
+    每个 key 持有独立锁（double-checked locking），防止缓存穿透与并发重建。
+    """
     entry = _CACHE.get(key)
     if entry:
         data, ts = entry
         if time.time() - ts < ttl:
             return data
-    data = factory()
-    _CACHE[key] = (data, time.time())
-    return data
+    lock = _get_cache_lock(key)
+    with lock:
+        # double-check：持锁后再次验证，另一线程可能已填充
+        entry = _CACHE.get(key)
+        if entry:
+            data, ts = entry
+            if time.time() - ts < ttl:
+                return data
+        data = factory()
+        _CACHE[key] = (data, time.time())
+        return data
+
+
+async def _acached(key: str, ttl: int, factory):
+    """
+    异步 TTL 缓存包装器。
+    在 FastAPI 的异步事件循环中，通过 asyncio.to_thread 将阻塞 I/O 隔离到
+    线程池，避免占用事件循环导致界面卡顿。
+    """
+    # 快速路径：已命中缓存时直接在事件循环中返回，避免线程调度开销
+    entry = _CACHE.get(key)
+    if entry:
+        data, ts = entry
+        if time.time() - ts < ttl:
+            return data
+    return await asyncio.to_thread(_cached, key, ttl, factory)
+
+
+def _sanitize(obj: Any) -> Any:
+    """递归将 NaN/Inf 浮点替换为 None，确保 JSON 序列化安全。"""
+    import math
+    if isinstance(obj, float):
+        return None if (math.isnan(obj) or math.isinf(obj)) else obj
+    if isinstance(obj, dict):
+        return {k: _sanitize(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_sanitize(v) for v in obj]
+    return obj
 
 
 def _ok(data: Any) -> Dict:
     return {
-        "data": data,
+        "data": _sanitize(data),
         "generated_at": datetime.now().isoformat(timespec="seconds"),
         "error": None,
     }
@@ -84,7 +136,7 @@ async def api_summary():
         except Exception as e:
             return {"error": str(e)}
 
-    data = _cached("summary", 30, _load)
+    data = await _acached("summary", 30, _load)
     return _ok(data)
 
 
@@ -92,15 +144,21 @@ async def api_summary():
 
 
 @router.get("/mr-repository", summary="MR 仓库列表与统计")
-async def api_mr_repository():
+async def api_mr_repository(layer: str = "operator"):
     """
-    遍历 MR 仓库，返回每个算子的 MR 统计（数量、验证率、类别、来源）
-    以及全局分布数据。缓存 60 秒。
+    遍历 MR 仓库，返回每个主体（算子/模型/应用）的 MR 统计。
+    layer 参数：operator（默认）/ model / application。缓存 60 秒。
     """
+    valid_layers = {"operator", "model", "application"}
+    if layer not in valid_layers:
+        return _err(f"layer 必须是 {valid_layers} 之一")
+
+    cache_key = f"mr_repository_{layer}"
+
     def _load():
         try:
-            repo = MRRepository(layer="operator")
-            operators_raw = repo.list_operators()
+            repo = MRRepository(layer=layer)
+            operators_raw = repo.list_subjects()
 
             total_mrs = 0
             verified_mrs = 0
@@ -132,7 +190,8 @@ async def api_mr_repository():
                         fws.update(mr.applicable_frameworks)
 
                 operators_out.append({
-                    "operator_name": op_name,
+                    "subject_name": op_name,
+                    "operator_name": op_name,  # backward compat
                     "total_count": op_total,
                     "verified_count": op_verified,
                     "categories": sorted(cats),
@@ -142,11 +201,14 @@ async def api_mr_repository():
 
             n_ops = len(operators_out)
             return {
+                "layer": layer,
                 "total_mr_count": total_mrs,
                 "verified_mr_count": verified_mrs,
                 "verification_rate": round(verified_mrs / total_mrs, 4) if total_mrs else 0.0,
                 "operators_with_mr": n_ops,
+                "subjects_with_mr": n_ops,
                 "avg_mr_per_operator": round(total_mrs / n_ops, 2) if n_ops else 0.0,
+                "avg_mr_per_subject": round(total_mrs / n_ops, 2) if n_ops else 0.0,
                 "category_distribution": dict(
                     sorted(category_dist.items(), key=lambda x: -x[1])
                 ),
@@ -154,23 +216,32 @@ async def api_mr_repository():
                     sorted(source_dist.items(), key=lambda x: -x[1])
                 ),
                 "operators": operators_out,
+                "subjects": operators_out,
             }
         except Exception as e:
-            return {"error": str(e), "operators": []}
+            return {"error": str(e), "operators": [], "subjects": []}
 
-    return _ok(_cached("mr_repository", 60, _load))
+    return _ok(await _acached(cache_key, 60, _load))
 
 
-@router.get("/mr-repository/{operator_name:path}", summary="单算子 MR 列表")
-async def api_mr_detail(operator_name: str):
+@router.get("/mr-repository/{operator_name:path}", summary="单主体 MR 列表")
+async def api_mr_detail(operator_name: str, layer_hint: str = "operator"):
     """
-    返回指定算子的全部 MR，含 transform_code / oracle_expr / 验证状态等。
-    不缓存（单算子查询成本低）。
+    返回指定主体（算子/模型/应用）的全部 MR。
+    layer_hint: 层次提示（operator/model/application），默认 operator。
+    不缓存（单主体查询成本低）。
     """
-    try:
-        repo = MRRepository(layer="operator")
-        mrs = repo.load(operator_name)
-        data = [
+    valid_layers = {"operator", "model", "application"}
+    layer = layer_hint if layer_hint in valid_layers else "operator"
+
+    def _load():
+        mrs = []
+        for lyr in [layer] + [l for l in ("operator", "model", "application") if l != layer]:
+            repo = MRRepository(layer=lyr)
+            mrs = repo.load(operator_name)
+            if mrs:
+                break
+        return [
             {
                 "id": mr.id,
                 "description": mr.description,
@@ -191,7 +262,9 @@ async def api_mr_detail(operator_name: str):
             }
             for mr in mrs
         ]
-        return _ok(data)
+
+    try:
+        return _ok(await asyncio.to_thread(_load))
     except Exception as e:
         return _err(str(e))
 
@@ -219,7 +292,7 @@ async def api_test_results():
         except Exception as e:
             return []
 
-    return _ok(_cached("test_results", 10, _load))
+    return _ok(await _acached("test_results", 10, _load))
 
 
 @router.get("/test-results/failed", summary="近期失败用例列表")
@@ -229,9 +302,9 @@ async def api_test_failed(limit: int = 50):
     不缓存（便于快速反映最新失败）。
     """
     try:
-        rows = ResultsManager().get_failed_tests(limit=limit)
+        rows = await asyncio.to_thread(ResultsManager().get_failed_tests, limit)
         return _ok(rows)
-    except Exception as e:
+    except Exception:
         return _ok([])
 
 
@@ -265,7 +338,7 @@ async def api_evidence(limit: int = 100):
         except Exception as e:
             return []
 
-    return _ok(_cached("evidence", 30, _load))
+    return _ok(await _acached("evidence", 30, _load))
 
 
 @router.get("/evidence/{evidence_id}/script", summary="证据包复现脚本")
@@ -274,17 +347,19 @@ async def api_evidence_script(evidence_id: str):
     返回指定证据包的完整 Python 复现脚本。
     不缓存（按需访问）。
     """
-    try:
+    def _load():
         pack = EvidenceCollector().load(evidence_id)
         if pack is None:
-            return _err(f"证据包 '{evidence_id}' 不存在")
-        return _ok({
+            raise KeyError(f"证据包 '{evidence_id}' 不存在")
+        return {
             "id": pack.evidence_id,
             "operator": pack.operator,
             "mr_description": pack.mr_description,
             "script": pack.reproduce_script,
             "timestamp": pack.timestamp,
-        })
+        }
+    try:
+        return _ok(await asyncio.to_thread(_load))
     except Exception as e:
         return _err(str(e))
 
@@ -323,7 +398,7 @@ async def api_cross_framework():
         except Exception as e:
             return []
 
-    return _ok(_cached("cross_framework", 60, _load))
+    return _ok(await _acached("cross_framework", 60, _load))
 
 
 @router.get("/cross-framework/{session_id}", summary="跨框架会话详情")
@@ -332,15 +407,14 @@ async def api_cross_session(session_id: str):
     返回指定会话的完整数据（含每条 MR 的一致性对比结果）。
     不缓存（按需访问）。
     """
-    try:
+    def _load():
         sessions = CrossFrameworkTester().load_all()
         session = next((s for s in sessions if s.session_id == session_id), None)
         if session is None:
-            return _err(f"会话 '{session_id}' 不存在")
-
-        data = session.to_dict()
-        # 补充每条 MR 的通过率字段（to_dict 已包含，但做二次确认）
-        return _ok(data)
+            raise KeyError(f"会话 '{session_id}' 不存在")
+        return session.to_dict()
+    try:
+        return _ok(await asyncio.to_thread(_load))
     except Exception as e:
         return _err(str(e))
 
@@ -363,7 +437,6 @@ async def api_mr_quality():
     """
     def _load():
         try:
-            from deepmt.analysis.qa.repo_audit import RepoAuditor
             auditor = RepoAuditor()
             report = auditor.run_audit()
             return {
@@ -388,7 +461,7 @@ async def api_mr_quality():
         except Exception as e:
             return {"error": str(e)}
 
-    return _ok(_cached("mr_quality", 60, _load))
+    return _ok(await _acached("mr_quality", 60, _load))
 
 
 @router.get("/mr-quality/filter", summary="按质量等级筛选 MR")
@@ -405,9 +478,7 @@ async def api_mr_quality_filter(
         layer           — 可选层次过滤（operator/model/application）
         exclude_retired — 是否排除已退役 MR（默认 True）
     """
-    try:
-        from deepmt.mr_governance.quality import QualityLevel, filter_by_quality
-
+    def _load():
         _ql_map = {
             "candidate": "pending", "checked": "checked",
             "proven": "proven", "curated": "curated", "retired": "retired",
@@ -435,6 +506,236 @@ async def api_mr_quality_filter(
                         "source": m.source,
                         "applicable_frameworks": m.applicable_frameworks,
                     })
-        return _ok({"count": len(result), "mrs": result})
+        return {"count": len(result), "mrs": result}
+
+    try:
+        return _ok(await asyncio.to_thread(_load))
+    except Exception as e:
+        return _err(str(e))
+
+
+# ── Phase P: 三层汇总（summary-v2） ─────────────────────────────────────────────
+
+
+@router.get("/summary-v2", summary="三层 MR 全量统计摘要")
+async def api_summary_v2():
+    """
+    汇总三层（operator/model/application）MR 仓库的整体规模，
+    同时复用 ExperimentOrganizer 的 RQ 数据。缓存 30 秒。
+    """
+    def _load():
+        try:
+            layers_stat = {}
+            grand_total = 0
+            for lyr in ("operator", "model", "application"):
+                repo = MRRepository(layer=lyr)
+                subjects = repo.list_subjects()
+                total = 0
+                verified = 0
+                for subj in subjects:
+                    mrs = repo.load(subj)
+                    total += len(mrs)
+                    verified += sum(1 for m in mrs if m.verified)
+                layers_stat[lyr] = {
+                    "total": total,
+                    "verified": verified,
+                    "subjects": len(subjects),
+                    "verification_rate": round(verified / total, 4) if total else 0.0,
+                }
+                grand_total += total
+
+            rq_data = {}
+            try:
+                rq_data = ExperimentOrganizer().collect_all()
+            except Exception:
+                pass
+
+            return {
+                "grand_total_mr": grand_total,
+                "layers": layers_stat,
+                "rq1": rq_data.get("rq1", {}),
+                "rq2": rq_data.get("rq2", {}),
+                "rq3": rq_data.get("rq3", {}),
+                "rq4": rq_data.get("rq4", {}),
+            }
+        except Exception as e:
+            return {"error": str(e), "layers": {}, "grand_total_mr": 0}
+
+    return _ok(await _acached("summary_v2", 30, _load))
+
+
+# ── Phase P: 框架信息 ──────────────────────────────────────────────────────────
+
+
+@router.get("/frameworks", summary="已注册框架列表与能力信息")
+async def api_frameworks():
+    """
+    返回各框架的安装状态与版本信息。
+
+    使用 importlib.util.find_spec（文件系统查找）与 importlib.metadata.version
+    （读取 .dist-info 元数据）检测框架是否安装及其版本，**不执行任何框架的
+    import**，彻底避免 PyTorch / PaddlePaddle 等 C++ 扩展的初始化开销与互斥锁问题。
+
+    缓存 120 秒。
+    """
+    # 框架静态描述表：name（与 MR applicable_frameworks 对齐）/ pkg（pip 包名）/ optional
+    _FW_TABLE = [
+        {"name": "pytorch",      "pkg": "torch",      "pip": "torch",        "optional": False},
+        {"name": "numpy",        "pkg": "numpy",      "pip": "numpy",        "optional": False},
+        {"name": "paddlepaddle", "pkg": "paddle",     "pip": "paddlepaddle", "optional": True},
+        {"name": "tensorflow",   "pkg": "tensorflow", "pip": "tensorflow",   "optional": True},
+    ]
+
+    def _load():
+        import importlib.metadata
+        import importlib.util
+
+        # 扫描 MR 仓库统计各框架适用 MR 数（纯文件 I/O，不涉及框架 import）
+        fw_mr_counts: Dict[str, int] = {}
+        try:
+            for lyr in ("operator", "model", "application"):
+                repo = MRRepository(layer=lyr)
+                for subj in repo.list_subjects():
+                    for m in repo.load(subj):
+                        for fw in (m.applicable_frameworks or []):
+                            fw_mr_counts[fw] = fw_mr_counts.get(fw, 0) + 1
+        except Exception:
+            pass
+
+        result = []
+        for fw in _FW_TABLE:
+            # find_spec：只做文件系统查找，不执行任何 Python/C 代码
+            available = importlib.util.find_spec(fw["pkg"]) is not None
+
+            version = "N/A"
+            if available:
+                try:
+                    version = importlib.metadata.version(fw["pip"])
+                except importlib.metadata.PackageNotFoundError:
+                    pass
+
+            result.append({
+                "name":               fw["name"],
+                "available":          available,
+                "optional":           fw["optional"],
+                "version":            version,
+                "supported_operators": [],   # 枚举算子需 import 框架，仪表盘不需要
+                "operator_count":     0,
+                "mr_applicable_count": fw_mr_counts.get(fw["name"], 0),
+                "status": "available" if available else "unavailable",
+            })
+
+        return {"frameworks": result, "total": len(result)}
+
+    return _ok(await _acached("frameworks", 120, _load))
+
+
+# ── Phase P: 模型层 / 应用层测试结果 ────────────────────────────────────────────
+
+
+@router.get("/test-results/model", summary="模型层测试结果汇总")
+async def api_test_results_model():
+    """
+    读取 defect_summary 表中 ir_type='model' 的记录。缓存 10 秒。
+    """
+    def _load():
+        try:
+            rows = ResultsManager().get_summary()
+            model_rows = [r for r in rows if r.get("ir_type") == "model" or
+                          r.get("ir_name", "").lower() in
+                          ("simplemlp", "simplecnn", "simplernn", "tinytransformer",
+                           "resnet18", "vgg16", "mobilenetv2")]
+            # 若 ir_type 字段不存在，尝试按模型 registry 名称判断
+            if not model_rows:
+                try:
+                    from deepmt.benchmarks.models.model_registry import ModelBenchmarkRegistry
+                    model_names = {m.name.lower() for m in ModelBenchmarkRegistry().list_models()}
+                    model_rows = [r for r in rows if r.get("ir_name", "").lower() in model_names]
+                except Exception:
+                    pass
+            return sorted(model_rows, key=lambda r: r.get("failed_tests", 0), reverse=True)
+        except Exception:
+            return []
+
+    return _ok(await _acached("test_results_model", 10, _load))
+
+
+@router.get("/test-results/application", summary="应用层验证结果汇总")
+async def api_test_results_application():
+    """
+    读取应用层测试结果（ir_type='application'）。缓存 10 秒。
+    """
+    def _load():
+        try:
+            rows = ResultsManager().get_summary()
+            app_rows = [r for r in rows if r.get("ir_type") == "application" or
+                        r.get("ir_name", "").lower() in
+                        ("imageclassification", "textsentiment", "image_classification", "text_sentiment")]
+            if not app_rows:
+                try:
+                    from deepmt.benchmarks.applications.app_registry import ApplicationBenchmarkRegistry
+                    app_names = {s.name.lower() for s in ApplicationBenchmarkRegistry().list_scenarios()}
+                    app_rows = [r for r in rows if r.get("ir_name", "").lower() in app_names]
+                except Exception:
+                    pass
+            return sorted(app_rows, key=lambda r: r.get("failed_tests", 0), reverse=True)
+        except Exception:
+            return []
+
+    return _ok(await _acached("test_results_application", 10, _load))
+
+
+# ── Phase P: 真实缺陷案例 ────────────────────────────────────────────────────────
+
+
+@router.get("/cases", summary="真实缺陷案例列表")
+async def api_cases(status: Optional[str] = None, limit: int = 100):
+    """
+    列出所有真实缺陷案例（来自 CaseStudyIndex）。
+    可按 status 过滤（draft/confirmed/closed）。缓存 30 秒。
+    """
+    def _load():
+        try:
+            idx = CaseStudyIndex()
+            cases = idx.list_all()
+            result = []
+            for c in cases[:limit]:
+                result.append({
+                    "case_id": c.case_id,
+                    "operator": c.operator,
+                    "framework": c.framework,
+                    "framework_version": c.framework_version,
+                    "mr_id": c.mr_id,
+                    "mr_description": c.mr_description,
+                    "layer": c.layer,
+                    "defect_type": c.defect_type,
+                    "severity": c.severity,
+                    "summary": c.summary,
+                    "status": c.status,
+                    "created_at": c.created_at,
+                    "oracle_violation": c.oracle_violation,
+                })
+            if status:
+                result = [r for r in result if r["status"] == status]
+            return result
+        except Exception as e:
+            return []
+
+    return _ok(await _acached("cases", 30, _load))
+
+
+@router.get("/cases/{case_id}", summary="单案例详情")
+async def api_case_detail(case_id: str):
+    """返回指定案例的完整信息（不缓存）。"""
+    def _load():
+        idx = CaseStudyIndex()
+        case = idx.load(case_id)
+        if case is None:
+            raise KeyError(f"案例 '{case_id}' 不存在")
+        return case.to_dict()
+    try:
+        return _ok(await asyncio.to_thread(_load))
+    except KeyError as e:
+        return _err(str(e))
     except Exception as e:
         return _err(str(e))
