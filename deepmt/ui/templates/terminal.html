@@ -1,0 +1,908 @@
+{% extends "base.html" %}
+{% block title %}终端 — DeepMT{% endblock %}
+
+{% block extra_head %}
+<style>
+/* ── Terminal page: 全屏铺满，隐藏 footer ──────────────────────────────── */
+body { overflow: hidden; }
+footer { display: none !important; }
+
+.page-content {
+  height: calc(100vh - var(--nav-h));
+  display: flex; flex-direction: column; overflow: hidden;
+  padding-top: var(--nav-h);
+}
+
+/* ── Root layout ─────────────────────────────────────────────────────── */
+.term-layout { display: flex; flex: 1; overflow: hidden; }
+
+/* ══════════════ SIDEBAR ══════════════════════════════════════════════ */
+.term-sidebar {
+  width: 248px; flex-shrink: 0;
+  border-right: 1px solid var(--border);
+  background: var(--surface);
+  overflow-y: auto; overflow-x: hidden;
+  padding: .9rem .75rem;
+  scrollbar-width: thin;
+}
+.term-sidebar::-webkit-scrollbar { width: 3px; }
+.term-sidebar::-webkit-scrollbar-thumb { background: var(--surface-3); }
+
+.cmd-section { margin-bottom: .9rem; }
+.cmd-section-title {
+  font-size: .6rem; font-weight: 700; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--text-dim);
+  margin-bottom: .4rem; padding-bottom: .3rem;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: .4rem;
+}
+.cmd-btn {
+  display: flex; align-items: flex-start; gap: .45rem;
+  width: 100%; text-align: left;
+  background: transparent; border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  padding: .32rem .5rem; margin-bottom: .15rem;
+  cursor: pointer; transition: var(--transition);
+  color: var(--text-dim);
+  font-size: .75rem; font-family: var(--font-mono);
+  line-height: 1.5; word-break: break-all;
+}
+.cmd-btn:hover {
+  background: var(--primary-dim); border-color: var(--border); color: var(--text);
+}
+.cmd-btn:active { background: rgba(77,139,255,.18); }
+.cmd-btn .cmd-icon { margin-top: 1px; flex-shrink: 0; font-size: .8rem; }
+.cmd-btn.is-running { opacity: .4; cursor: not-allowed; }
+/* Hovered btn highlight */
+.cmd-btn.tooltip-active {
+  background: rgba(0,229,255,.08);
+  border-color: rgba(0,229,255,.22);
+  color: var(--accent);
+}
+
+/* ══════════════ TOOLTIP PANEL ════════════════════════════════════════ */
+#tooltipPanel {
+  position: fixed;
+  left: 248px;
+  width: 300px;
+  z-index: 8000;
+  pointer-events: none;   /* 悬停在面板上不触发 mouseleave */
+  opacity: 0;
+  transform: translateX(-6px);
+  transition: opacity .18s ease, transform .18s ease;
+}
+#tooltipPanel.visible {
+  opacity: 1;
+  transform: translateX(0);
+  pointer-events: auto;
+}
+.tip-card {
+  background: var(--surface-2);
+  border: 1px solid var(--border-bright);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg), 0 0 0 1px rgba(0,229,255,.08);
+  padding: .85rem 1rem;
+  font-size: .78rem;
+}
+.tip-cmd {
+  font-family: var(--font-mono); font-size: .79rem;
+  color: var(--accent); font-weight: 600;
+  margin-bottom: .45rem;
+}
+.tip-cmd .tip-prefix { color: var(--primary); opacity: .7; }
+.tip-desc { color: var(--text); line-height: 1.55; margin-bottom: .55rem; }
+.tip-opts-title {
+  font-size: .6rem; font-weight: 700; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--text-dim);
+  margin-bottom: .35rem;
+}
+.tip-opt-row {
+  display: flex; gap: .5rem; margin-bottom: .2rem; line-height: 1.4;
+}
+.tip-opt-flag {
+  font-family: var(--font-mono); font-size: .72rem;
+  color: var(--info); flex-shrink: 0; min-width: 90px;
+}
+.tip-opt-desc { color: var(--text-dim); font-size: .72rem; }
+.tip-example {
+  margin-top: .55rem; padding-top: .45rem;
+  border-top: 1px solid var(--border);
+  font-family: var(--font-mono); font-size: .73rem;
+  color: var(--text-dim);
+}
+.tip-example span { color: var(--text-code); }
+
+/* ══════════════ MAIN TERMINAL ════════════════════════════════════════ */
+.term-main { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: #030507; }
+
+/* Header bar */
+.term-header {
+  flex-shrink: 0;
+  background: var(--surface-2); border-bottom: 1px solid var(--border);
+  padding: .5rem .9rem; display: flex; align-items: center; gap: .65rem; height: 40px;
+}
+.term-header-title {
+  font-size: .78rem; font-weight: 700; color: var(--text); flex: 1;
+  display: flex; align-items: center; gap: .45rem;
+}
+
+/* Status pip */
+.term-status { display: flex; align-items: center; gap: .4rem; font-size: .7rem; color: var(--text-dim); }
+.term-status-dot {
+  width: 7px; height: 7px; border-radius: 50%; background: var(--text-dim);
+  transition: background .3s ease, box-shadow .3s ease;
+}
+.term-status-dot.connected  { background: var(--success); box-shadow: 0 0 8px var(--success-glow); animation: pipBlink 2.6s ease-in-out infinite; }
+.term-status-dot.running    { background: var(--warning); box-shadow: 0 0 8px var(--warning-glow); animation: pipBlink .9s ease-in-out infinite; }
+.term-status-dot.error      { background: var(--danger);  box-shadow: 0 0 8px var(--danger-glow); }
+
+/* Output area */
+.term-output {
+  flex: 1; overflow-y: auto; overflow-x: auto;
+  padding: .85rem 1.1rem 1rem;
+  font-family: var(--font-mono); font-size: .81rem; line-height: 1.72;
+  color: var(--text-code); scrollbar-width: thin;
+}
+.term-output::-webkit-scrollbar { width: 4px; height: 4px; }
+.term-output::-webkit-scrollbar-thumb { background: var(--surface-3); border-radius: 99px; }
+
+.term-line { white-space: pre-wrap; word-break: break-all; }
+.term-prompt-line { margin-top: .7rem; }
+.term-done-line   { margin-bottom: .55rem; font-size: .7rem; opacity: .65; }
+.term-sys-line    { color: var(--text-dim); font-style: italic; }
+
+/* Welcome */
+.term-welcome {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  height: 100%; color: var(--text-dim); gap: .4rem;
+  pointer-events: none; user-select: none;
+}
+.term-welcome-icon { font-size: 2.8rem; opacity: .12; margin-bottom: .3rem; }
+.term-welcome-title { font-size: .9rem; color: var(--text-dim); opacity: .7; }
+.term-welcome-sub   { font-size: .72rem; color: var(--text-dim); opacity: .45; }
+
+/* ══════════════ AUTOCOMPLETE DROPDOWN ════════════════════════════════ */
+.ac-wrap { position: relative; flex: 1; display: flex; align-items: center; }
+
+#acDropdown {
+  position: absolute; bottom: calc(100% + 8px); left: -56px;
+  width: calc(100% + 120px);
+  background: var(--surface-2);
+  border: 1px solid var(--border-bright);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  display: none;
+  z-index: 7000;
+  max-height: 320px; overflow-y: auto;
+}
+#acDropdown.open { display: block; animation: revealUp .14s ease both; }
+#acDropdown::-webkit-scrollbar { width: 3px; }
+#acDropdown::-webkit-scrollbar-thumb { background: var(--surface-3); }
+
+.ac-item {
+  display: flex; align-items: baseline; gap: .65rem;
+  padding: .45rem .75rem; cursor: pointer;
+  transition: background .12s ease;
+  border-left: 2px solid transparent;
+}
+.ac-item:hover, .ac-item.focused {
+  background: var(--primary-dim);
+  border-left-color: var(--primary);
+}
+.ac-item-cmd {
+  font-family: var(--font-mono); font-size: .78rem;
+  color: var(--text); white-space: nowrap; min-width: 0;
+  flex-shrink: 0;
+}
+.ac-item-cmd .ac-match { color: var(--accent); }
+.ac-item-desc {
+  font-size: .72rem; color: var(--text-dim);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.ac-kbd {
+  margin-left: auto; flex-shrink: 0;
+  font-size: .62rem; color: var(--text-dim);
+  background: var(--surface-3); border: 1px solid var(--border);
+  border-radius: 4px; padding: 0 5px; line-height: 1.7;
+}
+
+/* ══════════════ INPUT BAR ════════════════════════════════════════════ */
+.term-input-bar {
+  flex-shrink: 0; background: var(--surface-2); border-top: 1px solid var(--border);
+  padding: .55rem .9rem; display: flex; align-items: center; gap: .6rem; height: 46px;
+}
+.term-prompt-label { font-family: var(--font-mono); font-size: .8rem; color: var(--accent); white-space: nowrap; user-select: none; opacity: .85; }
+.term-prompt-sep   { color: var(--border-bright); font-family: var(--font-mono); font-size: .9rem; user-select: none; }
+.term-input {
+  flex: 1; background: transparent; border: none; outline: none;
+  font-family: var(--font-mono); font-size: .8rem;
+  color: var(--text-bright); caret-color: var(--accent);
+}
+.term-input::placeholder { color: var(--text-dim); opacity: .55; }
+.term-input:disabled { opacity: .4; }
+
+/* Buttons */
+.term-btn {
+  background: transparent; cursor: pointer; transition: var(--transition);
+  border-radius: var(--radius-sm); padding: .22rem .6rem;
+  font-size: .72rem; display: flex; align-items: center; gap: .3rem; white-space: nowrap;
+}
+.term-btn-clear { border: 1px solid var(--border); color: var(--text-dim); }
+.term-btn-clear:hover { border-color: var(--border-bright); color: var(--text); background: var(--surface-3); }
+.term-btn-kill  { border: 1px solid rgba(255,82,82,.35); color: var(--danger); display: none; }
+.term-btn-kill:hover { background: var(--danger-dim); border-color: var(--danger); }
+.term-btn-run   { border: 1px solid rgba(77,139,255,.35); color: var(--primary); background: var(--primary-dim); font-weight: 600; padding: .22rem .8rem; }
+.term-btn-run:hover { background: rgba(77,139,255,.2); border-color: var(--primary); box-shadow: 0 0 12px rgba(77,139,255,.18); }
+.term-btn-run:disabled { opacity: .38; cursor: not-allowed; pointer-events: none; }
+
+.term-hd-sep { width: 1px; height: 14px; background: var(--border); flex-shrink: 0; }
+
+/* Responsive */
+@media (max-width: 900px) { .term-sidebar { display: none !important; } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="term-layout">
+
+  <!-- ══════════════════════ SIDEBAR ════════════════════════════════════ -->
+  <aside class="term-sidebar" id="termSidebar">
+    <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.8rem;padding-bottom:.5rem;border-bottom:1px solid var(--border);">
+      <i class="bi bi-terminal-fill" style="color:var(--accent);font-size:.9rem;"></i>
+      <span style="font-size:.75rem;font-weight:700;color:var(--text);">快捷命令</span>
+      <span style="margin-left:auto;font-size:.62rem;color:var(--text-dim);">悬停查看详情</span>
+    </div>
+
+    <div class="cmd-section">
+      <div class="cmd-section-title"><i class="bi bi-heart-pulse-fill" style="color:var(--success);"></i>系统</div>
+      <button class="cmd-btn" data-cmd="health check" onclick="runCmd('health check')"><span class="cmd-icon" style="color:var(--success);">✓</span>health check</button>
+      <button class="cmd-btn" data-cmd="health check --deep" onclick="runCmd('health check --deep')"><span class="cmd-icon" style="color:var(--success);">✓</span>health check --deep</button>
+      <button class="cmd-btn" data-cmd="health matrix" onclick="runCmd('health matrix')"><span class="cmd-icon" style="color:var(--info);">▦</span>health matrix</button>
+    </div>
+
+    <div class="cmd-section">
+      <div class="cmd-section-title"><i class="bi bi-list-ul" style="color:var(--primary);"></i>算子目录</div>
+      <button class="cmd-btn" data-cmd="catalog list" onclick="runCmd('catalog list --framework pytorch --category activation')"><span class="cmd-icon" style="color:var(--primary);">›</span>catalog list --category activation</button>
+      <button class="cmd-btn" data-cmd="catalog info <operator>" onclick="runCmd('catalog info relu')"><span class="cmd-icon" style="color:var(--primary);">›</span>catalog info relu</button>
+      <button class="cmd-btn" data-cmd="catalog search <keyword>" onclick="runCmd('catalog search relu')"><span class="cmd-icon" style="color:var(--primary);">›</span>catalog search relu</button>
+    </div>
+
+    <div class="cmd-section">
+      <div class="cmd-section-title"><i class="bi bi-cpu" style="color:var(--c-rq1);"></i>MR 生成</div>
+      <button class="cmd-btn" data-cmd="mr generate <operator>" onclick="runCmd('mr generate relu --sources template --precheck --save')"><span class="cmd-icon" style="color:var(--c-rq1);">⚙</span>mr generate relu --save</button>
+      <button class="cmd-btn" data-cmd="mr generate <operator>" onclick="runCmd('mr generate exp --sources template --precheck --save')"><span class="cmd-icon" style="color:var(--c-rq1);">⚙</span>mr generate exp --save</button>
+      <button class="cmd-btn" data-cmd="mr batch-generate" onclick="runCmd('mr batch-generate --framework pytorch --limit 5')"><span class="cmd-icon" style="color:var(--c-rq1);">⚙</span>mr batch-generate --limit 5</button>
+      <button class="cmd-btn" data-cmd="mr batch-generate" onclick="runCmd('mr batch-generate --dry-run')"><span class="cmd-icon" style="color:var(--text-dim);">›</span>mr batch-generate --dry-run</button>
+      <button class="cmd-btn" data-cmd="mr model-generate" onclick="runCmd('mr model-generate --all')"><span class="cmd-icon" style="color:var(--c-rq2);">◈</span>mr model-generate --all</button>
+    </div>
+
+    <div class="cmd-section">
+      <div class="cmd-section-title"><i class="bi bi-database" style="color:var(--c-rq3);"></i>知识库</div>
+      <button class="cmd-btn" data-cmd="repo stats" onclick="runCmd('repo stats')"><span class="cmd-icon" style="color:var(--c-rq3);">≡</span>repo stats</button>
+      <button class="cmd-btn" data-cmd="repo stats" onclick="runCmd('repo stats --all-layers')"><span class="cmd-icon" style="color:var(--c-rq3);">≡</span>repo stats --all-layers</button>
+      <button class="cmd-btn" data-cmd="repo list" onclick="runCmd('repo list')"><span class="cmd-icon" style="color:var(--c-rq3);">›</span>repo list</button>
+      <button class="cmd-btn" data-cmd="repo audit" onclick="runCmd('repo audit')"><span class="cmd-icon" style="color:var(--c-rq4);">⬡</span>repo audit</button>
+    </div>
+
+    <div class="cmd-section">
+      <div class="cmd-section-title"><i class="bi bi-play-fill" style="color:var(--success);"></i>测试执行</div>
+      <button class="cmd-btn" data-cmd="test batch" onclick="runCmd('test batch --framework pytorch --n-samples 10')"><span class="cmd-icon" style="color:var(--success);">▶</span>test batch --n-samples 10</button>
+      <button class="cmd-btn" data-cmd="test open" onclick="runCmd('test open --inject-faults all --n-samples 10 --collect-evidence')"><span class="cmd-icon" style="color:var(--danger);">⚡</span>test open --inject-faults all</button>
+      <button class="cmd-btn" data-cmd="test cross <operator>" onclick="runCmd('test cross torch.nn.functional.relu --save')"><span class="cmd-icon" style="color:var(--info);">↔</span>test cross relu --save</button>
+      <button class="cmd-btn" data-cmd="test model" onclick="runCmd('test model --all')"><span class="cmd-icon" style="color:var(--c-rq2);">◈</span>test model --all</button>
+    </div>
+
+    <div class="cmd-section">
+      <div class="cmd-section-title"><i class="bi bi-file-earmark-bar-graph" style="color:var(--c-rq4);"></i>报告 &amp; 证据</div>
+      <button class="cmd-btn" data-cmd="test report" onclick="runCmd('test report')"><span class="cmd-icon" style="color:var(--c-rq4);">📊</span>test report</button>
+      <button class="cmd-btn" data-cmd="test failures" onclick="runCmd('test failures --limit 10')"><span class="cmd-icon" style="color:var(--danger);">✗</span>test failures --limit 10</button>
+      <button class="cmd-btn" data-cmd="test evidence list" onclick="runCmd('test evidence list')"><span class="cmd-icon" style="color:var(--info);">📁</span>test evidence list</button>
+      <button class="cmd-btn" data-cmd="case list" onclick="runCmd('case list')"><span class="cmd-icon" style="color:var(--danger);">🐛</span>case list</button>
+    </div>
+
+    <div class="cmd-section">
+      <div class="cmd-section-title"><i class="bi bi-graph-up" style="color:var(--c-rq2);"></i>实验数据</div>
+      <button class="cmd-btn" data-cmd="experiment collect" onclick="runCmd('experiment collect')"><span class="cmd-icon" style="color:var(--c-rq2);">≈</span>experiment collect</button>
+      <button class="cmd-btn" data-cmd="experiment env" onclick="runCmd('experiment env')"><span class="cmd-icon" style="color:var(--text-dim);">ℹ</span>experiment env</button>
+      <button class="cmd-btn" data-cmd="experiment benchmark" onclick="runCmd('experiment benchmark')"><span class="cmd-icon" style="color:var(--c-rq1);">▣</span>experiment benchmark</button>
+    </div>
+
+    <div class="cmd-section">
+      <div class="cmd-section-title"><i class="bi bi-trash" style="color:var(--text-dim);"></i>数据清理</div>
+      <button class="cmd-btn" data-cmd="data clean-logs" onclick="runCmd('data clean-logs -y')"><span class="cmd-icon" style="color:var(--warning);">🗑</span>data clean-logs -y</button>
+    </div>
+  </aside>
+
+  <!-- ══════════════════════ TOOLTIP PANEL ══════════════════════════════ -->
+  <div id="tooltipPanel">
+    <div class="tip-card" id="tipCard"></div>
+  </div>
+
+  <!-- ══════════════════════ TERMINAL MAIN ══════════════════════════════ -->
+  <div class="term-main">
+
+    <!-- Header -->
+    <div class="term-header">
+      <div class="term-header-title">
+        <i class="bi bi-terminal" style="color:var(--accent);"></i>DeepMT 终端
+      </div>
+      <div class="term-status">
+        <div class="term-status-dot" id="statusDot"></div>
+        <span id="statusText" style="min-width:3rem;">未连接</span>
+      </div>
+      <div class="term-hd-sep"></div>
+      <button class="term-btn term-btn-clear" onclick="clearOutput()" title="清空 (Ctrl+L)">
+        <i class="bi bi-eraser"></i>清空
+      </button>
+      <button class="term-btn term-btn-kill" id="killBtn" onclick="killProcess()" title="中断 (Ctrl+C)">
+        <i class="bi bi-stop-fill"></i>中断
+      </button>
+    </div>
+
+    <!-- Output -->
+    <div class="term-output" id="termOutput">
+      <div class="term-welcome" id="termWelcome">
+        <div class="term-welcome-icon"><i class="bi bi-terminal-fill"></i></div>
+        <div class="term-welcome-title">DeepMT 命令终端</div>
+        <div class="term-welcome-sub">从左侧选择命令，或在下方输入子命令后按 Enter</div>
+      </div>
+    </div>
+
+    <!-- Input bar -->
+    <div class="term-input-bar">
+      <span class="term-prompt-label">deepmt</span>
+      <span class="term-prompt-sep">›</span>
+      <!-- autocomplete wrapper -->
+      <div class="ac-wrap">
+        <input
+          type="text" id="termInput" class="term-input"
+          placeholder="输入子命令…" autocomplete="off" autocorrect="off" spellcheck="false"
+        >
+        <!-- dropdown renders here -->
+        <div id="acDropdown"></div>
+      </div>
+      <button class="term-btn term-btn-run" id="runBtn" onclick="submitCommand()">
+        <i class="bi bi-send-fill" style="font-size:.7rem;"></i>运行
+      </button>
+    </div>
+
+  </div><!-- /term-main -->
+</div><!-- /term-layout -->
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+/* ════════════════════════════════════════════════════════════════════════
+   DeepMT Terminal  ·  WebSocket + Autocomplete + Tooltip
+   ════════════════════════════════════════════════════════════════════════ */
+
+/* ── DOM refs ──────────────────────────────────────────────────────────── */
+const $output    = document.getElementById('termOutput');
+const $input     = document.getElementById('termInput');
+const $runBtn    = document.getElementById('runBtn');
+const $killBtn   = document.getElementById('killBtn');
+const $statusDot = document.getElementById('statusDot');
+const $statusTxt = document.getElementById('statusText');
+const $acDrop    = document.getElementById('acDropdown');
+const $tipPanel  = document.getElementById('tooltipPanel');
+const $tipCard   = document.getElementById('tipCard');
+
+/* ════════════════════════════════════════════════════════════════════════
+   COMMAND DATA  — 全量 deepmt 命令字典
+   ════════════════════════════════════════════════════════════════════════ */
+const CMDS = [
+  /* health */
+  { cmd:'health check',        desc:'逐一检查所有核心模块，输出通过/警告/错误统计；报告头部含框架版本矩阵',
+    opts:[{f:'--deep',d:'追加插件契约 + 算子↔插件可达性 + 目录对账检测'}],
+    ex:'health check --deep' },
+  { cmd:'health matrix',       desc:'输出"算子 × 框架"可达性矩阵（基于知识库算子与已注册插件）',
+    opts:[{f:'--json',d:'JSON 格式输出'}], ex:'health matrix' },
+  { cmd:'health progress',     desc:'显示各模块开发进度百分比（进度条可视化）',
+    opts:[], ex:'health progress' },
+  { cmd:'health all',          desc:'同时运行进度报告与健康检查（等价于依次执行上面两条命令）',
+    opts:[], ex:'health all' },
+
+  /* catalog */
+  { cmd:'catalog list',        desc:'列出框架算子目录，支持按分类 / 关键字筛选',
+    opts:[{f:'--framework <fw>',d:'pytorch / tensorflow / paddlepaddle'},{f:'--category <cat>',d:'activation / math / pooling / convolution…'},{f:'--search <kw>',d:'名称关键字模糊过滤'},{f:'--count-only',d:'仅输出匹配数量'},{f:'--json',d:'JSON 格式输出'}],
+    ex:'catalog list --framework pytorch --category activation' },
+  { cmd:'catalog search <keyword>', desc:'跨所有框架模糊搜索算子（匹配名称及别名）',
+    opts:[{f:'--json',d:'JSON 格式输出'}], ex:'catalog search relu' },
+  { cmd:'catalog info <operator>', desc:'查询算子的跨框架分布 + 知识库 MR 数量联合视图',
+    opts:[{f:'--json',d:'JSON 格式输出'}], ex:'catalog info relu' },
+  { cmd:'catalog latest-version', desc:'从 PyPI 获取框架最新/历史版本号（无需 LLM，纯 HTTP）',
+    opts:[{f:'--framework <fw>',d:'目标框架'},{f:'--all-versions',d:'列出所有历史版本（最多 20 条）'},{f:'--json',d:'JSON 格式输出'}],
+    ex:'catalog latest-version --framework pytorch' },
+  { cmd:'catalog fetch-doc <operator>', desc:'从官方文档网页获取算子文档正文（无需 LLM）',
+    opts:[{f:'--framework <fw>',d:'目标框架'},{f:'--max-chars <n>',d:'最多显示字符数（0=不限）'}],
+    ex:'catalog fetch-doc torch.matmul' },
+  { cmd:'catalog enrich <operator>', desc:'对单个算子执行 input_specs 自动丰富（inspect + HTML + 可选 LLM）',
+    opts:[{f:'--framework <fw>',d:'目标框架'},{f:'--llm',d:'启用 LLM 提取约束条件'},{f:'--dry-run',d:'仅打印，不写入 YAML'}],
+    ex:'catalog enrich torch.matmul --dry-run' },
+
+  /* mr */
+  { cmd:'mr generate <operator>', desc:'为算子生成蜕变关系（四阶段：信息准备 → LLM猜想 → 数值预检 → SymPy证明）',
+    opts:[{f:'--sources <src>',d:'llm,template（逗号分隔，默认两者）'},{f:'--precheck',d:'启用数值预检（随机输入快速过滤）'},{f:'--sympy',d:'启用 SymPy 符号证明（较慢）'},{f:'--save',d:'将结果保存至知识库'},{f:'--framework <fw>',d:'目标框架'}],
+    ex:'mr generate relu --sources template --precheck --save' },
+  { cmd:'mr batch-generate',   desc:'批量为算子目录中所有算子生成 MR 并入库（支持断点续跑）',
+    opts:[{f:'--framework <fw>',d:'目标框架'},{f:'--category <cat>',d:'按模板分类过滤'},{f:'--limit <n>',d:'最多处理 N 个算子'},{f:'--skip-existing',d:'跳过已有 MR 的算子'},{f:'--dry-run',d:'仅列出待处理算子，不执行生成'}],
+    ex:'mr batch-generate --framework pytorch --limit 5' },
+  { cmd:'mr verify <operator>', desc:'对知识库中已有的 MR 重新执行数值预检 / SymPy 验证',
+    opts:[{f:'--precheck',d:'启用数值预检'},{f:'--sympy',d:'启用 SymPy 符号证明'},{f:'--save',d:'将验证结果更新到知识库'}],
+    ex:'mr verify relu --sympy --save' },
+  { cmd:'mr list',             desc:'列出知识库中算子的蜕变关系（省略算子名则列出所有算子）',
+    opts:[{f:'[operator]',d:'算子名称（可选）'},{f:'--verified-only',d:'仅显示已验证的 MR'},{f:'--json',d:'JSON 格式输出'}],
+    ex:'mr list relu --verified-only' },
+  { cmd:'mr stats',            desc:'显示 MR 知识库统计信息（总数、验证率）',
+    opts:[{f:'[operator]',d:'算子名称（可选，省略则统计全库）'},{f:'--json',d:'JSON 格式输出'}],
+    ex:'mr stats' },
+  { cmd:'mr promote <operator>', desc:'将已验证 MR 迁移到 MR Library（git 可追踪的 YAML 文件）',
+    opts:[{f:'--layer <layer>',d:'operator / model / application'}],
+    ex:'mr promote relu' },
+  { cmd:'mr model-generate',   desc:'为模型层基准对象生成 MR（结构分析，无需 LLM）',
+    opts:[{f:'[model_name]',d:'SimpleMLP / SimpleCNN / SimpleRNN / TinyTransformer（可选）'},{f:'--all',d:'为所有基准模型生成 MR'},{f:'--max-mrs <n>',d:'每个模型最多生成的 MR 数量'},{f:'--json',d:'JSON 格式输出'}],
+    ex:'mr model-generate --all' },
+
+  /* test */
+  { cmd:'test batch',          desc:'从 MR 知识库批量执行蜕变测试（RandomGenerator 自动生成输入）— 推荐主测试入口',
+    opts:[{f:'--framework <fw>',d:'目标框架'},{f:'--operator <op>',d:'指定单个算子（可选）'},{f:'--category <cat>',d:'按分类过滤'},{f:'--n-samples <n>',d:'每条 MR 的随机样本数（默认 10）'},{f:'--verified-only',d:'仅使用已验证的 MR'},{f:'--json',d:'JSON 格式输出'}],
+    ex:'test batch --framework pytorch --n-samples 10' },
+  { cmd:'test operator <operator>', desc:'对单个算子运行蜕变测试（需手动通过 --inputs 指定输入值）',
+    opts:[{f:'--framework <fw>',d:'目标框架'},{f:'--inputs <vals>',d:'逗号分隔的输入值，如 1.0,-1.0,0.0'},{f:'--generate',d:'若无 MR 则自动生成'}],
+    ex:'test operator relu --inputs 1.0,-1.0,0.0' },
+  { cmd:'test open',           desc:'开放测试：对含预设缺陷的插件运行批量蜕变测试（受控真实缺陷场景）',
+    opts:[{f:'--inject-faults <spec>',d:'all 或 op1:mutant1,op2:mutant2'},{f:'--list-catalog',d:'列出内置缺陷目录后退出'},{f:'--n-samples <n>',d:'每条 MR 的随机测试样本数'},{f:'--collect-evidence',d:'失败时保存可复现证据包'}],
+    ex:'test open --inject-faults all --n-samples 10 --collect-evidence' },
+  { cmd:'test mutate <operator>', desc:'变异测试：注入已知错误实现，验证 MR 的缺陷检测能力',
+    opts:[{f:'--mutant <type>',d:'negate / add_const / scale / identity / zero'},{f:'--n-samples <n>',d:'每条 MR 的测试样本数'},{f:'--verified-only',d:'仅使用已验证的 MR'}],
+    ex:'test mutate relu --mutant negate' },
+  { cmd:'test cross <operator>', desc:'跨框架一致性测试，对比 PyTorch 与 NumPy 在同一批 MR 上的行为差异',
+    opts:[{f:'--framework1 <fw>',d:'第一框架（默认 pytorch）'},{f:'--framework2 <fw>',d:'第二框架（默认 numpy）'},{f:'--n-samples <n>',d:'每条 MR 的随机样本数'},{f:'--save',d:'将结果持久化到 data/cross_results/'}],
+    ex:'test cross torch.nn.functional.relu --save' },
+  { cmd:'test model',          desc:'模型层蜕变测试：对基准模型自动生成并执行 MR 测试（无需 LLM）',
+    opts:[{f:'[model_name]',d:'SimpleMLP / SimpleCNN / SimpleRNN / TinyTransformer（可选）'},{f:'--all',d:'测试所有基准模型'},{f:'--list',d:'列出可用基准模型后退出'},{f:'--n-samples <n>',d:'每条 MR 的测试样本数'}],
+    ex:'test model --all' },
+  { cmd:'test report',         desc:'从数据库汇总测试通过率、失败分布、逐 MR 明细',
+    opts:[{f:'--framework <fw>',d:'按框架过滤'},{f:'--operator <op>',d:'按算子名过滤'},{f:'--failures-only',d:'仅显示失败案例'},{f:'--json',d:'JSON 格式输出'}],
+    ex:'test report --failures-only' },
+  { cmd:'test failures',       desc:'查看所有失败的测试用例（含数值偏差量化信息）',
+    opts:[{f:'--limit <n>',d:'最多显示条数（默认 50）'},{f:'--json',d:'JSON 格式输出'}],
+    ex:'test failures --limit 10' },
+  { cmd:'test dedup',          desc:'缺陷线索去重：将大量重复失败压缩为可人工复核的缺陷线索集',
+    opts:[{f:'--operator <op>',d:'按算子名过滤'},{f:'--limit <n>',d:'最多显示条数'},{f:'--json',d:'JSON 格式输出'}],
+    ex:'test dedup' },
+  { cmd:'test evidence list',  desc:'列出已保存的可复现失败证据包',
+    opts:[{f:'--operator <op>',d:'按算子名过滤'},{f:'--limit <n>',d:'最多显示条数（默认 20）'},{f:'--json',d:'JSON 格式输出'}],
+    ex:'test evidence list --limit 5' },
+  { cmd:'test evidence show <id>', desc:'显示单个证据包详情（时间、算子、框架、MR、输入形状、实测差值等）',
+    opts:[{f:'--json',d:'JSON 格式输出'}], ex:'test evidence show abc123' },
+  { cmd:'test evidence script <id>', desc:'打印可直接运行的 Python 复现脚本（粘贴即可重现缺陷）',
+    opts:[], ex:'test evidence script abc123 > repro.py' },
+  { cmd:'test history',        desc:'查看测试历史记录',
+    opts:[{f:'[name]',d:'指定算子名称（可选）'},{f:'--limit <n>',d:'最多显示条数（默认 20）'},{f:'--json',d:'JSON 格式输出'}],
+    ex:'test history relu' },
+  { cmd:'test from-config <path>', desc:'从 YAML 配置文件批量运行测试',
+    opts:[{f:'--json',d:'JSON 格式输出'}], ex:'test from-config tests/my_tests.yaml' },
+
+  /* repo */
+  { cmd:'repo list',           desc:'列出指定层所有主体（算子/模型/应用）及 MR 数量摘要',
+    opts:[{f:'--layer <layer>',d:'operator / model / application（默认 operator）'},{f:'--framework <fw>',d:'按框架过滤'},{f:'--json',d:'JSON 格式输出'}],
+    ex:'repo list --layer operator' },
+  { cmd:'repo stats',          desc:'显示知识库整体统计：总数、验证率、质量等级分布、来源分布',
+    opts:[{f:'--layer <layer>',d:'operator / model / application'},{f:'--all-layers',d:'汇总全部三层统计'},{f:'--json',d:'JSON 格式输出'}],
+    ex:'repo stats --all-layers' },
+  { cmd:'repo info <subject>', desc:'显示主体详情：MR 摘要、质量等级、溯源信息',
+    opts:[{f:'--layer <layer>',d:'operator / model / application'},{f:'--framework <fw>',d:'按框架过滤 MR'},{f:'--json',d:'JSON 格式输出'}],
+    ex:'repo info relu' },
+  { cmd:'repo delete <subject>', desc:'彻底删除知识库中的 MR 记录（不可恢复，仅临时停用请用 retire）',
+    opts:[{f:'--layer <layer>',d:'operator / model / application'},{f:'--id <id>',d:'只删除该 MR ID'},{f:'--all',d:'删除主体的全部 MR'},{f:'-y',d:'跳过交互确认提示'}],
+    ex:'repo delete relu --all -y' },
+  { cmd:'repo retire <subject>', desc:'归档退役指定 MR（lifecycle_state=retired），保留历史但不参与测试',
+    opts:[{f:'--id <id>',d:'要退役的 MR ID（必填）'},{f:'--layer <layer>',d:'operator / model / application'},{f:'-y',d:'跳过确认'}],
+    ex:'repo retire relu --id <MR_ID>' },
+  { cmd:'repo filter',         desc:'按质量等级、层次、框架筛选 MR（质量等级：candidate < checked < proven < curated）',
+    opts:[{f:'--layer <layer>',d:'operator / model / application'},{f:'--min-quality <q>',d:'candidate / checked / proven / curated'},{f:'--framework <fw>',d:'按框架过滤'},{f:'--json',d:'JSON 格式输出'}],
+    ex:'repo filter --min-quality proven' },
+  { cmd:'repo audit',          desc:'全库审计：质量统计、来源分布、异常告警、重复 MR 检测报告',
+    opts:[{f:'--layer <layer>',d:'只审计指定层'},{f:'--pending-review',d:'输出待复核清单（质量低于 proven 的 MR）'},{f:'--json',d:'JSON 格式输出'}],
+    ex:'repo audit' },
+
+  /* data */
+  { cmd:'data clean-logs',     desc:'清理 data/logs/ 目录下的日志文件（.log）',
+    opts:[{f:'--keep-days <n>',d:'保留最近 N 天的日志，更早的删除'},{f:'--before <date>',d:'删除此日期（YYYY-MM-DD）之前的日志'},{f:'--dry-run',d:'仅预览，不实际删除'},{f:'-y',d:'跳过确认提示'}],
+    ex:'data clean-logs -y' },
+
+  /* experiment */
+  { cmd:'experiment run',      desc:'创建实验运行清单（记录 benchmark、seed、环境快照，用于实验可复现性追踪）',
+    opts:[{f:'--rq <rq>',d:'目标 RQ（可多次指定，如 --rq rq1）'},{f:'--seed <n>',d:'随机种子（默认 42）'},{f:'--notes <text>',d:'附加备注'},{f:'--json',d:'JSON 格式输出'}],
+    ex:'experiment run --seed 42' },
+  { cmd:'experiment collect',  desc:'收集 RQ1-RQ4 当前统计数据并打印汇总（RQ1=MR生成能力, RQ2=缺陷检测率, RQ3=跨框架一致性, RQ4=可复现性）',
+    opts:[{f:'--rq <rq>',d:'指定 RQ（可多次指定）'},{f:'--json',d:'JSON 格式输出'}],
+    ex:'experiment collect' },
+  { cmd:'experiment export',   desc:'将统计数据导出为论文可用文件',
+    opts:[{f:'--format <fmt>',d:'json / csv / markdown / all'},{f:'--figures',d:'同时导出图表'},{f:'--ascii-only',d:'仅生成 ASCII 图表（不依赖 matplotlib）'}],
+    ex:'experiment export --format all --figures --ascii-only' },
+  { cmd:'experiment benchmark', desc:'查看固化的论文实验 Benchmark Suite 清单（算子层/模型层/应用层）',
+    opts:[{f:'--layer <layer>',d:'operator / model / application / all'},{f:'--json',d:'JSON 格式输出'}],
+    ex:'experiment benchmark --layer operator' },
+  { cmd:'experiment env',      desc:'查看当前运行环境与框架版本矩阵（pinned vs installed 对比）',
+    opts:[{f:'--json',d:'JSON 格式输出'}], ex:'experiment env' },
+  { cmd:'experiment list',     desc:'列出历史实验运行清单（由 experiment run 创建）',
+    opts:[{f:'--json',d:'JSON 格式输出'}], ex:'experiment list' },
+  { cmd:'experiment case list', desc:'列出所有 Case Study',
+    opts:[{f:'--status <s>',d:'draft / confirmed / closed'},{f:'--json',d:'JSON 格式输出'}],
+    ex:'experiment case list --status confirmed' },
+  { cmd:'experiment case export', desc:'将所有 Case Study 导出为 Markdown 目录文件',
+    opts:[{f:'--output <path>',d:'输出文件路径'},{f:'--status <s>',d:'只导出指定状态的案例'}],
+    ex:'experiment case export' },
+
+  /* case */
+  { cmd:'case list',           desc:'列出所有真实缺陷案例及状态（draft / confirmed / closed）',
+    opts:[{f:'--status <s>',d:'draft / confirmed / closed'},{f:'--json',d:'JSON 格式输出'}],
+    ex:'case list' },
+  { cmd:'case show <case_id>', desc:'以 Markdown 格式查看单个案例详情（根因、触发输入、复现步骤等）',
+    opts:[{f:'--json',d:'JSON 格式输出'}], ex:'case show CS001' },
+  { cmd:'case build',          desc:'从缺陷线索或证据包构建案例包（reproduce.py + case_summary.md + evidence.json + metadata.json）',
+    opts:[{f:'--from-evidence <id>',d:'从指定证据包 ID 构建单个案例'},{f:'--top <n>',d:'从去重缺陷线索中构建前 N 个高优先级案例'},{f:'--output <dir>',d:'案例包输出根目录'},{f:'--json',d:'JSON 格式输出'}],
+    ex:'case build --top 3' },
+  { cmd:'case export',         desc:'将案例目录导出为 Markdown 或 JSON 格式',
+    opts:[{f:'--format <fmt>',d:'markdown / json'},{f:'--status <s>',d:'只导出指定状态的案例'},{f:'--output <path>',d:'输出文件路径'}],
+    ex:'case export --status confirmed' },
+  { cmd:'case confirm <case_id>', desc:'人工更新案例字段（状态、严重程度、根因分析等）',
+    opts:[{f:'--status <s>',d:'draft / confirmed / closed'},{f:'--severity <s>',d:'critical / high / medium / low / unknown'},{f:'--root-cause <text>',d:'填写根因分析文本'},{f:'--summary <text>',d:'更新案例摘要'},{f:'--notes <text>',d:'追加备注（不覆盖原有内容）'}],
+    ex:'case confirm CS001 --status confirmed --severity low' },
+];
+
+/* ════════════════════════════════════════════════════════════════════════
+   AUTOCOMPLETE
+   ════════════════════════════════════════════════════════════════════════ */
+let acFocused = -1;   // 当前高亮条目索引
+let acItems   = [];   // 当前展示的条目
+
+function escH(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+/** 根据输入值过滤并渲染下拉列表 */
+function acUpdate(val) {
+  const q = val.trim().toLowerCase();
+  $acDrop.innerHTML = '';
+  acFocused = -1;
+
+  if (!q) { acClose(); return; }
+
+  // 优先：以 q 开头；次之：包含 q
+  const starts = CMDS.filter(c => c.cmd.toLowerCase().startsWith(q));
+  const contains = CMDS.filter(c => !c.cmd.toLowerCase().startsWith(q) && c.cmd.toLowerCase().includes(q));
+  acItems = [...starts, ...contains].slice(0, 9);
+
+  if (!acItems.length) { acClose(); return; }
+
+  acItems.forEach((item, i) => {
+    const div = document.createElement('div');
+    div.className = 'ac-item';
+    div.dataset.idx = i;
+
+    // 高亮匹配部分
+    const cmdLow = item.cmd.toLowerCase();
+    const pos = cmdLow.indexOf(q);
+    let highlighted;
+    if (pos >= 0) {
+      highlighted =
+        escH(item.cmd.slice(0, pos)) +
+        `<span class="ac-match">${escH(item.cmd.slice(pos, pos + q.length))}</span>` +
+        escH(item.cmd.slice(pos + q.length));
+    } else {
+      highlighted = escH(item.cmd);
+    }
+
+    const isFirst = i === 0;
+    div.innerHTML =
+      `<span class="ac-item-cmd">${highlighted}</span>` +
+      `<span class="ac-item-desc">${escH(item.desc.slice(0, 40))}…</span>` +
+      (isFirst ? `<span class="ac-kbd">Tab</span>` : '');
+
+    div.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      acSelect(i);
+    });
+    $acDrop.appendChild(div);
+  });
+
+  $acDrop.classList.add('open');
+}
+
+function acClose() {
+  $acDrop.classList.remove('open');
+  acFocused = -1;
+  acItems   = [];
+}
+
+/** 选中某个条目（填入输入框，不提交） */
+function acSelect(idx) {
+  const item = acItems[idx];
+  if (!item) return;
+  // 填入命令（去掉 <placeholder> 部分，保留到第一个 < 前）
+  const clean = item.cmd.replace(/<[^>]+>/g, '').trim();
+  $input.value = clean + ' ';
+  acClose();
+  $input.focus();
+}
+
+/** 键盘在下拉中导航 */
+function acMoveFocus(dir) {
+  const total = $acDrop.querySelectorAll('.ac-item').length;
+  if (!total) return;
+  acFocused = (acFocused + dir + total) % total;
+  $acDrop.querySelectorAll('.ac-item').forEach((el, i) => {
+    el.classList.toggle('focused', i === acFocused);
+  });
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   TOOLTIP  (侧边栏悬浮说明)
+   ════════════════════════════════════════════════════════════════════════ */
+let _tipTimer   = null;
+let _activeTipBtn = null;  // 当前触发 tooltip 的按钮
+
+function _clearActiveBtn() {
+  if (_activeTipBtn) {
+    _activeTipBtn.classList.remove('tooltip-active');
+    _activeTipBtn = null;
+  }
+}
+
+function tipShow(btn) {
+  const key = btn.dataset.cmd;
+  if (!key) return;
+
+  // 精确匹配 > 前缀匹配
+  let info = CMDS.find(c => c.cmd === key)
+          || CMDS.find(c => c.cmd.startsWith(key.split(' ')[0]));
+  if (!info) return;
+
+  // 先清除旧的高亮（无论是哪个按钮）
+  _clearActiveBtn();
+  _activeTipBtn = btn;
+  btn.classList.add('tooltip-active');
+
+  // 渲染 tip card
+  const optsHtml = info.opts.length
+    ? `<div class="tip-opts-title">OPTIONS</div>` +
+      info.opts.map(o =>
+        `<div class="tip-opt-row">
+           <span class="tip-opt-flag">${escH(o.f)}</span>
+           <span class="tip-opt-desc">${escH(o.d)}</span>
+         </div>`
+      ).join('')
+    : '';
+
+  $tipCard.innerHTML =
+    `<div class="tip-cmd">
+       <span class="tip-prefix">deepmt </span>${escH(info.cmd)}
+     </div>
+     <div class="tip-desc">${escH(info.desc)}</div>
+     ${optsHtml}
+     <div class="tip-example">
+       <span style="color:var(--text-dim)">$ deepmt </span><span>${escH(info.ex)}</span>
+     </div>`;
+
+  // 定位：与按钮垂直居中，贴着侧边栏右侧
+  const rect = btn.getBoundingClientRect();
+  const panelH = $tipPanel.offsetHeight || 200;
+  let top = rect.top + rect.height / 2 - panelH / 2;
+  // 边界夹紧
+  top = Math.max(60, Math.min(top, window.innerHeight - panelH - 12));
+  $tipPanel.style.top = top + 'px';
+  $tipPanel.classList.add('visible');
+}
+
+function tipHide() {
+  $tipPanel.classList.remove('visible');
+  _clearActiveBtn();
+}
+
+// 绑定所有 cmd-btn 的 hover 事件
+document.querySelectorAll('.cmd-btn[data-cmd]').forEach(btn => {
+  btn.addEventListener('mouseenter', () => {
+    clearTimeout(_tipTimer);
+    _tipTimer = setTimeout(() => tipShow(btn), 120);
+  });
+  btn.addEventListener('mouseleave', () => {
+    clearTimeout(_tipTimer);
+    _tipTimer = setTimeout(tipHide, 180);
+  });
+});
+
+// 鼠标进入 tooltip panel 时保持显示
+$tipPanel.addEventListener('mouseenter', () => clearTimeout(_tipTimer));
+$tipPanel.addEventListener('mouseleave', () => {
+  _tipTimer = setTimeout(tipHide, 180);
+});
+
+/* ════════════════════════════════════════════════════════════════════════
+   STATUS & RUNNING STATE
+   ════════════════════════════════════════════════════════════════════════ */
+let isRunning = false;
+
+function setStatus(state) {
+  $statusDot.className = 'term-status-dot';
+  if (['connected','running','error'].includes(state)) $statusDot.classList.add(state);
+  $statusTxt.textContent = {
+    connecting:'连接中…', connected:'已连接',
+    running:'运行中…', error:'错误', disconnected:'未连接',
+  }[state] || '未连接';
+}
+
+function setRunning(flag) {
+  isRunning = flag;
+  setStatus(flag ? 'running' : 'connected');
+  $runBtn.disabled = flag;
+  $killBtn.style.display = flag ? 'flex' : 'none';
+  $input.disabled = flag;
+  $input.placeholder = flag ? '命令运行中，Ctrl+C 可中断…' : '输入子命令…';
+  document.querySelectorAll('.cmd-btn').forEach(b => b.classList.toggle('is-running', flag));
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   OUTPUT
+   ════════════════════════════════════════════════════════════════════════ */
+function hideWelcome() {
+  const w = document.getElementById('termWelcome');
+  if (w) w.remove();
+}
+
+function appendHtml(html, cls = '') {
+  hideWelcome();
+  const div = document.createElement('div');
+  div.className = 'term-line' + (cls ? ' ' + cls : '');
+  if (!html) div.style.height = '.22em'; else div.innerHTML = html;
+  $output.appendChild(div);
+  $output.scrollTop = $output.scrollHeight;
+}
+
+function appendPrompt(subCmd) {
+  hideWelcome();
+  const div = document.createElement('div');
+  div.className = 'term-line term-prompt-line';
+  div.innerHTML =
+    `<span style="color:var(--accent);opacity:.6">$ </span>` +
+    `<span style="color:var(--primary);font-weight:600">deepmt</span>` +
+    ` <span style="color:var(--text-bright)">${escH(subCmd)}</span>`;
+  $output.appendChild(div);
+  $output.scrollTop = $output.scrollHeight;
+}
+
+function appendDone(code) {
+  const div = document.createElement('div');
+  div.className = 'term-line term-done-line';
+  div.innerHTML = code === 0
+    ? `<span style="color:var(--success)">✓ 完成（退出码 0）</span>`
+    : `<span style="color:var(--danger)">✗ 退出码 ${code}</span>`;
+  $output.appendChild(div);
+  $output.scrollTop = $output.scrollHeight;
+}
+
+function clearOutput() {
+  $output.innerHTML = `
+    <div class="term-welcome" id="termWelcome">
+      <div class="term-welcome-icon"><i class="bi bi-terminal-fill"></i></div>
+      <div class="term-welcome-title">DeepMT 命令终端</div>
+      <div class="term-welcome-sub">从左侧选择命令，或在下方输入子命令后按 Enter</div>
+    </div>`;
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   WEBSOCKET
+   ════════════════════════════════════════════════════════════════════════ */
+let ws = null;
+let _reconnTimer = null;
+
+function connect() {
+  if (ws && ws.readyState <= 1) return;
+  clearTimeout(_reconnTimer);
+  setStatus('connecting');
+  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+  ws = new WebSocket(`${proto}://${location.host}/terminal/ws`);
+
+  ws.onopen = () => {
+    setStatus('connected');
+    showToast('终端已连接', 'success');
+    $input.focus();
+  };
+  ws.onclose = () => {
+    setStatus('disconnected');
+    if (isRunning) { setRunning(false); appendHtml('<span style="color:var(--warning)">连接已断开</span>', 'term-sys-line'); }
+    _reconnTimer = setTimeout(connect, 3000);
+  };
+  ws.onerror = () => setStatus('error');
+  ws.onmessage = ({ data }) => {
+    let msg; try { msg = JSON.parse(data); } catch { return; }
+    switch (msg.type) {
+      case 'start':  appendPrompt(msg.cmd.replace(/^deepmt\s*/,'')); break;
+      case 'line':   appendHtml(msg.html || ''); break;
+      case 'done':   appendDone(msg.code); setRunning(false); $input.focus(); break;
+      case 'killed': appendHtml('<span style="color:var(--warning)">⚡ 命令已中断</span>', 'term-sys-line'); setRunning(false); $input.focus(); break;
+      case 'error':  appendHtml(`<span style="color:var(--danger)">✗ ${escH(msg.msg||'未知错误')}</span>`, 'term-sys-line'); setRunning(false); break;
+      case 'ping':   ws.send(JSON.stringify({type:'pong'})); break;
+    }
+  };
+}
+
+function _wsSend(p) { if (ws?.readyState === WebSocket.OPEN) ws.send(JSON.stringify(p)); }
+
+/* ════════════════════════════════════════════════════════════════════════
+   COMMAND SUBMISSION & HISTORY
+   ════════════════════════════════════════════════════════════════════════ */
+let cmdHistory = [];
+let histIdx    = -1;
+
+function submitCommand() {
+  if (isRunning) return;
+  if (!ws || ws.readyState !== WebSocket.OPEN) { showToast('终端未连接，请稍候', 'info'); return; }
+  const raw = $input.value.trim();
+  if (!raw) return;
+  if (cmdHistory[0] !== raw) cmdHistory.unshift(raw);
+  if (cmdHistory.length > 80) cmdHistory.pop();
+  histIdx = -1;
+  $input.value = '';
+  acClose();
+  _wsSend({ type:'run', cmd: raw });
+  setRunning(true);
+}
+
+function killProcess() { _wsSend({ type:'kill' }); }
+
+function runCmd(subCmd) {
+  if (isRunning) { showToast('请等待当前命令完成', 'info'); return; }
+  $input.value = subCmd;
+  submitCommand();
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   KEYBOARD
+   ════════════════════════════════════════════════════════════════════════ */
+$input.addEventListener('input', () => acUpdate($input.value));
+
+$input.addEventListener('keydown', (e) => {
+  // 下拉框开着时的导航
+  if ($acDrop.classList.contains('open')) {
+    if (e.key === 'ArrowDown') { e.preventDefault(); acMoveFocus(1); return; }
+    if (e.key === 'ArrowUp')   { e.preventDefault(); acMoveFocus(-1); return; }
+    if (e.key === 'Tab' || (e.key === 'Enter' && acFocused >= 0)) {
+      e.preventDefault();
+      acSelect(acFocused >= 0 ? acFocused : 0);
+      return;
+    }
+    if (e.key === 'Escape') { e.preventDefault(); acClose(); return; }
+  }
+
+  if (e.key === 'Enter') { e.preventDefault(); submitCommand(); }
+  else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    if (histIdx < cmdHistory.length - 1) { histIdx++; $input.value = cmdHistory[histIdx]; }
+  }
+  else if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    if (histIdx > 0) { histIdx--; $input.value = cmdHistory[histIdx]; }
+    else if (histIdx === 0) { histIdx = -1; $input.value = ''; }
+  }
+  else if (e.key === 'c' && e.ctrlKey && isRunning) { e.preventDefault(); killProcess(); }
+  else if (e.key === 'l' && e.ctrlKey) { e.preventDefault(); clearOutput(); }
+});
+
+// 点击输入框外关闭下拉
+document.addEventListener('mousedown', (e) => {
+  if (!$acDrop.contains(e.target) && e.target !== $input) acClose();
+});
+
+// 任意字符键聚焦输入框
+document.addEventListener('keydown', (e) => {
+  if (e.target === $input || e.target.tagName === 'BUTTON' || e.ctrlKey || e.metaKey || e.altKey) return;
+  if (e.key.length === 1 && !isRunning) $input.focus();
+});
+
+/* ── Boot ────────────────────────────────────────────────────────────── */
+connect();
+</script>
+{% endblock %}

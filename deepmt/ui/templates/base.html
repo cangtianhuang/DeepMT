@@ -651,6 +651,15 @@
             <i class="bi bi-bug-fill"></i><span>缺陷案例</span>
           </a>
         </li>
+        <li class="nav-item" style="margin-left:.25rem;">
+          <div style="width:1px; height:16px; background:var(--border); margin:auto .25rem;"></div>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if active_page=='terminal' %}active{% endif %}" href="/terminal"
+             style="{% if active_page=='terminal' %}color:var(--accent) !important;background:rgba(0,229,255,.10) !important;border-color:rgba(0,229,255,.25) !important;{% endif %}">
+            <i class="bi bi-terminal-fill"></i><span>终端</span>
+          </a>
+        </li>
       </ul>
 
       <div class="d-flex align-items-center gap-3">
