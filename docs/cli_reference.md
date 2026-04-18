@@ -6,7 +6,8 @@ DeepMT 提供统一的命令行接口，入口为 `python -m deepmt`。
 
 ```bash
 source .venv/bin/activate
-PYTHONPATH=/home/lhy/DeepMT python -m deepmt <command> [options]
+PYTHONPATH=$(pwd) python -m deepmt <command> [options]   # Linux/macOS
+# Windows: set PYTHONPATH=%cd% && python -m deepmt <command> [options]
 ```
 
 全局选项：
@@ -23,7 +24,7 @@ PYTHONPATH=/home/lhy/DeepMT python -m deepmt <command> [options]
 | 命令组       | 说明                               | 实现状态                                         |
 | ------------ | ---------------------------------- | ------------------------------------------------ |
 | `mr`         | MR 生成与管理（算子层）            | ✅ 已实现                                         |
-| `test`       | 测试执行                           | ✅ 已实现（pytorch 完整，tensorflow/paddle 占位） |
+| `test`       | 测试执行                           | ✅ 已实现（pytorch / numpy / paddlepaddle / tensorflow 四框架） |
 | `repo`       | MR 知识库管理                      | ✅ 已实现                                         |
 | `catalog`    | 算子目录浏览、跨框架查询、批量导入 | ✅ 已实现                                         |
 | `data`       | 数据目录管理（日志清理等）         | ✅ 已实现                                         |
@@ -613,7 +614,7 @@ deepmt mr promote torch.nn.functional.relu --layer operator
 
 ### `deepmt mr model-generate [model_name]`
 
-为模型层基准对象生成蜕变关系（基于结构分析，无需 LLM）。支持 MLP、CNN、RNN、Transformer 四类基准模型。
+为模型层基准对象生成蜕变关系（基于结构分析，无需 LLM）。基准模型：ResNet-18、VGG-16、LSTMBenchmark、BERTEncoder（工业级模型，懒加载 torchvision / transformers）。
 
 ```
 deepmt mr model-generate [MODEL_NAME] [OPTIONS]
@@ -629,17 +630,17 @@ deepmt mr model-generate [MODEL_NAME] [OPTIONS]
 **示例：**
 
 ```bash
-deepmt mr model-generate SimpleMLP              # 为 SimpleMLP 生成 MR
-deepmt mr model-generate --all                  # 为所有基准模型生成 MR
-deepmt mr model-generate SimpleCNN --max-mrs 5
-deepmt mr model-generate SimpleMLP --json
+deepmt mr model-generate ResNet18               # 为 ResNet-18 生成 MR
+deepmt mr model-generate --all                  # 为所有工业级基准模型生成 MR
+deepmt mr model-generate LSTMBenchmark --max-mrs 5
+deepmt mr model-generate BERTEncoder --json
 ```
 
 ---
 
 ## `deepmt test` — 测试执行
 
-> **框架支持**：目前仅 `pytorch` 插件已实现。指定 `tensorflow` / `paddlepaddle` 会给出友好提示。
+> **框架支持**：`pytorch`、`numpy`、`paddlepaddle`、`tensorflow` 四框架均已实现（Phase O）。`batch` / `cross` 均支持 `--framework paddlepaddle`；`--framework tensorflow` CLI 端到端可用（依赖 TF 安装速度）。
 
 子命令总览：
 
@@ -797,27 +798,33 @@ deepmt test failures --json
 
 ### `deepmt test cross <operator>`
 
-跨框架一致性测试，对比 PyTorch 与 NumPy 在同一批 MR 上的行为差异。
+跨框架一致性测试，对比两个框架在同一批 MR 上的行为差异。支持 pytorch / numpy / paddlepaddle / tensorflow 任意组合。
 
 ```
 deepmt test cross <OPERATOR> [OPTIONS]
 ```
 
-| 选项              | 默认值    | 说明                                 |
-| ----------------- | --------- | ------------------------------------ |
-| `--framework1`    | `pytorch` | 第一框架                             |
-| `--framework2`    | `numpy`   | 第二框架（NumPy 参考后端）           |
-| `--n-samples`     | `10`      | 每条 MR 的随机样本数                 |
-| `--verified-only` | `False`   | 仅使用已验证 MR                      |
-| `--save`          | `False`   | 将结果持久化到 `data/cross_results/` |
-| `--json`          | `False`   | 以 JSON 格式输出                     |
+| 选项              | 默认值    | 说明                                                   |
+| ----------------- | --------- | ------------------------------------------------------ |
+| `--framework1`    | `pytorch` | 第一框架（主框架）                                     |
+| `--framework2`    | `numpy`   | 第二框架（参考框架）                                   |
+| `--n-samples`     | `10`      | 每条 MR 的随机样本数                                   |
+| `--verified-only` | `False`   | 仅使用已验证 MR                                        |
+| `--save`          | `False`   | 将结果持久化到 `data/results/cross_framework/`         |
+| `--matrix`        | `False`   | 一次跑所有框架对（pytorch↔numpy / pytorch↔paddle / paddle↔numpy）|
+| `--keep-samples`  | `50`      | session JSON 中保留的失败样本数（用于复现）            |
+| `--json`          | `False`   | 以 JSON 格式输出                                       |
+
+> **silent-numeric-diff 告警**：当两框架 oracle 结论一致但数值差异显著（`output_close=False`）时，终端自动输出 `[!]` 告警，并在 session JSON 中记录 `silent_numeric_diff_rate`。
 
 **示例：**
 
 ```bash
-deepmt test cross torch.nn.functional.relu --save
-deepmt test cross torch.exp --n-samples 30 --json
-deepmt test cross torch.tanh --verified-only --save --json
+deepmt test cross relu --save
+deepmt test cross relu --framework2 paddle --n-samples 50
+deepmt test cross exp --n-samples 30 --json
+deepmt test cross relu --matrix --n-samples 50 --save     # 一次跑三对
+deepmt test cross tanh --verified-only --save --json
 ```
 
 ---
@@ -925,26 +932,29 @@ deepmt test report --json
 
 ### `deepmt test dedup`
 
-缺陷线索去重：从 `data/results/evidence/` 读取已保存的证据包，按（算子 × MR × 错误类型）签名聚类，将大量重复失败压缩为可人工复核的缺陷线索集。
+缺陷线索去重：从证据包或跨框架 session 读取失败记录，按（算子 × MR × 错误类型）签名聚类，将大量重复失败压缩为可人工复核的缺陷线索集。
 
-**前提**：先运行 `deepmt test batch --collect-evidence` 或 `deepmt test open --collect-evidence` 收集证据包。
+**前提**：先运行 `deepmt test batch --collect-evidence` / `deepmt test open --collect-evidence` 或 `deepmt test cross --save` 收集数据。
 
 ```
 deepmt test dedup [OPTIONS]
 ```
 
-| 选项          | 默认值  | 说明                   |
-| ------------- | ------- | ---------------------- |
-| `--operator`  | 全部    | 按算子名称过滤         |
-| `--framework` | 全部    | 按框架过滤             |
-| `--limit`     | `0`     | 最多显示条数（0=不限） |
-| `--json`      | `False` | 以 JSON 格式输出       |
+| 选项          | 默认值     | 说明                                                          |
+| ------------- | ---------- | ------------------------------------------------------------- |
+| `--source`    | `evidence` | 输入来源：`evidence`（证据包）/ `cross`（跨框架 session）/ `all` |
+| `--operator`  | 全部       | 按算子名称过滤                                                |
+| `--framework` | 全部       | 按框架过滤                                                    |
+| `--limit`     | `0`        | 最多显示条数（0=不限）                                        |
+| `--json`      | `False`    | 以 JSON 格式输出                                              |
 
 **示例：**
 
 ```bash
 deepmt test dedup
-deepmt test dedup --operator torch.nn.functional.relu
+deepmt test dedup --source cross               # 聚类跨框架差异
+deepmt test dedup --source all                 # 合并两类来源
+deepmt test dedup --operator relu --limit 10
 deepmt test dedup --limit 10 --json
 ```
 
@@ -1016,11 +1026,11 @@ deepmt test model [MODEL_NAME] [OPTIONS]
 **示例：**
 
 ```bash
-deepmt test model --list                          # 列出可用基准模型
-deepmt test model SimpleMLP                       # 测试 SimpleMLP
-deepmt test model SimpleCNN --n-samples 20
-deepmt test model --all                           # 测试所有基准模型
-deepmt test model SimpleMLP --json
+deepmt test model --list                          # 列出可用基准模型（ResNet18/VGG16/LSTMBenchmark/BERTEncoder）
+deepmt test model ResNet18                        # 测试 ResNet18
+deepmt test model LSTMBenchmark --n-samples 20
+deepmt test model --all                           # 测试所有工业级基准模型
+deepmt test model BERTEncoder --json
 ```
 
 ---
@@ -1318,30 +1328,32 @@ deepmt ui start --port 9090            # 自定义端口
 deepmt ui start --host 0.0.0.0 -p 80  # 局域网访问
 ```
 
-**页面说明：**
+**页面说明（Phase P 三层重设计，共 7 页）：**
 
-| 路径             | 说明                                           |
-| ---------------- | ---------------------------------------------- |
-| `/`              | 总览页（RQ1-RQ4 KPI 卡片 + 图表）              |
-| `/mr`            | MR 知识库（算子列表、分布图、筛选）            |
-| `/mr/<operator>` | 单算子 MR 详情（transform_code / oracle_expr） |
-| `/tests`         | 测试结果（通过率图、失败用例、证据包）         |
-| `/cross`         | 跨框架一致性（会话列表、一致率图表）           |
-| `/api/docs`      | OpenAPI 交互文档                               |
-| `/api/**`        | JSON 数据接口（供外部脚本调用）                |
+| 路径               | 说明                                                      |
+| ------------------ | --------------------------------------------------------- |
+| `/`                | 总览页（6 KPI + 三层 MR 分布 + 架构层次标签）             |
+| `/mr`              | MR 知识库（算子/模型/应用 三层 Tab + 动态框架下拉）       |
+| `/mr/<layer>/<subject>` | 三层 MR 详情（transform_code / oracle_expr）         |
+| `/tests`           | 测试结果（算子/模型/应用 三层 Tab）                       |
+| `/cross`           | 跨框架对比（3×3 矩阵热力图 + 框架对筛选 + 会话列表）     |
+| `/frameworks`      | 框架信息（四框架能力卡片 + 算子覆盖数对比图）             |
+| `/quality`         | MR 质量视图（三层质量分布 + 异常告警 + 质量筛选器）       |
+| `/cases`           | 真实缺陷案例（Phase M 案例列表 + 详情模态框）             |
+| `/api/docs`        | OpenAPI 交互文档                                          |
+| `/api/**`          | JSON 数据接口（供外部脚本调用）                           |
 
 ---
 
-## 未实现功能速查
+## 未完全开放的功能
 
-以下功能调用后会给出友好错误提示（退出码 2），**不会崩溃**：
+以下功能有友好提示或替代入口：
 
-| 命令 / 选项                                          | 状态说明                                                           |
-| ---------------------------------------------------- | ------------------------------------------------------------------ |
-| `deepmt mr generate <op> --layer model`              | 使用 `deepmt mr model-generate` 代替                               |
-| `deepmt mr generate <op> --layer application`        | 应用层 CLI 入口待接入，请用 Python API（`ApplicationMRGenerator`） |
-| `deepmt test operator <op> --framework tensorflow`   | TensorFlow 插件未实现                                              |
-| `deepmt test operator <op> --framework paddlepaddle` | PaddlePaddle 插件仅基础跨框架适配（Phase H），完整插件未实现       |
+| 命令 / 选项                               | 状态说明                                                              |
+| ----------------------------------------- | --------------------------------------------------------------------- |
+| `deepmt mr generate <op> --layer model`   | 使用 `deepmt mr model-generate` 代替                                  |
+| `deepmt mr generate <op> --layer application` | 应用层 CLI 入口待接入，请用 Python API（`ApplicationMRGenerator`）|
+| `deepmt test batch --framework tensorflow` | TF 插件已实现（Phase O）；本机 TF 加载较慢，建议在 CI 或专用机运行  |
 
 **应用层 Python API 快速入口：**
 

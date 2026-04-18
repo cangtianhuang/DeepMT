@@ -10,13 +10,91 @@ MR 验证器：将 oracle_expr 解析为 lhs <op> rhs，统一经由 backend 完
 """
 
 import ast
-from typing import Any, Optional, Tuple
+import math
+from typing import Any, List, Optional, Tuple
 
 import numpy as np
 
 from deepmt.core.logger import logger
 from deepmt.ir import MetamorphicRelation, OracleResult
 from deepmt.plugins.framework_plugin import CompareResult
+
+# ── 自适应容差计算 ─────────────────────────────────────────────────────────────
+
+# 算子分类到容差策略的映射
+_ELEMENTWISE_OPS = frozenset({
+    "relu", "sigmoid", "tanh", "leaky_relu", "gelu", "softmax", "log_softmax",
+    "elu", "selu", "silu", "abs", "exp", "log", "sqrt", "neg", "sin", "cos",
+    "floor", "ceil", "add", "subtract", "divide", "multiply", "pow",
+    "batch_norm", "layer_norm", "instance_norm",
+})
+_REDUCTION_OPS = frozenset({
+    "sum", "mean", "max", "min", "std", "var", "prod", "cumsum",
+    "cross_entropy", "mse_loss", "binary_cross_entropy",
+})
+_MATMUL_OPS = frozenset({
+    "matmul", "conv2d", "conv1d",
+})
+
+_BASE_ATOL = 1e-6
+_MATMUL_BASE_ATOL = 1e-5
+_REDUCTION_BASE_ATOL = 1e-5
+_FP16_MULTIPLIER = 10.0
+
+
+def calculate_adaptive_tolerance(
+    operator_name: str,
+    input_shapes: Optional[List[tuple]] = None,
+    dtype: str = "float32",
+) -> float:
+    """
+    基于算子类型和输入规模自动计算数值容差阈值。
+
+    规则：
+      逐元素算子（relu, sigmoid …）  → atol = 1e-6
+      矩阵运算（matmul, conv2d …）   → atol = 1e-5 × √N，N = 最大输入维度乘积
+      归约运算（sum, mean …）        → atol = 1e-5 × max_dim
+      fp16 dtype                     → 上述结果 × 10
+      其他                           → atol = 1e-6
+
+    Args:
+        operator_name:  算子名称（与 BenchmarkSuite 一致）
+        input_shapes:   输入张量形状列表（可为 None）
+        dtype:          输入数据类型字符串
+
+    Returns:
+        推荐的绝对容差值 atol
+    """
+    name = operator_name.lower()
+    shapes = input_shapes or []
+    fp16 = "16" in dtype
+
+    max_n = 1
+    for shape in shapes:
+        try:
+            n = 1
+            for d in shape:
+                n *= int(d)
+            max_n = max(max_n, n)
+        except (TypeError, ValueError):
+            pass
+
+    max_dim = max((max(s) for s in shapes if s), default=1)
+
+    if name in _MATMUL_OPS:
+        atol = _MATMUL_BASE_ATOL * math.sqrt(max(max_n, 1))
+    elif name in _REDUCTION_OPS:
+        atol = _REDUCTION_BASE_ATOL * max(max_dim, 1)
+    elif name in _ELEMENTWISE_OPS:
+        atol = _BASE_ATOL
+    else:
+        atol = _BASE_ATOL
+
+    if fp16:
+        atol *= _FP16_MULTIPLIER
+
+    return float(atol)
+
 
 # ── AST 操作符映射 ─────────────────────────────────────────────────────────────
 
@@ -144,20 +222,32 @@ class MRVerifier:
         mr: MetamorphicRelation,
         backend: Any,
         x_input: Any = None,
+        operator_name: Optional[str] = None,
+        input_shapes: Optional[List[tuple]] = None,
+        dtype: str = "float32",
     ) -> OracleResult:
         """
         验证一条 MR 是否对给定输出成立。
 
         Args:
-            orig:     原始算子输出（框架张量）
-            trans:    变换后算子输出（框架张量）
-            mr:       蜕变关系（含 oracle_expr 和 tolerance）
-            backend:  FrameworkPlugin 实例（被测框架的计算后端）
-            x_input:  原始输入张量（oracle_expr 中 x 变量）；为 None 时回退使用 orig
+            orig:           原始算子输出（框架张量）
+            trans:          变换后算子输出（框架张量）
+            mr:             蜕变关系（含 oracle_expr 和 tolerance）
+            backend:        FrameworkPlugin 实例（被测框架的计算后端）
+            x_input:        原始输入张量（oracle_expr 中 x 变量）；为 None 时回退使用 orig
+            operator_name:  算子名称；提供时自动计算自适应容差（覆盖 mr.tolerance）
+            input_shapes:   输入张量形状列表，用于自适应容差计算
+            dtype:          输入数据类型字符串，用于 fp16 放宽系数
 
         Returns:
             OracleResult
         """
+        # 优先使用自适应容差；否则退回 MR 模板中的静态容差
+        if operator_name is not None:
+            atol = calculate_adaptive_tolerance(operator_name, input_shapes, dtype)
+        else:
+            atol = mr.tolerance
+
         try:
             orig_shape = backend.get_shape(orig)
             trans_shape = backend.get_shape(trans)
@@ -166,7 +256,7 @@ class MRVerifier:
                 passed=False,
                 expr=mr.oracle_expr,
                 actual_diff=float("inf"),
-                tolerance=mr.tolerance,
+                tolerance=atol,
                 detail=f"SHAPE_CHECK_ERROR: {e}",
             )
 
@@ -175,7 +265,7 @@ class MRVerifier:
                 passed=False,
                 expr=mr.oracle_expr,
                 actual_diff=float("inf"),
-                tolerance=mr.tolerance,
+                tolerance=atol,
                 detail=f"SHAPE_MISMATCH: {orig_shape} vs {trans_shape}",
             )
 
@@ -194,13 +284,13 @@ class MRVerifier:
                     passed=False,
                     expr=display_expr,
                     actual_diff=float("inf"),
-                    tolerance=mr.tolerance,
+                    tolerance=atol,
                     detail=f"EVAL_ERROR: {e}",
                 )
-            cmp = _compare(lhs, rhs, op, backend, mr.tolerance)
-            return _to_oracle_result(cmp, display_expr, mr.tolerance, op)
+            cmp = _compare(lhs, rhs, op, backend, atol)
+            return _to_oracle_result(cmp, display_expr, atol, op)
 
-        return self._complex_eval_fallback(inner, backend, orig, trans, x, mr, display_expr)
+        return self._complex_eval_fallback(inner, backend, orig, trans, x, mr, display_expr, atol)
 
     def _complex_eval_fallback(
         self,
@@ -211,6 +301,7 @@ class MRVerifier:
         x: Any,
         mr: MetamorphicRelation,
         display_expr: str,
+        atol: float = 1e-6,
     ) -> OracleResult:
         """
         布尔组合表达式退化路径（如 (trans==orig+1)|(x<0)）。
@@ -228,7 +319,7 @@ class MRVerifier:
                 passed=passed,
                 expr=display_expr,
                 actual_diff=float("nan"),
-                tolerance=mr.tolerance,
+                tolerance=atol,
                 detail="" if passed else f"ORACLE_VIOLATION: '{display_expr}' not satisfied",
             )
         except Exception as e:
@@ -237,6 +328,6 @@ class MRVerifier:
                 passed=False,
                 expr=display_expr,
                 actual_diff=float("inf"),
-                tolerance=mr.tolerance,
+                tolerance=atol,
                 detail=f"ORACLE_EVAL_ERROR: {e}",
             )

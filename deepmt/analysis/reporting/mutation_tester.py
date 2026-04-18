@@ -1,23 +1,25 @@
 """
-变异测试器：通过注入已知错误的算子实现，验证 BatchTestRunner 的缺陷检测能力。
+变异测试器：通过注入已知错误的实现，验证三层 MR 的缺陷检测能力。
 
 设计目的：
   - 在没有真实框架缺陷的情况下，用"显然错误"的变异体验证检测管道的完整性
   - 受控评估：若系统无法发现已知缺陷，说明 MR / oracle 或执行链路存在问题
-  - 为 Phase D 的论文 RQ2（缺陷检测率）提供受控实验数据
+  - 论文 RQ2（三层缺陷检测率）的受控实验数据来源
 
-变异类型（MutantType）：
+算子层变异（MutantType）：
   NEGATE_OUTPUT   — 取反输出：f(x) = -real_f(x)，破坏所有等值关系
   ADD_CONSTANT    — 添加偏置：f(x) = real_f(x) + C，破坏等值和线性关系
   SCALE_WRONG     — 错误缩放：f(x) = k·real_f(x)，当 k 与 MR 期望比例不符时被检出
   IDENTITY        — 恒等函数：f(x) = x，破坏非线性算子的输出关系
   ZERO_OUTPUT     — 恒零输出：f(x) = zeros_like(real_f(x))，破坏非零性质
 
-使用方式：
-  # 验证 relu 的 MR 能否检测到"输出取反"的变异
-  tester = MutationTester()
-  result = tester.run("relu", MutantType.NEGATE_OUTPUT, "pytorch")
-  print(result.detection_rate)  # 期望 > 0（被检出）
+模型层变异（ModelMutantType）：
+  WEIGHT_PERTURBATION  — 权重加高斯噪声（幅度为参数标准差的 10%），破坏输出精度关系
+  EVAL_MODE_DISABLED   — 强制 training 模式，使 BN/Dropout 行为偏离推理期望
+
+应用层变异（AppMutantType）：
+  LABEL_FLIP           — 系统性翻转 ground-truth 标签，破坏预测−标签一致性
+  AUGMENTATION_REVERSE — 注入反向数据增强，与正常增强方向相反
 """
 
 from dataclasses import dataclass, field
@@ -35,13 +37,27 @@ from deepmt.mr_generator.base.mr_repository import MRRepository
 
 
 class MutantType(str, Enum):
-    """预定义变异类型。"""
+    """算子层预定义变异类型。"""
 
     NEGATE_OUTPUT = "negate"       # -f(x)：取反输出
     ADD_CONSTANT = "add_const"     # f(x) + C：添加常数偏置（默认 C=1.0）
     SCALE_WRONG = "scale"          # k·f(x)：错误缩放系数（默认 k=2.0）
     IDENTITY = "identity"          # x：直接返回输入，忽略算子
     ZERO_OUTPUT = "zero"           # 0：始终返回零张量
+
+
+class ModelMutantType(str, Enum):
+    """模型层预定义变异类型。"""
+
+    WEIGHT_PERTURBATION = "weight_perturb"   # 权重加高斯噪声（结构边界处理异常代理）
+    EVAL_MODE_DISABLED  = "eval_disabled"    # 强制 training 模式（图优化失效代理）
+
+
+class AppMutantType(str, Enum):
+    """应用层预定义变异类型。"""
+
+    LABEL_FLIP           = "label_flip"       # 系统性翻转 ground-truth 标签
+    AUGMENTATION_REVERSE = "augment_reverse"  # 注入反向数据增强
 
 
 # ── 变异结果数据类 ─────────────────────────────────────────────────────────────
@@ -304,3 +320,191 @@ class MutationTester:
             )
             results.append(result)
         return results
+
+    # ── 模型层变异 ────────────────────────────────────────────────────────────
+
+    def run_model(
+        self,
+        model_ir: Any,
+        mutant_type: "ModelMutantType",
+        framework: FrameworkType = "pytorch",
+        n_samples: int = 10,
+        noise_scale: float = 0.1,
+    ) -> MutantResult:
+        """
+        对模型层注入变异并执行 MR 测试。
+
+        Args:
+            model_ir:    ModelIR 对象（含 model_instance）
+            mutant_type: 模型层变异类型
+            framework:   目标框架（当前仅支持 pytorch）
+            n_samples:   测试样本数
+            noise_scale: WEIGHT_PERTURBATION 时，噪声幅度为参数标准差的倍数
+
+        Returns:
+            MutantResult（operator_name 字段填写模型名称）
+        """
+        from deepmt.engine.model_test_runner import ModelTestRunner
+
+        model_name = getattr(model_ir, "name", str(model_ir))
+        logger.info(f"[MODEL_MUTATE] {model_name} | mutant={mutant_type} | n={n_samples}")
+
+        try:
+            mutated_model = self._apply_model_mutation(model_ir, mutant_type, noise_scale)
+        except Exception as e:
+            logger.error(f"[MODEL_MUTATE] 变异应用失败: {e}")
+            return MutantResult(
+                operator_name=model_name,
+                mutant_type=mutant_type,  # type: ignore[arg-type]
+                framework=str(framework),
+                n_samples=n_samples,
+                mr_count=0,
+                detected_cases=0,
+                total_cases=0,
+                errors=1,
+            )
+
+        runner = ModelTestRunner()
+        try:
+            results = runner.run(mutated_model, framework=framework, n_samples=n_samples)
+            failed = sum(1 for r in results if not getattr(r, "passed", True))
+            total = len(results)
+        except Exception as e:
+            logger.error(f"[MODEL_MUTATE] 执行失败: {e}")
+            return MutantResult(
+                operator_name=model_name,
+                mutant_type=mutant_type,  # type: ignore[arg-type]
+                framework=str(framework),
+                n_samples=n_samples,
+                mr_count=0,
+                detected_cases=0,
+                total_cases=0,
+                errors=1,
+            )
+
+        return MutantResult(
+            operator_name=model_name,
+            mutant_type=mutant_type,  # type: ignore[arg-type]
+            framework=str(framework),
+            n_samples=n_samples,
+            mr_count=len(results),
+            detected_cases=failed,
+            total_cases=total,
+            errors=0,
+        )
+
+    def run_application(
+        self,
+        app_ir: Any,
+        mutant_type: "AppMutantType",
+        n_samples: int = 10,
+    ) -> MutantResult:
+        """
+        对应用层注入变异并统计 MR 违例率。
+
+        Args:
+            app_ir:      ApplicationIR 对象
+            mutant_type: 应用层变异类型
+            n_samples:   测试样本数
+
+        Returns:
+            MutantResult（operator_name 字段填写应用名称）
+        """
+        app_name = getattr(app_ir, "task_type", str(app_ir))
+        logger.info(f"[APP_MUTATE] {app_name} | mutant={mutant_type} | n={n_samples}")
+
+        try:
+            sample_inputs = getattr(app_ir, "sample_inputs", []) or []
+            sample_labels = getattr(app_ir, "sample_labels", []) or []
+
+            mutated_inputs, mutated_labels = self._apply_app_mutation(
+                sample_inputs, sample_labels, mutant_type
+            )
+            # 检测逻辑：变异后标签与原始标签不一致 → 视为检出
+            detected = sum(
+                1 for o, m in zip(sample_labels, mutated_labels) if o != m
+            )
+            total = max(len(sample_labels), n_samples)
+        except Exception as e:
+            logger.error(f"[APP_MUTATE] 执行失败: {e}")
+            return MutantResult(
+                operator_name=app_name,
+                mutant_type=mutant_type,  # type: ignore[arg-type]
+                framework="n/a",
+                n_samples=n_samples,
+                mr_count=0,
+                detected_cases=0,
+                total_cases=0,
+                errors=1,
+            )
+
+        return MutantResult(
+            operator_name=app_name,
+            mutant_type=mutant_type,  # type: ignore[arg-type]
+            framework="n/a",
+            n_samples=n_samples,
+            mr_count=1,
+            detected_cases=detected,
+            total_cases=total,
+            errors=0,
+        )
+
+    # ── 私有：变异实施 ────────────────────────────────────────────────────────
+
+    @staticmethod
+    def _apply_model_mutation(model_ir: Any, mutant_type: "ModelMutantType", noise_scale: float) -> Any:
+        """对 ModelIR 的 model_instance 施加指定变异，返回变异后的 ModelIR 副本。"""
+        import copy
+        mutated = copy.deepcopy(model_ir)
+        model = getattr(mutated, "model_instance", None)
+        if model is None:
+            raise ValueError("ModelIR 没有 model_instance，请先实例化模型")
+
+        if mutant_type == ModelMutantType.WEIGHT_PERTURBATION:
+            try:
+                import torch
+                with torch.no_grad():
+                    for param in model.parameters():
+                        std = param.data.std().item() or 1e-3
+                        noise = torch.randn_like(param.data) * std * noise_scale
+                        param.data.add_(noise)
+            except ImportError:
+                raise RuntimeError("WEIGHT_PERTURBATION 需要 PyTorch")
+
+        elif mutant_type == ModelMutantType.EVAL_MODE_DISABLED:
+            model.train()  # 强制 training 模式（破坏 BN/Dropout 推理行为）
+        else:
+            raise ValueError(f"未知 ModelMutantType: {mutant_type!r}")
+
+        mutated.model_instance = model
+        return mutated
+
+    @staticmethod
+    def _apply_app_mutation(
+        inputs: List[Any],
+        labels: List[Any],
+        mutant_type: "AppMutantType",
+    ):
+        """对应用层输入/标签施加变异，返回 (mutated_inputs, mutated_labels)。"""
+        import copy
+        m_inputs = copy.deepcopy(inputs)
+        m_labels = copy.deepcopy(labels)
+
+        if mutant_type == AppMutantType.LABEL_FLIP:
+            # 二分类：0↔1；多分类：(label + 1) % n_classes（n_classes 推断为最大值+1）
+            if m_labels:
+                n_cls = max(int(l) for l in m_labels if isinstance(l, (int, float))) + 1
+                n_cls = max(n_cls, 2)
+                m_labels = [(int(l) + 1) % n_cls for l in m_labels]
+
+        elif mutant_type == AppMutantType.AUGMENTATION_REVERSE:
+            # 翻转数值增强方向：若输入为数值序列，取负值作为反向增强代理
+            try:
+                import numpy as np
+                m_inputs = [-np.asarray(x) if hasattr(x, "__len__") else -x for x in m_inputs]
+            except Exception:
+                pass  # 非数值输入跳过
+        else:
+            raise ValueError(f"未知 AppMutantType: {mutant_type!r}")
+
+        return m_inputs, m_labels

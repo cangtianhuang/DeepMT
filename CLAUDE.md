@@ -24,13 +24,15 @@ DeepMT（Deep Metamorphic Testing）是面向深度学习框架（PyTorch、Tens
 | Phase H：第二框架落地与真实跨框架适配 | ✅ 完成   | `docs/dev/archived/08_Phase_H_第二框架落地与真实跨框架适配.md` |
 | Phase I：模型层MR自动生成引擎         | ✅ 完成   | `docs/dev/archived/09_Phase_I_模型层MR自动生成引擎.md`         |
 | Phase J：应用层语义MR生成与验证       | ✅ 完成   | `docs/dev/archived/10_Phase_J_应用层语义MR生成与验证.md`       |
-| Phase K：全层MR质量保障与知识库治理   | ✅ 完成   | `docs/dev/11_Phase_K_全层MR质量保障与统一知识库治理.md`        |
-| Phase L：论文实验基准与自动化数据生产 | ✅ 完成   | `docs/dev/12_Phase_L_论文实验基准与自动化数据生产线.md`        |
-| Phase M：真实缺陷挖掘与案例沉淀       | 🔄 进行中 | `docs/dev/13_Phase_M_真实缺陷挖掘与案例沉淀.md`                |
-| Phase N：论文交付收口与复现资产封装   | ⬜ 未开始 | `docs/dev/14_Phase_N_论文交付收口与复现资产封装.md`            |
-| Phase O：核心框架插件闭环与健康管理   | ⬜ 未开始 | `docs/dev/16_Phase_O_framework_plugin_closure_and_health.md`   |
+| Phase K：全层MR质量保障与知识库治理   | ✅ 完成   | `docs/dev/archived/11_Phase_K_全层MR质量保障与统一知识库治理.md`        |
+| Phase L：论文实验基准与自动化数据生产 | ✅ 完成   | `docs/dev/archived/12_Phase_L_论文实验基准与自动化数据生产线.md`        |
+| Phase M：真实缺陷挖掘与案例沉淀       | 🔄 进行中 | `docs/dev/13_Phase_M_真实缺陷挖掘与案例沉淀.md`                         |
+| Phase M 系统能力缺口修复（T1~T9）     | ✅ 完成   | `docs/dev/archived/15_Phase_M_system_capability_gaps.md`                |
+| Phase N：论文交付收口与复现资产封装   | ⬜ 未开始 | `docs/dev/14_Phase_N_论文交付收口与复现资产封装.md`                      |
+| Phase O：核心框架插件闭环与健康管理   | ✅ 完成   | `docs/dev/archived/16_Phase_O_framework_plugin_closure_and_health.md`   |
+| Phase P：仪表盘三层重设计             | ✅ 完成   | `docs/dev/archived/17_Phase_P_仪表盘三层重设计.md`                      |
 
-**当前主链：** A~L 已完成 → **下一步：真实缺陷挖掘与案例沉淀（Phase M）**
+**当前主链：** A~O + Phase P 均完成 → **当前进行：Phase M 真实缺陷挖掘主干**（用户手动执行）→ Phase N 论文交付收口未开始
 
 ## 环境与运行
 

@@ -11,7 +11,7 @@
 <!-- Build & quality -->
 [![CI](https://github.com/cangtianhuang/DeepMT/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/cangtianhuang/DeepMT/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/badge/python-3.10_%7C_3.11_%7C_3.12-3776AB?logo=python&logoColor=white)](https://www.python.org/)
-[![Tests](https://img.shields.io/badge/tests-385%20passing-brightgreen)](tests/)
+[![Tests](https://img.shields.io/badge/tests-766%20passing-brightgreen)](tests/)
 
 <!-- Framework & tools -->
 [![PyTorch](https://img.shields.io/badge/PyTorch-%3E%3D1.9-EE4C2C?logo=pytorch&logoColor=white)](https://pytorch.org/)
@@ -70,11 +70,11 @@ DeepMT **generates and proves** such relations automatically, then uses them as 
 
 | Capability | Description |
 |---|---|
-| 🤖 **Auto MR Generation** | LLM hypothesis → template matching → SymPy symbolic proof |
-| 🧪 **Batch Metamorphic Testing** | Load verified MRs from knowledge base, auto-generate test inputs via `RandomGenerator` |
-| 🐛 **Fault Injection** | `FaultyPyTorchPlugin` injects known bugs to measure MR detection rate |
-| 🔀 **Cross-Framework Consistency** | PyTorch vs NumPy operator-level output comparison |
-| 📊 **Web Dashboard** | Real-time visualization via Chart.js + Bootstrap 5 |
+| 🤖 **Auto MR Generation** | LLM hypothesis → template matching → SymPy symbolic proof — 3 layers (operator / model / application) |
+| 🧪 **Batch Metamorphic Testing** | Load verified MRs from knowledge base, auto-generate test inputs via `RandomGenerator` (with boundary injection) |
+| 🐛 **Fault Injection** | `FaultyPyTorchPlugin` / `FaultyTensorFlowPlugin` inject known bugs — 3-layer mutation evaluation |
+| 🔀 **Cross-Framework Consistency** | PyTorch / NumPy / PaddlePaddle / TensorFlow — `--matrix` runs all pairs at once |
+| 📊 **Web Dashboard** | 7-page dashboard (frameworks / MR quality / defect cases) via Chart.js + Bootstrap 5 |
 | 📦 **Evidence Packs** | Self-contained, copy-paste Python scripts for every detected defect |
 
 ---
@@ -188,7 +188,7 @@ deepmt mr batch-generate --framework pytorch          # all catalog operators
 ```bash
 deepmt test batch   --framework pytorch                       # batch metamorphic testing
 deepmt test open    --inject-faults all --collect-evidence    # fault injection testing
-deepmt test cross                                             # PyTorch vs NumPy
+deepmt test cross   relu --matrix --save                      # all framework pairs at once
 ```
 
 ### Analyze Results
@@ -217,18 +217,25 @@ deepmt ui start                     # web dashboard → http://localhost:8000
 
 ```
 deepmt/
-├── mr_generator/     🧬  MR Generation Engine
+├── mr_generator/     🧬  MR Generation Engine (3 layers)
 │   ├── operator/     │     LLM hypothesis · template pool · SymPy proof
+│   ├── model/        │     Graph analysis → strategy library
+│   ├── application/  │     Scene knowledge · LLM/template fallback
 │   └── base/         │     SQLite knowledge base · MR library
+├── benchmarks/       📐  Benchmark Registry
+│   ├── models/       │     ResNet-18 · VGG-16 · LSTM · BERT-encoder
+│   └── applications/ │     ImageClassification · TextSentiment
 ├── engine/           ⚙️   Batch Test Executor (BatchTestRunner)
 ├── analysis/         🔍  Input Generator · Oracle Verifier · Reporter · Evidence
-├── plugins/          🔌  Framework Adapters
+├── plugins/          🔌  Framework Adapters (Phase O — 4 frameworks, contract-aligned)
 │   ├── pytorch       │     PyTorch — primary implementation
-│   ├── numpy         │     NumPy   — cross-framework reference backend
-│   └── faulty_pytorch│     Fault injection backend (8 operator fault types)
-├── ui/               📊  Web Dashboard (FastAPI + Jinja2 + Chart.js)
+│   ├── numpy         │     NumPy   — float64 gold-standard reference
+│   ├── paddle        │     PaddlePaddle — full operator parity
+│   ├── tensorflow    │     TensorFlow — lazy-load, CPU-first
+│   └── faulty_*      │     Fault injection backends (PyTorch & TensorFlow)
+├── ui/               📊  Web Dashboard — 7 pages (Phase P)
 ├── commands/         💻  CLI sub-commands
-└── core/             🎛️   Config · Logger · Plugin Manager
+└── core/             🎛️   Config · Logger · Plugin Manager · Health Checker
 ```
 
 ---
@@ -265,7 +272,7 @@ Full reference → [README_CONFIG.md](README_CONFIG.md) &nbsp;·&nbsp; [docs/env
 
 ```bash
 source .venv/bin/activate
-# All 385 unit tests — no LLM or network needed
+# All 766 unit tests — no LLM or network needed
 PYTHONPATH=$(pwd) python -m pytest tests/unit/ -v
 
 # With HTML coverage report
@@ -281,9 +288,9 @@ python -m pytest tests/unit/ --cov=deepmt --cov-report=html
 | [README_CONFIG.md](README_CONFIG.md) | Configuration guide & all environment variables |
 | [docs/cli_reference.md](docs/cli_reference.md) | Full CLI command reference (20+ commands) |
 | [docs/quick_start.md](docs/quick_start.md) | Python API quick start |
-| [docs/operator_mr_technical.md](docs/operator_mr_technical.md) | Operator-level MR technical details |
+| [docs/tech/operator_mr.md](docs/tech/operator_mr.md) | Operator-level MR technical details |
 | [docs/environment_variables.md](docs/environment_variables.md) | Environment variable reference |
-| [docs/status.md](docs/status.md) | Development status & completed modules |
+| [docs/dev/status.md](docs/dev/status.md) | Development status & completed modules |
 
 ---
 

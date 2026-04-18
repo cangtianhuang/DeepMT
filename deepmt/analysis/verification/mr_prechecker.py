@@ -84,7 +84,9 @@ class MRPreChecker:
                 x_input = orig_kwargs.get("input", orig_kwargs.get("x", None))
 
                 oracle_result = self.verifier.verify(
-                    orig_output, trans_output, mr, backend, x_input=x_input
+                    orig_output, trans_output, mr, backend, x_input=x_input,
+                    operator_name=operator_ir.name,
+                    input_shapes=[tuple(backend.get_shape(t)) for t in test_input],
                 )
 
                 if oracle_result.passed:

@@ -53,17 +53,17 @@ DeepMT/
 │   ├── model/                  #   模型结构分析（GraphAnalyzer）
 │   ├── application/            #   应用层场景定义（ApplicationScenario）
 │   ├── benchmarks/             #   基准注册表
-│   │   ├── models/             #     ModelBenchmarkRegistry（SimpleMLP / SimpleCNN / SimpleRNN / TinyTransformer）
+│   │   ├── models/             #     ModelBenchmarkRegistry（ResNet-18 / VGG-16 / LSTMBenchmark / BERTEncoder 等工业级模型）
 │   │   └── applications/       #     ApplicationBenchmarkRegistry（ImageClassification / TextSentiment）
 │   ├── analysis/               #   验证、报告、实验（三层均有）
 │   ├── engine/                 #   测试执行引擎
-│   ├── plugins/                #   框架适配器（PyTorch 完整，NumPy/Paddle 部分）
+│   ├── plugins/                #   框架适配器（PyTorch / NumPy / PaddlePaddle / TensorFlow 四框架，Phase O 对等闭环）
 │   ├── tools/                  #   通用工具（LLM / 网络搜索）
 │   ├── commands/               #   CLI 子命令（mr / test / repo / catalog / data / health / ui）
 │   ├── core/                   #   微内核框架
 │   ├── monitoring/             #   健康检查与进度追踪
 │   └── ui/                     #   Web 仪表盘（FastAPI + Jinja2）
-├── tests/                      # 测试用例（unit/ + integration/），708 个测试
+├── tests/                      # 测试用例（unit/ + integration/），766 个单元测试 + 31 个集成测试
 ├── demo/                       # 快速演示脚本
 ├── docs/                       # 开发文档（见下方索引）
 ├── data/                       # 运行时数据（日志、SQLite、MR YAML）
@@ -151,20 +151,20 @@ mr_generation:
 
 ## 六、开发状态
 
-Phase A–J 均已完成，708 个测试通过。详见 `docs/dev/status.md`。
+Phase A~O 及 Phase P 均已完成，766 个单元测试通过，31 个集成测试通过。详见 `docs/dev/status.md`。
 
-| 层次 / 模块          | 状态                                   |
-| -------------------- | -------------------------------------- |
-| 算子层 MR 生成       | ✅ 完成（四阶段流水线 + SymPy 证明）    |
-| 批量测试执行         | ✅ 完成                                 |
-| 缺陷分析报告         | ✅ 完成                                 |
-| 跨框架一致性测试     | ✅ 完成（PyTorch vs NumPy）             |
-| Web 仪表盘           | ✅ 完成                                 |
-| 统一 IR（三层）      | ✅ 完成（Phase G）                      |
-| NumPy/PaddlePaddle   | ✅ 完成（Phase H，基础跨框架适配）      |
-| 模型层 MR 生成       | ✅ 完成（Phase I，模板驱动）            |
-| 应用层 MR 生成与验证 | ✅ 完成（Phase J，图像分类 + 文本情感） |
-| 全层 MR 质量保障     | 📋 Phase K，计划中                      |
+| 层次 / 模块                  | 状态                                                          |
+| ---------------------------- | ------------------------------------------------------------- |
+| 算子层 MR 生成               | ✅ 完成（四阶段流水线 + SymPy 证明，53 算子基准）             |
+| 模型层 MR 生成               | ✅ 完成（Phase I，模板驱动，ResNet-18/VGG-16/LSTM/BERT）      |
+| 应用层 MR 生成与验证         | ✅ 完成（Phase J，图像分类 + 文本情感）                        |
+| 批量测试 / 跨框架一致性测试  | ✅ 完成（PyTorch / NumPy / PaddlePaddle / TensorFlow 四框架） |
+| 缺陷分析报告 & 受控变异评估  | ✅ 完成（三层 MutationTester，Phase E/T5）                    |
+| 全层 MR 质量保障与知识库治理 | ✅ 完成（Phase K）                                             |
+| 论文实验基准与数据生产线     | ✅ 完成（Phase L，RQ1-RQ4 全量接口）                          |
+| 真实缺陷挖掘 & CLI 闭环      | ✅ 完成（Phase M 缺口修复 T1~T9 + L1/L2/L3；扫描由用户执行） |
+| 四框架插件对等闭环           | ✅ 完成（Phase O，契约规范 + 健康矩阵）                        |
+| Web 仪表盘三层重设计         | ✅ 完成（Phase P，7 页 + 框架信息 / MR 质量 / 缺陷案例）      |
 
 ---
 
@@ -193,9 +193,10 @@ Phase A–J 均已完成，708 个测试通过。详见 `docs/dev/status.md`。
 | ---------------------------------------------- | ----------------------------------- |
 | `docs/dev/status.md`                           | 开发状态、已完成模块、架构约定      |
 | `docs/dev/agent_rules.md`                      | 编码智能体执行规范与开发原则        |
-| `docs/dev/archived/`                           | 已完成阶段（Phase A–J）详细规划文档 |
-| `docs/dev/11_Phase_K_*.md` ~ `14_Phase_N_*.md` | 待开发阶段规划文档                  |
+| `docs/dev/archived/`                           | 已完成阶段（Phase A~O、Phase P）详细规划文档 |
+| `docs/dev/13_Phase_M_*.md`                     | Phase M 真实缺陷挖掘（进行中）              |
+| `docs/dev/14_Phase_N_*.md`                     | Phase N 论文交付收口（未开始）              |
 
 ---
 
-*最后更新：2026-04-13（Phase J 完成，三层 MR 生成闭环）*
+*最后更新：2026-04-17（Phase A~O 及 Phase P 均完成；766 单元测试 + 31 集成测试通过）*

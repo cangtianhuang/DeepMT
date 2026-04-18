@@ -284,6 +284,157 @@ class ExperimentOrganizer:
             ),
         }
 
+    # ── 论文指标计算接口（T6/T7）────────────────────────────────────────────────
+
+    def compute_retention_rate(
+        self,
+        layer: str = "operator",
+        method: str = "all",
+    ) -> float:
+        """
+        有效留存率 = 有效（已验证）MR 数 / 初始候选 MR 数。
+
+        Args:
+            layer:  目标层次（当前仅 "operator" 层有知识库支持）
+            method: 来源过滤（"llm" / "template" / "all"）
+
+        Returns:
+            留存率 [0, 1]；无数据时返回 0.0
+        """
+        try:
+            from deepmt.mr_generator.base.mr_repository import MRRepository
+            repo = self._mr_repo or MRRepository()
+            total = 0
+            verified = 0
+            for op in repo.list_operators():
+                for mr in repo.load(op):
+                    if method != "all" and mr.source != method:
+                        continue
+                    if layer != "all" and mr.layer != layer:
+                        continue
+                    total += 1
+                    if getattr(mr, "verified", False) or mr.lifecycle_state in ("verified", "active"):
+                        verified += 1
+            return round(verified / total, 4) if total > 0 else 0.0
+        except Exception as e:
+            logger.warning(f"[compute_retention_rate] 计算失败: {e}")
+            return 0.0
+
+    def compute_mutation_score(
+        self,
+        layer: str = "operator",
+        framework: str = "pytorch",
+    ) -> float:
+        """
+        变异检出率 = 被至少一个测试用例检出的变异数 / 注入变异体总数。
+
+        从 MutationTester 的历史执行结果（内存或数据库）中读取，
+        若无持久化结果，返回 None 并记录日志提示先运行变异测试。
+
+        Args:
+            layer:     目标层次（"operator" / "model" / "application"）
+            framework: 目标框架
+
+        Returns:
+            变异检出率 [0, 1]；无数据时返回 0.0
+        """
+        try:
+            from deepmt.core.results_manager import ResultsManager
+            rm = ResultsManager(db_path=self._db_path) if self._db_path else ResultsManager()
+            mutation_data = rm.get_mutation_results(layer=layer, framework=framework)
+            if not mutation_data:
+                logger.info(
+                    "[compute_mutation_score] 无变异测试历史记录，"
+                    "请先运行 deepmt test mutate 生成数据"
+                )
+                return 0.0
+            detected = sum(1 for r in mutation_data if r.get("detected", False))
+            return round(detected / len(mutation_data), 4)
+        except Exception as e:
+            logger.warning(f"[compute_mutation_score] 计算失败: {e}")
+            return 0.0
+
+    def compute_stat_confidence(
+        self,
+        layer: str = "operator",
+        threshold: float = 0.95,
+        n_samples: int = 100,
+        seed: int = 42,
+    ) -> Dict[str, Any]:
+        """
+        N≥100 统计置信度验证（T7）。
+
+        对已入库的 MR 执行 n_samples 次采样测试，
+        通过率低于 threshold 的 MR 标记为 stat_unverified。
+
+        Args:
+            layer:      目标层次
+            threshold:  通过率阈值（默认 0.95）
+            n_samples:  采样次数（默认 100）
+            seed:       随机种子，确保可复现
+
+        Returns:
+            {
+              "total_mrs":          int,     # 参与评估的 MR 数
+              "passed_mrs":         int,     # 通过率 >= threshold 的 MR 数
+              "stat_confidence":    float,   # 通过 MR 占比
+              "flagged_mrs":        list,    # 通过率 < threshold 的 MR id 列表
+            }
+        """
+        try:
+            from deepmt.mr_generator.base.mr_repository import MRRepository
+            from deepmt.engine.batch_test_runner import BatchTestRunner
+            from deepmt.core.results_manager import ResultsManager
+            from unittest.mock import MagicMock
+
+            repo = self._mr_repo or MRRepository()
+            mock_rm = MagicMock(spec=ResultsManager)
+            runner = BatchTestRunner(repo=repo, results_manager=mock_rm)
+
+            total_mrs = 0
+            passed_mrs = 0
+            flagged: List[str] = []
+
+            for op in repo.list_operators():
+                for mr in repo.load(op):
+                    if mr.layer != layer:
+                        continue
+                    total_mrs += 1
+                    try:
+                        summary = runner.run_operator(
+                            operator_name=op,
+                            framework="pytorch",
+                            n_samples=n_samples,
+                            seed=seed,
+                            mr_id=mr.id,
+                        )
+                        rate = summary.passed / summary.total_cases if summary.total_cases > 0 else 0.0
+                        if rate >= threshold:
+                            passed_mrs += 1
+                        else:
+                            flagged.append(mr.id)
+                            # 标记为 stat_unverified（更新知识库中的状态）
+                            try:
+                                repo.update_lifecycle_state(mr.id, "stat_unverified")
+                            except Exception:
+                                pass
+                    except Exception as e:
+                        logger.debug(f"[stat_confidence] {op}/{mr.id} 测试失败: {e}")
+                        flagged.append(mr.id)
+
+            return {
+                "total_mrs": total_mrs,
+                "passed_mrs": passed_mrs,
+                "stat_confidence": round(passed_mrs / total_mrs, 4) if total_mrs > 0 else 0.0,
+                "flagged_mrs": flagged,
+                "threshold": threshold,
+                "n_samples": n_samples,
+            }
+
+        except Exception as e:
+            logger.warning(f"[compute_stat_confidence] 计算失败: {e}")
+            return {"error": str(e)}
+
     def format_text(self, data: Dict[str, Any]) -> str:
         """将 collect_all() 的输出格式化为终端可读文本。"""
         now = data.get("generated_at", "")[:19]

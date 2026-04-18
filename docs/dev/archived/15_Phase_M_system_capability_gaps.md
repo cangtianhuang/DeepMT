@@ -1,6 +1,6 @@
 # 15_Phase_M_system_capability_gaps.md
 
-> 状态：⬜ 计划  日期：2026-04-14  
+> 状态：✅ 完成  日期：2026-04-14  完成：2026-04-15  
 > 前置：Phase M（`13_Phase_M_真实缺陷挖掘与案例沉淀.md`）
 
 ## 1. 背景
@@ -120,27 +120,27 @@ deepmt test batch --framework paddlepaddle --collect-evidence
 
 ### L1 —— CLI 到达能力（硬性，必须全绿）
 
-- [ ] `deepmt test cross log_softmax --framework2 paddle --n-samples 50` 不再报 `无对应实现`，返回结构化一致性统计。
-- [ ] `deepmt test cross gelu --framework2 numpy --n-samples 50` 不再 `unsupported_f2=50`，numpy 侧返回数值结果。
-- [ ] `deepmt test batch --framework paddlepaddle --operator relu --n-samples 10 --collect-evidence` 正常跑通并落盘证据。
-- [ ] `deepmt test cross <op> --framework2 paddle --save` 的 session JSON 中，当 `inconsistent_cases>0` 时必须包含 `failed_samples` 字段，且字段里能找到足以在独立 Python 复现问题的 input payload。
+- [x] `deepmt test cross log_softmax --framework2 paddle --n-samples 50` 不再报 `无对应实现`，返回结构化一致性统计。
+- [x] `deepmt test cross gelu --framework2 numpy --n-samples 50` 不再 `unsupported_f2=50`，numpy 侧返回数值结果。
+- [x] `deepmt test batch --framework paddlepaddle --operator relu --n-samples 10 --collect-evidence` 正常跑通并落盘证据。
+- [x] `deepmt test cross <op> --framework2 paddle --save` 的 session JSON 中，当 `inconsistent_cases>0` 时必须包含 `failed_samples` 字段，且字段里能找到足以在独立 Python 复现问题的 input payload。
 
 ### L2 —— CLI 闭环能力（硬性，必须全绿）
 
-- [ ] `deepmt test cross` 产出的跨框架不一致，能被 `deepmt case build --from-evidence <id>` 直接消费，生成含 `reproduce.py` 的案例包。
-- [ ] `reproduce.py` 在干净 Python 环境内一次运行即复现原差异（与 session 中记录的 `diff_type` 一致）。
-- [ ] `deepmt test dedup --source cross` 能对 session 中的不一致样本按 `(op, mr_id, framework_pair, diff_type)` 聚类输出 `DefectLead`。
-- [ ] silent-numeric-diff 告警：`deepmt test cross exp --framework2 paddle` 必须在终端给出 `[!]` 级别提示，而不是沉默地 `consistency=100%`。
+- [x] `deepmt test cross` 产出的跨框架不一致，能被 `deepmt case build --from-evidence <id>` 直接消费，生成含 `reproduce.py` 的案例包。
+- [x] `reproduce.py` 在干净 Python 环境内一次运行即复现原差异（与 session 中记录的 `diff_type` 一致）。
+- [x] `deepmt test dedup --source cross` 能对 session 中的不一致样本按 `(op, mr_id, framework_pair, diff_type)` 聚类输出 `DefectLead`。
+- [x] silent-numeric-diff 告警：`deepmt test cross exp --framework2 paddle` 必须在终端给出 `[!]` 级别提示，而不是沉默地 `consistency=100%`。
 
 ### L3 —— 自主挖掘能力（软性验收，用受控缺陷衡量）
 
 不要求挖到真实框架缺陷；要求系统能在"受控注入"下自主完成"生成 MR → 发现差异 → 生成证据包 → 聚类 → 落盘案例"闭环。具体指标：
 
-- [ ] 在 `FaultyPyTorchPlugin.BUILTIN_FAULT_CATALOG` 中新增至少 3 个**偏僻算子**的缺陷（cos/sin/sqrt 以外的，例如 cosh/tan/log1p/expm1），且：
+- [x] 在 `FaultyPyTorchPlugin.BUILTIN_FAULT_CATALOG` 中新增至少 3 个**偏僻算子**的缺陷（cos/sin/sqrt 以外的，例如 cosh/tan/log1p/expm1），且：
     - 测试前：知识库无对应 MR、插件映射无特殊硬编码、cross 路径 default 参考框架有等价实现（依赖 T1/T2）；
     - 运行路径：`deepmt mr generate <op> --save` → `deepmt test open --operator <op> --inject-faults <op>:<mutant> --collect-evidence` → `deepmt test dedup` → `deepmt case build --from-evidence`；
     - 通过标准：每个受控缺陷都被自动生成的 MR（或模板回退 MR）捕获，至少一个相应的 `DefectLead` 产生，`case build` 产出可复现的 `reproduce.py`。
-- [ ] 在同一 CLI 闭环下跑"无注入"对照（未激活 faulty 插件），**必须**零 `DefectLead`（False Positive 率验证）。
+- [x] 在同一 CLI 闭环下跑"无注入"对照（未激活 faulty 插件），**必须**零 `DefectLead`（False Positive 率验证）。
 
 满足 L1+L2+L3 即认为系统自主挖掘能力具备，可在此基础上重启 Phase M 真实缺陷扫描。
 

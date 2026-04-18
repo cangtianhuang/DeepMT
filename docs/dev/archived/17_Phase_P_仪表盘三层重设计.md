@@ -1,5 +1,7 @@
 # 17_Phase_P_仪表盘三层重设计
 
+> 状态：✅ 完成  完成：2026-04-17
+
 ## 1. 阶段目标
 
 以**论文答辩演示**和**项目落地展示**为核心场景，对现有 Web 仪表盘进行系统性重设计，使其完整覆盖项目的三层蜕变测试体系（算子层 / 模型层 / 应用层）、多框架注册信息、真实缺陷案例以及 MR 质量视图。
@@ -281,52 +283,52 @@
 
 ### P1：总览页改造
 
-- [ ] 新增 `/api/summary-v2` 端点（三层 MR 统计）
-- [ ] 改造 `overview.html`：6 KPI + 三层 MR 环形图 + 架构层次标签
-- [ ] 三层 MR 来源分布横向柱图
+- [x] 新增 `/api/summary-v2` 端点（三层 MR 统计）
+- [x] 改造 `overview.html`：6 KPI + 三层 MR 环形图 + 架构层次标签
+- [x] 三层 MR 来源分布横向柱图
 
 ### P2：MR 知识库三层化
 
-- [ ] 扩展 `/api/mr-repository` 的 `layer` 查询参数
-- [ ] 改造 `mr_repo.html`：三层 Tab + 动态框架下拉（调用 `/api/frameworks`）
-- [ ] 模型层 / 应用层 subject 列表渲染逻辑
-- [ ] 改造 `mr_detail.html`：支持模型/应用层字段
+- [x] 扩展 `/api/mr-repository` 的 `layer` 查询参数
+- [x] 改造 `mr_repo.html`：三层 Tab + 动态框架下拉（调用 `/api/frameworks`）
+- [x] 模型层 / 应用层 subject 列表渲染逻辑
+- [x] 改造 `mr_detail.html`：支持模型/应用层字段
 
 ### P3：测试结果三层化
 
-- [ ] 新增 `/api/test-results/model` 端点
-- [ ] 新增 `/api/test-results/application` 端点
-- [ ] 改造 `test_results.html`：三层 Tab 切换
+- [x] 新增 `/api/test-results/model` 端点
+- [x] 新增 `/api/test-results/application` 端点
+- [x] 改造 `test_results.html`：三层 Tab 切换
 
 ### P4：跨框架矩阵视图
 
-- [ ] 在 `/api/cross-framework` 返回值中增加 `matrix_summary` 字段
-- [ ] 改造 `cross_framework.html`：矩阵热力图 + 框架对筛选
+- [x] 在 `/api/cross-framework` 返回值中增加 `matrix_summary` 字段
+- [x] 改造 `cross_framework.html`：矩阵热力图 + 框架对筛选
 
 ### P5：框架信息页（新增）
 
-- [ ] 新增 `/api/frameworks` 端点（读取插件 `_OP_MAP` 等能力信息）
-- [ ] 新增 `routers/frameworks.py`、`templates/frameworks.html`
-- [ ] 注册路由至 `app.py`
+- [x] 新增 `/api/frameworks` 端点（读取插件 `_OP_MAP` 等能力信息）
+- [x] 新增 `routers/frameworks.py`、`templates/frameworks.html`
+- [x] 注册路由至 `app.py`
 
 ### P6：MR 质量视图（新增）
 
-- [ ] 新增 `routers/quality.py`、`templates/quality.html`
-- [ ] 注册路由至 `app.py`
-- [ ] 三层质量堆叠柱图 + 异常告警列表 + 质量筛选器 JS 逻辑
+- [x] 新增 `routers/quality.py`、`templates/quality.html`
+- [x] 注册路由至 `app.py`
+- [x] 三层质量堆叠柱图 + 异常告警列表 + 质量筛选器 JS 逻辑
 
 ### P7：真实缺陷案例页（新增）
 
-- [ ] 新增 `/api/cases` 和 `/api/cases/{case_id}` 端点
-- [ ] 新增 `routers/cases.py`、`templates/cases.html`、`templates/case_detail.html`
-- [ ] 注册路由至 `app.py`
-- [ ] 在 `dependencies.py` 中注册 `CaseStudyIndex` 依赖
+- [x] 新增 `/api/cases` 和 `/api/cases/{case_id}` 端点
+- [x] 新增 `routers/cases.py`、`templates/cases.html`、`templates/case_detail.html`
+- [x] 注册路由至 `app.py`
+- [x] 在 `dependencies.py` 中注册 `CaseStudyIndex` 依赖
 
 ### P8：基础设施与导航
 
-- [ ] `base.html` 导航栏扩展为 7 项
-- [ ] `dependencies.py` 新增 `ModelBenchmarkRegistry`、`ApplicationBenchmarkRegistry`、`CaseStudyIndex` 依赖
-- [ ] 更新 `docs/tech/web_dashboard.md`
+- [x] `base.html` 导航栏扩展为 7 项
+- [x] `dependencies.py` 新增 `ModelBenchmarkRegistry`、`ApplicationBenchmarkRegistry`、`CaseStudyIndex` 依赖
+- [x] 更新 `docs/tech/web_dashboard.md`
 
 ---
 

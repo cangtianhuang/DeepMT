@@ -1,9 +1,13 @@
-"""Phase I 基准模型定义：SimpleMLP、SimpleCNN、SimpleRNN、TinyTransformer。
+"""基准模型定义：轻量参考模型 + 工业级真实模型。
 
-这些模型用于模型层蜕变测试的标准基准对象，设计原则：
-  - 结构简洁，具有代表性的层组合
-  - 参数量小（推理速度快，便于批量测试）
-  - 每个模型覆盖一种典型的神经网络架构模式
+工业级模型（BenchmarkSuite 使用）：
+  ResNet18Benchmark  — 残差卷积网络，torchvision.models.resnet18
+  VGG16Benchmark     — 顺序卷积网络，torchvision.models.vgg16
+  LSTMBenchmark      — 循环神经网络，nn.LSTM 包装
+  BERTEncoderBenchmark — Transformer 编码器，transformers.BertModel（encoder only）
+
+轻量参考模型（单元测试 / 快速验证用）：
+  SimpleMLP / SimpleCNN / SimpleRNN / TinyTransformer
 """
 
 try:
@@ -140,3 +144,106 @@ class TinyTransformer(nn.Module):
         enc = self.encoder(emb)             # (batch, seq, embed_dim)
         pooled = enc.mean(dim=1)            # (batch, embed_dim)
         return self.fc(pooled)
+
+
+# ── 工业级真实模型 ─────────────────────────────────────────────────────────────
+
+
+def build_resnet18(num_classes: int = 10):
+    """ResNet-18：残差卷积网络，torchvision 提供。
+
+    输入：(batch, 3, 224, 224)  RGB 图像
+    输出：(batch, num_classes)
+    """
+    _require_torch()
+    try:
+        from torchvision.models import resnet18
+    except ImportError as e:
+        raise ImportError(
+            "ResNet-18 需要 torchvision，请安装：pip install torchvision"
+        ) from e
+    import torch.nn as nn
+    model = resnet18(weights=None)
+    model.fc = nn.Linear(model.fc.in_features, num_classes)
+    return model
+
+
+def build_vgg16(num_classes: int = 10):
+    """VGG-16：顺序卷积网络，torchvision 提供。
+
+    输入：(batch, 3, 224, 224)  RGB 图像
+    输出：(batch, num_classes)
+    """
+    _require_torch()
+    try:
+        from torchvision.models import vgg16
+    except ImportError as e:
+        raise ImportError(
+            "VGG-16 需要 torchvision，请安装：pip install torchvision"
+        ) from e
+    import torch.nn as nn
+    model = vgg16(weights=None)
+    model.classifier[-1] = nn.Linear(model.classifier[-1].in_features, num_classes)
+    return model
+
+
+class LSTMBenchmark(nn.Module):
+    """LSTM 序列分类器：标准双层 LSTM + 线性分类头。
+
+    结构：LSTM(2 层) → 取最后时刻隐状态 → Linear
+    输入：(batch, seq_len, input_size)  浮点特征序列
+    输出：(batch, num_classes)
+    """
+
+    def __init__(
+        self,
+        input_size: int = 64,
+        hidden_size: int = 256,
+        num_layers: int = 2,
+        num_classes: int = 10,
+    ):
+        super().__init__()
+        _require_torch()
+        self.lstm = nn.LSTM(input_size, hidden_size, num_layers=num_layers, batch_first=True)
+        self.fc = nn.Linear(hidden_size, num_classes)
+
+    def forward(self, x):
+        out, _ = self.lstm(x)       # (batch, seq, hidden)
+        last = out[:, -1, :]        # (batch, hidden)
+        return self.fc(last)
+
+
+def build_bert_encoder(num_classes: int = 10):
+    """BERT-base 编码器分类器：取 [CLS] token 表示后接线性分类头。
+
+    输入：input_ids (batch, seq_len)  整数 token id
+    输出：(batch, num_classes)
+    """
+    _require_torch()
+    try:
+        from transformers import BertConfig, BertModel
+    except ImportError as e:
+        raise ImportError(
+            "BERT 需要 transformers，请安装：pip install transformers"
+        ) from e
+    import torch.nn as nn
+
+    class BERTClassifier(nn.Module):
+        def __init__(self):
+            super().__init__()
+            config = BertConfig(
+                vocab_size=30522,
+                hidden_size=768,
+                num_hidden_layers=12,
+                num_attention_heads=12,
+                intermediate_size=3072,
+            )
+            self.bert = BertModel(config)
+            self.classifier = nn.Linear(config.hidden_size, num_classes)
+
+        def forward(self, input_ids):
+            outputs = self.bert(input_ids)
+            cls_output = outputs.last_hidden_state[:, 0, :]  # [CLS]
+            return self.classifier(cls_output)
+
+    return BERTClassifier()

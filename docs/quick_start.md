@@ -92,14 +92,14 @@ from deepmt.analysis.model_verifier import ModelVerifier
 import torch
 
 registry = ModelBenchmarkRegistry()
-ir = registry.get("SimpleMLP", with_instance=True)   # 包含 model_instance
+ir = registry.get("ResNet18", with_instance=True)   # 包含 model_instance（懒加载 torchvision）
 
 gen = ModelMRGenerator()
 mrs = gen.generate(ir)   # 基于结构分析选择变换策略
 
 # 手动验证
 verifier = ModelVerifier()
-x = torch.randn(4, 64)
+x = torch.randn(4, 3, 224, 224)
 with torch.no_grad():
     orig = ir.model_instance(x)
 for mr in mrs:
@@ -110,7 +110,7 @@ for mr in mrs:
     print(mr.description, result.passed)
 ```
 
-可用基准模型：`SimpleMLP`、`SimpleCNN`、`SimpleRNN`、`TinyTransformer`
+工业级基准模型：`ResNet18`、`VGG16`、`LSTMBenchmark`、`BERTEncoder`（需 `pip install -e ".[benchmarks]"`）
 
 ### 应用层 MR 生成与验证
 

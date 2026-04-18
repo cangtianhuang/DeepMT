@@ -28,6 +28,11 @@ class MRTemplate:
     min_inputs: int = 1  # 最小输入数量
     max_inputs: Optional[int] = None  # 最大输入数量（None表示无限制）
     tolerance: Optional[float] = None  # 数值容差（None表示使用系统默认值 1e-6）
+    property_tags: List[str] = None  # 数学属性标签（commutative / linear / monotone 等）
+
+    def __post_init__(self):
+        if self.property_tags is None:
+            self.property_tags = []
 
 
 class MRTemplatePool:
@@ -42,6 +47,7 @@ class MRTemplatePool:
 
         self.templates: Dict[str, MRTemplate] = {}
         self.operator_mr_mapping: Dict[str, List[str]] = {}
+        self._tag_index: Dict[str, List[str]] = {}  # tag → [template_name, ...]
 
         self._load_config()
 
@@ -55,7 +61,8 @@ class MRTemplatePool:
 
             for template_name, tdata in config.get("templates", {}).items():
                 try:
-                    self.templates[template_name] = MRTemplate(
+                    tags = tdata.get("property_tags") or []
+                    tmpl = MRTemplate(
                         name=tdata.get("name", template_name),
                         description=tdata.get("description", ""),
                         transform_code=tdata.get("transform_code", ""),
@@ -64,12 +71,17 @@ class MRTemplatePool:
                         min_inputs=tdata.get("min_inputs", 1),
                         max_inputs=tdata.get("max_inputs"),
                         tolerance=tdata.get("tolerance"),
+                        property_tags=list(tags),
                     )
+                    self.templates[template_name] = tmpl
+                    for tag in tags:
+                        self._tag_index.setdefault(tag, []).append(template_name)
                 except Exception as e:
                     logger.warning(f"Failed to load template {template_name}: {e}")
 
             logger.debug(
-                f"Loaded {len(self.templates)} MR templates from {self.config_path}"
+                f"Loaded {len(self.templates)} MR templates "
+                f"({len(self._tag_index)} property tags) from {self.config_path}"
             )
 
         except FileNotFoundError:
@@ -78,6 +90,23 @@ class MRTemplatePool:
         except Exception as e:
             logger.error(f"Failed to load MR templates config: {e}")
             raise
+
+    def get_templates_by_tag(self, tag: str) -> List[MRTemplate]:
+        """
+        按属性标签查询模板（MapPropertyTags 步骤的实现）。
+
+        Args:
+            tag: 属性标签名称（如 "commutative"、"linear"、"monotone"）
+
+        Returns:
+            具有该标签的 MRTemplate 列表（不含已在 operator_mr_mapping 中的过滤）
+        """
+        names = self._tag_index.get(tag, [])
+        return [self.templates[n] for n in names if n in self.templates]
+
+    def available_tags(self) -> List[str]:
+        """返回所有已知属性标签（按名称排序）。"""
+        return sorted(self._tag_index.keys())
 
     def _infer_num_inputs(self, operator_func: Optional[Callable]) -> int:
         """推断算子的输入数量"""

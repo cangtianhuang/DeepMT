@@ -30,8 +30,62 @@ def _get_pytorch_models():
 
 
 # ── 基准模型元数据配置 ──────────────────────────────────────────────────────────
+#
+# 工业级基准模型（BenchmarkSuite 默认使用，对应论文实验对象）：
+#   ResNet18 / VGG16 / LSTMBenchmark / BERTEncoder
+#
+# 轻量参考模型（保留供单元测试使用，不出现在 BenchmarkSuite）：
+#   SimpleMLP / SimpleCNN / SimpleRNN / TinyTransformer
 
 _BENCHMARK_SPECS = [
+    # ── 工业级模型（BenchmarkSuite 正式清单）──────────────────────────────
+    {
+        "name": "ResNet18",
+        "framework": "pytorch",
+        "model_type": "resnet",
+        "task_type": "classification",
+        "input_shape": (3, 224, 224),
+        "output_shape": (10,),
+        "num_classes": 10,
+        "constructor": lambda m: m.build_resnet18(num_classes=10),
+        "metadata": {"architecture": "residual_cnn", "depth": 18},
+    },
+    {
+        "name": "VGG16",
+        "framework": "pytorch",
+        "model_type": "vgg",
+        "task_type": "classification",
+        "input_shape": (3, 224, 224),
+        "output_shape": (10,),
+        "num_classes": 10,
+        "constructor": lambda m: m.build_vgg16(num_classes=10),
+        "metadata": {"architecture": "sequential_cnn", "depth": 16},
+    },
+    {
+        "name": "LSTMBenchmark",
+        "framework": "pytorch",
+        "model_type": "rnn",
+        "task_type": "classification",
+        "input_shape": (32, 64),   # (seq_len, input_size)
+        "output_shape": (10,),
+        "num_classes": 10,
+        "constructor": lambda m: m.LSTMBenchmark(
+            input_size=64, hidden_size=256, num_layers=2, num_classes=10
+        ),
+        "metadata": {"hidden_size": 256, "num_layers": 2, "input_dtype": "float32"},
+    },
+    {
+        "name": "BERTEncoder",
+        "framework": "pytorch",
+        "model_type": "transformer",
+        "task_type": "classification",
+        "input_shape": (128,),    # seq_len
+        "output_shape": (10,),
+        "num_classes": 10,
+        "constructor": lambda m: m.build_bert_encoder(num_classes=10),
+        "metadata": {"architecture": "bert_base", "hidden_size": 768, "input_dtype": "int64"},
+    },
+    # ── 轻量参考模型（仅供单元测试，不进入 BenchmarkSuite）──────────────────
     {
         "name": "SimpleMLP",
         "framework": "pytorch",
@@ -59,7 +113,7 @@ _BENCHMARK_SPECS = [
         "framework": "pytorch",
         "model_type": "rnn",
         "task_type": "classification",
-        "input_shape": (16,),     # seq_len
+        "input_shape": (16,),
         "output_shape": (10,),
         "num_classes": 10,
         "constructor": lambda m: m.SimpleRNN(
@@ -72,7 +126,7 @@ _BENCHMARK_SPECS = [
         "framework": "pytorch",
         "model_type": "transformer",
         "task_type": "classification",
-        "input_shape": (16,),     # seq_len
+        "input_shape": (16,),
         "output_shape": (10,),
         "num_classes": 10,
         "constructor": lambda m: m.TinyTransformer(

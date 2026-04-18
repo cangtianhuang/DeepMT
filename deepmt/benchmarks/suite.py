@@ -54,7 +54,7 @@ class OperatorBenchmarkEntry:
 
 
 _OPERATOR_BENCHMARK_ENTRIES: List[OperatorBenchmarkEntry] = [
-    # ── 激活函数（泛化名，框架无关）──────────────────────────────────────────
+    # ── 激活函数（10 个）────────────────────────────────────────────────────
     OperatorBenchmarkEntry("relu",         "pytorch", "activation"),
     OperatorBenchmarkEntry("sigmoid",      "pytorch", "activation"),
     OperatorBenchmarkEntry("tanh",         "pytorch", "activation"),
@@ -62,42 +62,69 @@ _OPERATOR_BENCHMARK_ENTRIES: List[OperatorBenchmarkEntry] = [
     OperatorBenchmarkEntry("gelu",         "pytorch", "activation"),
     OperatorBenchmarkEntry("softmax",      "pytorch", "activation"),
     OperatorBenchmarkEntry("log_softmax",  "pytorch", "activation"),
-    # ── 基础数学算子（泛化名）────────────────────────────────────────────────
-    OperatorBenchmarkEntry("abs",      "pytorch", "math"),
-    OperatorBenchmarkEntry("exp",      "pytorch", "math"),
-    OperatorBenchmarkEntry("log",      "pytorch", "math"),
-    OperatorBenchmarkEntry("sqrt",     "pytorch", "math"),
-    OperatorBenchmarkEntry("pow",      "pytorch", "math"),
-    OperatorBenchmarkEntry("add",      "pytorch", "math"),
-    OperatorBenchmarkEntry("multiply", "pytorch", "math"),
-    # ── 归一化（泛化名）──────────────────────────────────────────────────────
-    OperatorBenchmarkEntry("batch_norm",  "pytorch", "normalization"),
-    OperatorBenchmarkEntry("layer_norm",  "pytorch", "normalization"),
-    # ── 池化（泛化名）────────────────────────────────────────────────────────
-    OperatorBenchmarkEntry("max_pool2d",         "pytorch", "pooling"),
-    OperatorBenchmarkEntry("avg_pool2d",         "pytorch", "pooling"),
-    # ── 损失函数（泛化名）────────────────────────────────────────────────────
-    OperatorBenchmarkEntry("cross_entropy", "pytorch", "loss"),
-    OperatorBenchmarkEntry("mse_loss",      "pytorch", "loss"),
-    # ── 归约（泛化名）────────────────────────────────────────────────────────
-    OperatorBenchmarkEntry("sum",   "pytorch", "reduction"),
-    OperatorBenchmarkEntry("mean",  "pytorch", "reduction"),
-    OperatorBenchmarkEntry("max",   "pytorch", "reduction"),
-    OperatorBenchmarkEntry("min",   "pytorch", "reduction"),
-    OperatorBenchmarkEntry("std",   "pytorch", "reduction"),
-    # ── 线性代数（泛化名）────────────────────────────────────────────────────
+    OperatorBenchmarkEntry("elu",          "pytorch", "activation"),
+    OperatorBenchmarkEntry("selu",         "pytorch", "activation"),
+    OperatorBenchmarkEntry("silu",         "pytorch", "activation"),
+    # ── 数学运算（13 个）────────────────────────────────────────────────────
+    OperatorBenchmarkEntry("abs",       "pytorch", "math"),
+    OperatorBenchmarkEntry("exp",       "pytorch", "math"),
+    OperatorBenchmarkEntry("log",       "pytorch", "math"),
+    OperatorBenchmarkEntry("sqrt",      "pytorch", "math"),
+    OperatorBenchmarkEntry("pow",       "pytorch", "math"),
+    OperatorBenchmarkEntry("add",       "pytorch", "math"),
+    OperatorBenchmarkEntry("multiply",  "pytorch", "math"),
+    OperatorBenchmarkEntry("subtract",  "pytorch", "math"),
+    OperatorBenchmarkEntry("divide",    "pytorch", "math"),
+    OperatorBenchmarkEntry("floor",     "pytorch", "math"),
+    OperatorBenchmarkEntry("ceil",      "pytorch", "math"),
+    OperatorBenchmarkEntry("neg",       "pytorch", "math"),
+    OperatorBenchmarkEntry("sin",       "pytorch", "math"),
+    # ── 归一化（3 个）───────────────────────────────────────────────────────
+    OperatorBenchmarkEntry("batch_norm",    "pytorch", "normalization"),
+    OperatorBenchmarkEntry("layer_norm",    "pytorch", "normalization"),
+    OperatorBenchmarkEntry("instance_norm", "pytorch", "normalization"),
+    # ── 池化（4 个）─────────────────────────────────────────────────────────
+    OperatorBenchmarkEntry("max_pool2d",          "pytorch", "pooling"),
+    OperatorBenchmarkEntry("avg_pool2d",          "pytorch", "pooling"),
+    OperatorBenchmarkEntry("adaptive_avg_pool2d", "pytorch", "pooling"),
+    OperatorBenchmarkEntry("adaptive_max_pool2d", "pytorch", "pooling"),
+    # ── 损失函数（3 个）─────────────────────────────────────────────────────
+    OperatorBenchmarkEntry("cross_entropy",         "pytorch", "loss"),
+    OperatorBenchmarkEntry("mse_loss",              "pytorch", "loss"),
+    OperatorBenchmarkEntry("binary_cross_entropy",  "pytorch", "loss"),
+    # ── 归约（8 个）─────────────────────────────────────────────────────────
+    OperatorBenchmarkEntry("sum",    "pytorch", "reduction"),
+    OperatorBenchmarkEntry("mean",   "pytorch", "reduction"),
+    OperatorBenchmarkEntry("max",    "pytorch", "reduction"),
+    OperatorBenchmarkEntry("min",    "pytorch", "reduction"),
+    OperatorBenchmarkEntry("std",    "pytorch", "reduction"),
+    OperatorBenchmarkEntry("prod",   "pytorch", "reduction"),
+    OperatorBenchmarkEntry("var",    "pytorch", "reduction"),
+    OperatorBenchmarkEntry("cumsum", "pytorch", "reduction"),
+    # ── 线性代数 / 卷积（4 个）──────────────────────────────────────────────
     OperatorBenchmarkEntry("matmul",    "pytorch", "linear_algebra"),
     OperatorBenchmarkEntry("transpose", "pytorch", "linear_algebra"),
+    OperatorBenchmarkEntry("conv2d",    "pytorch", "linear_algebra"),
+    OperatorBenchmarkEntry("conv1d",    "pytorch", "linear_algebra"),
+    # ── 张量操作（8 个，新增类别）───────────────────────────────────────────
+    OperatorBenchmarkEntry("reshape",   "pytorch", "tensor_op"),
+    OperatorBenchmarkEntry("flatten",   "pytorch", "tensor_op"),
+    OperatorBenchmarkEntry("squeeze",   "pytorch", "tensor_op"),
+    OperatorBenchmarkEntry("unsqueeze", "pytorch", "tensor_op"),
+    OperatorBenchmarkEntry("permute",   "pytorch", "tensor_op"),
+    OperatorBenchmarkEntry("cat",       "pytorch", "tensor_op"),
+    OperatorBenchmarkEntry("split",     "pytorch", "tensor_op"),
+    OperatorBenchmarkEntry("stack",     "pytorch", "tensor_op"),
 ]
 
 
-# ── 模型层 benchmark（引用 ModelBenchmarkRegistry 中已定义的模型）─────────────
+# ── 模型层 benchmark（工业级真实模型，对应论文实验对象）─────────────────────────
 
 _MODEL_BENCHMARK_NAMES = [
-    "SimpleMLP",
-    "SimpleCNN",
-    "SimpleRNN",
-    "TinyTransformer",
+    "ResNet18",        # 残差卷积网络（典型 CNN 拓扑）
+    "VGG16",           # 顺序卷积网络（深层 CNN 拓扑）
+    "LSTMBenchmark",   # 双层 LSTM 分类器（循环网络拓扑）
+    "BERTEncoder",     # BERT-base 编码器（Transformer 拓扑）
 ]
 
 # ── 应用层 benchmark（引用 ApplicationBenchmarkRegistry 中已定义的场景）────────

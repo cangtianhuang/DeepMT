@@ -19,15 +19,16 @@
 | Phase M：真实缺陷挖掘与案例沉淀               | 🔄 进行中  |
 | Phase M 系统能力缺口修复（前置 T1~T9）        | ✅ 完成    |
 | Phase N：论文交付收口与复现资产封装           | ⬜ 未开始  |
-| Phase O：核心框架插件闭环与健康管理           | 🔄 进行中  |
+| Phase O：核心框架插件闭环与健康管理           | ✅ 完成    |
+| Phase P：仪表盘三层重设计                     | ✅ 完成    |
 
-**当前主链：** A~L 已完成 → **Phase M 系统能力缺口修复完成（L1+L2+L3 全绿，详见 [15_Phase_M_system_capability_gaps.md](./15_Phase_M_system_capability_gaps.md)）** → Phase M 主干真实扫描 TODO 已就绪（[phase_m_real_defect_hunting/08_scan_todo.md](../phase_m_real_defect_hunting/08_scan_todo.md)），由用户手动执行 → 并行新增 Phase O（[16_Phase_O_framework_plugin_closure_and_health.md](./16_Phase_O_framework_plugin_closure_and_health.md)）处理四框架插件闭环与健康系统扩展
+**当前主链：** A~L + Phase M 缺口修复 + Phase O + Phase P 均完成 → **当前进行：Phase M 真实缺陷挖掘主干**（扫描 TODO 已就绪，见 [phase_m_real_defect_hunting/08_scan_todo.md](../phase_m_real_defect_hunting/08_scan_todo.md)，由用户手动执行） → Phase N 论文交付未开始
 
 ---
 
 ## 测试覆盖
 
-**全部 747 个单元测试通过（无 LLM/网络依赖，含 1 个 TF 未安装时 skip），另有 31 个集成测试通过。**（Phase O 新增 test_plugin_contract 4 个，test_plugin_parity 9 个，test_health_deep 3 个）
+**全部 747 个单元测试通过（无 LLM/网络依赖，含 1 个 TF 未安装时 skip），另有 31 个集成测试通过。**（Phase O 新增 test_plugin_contract 4 个，test_plugin_parity 9 个，test_health_deep 3 个）新增论文对齐测试 test_alignment_improvements 19 个（2026-04-17）。
 
 ---
 
