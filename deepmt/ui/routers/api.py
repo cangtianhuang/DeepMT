@@ -16,6 +16,7 @@ import asyncio
 import threading
 import time
 from datetime import datetime
+from functools import lru_cache
 from typing import Any, Dict, Optional
 
 from fastapi import APIRouter
@@ -29,6 +30,11 @@ from deepmt.experiments.organizer import ExperimentOrganizer
 from deepmt.core.results_manager import ResultsManager
 from deepmt.mr_generator.base.mr_repository import MRRepository
 from deepmt.mr_governance.quality import QualityLevel, filter_by_quality
+
+
+@lru_cache(maxsize=3)
+def _repo(layer: str) -> MRRepository:
+    return MRRepository(layer=layer)
 
 router = APIRouter(tags=["API"])
 
@@ -157,7 +163,7 @@ async def api_mr_repository(layer: str = "operator"):
 
     def _load():
         try:
-            repo = MRRepository(layer=layer)
+            repo = _repo(layer)
             operators_raw = repo.list_subjects()
 
             total_mrs = 0
@@ -237,7 +243,7 @@ async def api_mr_detail(operator_name: str, layer_hint: str = "operator"):
     def _load():
         mrs = []
         for lyr in [layer] + [l for l in ("operator", "model", "application") if l != layer]:
-            repo = MRRepository(layer=lyr)
+            repo = _repo(lyr)
             mrs = repo.load(operator_name)
             if mrs:
                 break
@@ -488,7 +494,7 @@ async def api_mr_quality_filter(
 
         result = []
         for lyr in target_layers:
-            repo = MRRepository(layer=lyr)
+            repo = _repo(lyr)
             for subject in repo.list_subjects():
                 mrs = repo.load(subject)
                 filtered = filter_by_quality(
@@ -528,7 +534,7 @@ async def api_summary_v2():
             layers_stat = {}
             grand_total = 0
             for lyr in ("operator", "model", "application"):
-                repo = MRRepository(layer=lyr)
+                repo = _repo(lyr)
                 subjects = repo.list_subjects()
                 total = 0
                 verified = 0
@@ -594,7 +600,7 @@ async def api_frameworks():
         fw_mr_counts: Dict[str, int] = {}
         try:
             for lyr in ("operator", "model", "application"):
-                repo = MRRepository(layer=lyr)
+                repo = _repo(lyr)
                 for subj in repo.list_subjects():
                     for m in repo.load(subj):
                         for fw in (m.applicable_frameworks or []):

@@ -1,0 +1,202 @@
+﻿# MR 模板池（项目级静态资源，git 追踪）
+#
+# 只存放 **与算子无关的通用数学律**。凡是包含特定算子名或特定算子语义
+# （例如硬编码 exp(1)、abs(x)、sigmoid 互补）的条目，应当由 MR 生成流水线
+# （LLM 猜想 + precheck + SymPy）在运行时产出并写入 MRLibrary，不应在此预存。
+#
+# 字段说明：
+#   name:            模板名（与 key 保持一致）
+#   description:     人类可读的描述
+#   transform_code:  变换 lambda 的源码（字符串；precheck 会 eval 并绑定）
+#   oracle_expr:     与框架无关的输出关系表达式（由 MRVerifier 统一解释）
+#   min_inputs:      适用于算子的最小输入数
+#   max_inputs:      适用于算子的最大输入数（null 表示不限）
+#   property_tags:   数学属性标签，用于按标签检索模板
+#
+# 使用路径：MRTemplatePool 统一通过 discover_all_templates 按 arity 过滤，
+# 由 precheck 在随机输入上验证哪些律真正成立。
+templates:
+  commutative:
+    name: commutative
+    description: '交换律: f(x, y) == f(y, x)'
+    transform_code: 'lambda *args: ((args[1], args[0]) + args[2:] if len(args) >= 2 else args)'
+    oracle_expr: orig == trans
+    min_inputs: 2
+    max_inputs: 2
+    property_tags: [commutative]
+  associative_left:
+    name: associative_left
+    description: '左结合律: f(f(x, y), z) == f(x, f(y, z))'
+    transform_code: 'lambda x, y, z: (x, (y, z))'
+    oracle_expr: orig == trans
+    min_inputs: 3
+    max_inputs: 3
+    property_tags: [associative]
+  additive_identity:
+    name: additive_identity
+    description: '加法单位元: f(x, 0) == x'
+    transform_code: 'lambda x: (x, 0)'
+    oracle_expr: orig == trans
+    min_inputs: 1
+    max_inputs: 1
+    property_tags: [additive_identity]
+  multiplicative_identity:
+    name: multiplicative_identity
+    description: '乘法单位元: f(x, 1) == x'
+    transform_code: 'lambda x: (x, 1)'
+    oracle_expr: orig == trans
+    min_inputs: 1
+    max_inputs: 1
+    property_tags: [multiplicative_identity]
+  anti_commutative:
+    name: anti_commutative
+    description: '反交换律: f(x, y) == -f(y, x)'
+    transform_code: 'lambda *args: ((args[1], args[0]) + args[2:] if len(args) >= 2 else args)'
+    oracle_expr: trans == -orig
+    min_inputs: 2
+    max_inputs: 2
+    property_tags: [anti_commutative]
+  reciprocal:
+    name: reciprocal
+    description: '倒数关系: f(x, y) * f(y, x) == 1'
+    transform_code: 'lambda x, y: (y, x)'
+    oracle_expr: orig * trans == 1
+    min_inputs: 2
+    max_inputs: 2
+    property_tags: [reciprocal, commutative]
+  linear_scaling:
+    name: linear_scaling
+    description: '线性缩放: f(2*x, 2*y) == 2*f(x, y)'
+    transform_code: 'lambda x, y, k=2: (k * x, k * y)'
+    oracle_expr: trans == 2 * orig
+    min_inputs: 2
+    max_inputs: 2
+    property_tags: [linear]
+  additive_scaling:
+    name: additive_scaling
+    description: '加法缩放: f(x + 1, y + 1) == f(x, y) + 1'
+    transform_code: 'lambda x, y, k=1: (x + k, y + k)'
+    oracle_expr: trans == orig + 1
+    min_inputs: 2
+    max_inputs: 2
+    property_tags: [linear, distributive]
+  distributive_left:
+    name: distributive_left
+    description: '左分配律: f(x, f(y, z)) == f(f(x, y), f(x, z))'
+    transform_code: 'lambda x, y, z: (x, (y, z))'
+    oracle_expr: orig == trans
+    min_inputs: 3
+    max_inputs: 3
+    property_tags: [distributive]
+  idempotent:
+    name: idempotent
+    description: '幂等性(二元): f(x, x) == x'
+    transform_code: 'lambda x: (x, x)'
+    oracle_expr: orig == trans
+    min_inputs: 2
+    max_inputs: 2
+    property_tags: [idempotent]
+  absorption_max:
+    name: absorption_max
+    description: '吸收律(Max): f(x, f(x, y)) == f(x, y)'
+    transform_code: 'lambda x, y: (x, (x, y))'
+    oracle_expr: orig == trans
+    min_inputs: 2
+    max_inputs: 2
+    property_tags: [idempotent]
+  absorption_min:
+    name: absorption_min
+    description: '吸收律(Min): f(x, f(x, y)) == f(x, y)'
+    transform_code: 'lambda x, y: (x, (x, y))'
+    oracle_expr: orig == trans
+    min_inputs: 2
+    max_inputs: 2
+    property_tags: [idempotent]
+  transpose_matmul:
+    name: transpose_matmul
+    description: '矩阵乘法转置: f(A, B) == f(B^T, A^T)^T'
+    transform_code: 'lambda A, B: (B.T, A.T)'
+    oracle_expr: orig == trans
+    min_inputs: 2
+    max_inputs: 2
+    property_tags: [commutative]
+  symmetric:
+    name: symmetric
+    description: '对称性: f(x, y) == f(y, x)'
+    transform_code: 'lambda *args: ((args[1], args[0]) + args[2:] if len(args) >= 2 else args)'
+    oracle_expr: orig == trans
+    min_inputs: 2
+    max_inputs: 2
+    property_tags: [commutative]
+  translation_invariant:
+    name: translation_invariant
+    description: '平移不变性: f(x + 1, y + 1) == f(x, y) + 1'
+    transform_code: 'lambda x, y, k=1: (x + k, y + k)'
+    oracle_expr: trans == orig + 1
+    min_inputs: 2
+    max_inputs: 2
+    property_tags: [linear]
+  negation:
+    name: negation
+    description: '取反(二元): f(-x, -y) == -f(x, y)'
+    transform_code: 'lambda x, y: (-x, -y)'
+    oracle_expr: trans == -orig
+    min_inputs: 2
+    max_inputs: 2
+    property_tags: [anti_commutative, linear]
+  unary_scale_linear:
+    name: unary_scale_linear
+    description: '一元正齐次性: f(2*x) == 2*f(x)'
+    transform_code: "lambda k: {**k, 'input': 2.0 * k['input']}"
+    oracle_expr: trans == 2.0 * orig
+    min_inputs: 1
+    max_inputs: 1
+    property_tags: [linear]
+  unary_reflect:
+    name: unary_reflect
+    description: '一元反射对称(偶函数): f(-x) == f(x)'
+    transform_code: "lambda k: {**k, 'input': -k['input']}"
+    oracle_expr: trans == orig
+    min_inputs: 1
+    max_inputs: 1
+    property_tags: [even_symmetry]
+  unary_reflect_odd:
+    name: unary_reflect_odd
+    description: '一元奇对称(奇函数): f(-x) == -f(x)'
+    transform_code: "lambda k: {**k, 'input': -k['input']}"
+    oracle_expr: trans == -orig
+    min_inputs: 1
+    max_inputs: 1
+    property_tags: [odd_symmetry]
+  unary_translate:
+    name: unary_translate
+    description: '一元平移恒等: f(x + 1) == f(x) + 1'
+    transform_code: "lambda k: {**k, 'input': k['input'] + 1.0}"
+    oracle_expr: trans == orig + 1.0
+    min_inputs: 1
+    max_inputs: 1
+    property_tags: [linear]
+  unary_monotone_increase:
+    name: unary_monotone_increase
+    description: '一元单调递增: x+1 后输出不减小'
+    transform_code: "lambda k: {**k, 'input': k['input'] + 1.0}"
+    oracle_expr: all(trans >= orig)
+    min_inputs: 1
+    max_inputs: 1
+    property_tags: [monotone]
+  unary_nonnegative_output:
+    name: unary_nonnegative_output
+    description: '一元非负输出: f(x) >= 0 恒成立'
+    transform_code: "lambda k: k"
+    oracle_expr: all(orig >= 0)
+    min_inputs: 1
+    max_inputs: 1
+    property_tags: [nonnegative]
+  identity:
+    name: identity
+    description: '恒等变换: f(x) == f(x)'
+    transform_code: "lambda k: k"
+    oracle_expr: orig == trans
+    min_inputs: 1
+    max_inputs: null
+    property_tags: [idempotent]

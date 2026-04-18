@@ -706,74 +706,51 @@ templates:
     category: "identity"
     min_inputs: 2
 
-operator_mr_mapping:
-  # 算子到模板的映射
-  ReLU: ["idempotent", "positive_scaling"]
-  Add: ["commutative", "identity", "associative"]
-  Multiply: ["commutative", "zero"]
 ```
 
-**模板类型**：
+> **注意**：`templates.yaml` 只存放算子无关的通用数学律（交换律、线性性等），
+> 不含"算子→模板"映射。生成时统一通过 `discover_all_templates` 按 arity
+> 枚举全部兼容模板，由 precheck 过滤真正成立的 MR。
 
-| 模板名称 | 数学描述 | oracle_expr | 适用算子 |
-|---------|---------|-------------|---------|
-| commutative | `f(x, y) == f(y, x)` | `orig == trans` | Add, Multiply, Max, Min |
-| associative | `f(f(x, y), z) == f(x, f(y, z))` | `orig == trans` | Add, Multiply |
-| identity | `f(x, 0) == x` | `orig == trans` | Add |
-| zero | `f(x, 0) == 0` | `all(trans == 0)` | Multiply |
-| distributive | `f(x, g(y, z)) == g(f(x, y), f(x, z))` | `orig == trans` | Multiply, Add |
-| idempotent | `f(f(x)) == f(x)` | `orig == trans` | ReLU, Abs |
-| transpose | `f(A^T) == f(A)^T` | `orig == trans` | MatMul |
+**模板类型**（`deepmt/mr_generator/config/templates.yaml`）：
+
+| 模板名称 | 数学描述 | oracle_expr | 适用 arity |
+|---------|---------|-------------|------------|
+| commutative | `f(x, y) == f(y, x)` | `orig == trans` | 2 |
+| associative_left | `f(f(x,y),z) == f(x,f(y,z))` | `orig == trans` | 3 |
+| identity | `f(x) == f(x)` | `orig == trans` | 1+ |
+| transpose_matmul | `f(A,B) == f(B^T,A^T)^T` | `orig == trans` | 2 |
+| unary_scale_linear | `f(2x) == 2f(x)` | `trans == 2.0 * orig` | 1 |
+| unary_reflect | `f(-x) == f(x)` | `trans == orig` | 1 |
+| unary_reflect_odd | `f(-x) == -f(x)` | `trans == -orig` | 1 |
+| unary_monotone_increase | `x+1 后输出不减小` | `all(trans >= orig)` | 1 |
+| unary_nonnegative_output | `f(x) >= 0 恒成立` | `all(orig >= 0)` | 1 |
 
 **实现示例**：
 
 ```python
 class MRTemplatePool:
     def _load_config(self):
-        """从配置文件加载模板"""
         with open(self.config_path, "r", encoding="utf-8") as f:
             config = yaml.safe_load(f)
-
-        # 加载算子到MR的映射
-        self.operator_mr_mapping = config.get("operator_mr_mapping", {})
-
-        # 加载模板定义
-        templates_config = config.get("templates", {})
-
-        for template_name, template_data in templates_config.items():
-            # 解析transform_code为函数
-            transform_code = template_data.get("transform_code", "")
-            transform_func = eval(transform_code) if transform_code else lambda *args: args
-
-            # 解析 oracle_expr（框架无关的表达式）
-            oracle_expr = template_data.get("oracle_expr", "orig == trans")
-
-            template = MRTemplate(
-                name=template_data.get("name", template_name),
-                description=template_data.get("description", ""),
-                transform_func=transform_func,
-                oracle_expr=oracle_expr,
-                category=template_data.get("category", "general"),
-                min_inputs=template_data.get("min_inputs", 1),
-                max_inputs=template_data.get("max_inputs"),
+        for template_name, tdata in config.get("templates", {}).items():
+            tmpl = MRTemplate(
+                name=tdata.get("name", template_name),
+                transform_code=tdata.get("transform_code", ""),
+                oracle_expr=tdata.get("oracle_expr", "orig == trans"),
+                min_inputs=tdata.get("min_inputs", 1),
+                max_inputs=tdata.get("max_inputs"),
             )
-
-            self.templates[template_name] = template
+            self.templates[template_name] = tmpl
 ```
 
 **生成流程**：
 
 ```python
 def generate_mr_candidates(self, operator_name, operator_func=None, num_inputs=None):
-    """
-    为算子生成MR候选列表（路径B：模板池）
-
-    Returns:
-        MR候选列表（使用框架无关的结构）
-    """
-    # 1. 获取适用的模板
-    templates = self.get_applicable_templates(
-        operator_name, operator_func=operator_func, num_inputs=num_inputs
+    # 按 arity 枚举全部兼容模板，不依赖预映射
+    templates = self.discover_all_templates(
+        operator_func=operator_func, num_inputs=num_inputs
     )
 
     # 2. 为每个模板创建MR

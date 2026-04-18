@@ -362,23 +362,26 @@ class HealthChecker:
     def compute_reachability_matrix(self) -> Dict[str, Dict[str, bool]]:
         """
         产出 {operator: {framework: bool}} 可达性矩阵。
-        算子来源 = MR 知识库 YAML + 模板池 operator_mr_mapping（保证新装环境非空）。
-        framework 范围取自 PLUGIN_REGISTRY 中可用的插件。
+        算子来源 = MR 知识库 YAML + OperatorCatalog 中各框架的算子短名
+        （保证新装环境非空）。framework 范围取自 PLUGIN_REGISTRY 中可用的插件。
         """
         from deepmt.mr_generator.base.mr_repository import MRRepository
-        from deepmt.mr_generator.base.mr_templates import MRTemplatePool
+        from deepmt.mr_generator.base.operator_catalog import OperatorCatalog
         from deepmt.plugins import PLUGIN_REGISTRY
 
         repo = MRRepository()
         repo_ops = {p.stem for p in repo.repo_dir.glob("*.yaml")}
 
+        catalog_ops: set = set()
         try:
-            pool = MRTemplatePool()
-            template_ops = set(pool.operator_mr_mapping.keys())
+            catalog = OperatorCatalog()
+            for fw in catalog.get_all_frameworks():
+                for entry in catalog.get_all_entries(fw):
+                    catalog_ops.add(entry.name.rsplit(".", 1)[-1])
         except Exception:
-            template_ops = set()
+            catalog_ops = set()
 
-        operators = sorted(repo_ops | template_ops)
+        operators = sorted(repo_ops | catalog_ops)
         matrix: Dict[str, Dict[str, bool]] = {}
 
         plugins: List[Tuple[str, Any]] = []

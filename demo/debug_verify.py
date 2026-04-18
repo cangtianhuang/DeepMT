@@ -32,7 +32,7 @@ print("准备: 生成 relu 的 MR 候选（模板来源，不验证）")
 print("=" * 64)
 
 pool = MRTemplatePool()
-templates = pool.get_applicable_templates(OPERATOR_NAME, operator_func=OPERATOR_FUNC)
+templates = pool.discover_all_templates(operator_func=OPERATOR_FUNC)
 candidates = [pool.create_mr_from_template(t) for t in templates]
 
 operator_ir = OperatorIR(name=OPERATOR_NAME)

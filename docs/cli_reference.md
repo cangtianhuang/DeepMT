@@ -477,7 +477,7 @@ deepmt mr generate my_model --layer model
 
 ### `deepmt mr batch-generate`
 
-批量为算子目录中的算子生成蜕变关系并保存至知识库。算子来源：`mr_templates.yaml` 的 `operator_mr_mapping`，按 `framework` 前缀和 `category` 过滤。
+批量为算子目录中的算子生成蜕变关系并保存至知识库。算子来源：`OperatorCatalog`（`data/knowledge/operator_catalog/<framework>.yaml`），按 `framework` 和 `category` 过滤。对每个算子枚举全部兼容模板（按 arity），由 precheck 筛选真正成立的 MR，不依赖任何预存的"算子→模板"映射。
 
 ```
 deepmt mr batch-generate [OPTIONS]
@@ -486,7 +486,7 @@ deepmt mr batch-generate [OPTIONS]
 | 选项                         | 默认值     | 说明                                                                   |
 | ---------------------------- | ---------- | ---------------------------------------------------------------------- |
 | `--framework`                | `pytorch`  | 目标框架                                                               |
-| `--category`                 | 无（全部） | 按模板分类过滤（如 `linearity`、`symmetry`、`invariance`、`boundary`） |
+| `--category`                 | 无（全部） | 按算子分类过滤（如 `activation`、`math`、`reduction`）                 |
 | `--limit N`                  | 无限制     | 最多处理 N 个算子                                                      |
 | `--skip-existing`            | `False`    | 跳过知识库中已有 MR 的算子（支持 Ctrl+C 后断点续跑）                   |
 | `--sources`                  | `template` | MR 生成来源，逗号分隔（`llm` / `template`）                            |

@@ -1,7 +1,11 @@
 """
-MR模板池：从配置文件读取常见数学变换模板
-用于路径B（无知识）的MR猜想生成
+MR 模板池：从配置文件读取算子无关的通用数学律模板，用于 MR 候选生成。
 
+设计原则：
+  - 模板字段只存放**算子无关的通用数学律**（交换律、结合律、线性性、对称性等）。
+  - 不存放"算子→模板"映射，也不存放针对特定算子的预写答案。
+  - 运行期一律通过 `discover_all_templates` 按算子 arity 枚举候选，
+    是否真正成立交由下游 precheck + SymPy 证明判定。
 """
 
 import inspect
@@ -36,17 +40,16 @@ class MRTemplate:
 
 
 class MRTemplatePool:
-    """MR模板池：从配置文件读取和管理常见数学变换模板"""
+    """MR 模板池：加载算子无关的通用数学律，供候选生成枚举。"""
 
     def __init__(self, config_path: Optional[str] = None):
         if config_path is None:
-            project_root = Path(__file__).parents[3]
-            self.config_path = project_root / "data" / "knowledge" / "mr_repository" / "mr_templates.yaml"
+            # 默认路径：项目内随代码分发的模板池（git 追踪）
+            self.config_path = Path(__file__).parents[1] / "config" / "templates.yaml"
         else:
             self.config_path = Path(config_path)
 
         self.templates: Dict[str, MRTemplate] = {}
-        self.operator_mr_mapping: Dict[str, List[str]] = {}
         self._tag_index: Dict[str, List[str]] = {}  # tag → [template_name, ...]
 
         self._load_config()
@@ -55,9 +58,7 @@ class MRTemplatePool:
         """从配置文件加载模板（只解析 YAML，不 eval transform_code）"""
         try:
             with open(self.config_path, "r", encoding="utf-8") as f:
-                config = yaml.safe_load(f)
-
-            self.operator_mr_mapping = config.get("operator_mr_mapping", {})
+                config = yaml.safe_load(f) or {}
 
             for template_name, tdata in config.get("templates", {}).items():
                 try:
@@ -92,15 +93,7 @@ class MRTemplatePool:
             raise
 
     def get_templates_by_tag(self, tag: str) -> List[MRTemplate]:
-        """
-        按属性标签查询模板（MapPropertyTags 步骤的实现）。
-
-        Args:
-            tag: 属性标签名称（如 "commutative"、"linear"、"monotone"）
-
-        Returns:
-            具有该标签的 MRTemplate 列表（不含已在 operator_mr_mapping 中的过滤）
-        """
+        """按属性标签查询模板。"""
         names = self._tag_index.get(tag, [])
         return [self.templates[n] for n in names if n in self.templates]
 
@@ -109,86 +102,64 @@ class MRTemplatePool:
         return sorted(self._tag_index.keys())
 
     def _infer_num_inputs(self, operator_func: Optional[Callable]) -> int:
-        """推断算子的输入数量"""
+        """推断算子的张量输入数量（仅计无默认值的必填参数）。
+
+        例：relu(input, inplace=False) → 1（inplace 有默认值，不计）。
+        """
         if operator_func is None:
             return 2
 
         try:
             sig = inspect.signature(operator_func)
-            num_inputs = len(sig.parameters)
-            return num_inputs
+            required = [
+                p for p in sig.parameters.values()
+                if p.default is inspect.Parameter.empty
+                and p.kind not in (
+                    inspect.Parameter.VAR_POSITIONAL,
+                    inspect.Parameter.VAR_KEYWORD,
+                )
+            ]
+            return max(len(required), 1)
         except Exception as e:
             logger.warning(
                 f"Failed to infer num_inputs from operator_func: {e}, using default: 2"
             )
             return 2
 
-    def get_applicable_templates(
+    def discover_all_templates(
         self,
-        operator_name: str,
         operator_func: Optional[Callable] = None,
         num_inputs: Optional[int] = None,
     ) -> List[MRTemplate]:
         """
-        获取适用于指定算子的模板列表
+        枚举全部模板，按算子 arity 过滤。
+
+        这是从算子到模板的**唯一**入口：不依赖任何"算子→模板"先验映射，
+        所有筛选交给下游 precheck + SymPy 证明。
 
         Args:
-            operator_name: 算子名称
-            operator_func: 算子函数对象
-            num_inputs: 输入数量
+            operator_func: 算子函数对象（用于推断输入数量）
+            num_inputs:    输入数量（优先于 operator_func 推断）
 
         Returns:
-            适用的模板列表
+            满足输入数量约束的全部模板列表
         """
         if num_inputs is None:
             num_inputs = self._infer_num_inputs(operator_func)
 
-        applicable = []
-
-        template_names = self.operator_mr_mapping.get(operator_name, [])
-        if not template_names and "." in operator_name:
-            short = operator_name.rsplit(".", 1)[-1]
-            template_names = self.operator_mr_mapping.get(short, [])
-
-        for template_name in template_names:
-            template = self.templates.get(template_name)
-            if template is None:
-                continue
-
-            if num_inputs < template.min_inputs:
-                continue
-            if template.max_inputs is not None and num_inputs > template.max_inputs:
-                continue
-
-            applicable.append(template)
-
-        # 如果没有找到特定映射，尝试通用模板（identity）
-        if not applicable and "identity" in self.templates:
-            identity_template = self.templates["identity"]
-            if num_inputs >= identity_template.min_inputs:
-                if (
-                    identity_template.max_inputs is None
-                    or num_inputs <= identity_template.max_inputs
-                ):
-                    applicable.append(identity_template)
-
+        result = [
+            t for t in self.templates.values()
+            if num_inputs >= t.min_inputs
+            and (t.max_inputs is None or num_inputs <= t.max_inputs)
+        ]
         logger.debug(
-            f"Found {len(applicable)} applicable templates for {operator_name} "
-            f"(inputs: {num_inputs})"
+            f"[DISCOVER] {len(result)}/{len(self.templates)} templates "
+            f"compatible with num_inputs={num_inputs}"
         )
-
-        return applicable
+        return result
 
     def create_mr_from_template(self, template: MRTemplate) -> MetamorphicRelation:
-        """
-        从模板创建MR对象
-
-        Args:
-            template: MR模板
-
-        Returns:
-            MetamorphicRelation对象
-        """
+        """从模板创建 MR 对象"""
         transform_code = template.transform_code
         raw_func = eval(transform_code) if transform_code else lambda *args: args
 
@@ -214,69 +185,6 @@ class MRTemplatePool:
             verified=False,
         )
 
-    def discover_all_templates(
-        self,
-        operator_func: Optional[Callable] = None,
-        num_inputs: Optional[int] = None,
-    ) -> List[MRTemplate]:
-        """
-        不依赖 operator_mr_mapping，枚举所有已定义模板，仅按 min_inputs/max_inputs 过滤。
-
-        用于自动发现模式：当算子未在映射表中注册时，遍历全部模板，
-        由 precheck 进一步筛选哪些模板真正适用于该算子。
-
-        Args:
-            operator_func: 算子函数对象（用于推断输入数量）
-            num_inputs:    输入数量（优先于 operator_func 推断）
-
-        Returns:
-            满足输入数量约束的全部模板列表
-        """
-        if num_inputs is None:
-            num_inputs = self._infer_num_inputs(operator_func)
-
-        result = [
-            t for t in self.templates.values()
-            if num_inputs >= t.min_inputs
-            and (t.max_inputs is None or num_inputs <= t.max_inputs)
-        ]
-        logger.debug(
-            f"[DISCOVER] {len(result)}/{len(self.templates)} templates "
-            f"compatible with num_inputs={num_inputs}"
-        )
-        return result
-
-    def update_operator_mapping(
-        self,
-        operator_name: str,
-        template_names: List[str],
-    ) -> None:
-        """
-        将算子→模板列表写回 YAML 文件的 operator_mr_mapping 节，同时更新内存映射。
-
-        Args:
-            operator_name:  泛化短名（如 relu）
-            template_names: 适用模板名称列表
-        """
-        with open(self.config_path, "r", encoding="utf-8") as f:
-            config = yaml.safe_load(f) or {}
-
-        config.setdefault("operator_mr_mapping", {})[operator_name] = template_names
-        self.operator_mr_mapping[operator_name] = template_names
-
-        with open(self.config_path, "w", encoding="utf-8") as f:
-            yaml.dump(
-                config,
-                f,
-                allow_unicode=True,
-                default_flow_style=False,
-                sort_keys=False,
-            )
-        logger.info(
-            f"[TEMPLATE] operator_mr_mapping 已更新: "
-            f"{operator_name} → {template_names}"
-        )
-
     def generate_mr_candidates(
         self,
         operator_name: str,
@@ -284,29 +192,14 @@ class MRTemplatePool:
         num_inputs: Optional[int] = None,
     ) -> List[MetamorphicRelation]:
         """
-        为算子生成MR候选列表（路径B：模板池）
+        为算子枚举模板池候选 MR。
 
-        Args:
-            operator_name: 算子名称
-            operator_func: 算子函数对象
-            num_inputs: 输入数量
-
-        Returns:
-            MR候选列表
+        流程：按算子 arity 过滤出兼容模板，逐一实例化为 MetamorphicRelation。
+        是否真正适用于该算子由 precheck / SymPy 判定。
         """
-        templates = self.get_applicable_templates(
-            operator_name, operator_func=operator_func, num_inputs=num_inputs
+        templates = self.discover_all_templates(
+            operator_func=operator_func, num_inputs=num_inputs
         )
-
-        # T9：无映射时退回到全模板枚举，保证模板-only 路径可用
-        if not templates:
-            logger.info(
-                f"⚡ [GEN] No template mapping for {operator_name!r}; "
-                f"falling back to discover_all_templates"
-            )
-            templates = self.discover_all_templates(
-                operator_func=operator_func, num_inputs=num_inputs
-            )
 
         candidates = []
         for template in templates:
@@ -318,6 +211,9 @@ class MRTemplatePool:
                     f"Failed to create MR from template {template.name}: {e}"
                 )
 
-        logger.info(f"⚡ [GEN] Generated {len(candidates)} MR candidates from templates for operator {operator_name}")
+        logger.info(
+            f"⚡ [GEN] Generated {len(candidates)} MR candidates from templates "
+            f"for operator {operator_name}"
+        )
 
         return candidates

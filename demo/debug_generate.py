@@ -25,10 +25,10 @@ print("Step 1: 查看模板池中该算子的可用模板")
 print("=" * 64)
 
 pool = MRTemplatePool()
-templates = pool.get_applicable_templates(OPERATOR_NAME, operator_func=OPERATOR_FUNC)
+templates = pool.discover_all_templates(operator_func=OPERATOR_FUNC)
 print(f"算子: {OPERATOR_NAME}")
-print(f"模板总数: {len(pool.templates)}, 映射算子数: {len(pool.operator_mr_mapping)}")
-print(f"适用模板: {len(templates)} 个\n")
+print(f"模板总数: {len(pool.templates)}")
+print(f"按 arity 兼容的模板: {len(templates)} 个\n")
 
 for t in templates:
     print(f"  [{t.name}]")
