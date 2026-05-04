@@ -6,6 +6,7 @@
 
 import inspect
 import json
+import re
 import traceback
 import uuid
 from typing import Any, Callable, Dict, List, Optional
@@ -120,7 +121,8 @@ Before generating JSON, you MUST perform a **Step-by-Step Analysis** in your res
 2. **Identify Invariants**: What mathematical properties theoretically hold? (Linearity, Symmetry, Periodicity, etc.)
 3. **Detect Interference**: Which configuration parameters might BREAK these properties?
 * *Reasoning Example*: "Linearity f(ax)=af(x) holds for Matrix Multiplication, but if `bias` is present, it becomes `a(Wx+b) != W(ax)+b`. So I must set `bias=None` or `0`."
-4. **Formulate MRs**: Create lambda transformations that handle these interferences.
+4. **Domain Safety**: Check if the operator has a restricted input domain (e.g., log requires positive x, sqrt requires non-negative x).
+5. **Formulate MRs**: Create lambda transformations that handle these interferences.
 
 ### OUTPUT FORMAT
 
@@ -139,7 +141,7 @@ Return a single JSON object containing a list of MRs. No markdown formatting out
       "description": "Brief description of the mathematical property",
       "analysis": "Brief analysis explanation for this MR",
       "transform_code": "lambda k: {**k, 'input': ...}",
-      "oracle_expr": "trans == ..."
+      "oracle_expr": "all(trans == ...)"
     }
   ]
 }
@@ -151,34 +153,65 @@ Return a single JSON object containing a list of MRs. No markdown formatting out
 * `description`: Brief human-readable description of the MR
 * `analysis`: Brief analysis explaining why this MR holds and any constraints
 * `transform_code`: A Python lambda `lambda k: {**k, ...}`.
-* Input `k`: Dict of ALL arguments.
-* Output: New dict.
-* **Rule**: You can and should modify config parameters if needed to satisfy the mathematical property.
-* `oracle_expr`: A mathematical assertion using `trans` (transformed output), `orig` (original output), `x` (input).
-* Use `all(...)` for tensor comparisons.
-* No framework-specific functions (e.g., no `torch.*`).
+  * Input `k`: Dict of ALL arguments.
+  * Output: New dict with modified arguments.
+  * Use Python operators (`**`, `*`, `+`, `-`) and tensor methods (`.abs()`, `.clamp()`, `.exp()`) in the expression.
+  * Example: `k['input'] ** 2` or `k['input'].abs()` or `k['input'].clamp(min=0.001)`
+  * **Rule**: You can and should modify config parameters if needed to satisfy the mathematical property.
+* `oracle_expr`: A mathematical assertion using `trans` (transformed output), `orig` (original output), `x` (original input tensor).
+  * Use `all(...)` for tensor-level comparisons.
+  * **Available functions** in oracle_expr: `abs`, `exp`, `log`, `sqrt`, `sin`, `cos`, `all`, `any`, `sum`, `mean`.
+  * **DOMAIN SAFETY RULE**: For operators with restricted domains (log needs positive, sqrt needs non-negative):
+    - If `orig` may contain NaN (because original input can be out-of-domain), prefer using `x` and `trans` in the oracle instead of `orig`.
+    - Example for log(x²) = 2·log(|x|): use `all(trans == 2 * log(abs(x)))` NOT `all(trans == 2 * orig)` (since orig=log(x) is NaN for negative x).
+    - This way, the oracle is valid for ALL inputs including negative x.
 
-### FEW-SHOT EXAMPLES (General & Simple)
+### FEW-SHOT EXAMPLES
 
-**Example 1: Sin (Symmetry/Periodicity)**
+**Example 1: Sin (Symmetry - full domain)**
 
-> Analysis: Sin is an odd function (sin(-x) = -sin(x)) and periodic (sin(x+2pi) = sin(x)). No config args interfere.
+> Analysis: Sin is an odd function (sin(-x) = -sin(x)). No domain restriction — works for any real x.
 
 ```json
 {
   "mrs": [
     {
       "category": "symmetry",
-      "description": "Sin is an odd function: f(-x) = -f(x)",
-      "analysis": "The sine function satisfies the odd function property sin(-x) = -sin(x) due to its symmetry about the origin.",
+      "description": "Sin is an odd function: sin(-x) == -sin(x)",
+      "analysis": "sin(-x) = -sin(x) holds for all real x. No domain restriction.",
       "transform_code": "lambda k: {{**k, 'input': -k['input']}}",
-      "oracle_expr": "trans == -orig"
+      "oracle_expr": "all(trans == -orig)"
     }
   ]
 }
 ```
 
-**Example 2: Linear / Dense (Linearity with Inference)**
+**Example 2: Log (restricted domain — use x in oracle, not orig)**
+
+> Analysis: log(x²) = 2·log(|x|) for any x ≠ 0. The transform squares the input (always positive). To avoid NaN from orig=log(x) for negative x, use x directly in the oracle.
+
+```json
+{
+  "mrs": [
+    {
+      "category": "invariance",
+      "description": "log(x²) == 2·log(|x|) holds for any non-zero x",
+      "analysis": "Squaring the input always produces positive values. The oracle uses abs(x) to avoid NaN from log of negative x.",
+      "transform_code": "lambda k: {{**k, 'input': k['input'] ** 2}}",
+      "oracle_expr": "all(trans == 2 * log(abs(x)))"
+    },
+    {
+      "category": "linearity",
+      "description": "log(2·|x|) == log(2) + log(|x|) for positive |x|",
+      "analysis": "Use abs to ensure positive domain. log(2*|x|) = log(2) + log(|x|). Both sides use x (not orig) to avoid NaN.",
+      "transform_code": "lambda k: {{**k, 'input': 2.0 * k['input'].abs()}}",
+      "oracle_expr": "all(abs(trans - (log(abs(x)) + log(abs(x) * 0 + 2.0))) < 1e-5)"
+    }
+  ]
+}
+```
+
+**Example 3: Linear / Dense (Linearity with Bias interference)**
 
 > Analysis: A Linear layer is `x @ w.T + bias`. Pure linearity `f(kx) == kf(x)` fails because of bias. I must disable bias for this MR.
 
@@ -189,8 +222,8 @@ Return a single JSON object containing a list of MRs. No markdown formatting out
       "category": "linearity",
       "description": "Scaling input scales output (valid only when bias is disabled)",
       "analysis": "For a linear layer without bias, f(kx) = k*f(x). The bias term breaks this property, so it must be disabled.",
-      "transform_code": "lambda k: {**k, 'input': 2 * k['input'], 'bias': None}",
-      "oracle_expr": "trans == 2 * orig"
+      "transform_code": "lambda k: {{**k, 'input': 2 * k['input'], 'bias': None}}",
+      "oracle_expr": "all(trans == 2 * orig)"
     }
   ]
 }
@@ -215,7 +248,8 @@ Generate the response for the user's operator. Start with **Analysis**, then pro
             elif "```" in content:
                 content = content.split("```")[1].split("```")[0].strip()
 
-            # 解析JSON
+            # 解析JSON（容忍LLM常见输出：trailing comma）
+            content = re.sub(r",\s*([}\]])", r"\1", content)
             data = json.loads(content)
 
             # 转换为MR对象

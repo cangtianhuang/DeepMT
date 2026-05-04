@@ -20,7 +20,7 @@ from typing import Dict, List, Optional
 import click
 import yaml
 
-_CATALOG_DIR = Path(__file__).parents[2] / "data" / "operator_catalog"
+_CATALOG_DIR = Path(__file__).parents[2] / "data" / "knowledge" / "operator_catalog"
 _ALL_FRAMEWORKS = ["pytorch", "tensorflow", "paddlepaddle"]
 
 
@@ -69,7 +69,8 @@ def _write_entry_yaml(f, d: dict) -> None:
     if d.get("doc_url"):
         f.write(f"    doc_url: {d['doc_url']}\n")
     if d.get("signature"):
-        f.write(f'    signature: "{d["signature"]}"\n')
+        sig = d["signature"].replace("\\", "\\\\").replace('"', '\\"')
+        f.write(f'    signature: "{sig}"\n')
     if d.get("input_specs"):
         f.write("    input_specs:\n")
         for spec in d["input_specs"]:
@@ -880,7 +881,14 @@ def catalog_enrich(operator, framework, llm, dry_run):
     show_default=True,
     help="--enrich 时是否启用 LLM 提取约束条件（需配置 LLM API，默认不启用）",
 )
-def catalog_import_from_docs(framework, version, replace, no_cache, dry_run, enrich, enrich_llm):
+@click.option(
+    "--yes", "-y",
+    "auto_yes",
+    is_flag=True,
+    default=False,
+    help="自动确认所有交互提示（适合脚本/非交互式批量运行）",
+)
+def catalog_import_from_docs(framework, version, replace, no_cache, dry_run, enrich, enrich_llm, auto_yes):
     """从官方文档批量导入 API 到算子目录。
 
     拉取官方文档中所有 API 条目，经排除列表过滤后，写入算子目录 YAML。
@@ -916,6 +924,9 @@ def catalog_import_from_docs(framework, version, replace, no_cache, dry_run, enr
 
       # 丰富并启用 LLM（每批 8 次后确认）
       deepmt catalog import-api --enrich --enrich-llm
+
+      # 非交互式批量运行（自动确认所有提示）
+      deepmt catalog import-api --enrich --yes
 
       # 试运行
       deepmt catalog import-api --replace --dry-run
@@ -1018,7 +1029,7 @@ def catalog_import_from_docs(framework, version, replace, no_cache, dry_run, enr
 
     # 确认
     action_desc = "清空目录并全量导入" if replace else "添加新 API"
-    if not click.confirm(f"\n确认{action_desc}？"):
+    if not auto_yes and not click.confirm(f"\n确认{action_desc}？"):
         click.echo("已取消。")
         return
 
@@ -1085,7 +1096,7 @@ def catalog_import_from_docs(framework, version, replace, no_cache, dry_run, enr
         click.echo(f"\n即将丰富 {total} 个缺少 input_specs 的条目")
         click.echo(f"  策略: inspect + HTML{'+ LLM' if llm_client else '（不使用 LLM）'}")
         click.echo(f"  LLM 调用总次数: {llm_calls}  |  批次大小: {_BATCH}  |  共 {batch_count} 批")
-        if llm_client:
+        if llm_client and not auto_yes:
             if not click.confirm("\n确认启动（含 LLM 调用）？"):
                 click.echo("已跳过丰富。")
                 llm_client = None
@@ -1117,7 +1128,7 @@ def catalog_import_from_docs(framework, version, replace, no_cache, dry_run, enr
 
             if batch_idx > 0:
                 click.echo(f"\n已完成 {batch_idx}/{total}，准备第 {batch_no}/{batch_count} 批（{batch_idx+1}–{batch_end}）")
-                if not click.confirm(f"继续处理下一批（{len(batch)} 个）？"):
+                if not auto_yes and not click.confirm(f"继续处理下一批（{len(batch)} 个）？"):
                     click.echo("已停止丰富，将写入当前进度。")
                     break
 

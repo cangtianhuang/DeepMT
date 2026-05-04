@@ -75,6 +75,7 @@ class PyTorchPlugin(FrameworkPlugin):
     # 键为泛化名（与 MR 知识库 subject_name 一致），值为可调用对象。
     # 对于直接存在于 torch.* 的算子（abs/exp/log 等），无需在此注册。
     _overrides: ClassVar[Dict[str, Callable]] = {
+        # ── 激活函数（torch.nn.functional）──────────────────────────────────
         "relu":         F.relu,
         "sigmoid":      F.sigmoid,
         "tanh":         F.tanh,
@@ -85,6 +86,25 @@ class PyTorchPlugin(FrameworkPlugin):
         "elu":          F.elu,
         "silu":         F.silu,
         "hardswish":    F.hardswish,
+        "hardshrink":   F.hardshrink,
+        "hardsigmoid":  F.hardsigmoid,
+        "hardtanh":     F.hardtanh,
+        "glu":          F.glu,
+        "selu":         F.selu,
+        "celu":         F.celu,
+        "rrelu":        F.rrelu,
+        "mish":         F.mish,
+        "softplus":     F.softplus,
+        "softshrink":   F.softshrink,
+        "softsign":     F.softsign,
+        "tanhshrink":   F.tanhshrink,
+        "logsigmoid":   F.logsigmoid,
+        "relu6":        F.relu6,
+        "softmin":      F.softmin,
+        # nn.Module 类短名别名（与上方 functional 版本等价）
+        "leakyrelu":    F.leaky_relu,
+        "logsoftmax":   F.log_softmax,
+        # ── 层操作 ──────────────────────────────────────────────────────────
         "batch_norm":   F.batch_norm,
         "layer_norm":   F.layer_norm,
         "dropout":      F.dropout,

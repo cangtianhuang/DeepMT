@@ -143,7 +143,8 @@ class OperatorMRGenerator:
         final_mrs = self._deduplicate_mrs(verified_mrs)
 
         for mr in final_mrs:
-            mr.verified = (mr.checked is True) and (mr.proven is True)
+            proven_ok = (not use_sympy_proof) or (mr.proven is True)
+            mr.verified = (mr.checked is True) and proven_ok
 
         verified_count = sum(1 for mr in final_mrs if mr.verified)
         if verified_count == len(final_mrs):
@@ -259,7 +260,8 @@ class OperatorMRGenerator:
         final_mrs = self._deduplicate_mrs(mrs)
 
         for mr in final_mrs:
-            mr.verified = (mr.checked is True) and (mr.proven is True)
+            proven_ok = (not use_sympy_proof) or (mr.proven is True)
+            mr.verified = (mr.checked is True) and proven_ok
 
         verified_count = sum(1 for mr in final_mrs if mr.verified)
         logger.success("✨ [SUCCESS] " + f"Verification completed: {verified_count}/{len(final_mrs)} MRs verified")
@@ -360,21 +362,63 @@ class OperatorMRGenerator:
 
         return operator_code, operator_doc
 
+    @staticmethod
+    def _normalize_expr(s: str) -> str:
+        """
+        标准化表达式用于去重比较：
+          1. 去除全部空格
+          2. 剥除外层 all()/any() 量词（验证器会统一处理，对去重无意义）
+          3. 将整数值浮点字面量统一为整数（2.0 → 2，避免 2 vs 2.0 的重复 MR）
+        """
+        import re
+        s = s.strip()
+        s = re.sub(r"\s+", "", s)
+        # 剥除外层 all(...) / any(...) 包装
+        m = re.fullmatch(r"(?:all|any)\((.+)\)", s)
+        if m:
+            s = m.group(1)
+        # 将整数值浮点字面量统一为整数字面量（避免 2 vs 2.0 产生重复 MR）
+        s = re.sub(r"(?<![.\d])(-?\d+)\.0+(?!\d)", r"\1", s)
+        return s
+
     def _deduplicate_mrs(
         self, mrs: List[MetamorphicRelation]
     ) -> List[MetamorphicRelation]:
-        """去重MR列表"""
+        """
+        去重MR列表。
+
+        去重键为 (oracle_expr, transform_code) 的规范化形式——只保留语义独特的 MR。
+        同时过滤掉恒成立的无效 MR：identity 变换 + "orig == trans" oracle 永远为真，
+        对缺陷检测毫无贡献。
+        """
         seen: Set[str] = set()
         unique_mrs: List[MetamorphicRelation] = []
+        filtered_trivial = 0
 
         for mr in mrs:
-            key = mr.description
+            norm_oracle = self._normalize_expr(mr.oracle_expr or "")
+            norm_transform = self._normalize_expr(mr.transform_code or "")
+
+            # 过滤恒成立的 trivial MR（identity 变换 + orig==trans oracle）
+            is_identity = norm_transform in ("lambdak:k", "lambdax:x")
+            is_tautology = norm_oracle in ("orig==trans", "trans==orig")
+            if is_identity and is_tautology:
+                filtered_trivial += 1
+                logger.debug("🐛 [DEBUG] " + f"Filtered trivial MR (identity+tautology): {mr.description}")
+                continue
+
+            key = f"{norm_oracle}||{norm_transform}"
             if key not in seen:
                 seen.add(key)
                 unique_mrs.append(mr)
 
-        if len(mrs) != len(unique_mrs):
-            logger.debug("🐛 [DEBUG] " + f"Deduplicated: {len(mrs)} → {len(unique_mrs)} MRs")
+        removed = len(mrs) - len(unique_mrs) - filtered_trivial
+        if removed > 0 or filtered_trivial > 0:
+            logger.debug(
+                "🐛 [DEBUG] "
+                f"Deduplicated: {len(mrs)} → {len(unique_mrs)} MRs "
+                f"(removed {removed} duplicates, {filtered_trivial} trivial)"
+            )
 
         return unique_mrs
 
@@ -437,6 +481,7 @@ class OperatorMRGenerator:
                 template_mrs = self.template_pool.generate_mr_candidates(
                     operator_name=operator_name,
                     operator_func=operator_func,
+                    num_inputs=len(operator_ir.input_specs) if operator_ir.input_specs else None,
                 )
                 candidate_mrs.extend(template_mrs)
                 logger.info("⚡ [GEN] " + f"Generated {len(template_mrs)} candidates from templates for '{operator_name}'")

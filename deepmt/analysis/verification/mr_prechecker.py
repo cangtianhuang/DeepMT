@@ -61,10 +61,19 @@ class MRPreChecker:
             try:
                 orig_kwargs = self._build_kwargs(test_input)
 
-                orig_output = operator_func(**orig_kwargs)
+                # Clone inputs before operator call: in-place operators (log_, sqrt_, etc.)
+                # mutate orig_kwargs['input'] during execution, corrupting the transform step.
+                saved_inputs = {
+                    k: v.clone() if hasattr(v, "clone") else v
+                    for k, v in orig_kwargs.items()
+                }
+
+                orig_output = self._call_operator(operator_func, orig_kwargs)
+                # orig_kwargs['input'] may now be mutated for in-place operators.
+                # saved_inputs still holds the original tensor values.
 
                 try:
-                    transformed_kwargs = bound_transform(orig_kwargs)
+                    transformed_kwargs = bound_transform(saved_inputs)
                     if not isinstance(transformed_kwargs, dict):
                         failed_count += 1
                         error_messages.append(
@@ -78,10 +87,10 @@ class MRPreChecker:
                     logger.debug(f"Transform error: {e}")
                     continue
 
-                trans_output = operator_func(**transformed_kwargs)
+                trans_output = self._call_operator(operator_func, transformed_kwargs)
 
-                # 提取原始输入张量（oracle_expr 中 x 变量）
-                x_input = orig_kwargs.get("input", orig_kwargs.get("x", None))
+                # 提取原始输入张量（oracle_expr 中 x 变量）— 使用克隆前的原始值
+                x_input = saved_inputs.get("input", saved_inputs.get("x", None))
 
                 oracle_result = self.verifier.verify(
                     orig_output, trans_output, mr, backend, x_input=x_input,
@@ -161,6 +170,17 @@ class MRPreChecker:
         return filtered
 
     # ── 私有方法 ──────────────────────────────────────────────────────────────
+
+    @staticmethod
+    def _call_operator(operator_func: Callable, kwargs: Dict[str, Any]) -> Any:
+        """
+        Call operator_func with kwargs. Falls back to positional call if the operator
+        uses non-standard parameter names (e.g. torch.linalg.cond uses 'A', not 'input').
+        """
+        try:
+            return operator_func(**kwargs)
+        except TypeError:
+            return operator_func(*list(kwargs.values()))
 
     @staticmethod
     def _bind_transform_code(

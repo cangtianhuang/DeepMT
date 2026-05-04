@@ -49,7 +49,7 @@ def mr():
 )
 @click.option("--precheck/--no-precheck", default=True, show_default=True, help="启用数值预检")
 @click.option("--sympy/--no-sympy", default=False, show_default=True, help="启用 SymPy 符号证明")
-@click.option("--auto-fetch/--no-auto-fetch", default=False, show_default=True, help="自动从网络获取算子文档")
+@click.option("--auto-fetch/--no-auto-fetch", default=True, show_default=True, help="自动从网络获取算子文档（默认开启，会利用本地缓存）")
 @click.option("--save/--no-save", default=True, show_default=True, help="将结果保存至知识库")
 def mr_generate(operator, layer, framework, sources, precheck, sympy, auto_fetch, save):
     """为算子生成蜕变关系并（可选）保存至知识库。
@@ -74,6 +74,7 @@ def mr_generate(operator, layer, framework, sources, precheck, sympy, auto_fetch
     try:
         from deepmt.ir import OperatorIR
         from deepmt.mr_generator.operator.operator_mr_generator import OperatorMRGenerator
+        from deepmt.mr_generator.base.operator_catalog import OperatorCatalog
 
         operator_func = _try_import_operator(operator, framework)
         if operator_func:
@@ -81,7 +82,14 @@ def mr_generate(operator, layer, framework, sources, precheck, sympy, auto_fetch
         else:
             click.echo(f"           operator_func=未找到（precheck 将跳过）")
 
-        operator_ir = OperatorIR(name=operator)
+        # Load input_specs from catalog so template pool selects correct arity
+        catalog = OperatorCatalog()
+        catalog_entry = catalog.get_operator_info(framework, operator)
+        catalog_input_specs = catalog_entry.input_specs if catalog_entry else None
+        operator_ir = OperatorIR(
+            name=operator,
+            input_specs=catalog_input_specs if catalog_input_specs else None,
+        )
         generator = OperatorMRGenerator()
 
         click.echo("正在生成候选 MR …")
@@ -90,6 +98,7 @@ def mr_generate(operator, layer, framework, sources, precheck, sympy, auto_fetch
             auto_fetch_info=auto_fetch,
             sources=source_list,
             framework=framework,
+            operator_func=operator_func,
         )
         click.echo(f"生成候选: {len(mrs)} 个")
 
@@ -275,7 +284,7 @@ def mr_stats(operator, as_json):
     click.echo(f"  数值检查:   {stats['checked']}")
     click.echo(f"  符号证明:   {stats['proven']}")
 
-    if not operator and stats["by_operator"]:
+    if not operator and stats.get("by_operator"):
         click.echo("\n  按算子分布:")
         for op, s in stats["by_operator"].items():
             click.echo(f"    {op}: total={s['total']}, verified={s['verified']}")
@@ -286,12 +295,13 @@ def mr_stats(operator, as_json):
 
 def _collect_batch_operators(framework: str, category_filter=None):
     """
-    构建 batch-generate 的算子列表，返回 [(operator_name, category), ...] 。
+    构建 batch-generate 的算子列表，返回 [(operator_name, category, input_specs), ...] 。
 
     来源：OperatorCatalog 中指定框架的算子条目。若 category_filter 给出，
     只返回该分类下的算子。算子名称取 OperatorEntry.name 的末段短名
     （如 torch.nn.functional.relu → relu），以便 precheck 阶段通过插件的
     `_resolve_operator` 解析为具体函数。
+    input_specs 从目录条目中直接获取，用于正确推断算子 arity。
     """
     from deepmt.mr_generator.base.operator_catalog import OperatorCatalog
 
@@ -302,14 +312,23 @@ def _collect_batch_operators(framework: str, category_filter=None):
         else catalog.get_all_entries(framework)
     )
 
+    # 优先使用 torch.nn.functional.* 条目（可被插件直接解析），
+    # 其次是 torch.nn.* 条目（类名，短名可能与 functional 重名但无法直接解析）。
+    def _entry_priority(e):
+        if ".functional." in e.name:
+            return 0
+        if e.name.startswith("torch.nn."):
+            return 1
+        return 2
+
     result = []
     seen = set()
-    for entry in entries:
-        short = entry.name.rsplit(".", 1)[-1]
+    for entry in sorted(entries, key=_entry_priority):
+        short = entry.name.rsplit(".", 1)[-1].lower()
         if short in seen:
             continue
         seen.add(short)
-        result.append((short, entry.category))
+        result.append((short, entry.category, entry.input_specs or []))
     return result
 
 
@@ -341,6 +360,18 @@ def _try_import_operator(operator_name: str, framework: str):
     except Exception:
         pass
     return None
+
+
+def _print_status(click_mod, operator: str, status: str, msg: str) -> None:
+    """将 _process_one 返回的状态格式化打印。"""
+    if status == "SKIP":
+        click_mod.echo(f"{msg}  {click_mod.style('SKIP', fg='yellow')}")
+    elif status == "OK":
+        click_mod.echo(f"{msg}  {click_mod.style('OK', fg='green')}")
+    elif status in ("NO_MR_NONE", "NO_MR_ZERO"):
+        click_mod.echo(f"{msg}  {click_mod.style('NO_MR', fg='yellow')}")
+    else:
+        click_mod.echo(f"{msg}  {click_mod.style('FAIL', fg='red')}")
 
 
 # ── batch-generate ───────────────────────────────────────────────────────────
@@ -390,7 +421,14 @@ def _try_import_operator(operator_name: str, framework: str):
     default=False,
     help="只列出待处理算子，不实际执行生成",
 )
-def mr_batch_generate(framework, operators, category, limit, skip_existing, sources, precheck, sympy, dry_run):
+@click.option(
+    "--parallel",
+    default=1,
+    type=int,
+    show_default=True,
+    help="并行线程数（>1 时 LLM 请求并发执行，加速批量生成；仅在 sources 包含 llm 时有效）",
+)
+def mr_batch_generate(framework, operators, category, limit, skip_existing, sources, precheck, sympy, dry_run, parallel):
     """批量为算子目录中的算子生成蜕变关系并保存至知识库。
 
     统一流程：对每个算子枚举全部兼容模板（按 arity）并叠加可选 LLM 猜想，
@@ -412,7 +450,7 @@ def mr_batch_generate(framework, operators, category, limit, skip_existing, sour
 
     # ── 构建算子列表 ──────────────────────────────────────────────────────────
     if operators:
-        operator_list = [(op, "") for op in operators]
+        operator_list = [(op, "", []) for op in operators]
     else:
         operator_list = _collect_batch_operators(framework, category)
 
@@ -428,16 +466,17 @@ def mr_batch_generate(framework, operators, category, limit, skip_existing, sour
     if limit is not None and limit > 0:
         operator_list = operator_list[:limit]
 
+    n_parallel = max(1, parallel)
     click.echo(
         f"[batch-generate] framework={framework}  category={category or '全部'}"
         f"  sources={source_list}  precheck={precheck}  sympy={sympy}"
-        f"  skip_existing={skip_existing}  dry_run={dry_run}"
+        f"  skip_existing={skip_existing}  parallel={n_parallel}  dry_run={dry_run}"
     )
     click.echo(f"待处理算子: {len(operator_list)} 个")
 
     if dry_run:
         click.echo("\n[dry-run] 将处理以下算子:")
-        for op_name, op_category in operator_list:
+        for op_name, op_category, *_ in operator_list:
             click.echo(f"  {op_name}  [{op_category}]")
         return
 
@@ -457,66 +496,94 @@ def mr_batch_generate(framework, operators, category, limit, skip_existing, sour
 
     click.echo("")
 
-    try:
-        for idx, (operator, op_category) in enumerate(operator_list, 1):
-            prefix = f"[{idx:>3}/{total}] {operator}"
+    def _process_one(args):
+        """处理单个算子，返回 (operator, status, detail_str)。"""
+        idx, (operator, op_category, catalog_input_specs) = args
+        prefix = f"[{idx:>3}/{total}] {operator}"
 
-            if skip_existing and repo.exists(operator):
-                click.echo(f"{prefix}  {click.style('SKIP', fg='yellow')}")
-                skipped += 1
-                continue
+        if skip_existing and repo.exists(operator):
+            return (operator, "SKIP", prefix)
 
-            try:
-                operator_func = _try_import_operator(operator, framework)
-                operator_ir = OperatorIR(name=operator)
+        try:
+            operator_func = _try_import_operator(operator, framework)
+            operator_ir = OperatorIR(
+                name=operator,
+                input_specs=catalog_input_specs if catalog_input_specs else None,
+            )
 
-                mrs = generator.generate_only(
+            mrs = generator.generate_only(
+                operator_ir=operator_ir,
+                auto_fetch_info=False,
+                sources=source_list,
+                framework=framework,
+                operator_func=operator_func,
+            )
+
+            if not mrs:
+                return (operator, "NO_MR_NONE", prefix)
+
+            if precheck or sympy:
+                mrs = generator.verify_mrs(
+                    mrs=mrs,
                     operator_ir=operator_ir,
-                    auto_fetch_info=False,
-                    sources=source_list,
                     framework=framework,
                     operator_func=operator_func,
+                    use_precheck=precheck,
+                    use_sympy_proof=sympy,
                 )
 
-                if not mrs:
-                    click.echo(f"{prefix}  {click.style('NO_MR', fg='yellow')} (无候选 MR)")
+            passed = sum(1 for m in mrs if m.verified)
+            count = repo.save(operator, mrs, framework=framework)
+
+            if count == 0 and not mrs:
+                return (operator, "NO_MR_NONE", prefix)
+            elif passed == 0:
+                return (operator, "NO_MR_ZERO", f"{prefix}  生成={len(mrs)} 验证通过=0")
+            else:
+                return (operator, "OK", f"{prefix}  生成={len(mrs)} 验证={passed} 保存={count}")
+
+        except Exception as e:
+            return (operator, "FAIL", f"{prefix}  {e}")
+
+    try:
+        if n_parallel > 1 and "llm" in source_list:
+            import concurrent.futures
+            tasks = list(enumerate(operator_list, 1))
+            with concurrent.futures.ThreadPoolExecutor(max_workers=n_parallel) as executor:
+                futures = {executor.submit(_process_one, t): t for t in tasks}
+                for future in concurrent.futures.as_completed(futures):
+                    try:
+                        operator, status, msg = future.result()
+                    except KeyboardInterrupt:
+                        raise
+                    except Exception as e:
+                        click.echo(click.style(f"  FAIL  {e}", fg="red"))
+                        failed += 1
+                        continue
+                    _print_status(click, operator, status, msg)
+                    if status == "SKIP":
+                        skipped += 1
+                    elif status == "OK":
+                        done += 1
+                    elif status in ("NO_MR_NONE", "NO_MR_ZERO"):
+                        skipped += 1
+                    else:
+                        failed += 1
+        else:
+            for item in enumerate(operator_list, 1):
+                try:
+                    operator, status, msg = _process_one(item)
+                except KeyboardInterrupt:
+                    raise
+                _print_status(click, operator, status, msg)
+                if status == "SKIP":
                     skipped += 1
-                    continue
-
-                if precheck or sympy:
-                    mrs = generator.verify_mrs(
-                        mrs=mrs,
-                        operator_ir=operator_ir,
-                        framework=framework,
-                        operator_func=operator_func,
-                        use_precheck=precheck,
-                        use_sympy_proof=sympy,
-                    )
-
-                passed = sum(1 for m in mrs if m.verified)
-                count = repo.save(operator, mrs, framework=framework)
-
-                if count == 0 and not mrs:
-                    click.echo(f"{prefix}  {click.style('NO_MR', fg='yellow')} (无候选 MR)")
-                    skipped += 1
-                elif passed == 0:
-                    click.echo(
-                        f"{prefix}  {click.style('NO_MR', fg='yellow')} "
-                        f"(生成={len(mrs)} 验证通过=0)"
-                    )
+                elif status == "OK":
+                    done += 1
+                elif status in ("NO_MR_NONE", "NO_MR_ZERO"):
                     skipped += 1
                 else:
-                    click.echo(
-                        f"{prefix}  {click.style('OK', fg='green')}"
-                        f"  生成={len(mrs)} 验证={passed} 保存={count}"
-                    )
-                    done += 1
-
-            except KeyboardInterrupt:
-                raise
-            except Exception as e:
-                click.echo(f"{prefix}  {click.style('FAIL', fg='red')}  {e}")
-                failed += 1
+                    failed += 1
 
     except KeyboardInterrupt:
         click.echo(click.style("\n用户中断（Ctrl+C）", fg="yellow"))

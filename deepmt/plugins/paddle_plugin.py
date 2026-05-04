@@ -16,6 +16,9 @@ PaddlePaddle 框架适配插件
   但实例化 PaddlePlugin 时会抛出 ImportError 并给出安装提示。
 """
 
+import os
+import sys
+from pathlib import Path
 from typing import Any, Callable, ClassVar, Dict, List, Optional, Tuple
 
 import numpy as np
@@ -24,12 +27,44 @@ from deepmt.plugins.framework_plugin import CompareResult, FrameworkPlugin
 
 # ── 可用性检查 ────────────────────────────────────────────────────────────────
 
+
+def _add_nvidia_dll_dirs() -> None:
+    """Windows-specific: add NVIDIA DLL search paths before importing paddle.
+
+    On Windows, paddle ships NVIDIA cuDNN/cuBLAS DLLs in site-packages/nvidia/.
+    These directories must be registered via os.add_dll_directory so Windows
+    can find them during DLL loading, especially when multiple CUDA libraries
+    (e.g. PyTorch and PaddlePaddle) are installed in the same environment.
+    """
+    if sys.platform != "win32" or not hasattr(os, "add_dll_directory"):
+        return
+    try:
+        import site
+        site_dirs = site.getsitepackages()
+        try:
+            site_dirs = site_dirs + [site.getusersitepackages()]
+        except Exception:
+            pass
+        for sp in site_dirs:
+            for nvidia_subdir in ("cudnn", "cublas", "cuda_runtime", "nccl", "cusolver", "cufft"):
+                dll_dir = Path(sp) / "nvidia" / nvidia_subdir / "bin"
+                if dll_dir.is_dir():
+                    try:
+                        os.add_dll_directory(str(dll_dir))
+                    except OSError:
+                        pass
+    except Exception:
+        pass
+
+
+_add_nvidia_dll_dirs()
+
 try:
     import paddle
     import paddle.nn.functional as _F
 
     _PADDLE_AVAILABLE = True
-except ImportError:
+except (ImportError, OSError):
     _PADDLE_AVAILABLE = False
     paddle = None  # type: ignore[assignment]
     _F = None      # type: ignore[assignment]

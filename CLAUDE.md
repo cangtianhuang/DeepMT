@@ -199,3 +199,12 @@ source .venv/bin/activate && PYTHONPATH=$(pwd) python -m pytest tests/
      - ✅ 合法：`make_tensor(shape, dtype, value_range)`、`allclose`、`to_numpy`、`get_shape`、`_execute_operator`
      - ❌ 禁止：任何需要解析项目自定义数据格式（`input_specs`、MR 结构、YAML 字段）的逻辑
    - 需要解析 `input_specs` 或执行生成策略的代码，统一放在 `deepmt/analysis/`（如 `InputGenerator`），再调用插件的基础接口
+
+8. **禁止作弊式补丁（反复违规，强制记忆）**
+   - 修复功能 bug 时，**必须从逻辑根源修复**，严禁绕过标准流程的投机补丁，例如：
+     - ❌ 禁止：直接向 MR 知识库写入预制答案（绕过生成流水线）
+     - ❌ 禁止：为特定算子单独注册硬编码 MR（`relu`、`abs` 等），伪造"生成"效果
+     - ❌ 禁止：在预检/验证函数里为特定算子名称写特殊分支，假装通过验证
+     - ❌ 禁止：跳过 pre-check 或 SymPy 证明以规避失败
+   - 标准流程必须完整走通：模板匹配 → 数值预检 → （可选）SymPy 证明 → 知识库存储
+   - 若某步骤因环境或算子特性而失败，应修复该步骤的**通用逻辑**，而非为失败案例开后门

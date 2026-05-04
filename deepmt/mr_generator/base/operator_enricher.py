@@ -435,7 +435,9 @@ class OperatorEnricher:
 - dtype 只能从以下选择：float16, bfloat16, float32, float64, int8, int16, int32, int64, uint8, bool, complex64, complex128
 - shape 可选值："any" | "nd>=N"（如 "nd>=2"）| "(n,)" | "(n,m)" | "(n,c,h,w)" 等
 - value_range 格式：null（无约束）| [最小值或null, 最大值或null]
-- 不确定的值填 [] 或 null，不要猜测
+  * 若输入有数学域约束（如 log/ln 必须正数 → [0.001, null]，sqrt 必须非负 → [0, null]，atanh 必须在(-1,1) → [-0.999, 0.999]），请填写实际约束范围（使用合理的测试友好数值）
+  * 若输入确实无约束（如 sin/cos/exp/relu 可接受任意实数），填 null
+  * 避免过度保守：若函数数学上对全体实数有定义，请填 null 而非缩小范围
 - 只输出 JSON 数组，不要解释"""
         try:
             messages = [{"role": "user", "content": prompt}]

@@ -39,12 +39,7 @@ description: "PyTorch 常用算子目录（torch >= 1.0）"
 #   sparse           稀疏张量运算
 #   distance         距离 / 相似度度量
 
-
-
-
-
-
-last_updated: "2026-04-06"
+last_updated: "2026-05-04"
 
 operators:
   - name: torch.nn.Conv1d
@@ -245,30 +240,37 @@ operators:
 
   - name: torch.nn.ELU
     api_type: class
+    category: activation
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.ELU.html
 
   - name: torch.nn.Hardshrink
     api_type: class
+    category: activation
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.Hardshrink.html
 
   - name: torch.nn.Hardsigmoid
     api_type: class
+    category: activation
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.Hardsigmoid.html
 
   - name: torch.nn.Hardtanh
     api_type: class
+    category: activation
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.Hardtanh.html
 
   - name: torch.nn.Hardswish
     api_type: class
+    category: activation
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.Hardswish.html
 
   - name: torch.nn.LeakyReLU
     api_type: class
+    category: activation
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.LeakyReLU.html
 
   - name: torch.nn.LogSigmoid
     api_type: class
+    category: activation
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.LogSigmoid.html
 
   - name: torch.nn.MultiheadAttention
@@ -277,86 +279,107 @@ operators:
 
   - name: torch.nn.PReLU
     api_type: class
+    category: activation
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.PReLU.html
 
   - name: torch.nn.ReLU
     api_type: class
+    category: activation
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.ReLU.html
 
   - name: torch.nn.ReLU6
     api_type: class
+    category: activation
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.ReLU6.html
 
   - name: torch.nn.RReLU
     api_type: class
+    category: activation
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.RReLU.html
 
   - name: torch.nn.SELU
     api_type: class
+    category: activation
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.SELU.html
 
   - name: torch.nn.CELU
     api_type: class
+    category: activation
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.CELU.html
 
   - name: torch.nn.GELU
     api_type: class
+    category: activation
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.GELU.html
 
   - name: torch.nn.Sigmoid
     api_type: class
+    category: activation
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.Sigmoid.html
 
   - name: torch.nn.SiLU
     api_type: class
+    category: activation
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.SiLU.html
 
   - name: torch.nn.Mish
     api_type: class
+    category: activation
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.Mish.html
 
   - name: torch.nn.Softplus
     api_type: class
+    category: activation
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.Softplus.html
 
   - name: torch.nn.Softshrink
     api_type: class
+    category: activation
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.Softshrink.html
 
   - name: torch.nn.Softsign
     api_type: class
+    category: activation
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.Softsign.html
 
   - name: torch.nn.Tanh
     api_type: class
+    category: activation
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.Tanh.html
 
   - name: torch.nn.Tanhshrink
     api_type: class
+    category: activation
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.Tanhshrink.html
 
   - name: torch.nn.Threshold
     api_type: class
+    category: activation
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.Threshold.html
 
   - name: torch.nn.GLU
     api_type: class
+    category: activation
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.GLU.html
 
   - name: torch.nn.Softmin
     api_type: class
+    category: activation
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.Softmin.html
 
   - name: torch.nn.Softmax
     api_type: class
+    category: activation
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.Softmax.html
 
   - name: torch.nn.Softmax2d
     api_type: class
+    category: activation
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.Softmax2d.html
 
   - name: torch.nn.LogSoftmax
     api_type: class
+    category: activation
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.LogSoftmax.html
 
   - name: torch.nn.AdaptiveLogSoftmaxWithLoss
@@ -1033,7 +1056,16 @@ operators:
 
   - name: torch.abs
     api_type: function
+    category: math
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.abs.html
+    signature: "(input, input: Tensor, *, out: Optional[Tensor])"
+    input_specs:
+      - name: input
+        dtype: any
+        shape: any
+        value_range: null
+        required: true
+    input_specs_auto: true  # ⚠ 自动生成
 
   - name: torch.angle
     api_type: function
@@ -1361,7 +1393,16 @@ operators:
 
   - name: torch.asinh
     api_type: function
+    category: math
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.asinh.html
+    signature: "(input, input: Tensor, *, out: Optional[Tensor])"
+    input_specs:
+      - name: input
+        dtype: any
+        shape: any
+        value_range: null
+        required: true
+    input_specs_auto: true  # ⚠ 自动生成
 
   - name: torch.arcsinh
     api_type: function
@@ -1445,11 +1486,29 @@ operators:
 
   - name: torch.cos
     api_type: function
+    category: math
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.cos.html
+    signature: "(input, input, *, out=None)"
+    input_specs:
+      - name: input
+        dtype: any
+        shape: any
+        value_range: null
+        required: true
+    input_specs_auto: true  # ⚠ 自动生成
 
   - name: torch.cosh
     api_type: function
+    category: math
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.cosh.html
+    signature: "(input, input, *, out=None)"
+    input_specs:
+      - name: input
+        dtype: any
+        shape: any
+        value_range: null
+        required: true
+    input_specs_auto: true  # ⚠ 自动生成
 
   - name: torch.deg2rad
     api_type: function
@@ -1481,15 +1540,42 @@ operators:
 
   - name: torch.exp
     api_type: function
+    category: math
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.exp.html
+    signature: "(input, input, *, out=None)"
+    input_specs:
+      - name: input
+        dtype: any
+        shape: any
+        value_range: null
+        required: true
+    input_specs_auto: true  # ⚠ 自动生成
 
   - name: torch.exp2
     api_type: function
+    category: math
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.exp2.html
+    signature: "(input, input, *, out=None)"
+    input_specs:
+      - name: input
+        dtype: any
+        shape: any
+        value_range: null
+        required: true
+    input_specs_auto: true  # ⚠ 自动生成
 
   - name: torch.expm1
     api_type: function
+    category: math
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.expm1.html
+    signature: "(input, input, *, out=None)"
+    input_specs:
+      - name: input
+        dtype: any
+        shape: any
+        value_range: null
+        required: true
+    input_specs_auto: true  # ⚠ 自动生成
 
   - name: torch.fake_quantize_per_channel_affine
     api_type: function
@@ -1549,7 +1635,16 @@ operators:
 
   - name: torch.log
     api_type: function
+    category: math
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.log.html
+    signature: "(input, input, *, out=None)"
+    input_specs:
+      - name: input
+        dtype: any
+        shape: any
+        value_range: [0.001, null]
+        required: true
+    input_specs_auto: true  # ⚠ 自动生成
 
   - name: torch.log10
     api_type: function
@@ -1697,7 +1792,16 @@ operators:
 
   - name: torch.sin
     api_type: function
+    category: math
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.sin.html
+    signature: "(input, input, *, out=None)"
+    input_specs:
+      - name: input
+        dtype: any
+        shape: any
+        value_range: null
+        required: true
+    input_specs_auto: true  # ⚠ 自动生成
 
   - name: torch.sinc
     api_type: function
@@ -1711,13 +1815,343 @@ operators:
     api_type: function
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.softmax.html
 
+  - name: torch.nn.functional.relu
+    api_type: function
+    category: activation
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.relu.html
+    signature: "(input, inplace=False)"
+    input_specs:
+      - name: input
+        dtype: any
+        shape: any
+        value_range: null
+        required: true
+    input_specs_auto: true  # ⚠ 自动生成
+
+  - name: torch.nn.functional.sigmoid
+    api_type: function
+    category: activation
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.sigmoid.html
+    signature: "(input)"
+    input_specs:
+      - name: input
+        dtype: []  # ⚠ 待确认
+        shape: any
+        value_range: null
+        required: true
+    input_specs_auto: true  # ⚠ 自动生成
+
+  - name: torch.nn.functional.tanh
+    api_type: function
+    category: activation
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.tanh.html
+    signature: "(input)"
+    input_specs:
+      - name: input
+        dtype: []  # ⚠ 待确认
+        shape: any
+        value_range: null
+        required: true
+    input_specs_auto: true  # ⚠ 自动生成
+
+  - name: torch.nn.functional.leaky_relu
+    api_type: function
+    category: activation
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.leaky_relu.html
+    signature: "(input, negative_slope=0.01, inplace=False)"
+    input_specs:
+      - name: input
+        dtype: any
+        shape: any
+        value_range: null
+        required: true
+    input_specs_auto: true  # ⚠ 自动生成
+
+  - name: torch.nn.functional.gelu
+    api_type: function
+    category: activation
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.gelu.html
+    signature: "(input, input, approximate = 'none')"
+    input_specs:
+      - name: input
+        dtype: any
+        shape: any
+        value_range: null
+        required: true
+    input_specs_auto: true  # ⚠ 自动生成
+
+  - name: torch.nn.functional.elu
+    api_type: function
+    category: activation
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.elu.html
+    signature: "(input, alpha=1.0, inplace=False)"
+    input_specs:
+      - name: input
+        dtype: any
+        shape: any
+        value_range: null
+        required: true
+    input_specs_auto: true  # ⚠ 自动生成
+
+  - name: torch.nn.functional.silu
+    api_type: function
+    category: activation
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.silu.html
+    signature: "(input, inplace=False)"
+    input_specs:
+      - name: input
+        dtype: any
+        shape: any
+        value_range: null
+        required: true
+    input_specs_auto: true  # ⚠ 自动生成
+
+  - name: torch.nn.functional.log_softmax
+    api_type: function
+    category: activation
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.log_softmax.html
+    signature: "(input, dim=None, _stacklevel=3, dtype=None)"
+    input_specs:
+      - name: input
+        dtype: any
+        shape: any
+        value_range: null
+        required: true
+    input_specs_auto: true  # ⚠ 自动生成
+
+  - name: torch.nn.functional.hardswish
+    api_type: function
+    category: activation
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.hardswish.html
+    signature: "(input, inplace=False)"
+    input_specs:
+      - name: input
+        dtype: any
+        shape: any
+        value_range: null
+        required: true
+    input_specs_auto: true  # ⚠ 自动生成
+
   - name: torch.nn.functional.softmax
     api_type: function
+    category: activation
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.softmax.html
+    signature: "(input, dim=None, _stacklevel=3, dtype=None)"
+    input_specs:
+      - name: input
+        dtype: any
+        shape: any
+        value_range: null
+        required: true
+    input_specs_auto: true  # ⚠ 自动生成
+
+  - name: torch.nn.functional.hardshrink
+    api_type: function
+    category: activation
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.hardshrink.html
+    signature: "(input, input, lambd=0.5)"
+    input_specs:
+      - name: input
+        dtype: any
+        shape: any
+        value_range: null
+        required: true
+    input_specs_auto: true  # ⚠ 自动生成
+
+  - name: torch.nn.functional.hardsigmoid
+    api_type: function
+    category: activation
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.hardsigmoid.html
+    signature: "(input, inplace=False)"
+    input_specs:
+      - name: input
+        dtype: any
+        shape: any
+        value_range: null
+        required: true
+    input_specs_auto: true  # ⚠ 自动生成
+
+  - name: torch.nn.functional.hardtanh
+    api_type: function
+    category: activation
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.hardtanh.html
+    signature: "(input, min_val=-1.0, max_val=1.0, inplace=False)"
+    input_specs:
+      - name: input
+        dtype: any
+        shape: any
+        value_range: null
+        required: true
+    input_specs_auto: true  # ⚠ 自动生成
+
+  - name: torch.nn.functional.glu
+    api_type: function
+    category: activation
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.glu.html
+    signature: "(input, dim=-1)"
+    input_specs:
+      - name: input
+        dtype: any
+        shape: any
+        value_range: null
+        required: true
+    input_specs_auto: true  # ⚠ 自动生成
+
+  - name: torch.nn.functional.selu
+    api_type: function
+    category: activation
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.selu.html
+    signature: "(input, inplace=False)"
+    input_specs:
+      - name: input
+        dtype: any
+        shape: any
+        value_range: null
+        required: true
+    input_specs_auto: true  # ⚠ 自动生成
+
+  - name: torch.nn.functional.celu
+    api_type: function
+    category: activation
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.celu.html
+    signature: "(input, alpha=1.0, inplace=False)"
+    input_specs:
+      - name: input
+        dtype: any
+        shape: any
+        value_range: null
+        required: true
+    input_specs_auto: true  # ⚠ 自动生成
+
+  - name: torch.nn.functional.rrelu
+    api_type: function
+    category: activation
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.rrelu.html
+    signature: "(input, lower=0.125, upper=0.3333333333333333, training=False, inplace=False)"
+    input_specs:
+      - name: input
+        dtype: any
+        shape: any
+        value_range: null
+        required: true
+    input_specs_auto: true  # ⚠ 自动生成
+
+  - name: torch.nn.functional.mish
+    api_type: function
+    category: activation
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.mish.html
+    signature: "(input, inplace=False)"
+    input_specs:
+      - name: input
+        dtype: any
+        shape: any
+        value_range: null
+        required: true
+    input_specs_auto: true  # ⚠ 自动生成
+
+  - name: torch.nn.functional.softplus
+    api_type: function
+    category: activation
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.softplus.html
+    signature: "(input, input, beta=1, threshold=20)"
+    input_specs:
+      - name: input
+        dtype: any
+        shape: any
+        value_range: null
+        required: true
+    input_specs_auto: true  # ⚠ 自动生成
+
+  - name: torch.nn.functional.softshrink
+    api_type: function
+    category: activation
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.softshrink.html
+    signature: "(input, input, lambd=0.5)"
+    input_specs:
+      - name: input
+        dtype: any
+        shape: any
+        value_range: null
+        required: true
+    input_specs_auto: true  # ⚠ 自动生成
+
+  - name: torch.nn.functional.softsign
+    api_type: function
+    category: activation
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.softsign.html
+    signature: "(input)"
+    input_specs:
+      - name: input
+        dtype: []  # ⚠ 待确认
+        shape: any
+        value_range: null
+        required: true
+    input_specs_auto: true  # ⚠ 自动生成
+
+  - name: torch.nn.functional.tanhshrink
+    api_type: function
+    category: activation
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.tanhshrink.html
+    signature: "(input)"
+    input_specs:
+      - name: input
+        dtype: []  # ⚠ 待确认
+        shape: any
+        value_range: null
+        required: true
+    input_specs_auto: true  # ⚠ 自动生成
+
+  - name: torch.nn.functional.logsigmoid
+    api_type: function
+    category: activation
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.logsigmoid.html
+    signature: "(input, input)"
+    input_specs:
+      - name: input
+        dtype: any
+        shape: any
+        value_range: null
+        required: true
+    input_specs_auto: true  # ⚠ 自动生成
+
+  - name: torch.nn.functional.relu6
+    api_type: function
+    category: activation
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.relu6.html
+    signature: "(input, inplace=False)"
+    input_specs:
+      - name: input
+        dtype: any
+        shape: any
+        value_range: null
+        required: true
+    input_specs_auto: true  # ⚠ 自动生成
+
+  - name: torch.nn.functional.softmin
+    api_type: function
+    category: activation
+    doc_url: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.softmin.html
+    signature: "(input, dim=None, _stacklevel=3, dtype=None)"
+    input_specs:
+      - name: input
+        dtype: any
+        shape: any
+        value_range: null
+        required: true
+    input_specs_auto: true  # ⚠ 自动生成
 
   - name: torch.sqrt
     api_type: function
+    category: math
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.sqrt.html
+    signature: "(input, input, *, out=None)"
+    input_specs:
+      - name: input
+        dtype: any
+        shape: any
+        value_range: null
+        required: true
+    input_specs_auto: true  # ⚠ 自动生成
 
   - name: torch.square
     api_type: function
@@ -1737,7 +2171,16 @@ operators:
 
   - name: torch.tanh
     api_type: function
+    category: math
     doc_url: https://docs.pytorch.org/docs/stable/generated/torch.tanh.html
+    signature: "(input, input, *, out=None)"
+    input_specs:
+      - name: input
+        dtype: any
+        shape: any
+        value_range: null
+        required: true
+    input_specs_auto: true  # ⚠ 自动生成
 
   - name: torch.true_divide
     api_type: function

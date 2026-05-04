@@ -44,7 +44,8 @@ class LLMClient:
             api_key or get_config_value("llm.api_key") or os.getenv("OPENAI_API_KEY")
         )
         self.model_base = get_config_value("llm.model_base", "ernie-4.5-turbo-latest")
-        self.model_max = get_config_value("llm.model_max", self.model_base)
+        _model_max = get_config_value("llm.model_max")
+        self.model_max = _model_max if _model_max else self.model_base
         self.base_url = get_config_value("llm.url")
         self.temperature = get_config_value("llm.temperature", 0.2)
 

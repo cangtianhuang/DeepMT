@@ -170,15 +170,33 @@ class FaultyPyTorchPlugin(PyTorchPlugin):
 
     def _resolve_operator(self, name: str) -> Callable:
         real_func = super()._resolve_operator(name)
-        if name not in self._active_faults:
+        fault_key = self._match_fault_key(name)
+        if fault_key is None:
             return real_func
 
-        mutant_type_str, kwargs, description = self._active_faults[name]
-        logger.debug(f"[FAULTY] {name}: {description}")
+        mutant_type_str, kwargs, description = self._active_faults[fault_key]
+        logger.debug(f"[FAULTY] {name} (matched as {fault_key!r}): {description}")
 
         from deepmt.analysis.reporting.mutation_tester import MutantType, create_mutant_func
         mutant_type = MutantType(mutant_type_str)
         return create_mutant_func(real_func, mutant_type, **kwargs)
+
+    def _match_fault_key(self, name: str) -> Optional[str]:
+        """
+        将算子名称匹配到 _active_faults 中的键。
+
+        支持两种匹配：
+          1. 精确匹配（全路径名，如 "torch.nn.functional.relu"）
+          2. 后缀匹配（泛化短名，如 "relu" 匹配 "torch.nn.functional.relu"）
+             当有多个键后缀相同时，精确匹配优先，否则返回第一个匹配。
+        """
+        if name in self._active_faults:
+            return name
+        suffix = "." + name
+        for key in self._active_faults:
+            if key.endswith(suffix):
+                return key
+        return None
 
     # ── 缺陷目录查询 ─────────────────────────────────────────────────────────
 
